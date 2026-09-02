@@ -1,0 +1,20 @@
+﻿from typing import TYPE_CHECKING, List
+from sqlalchemy import Boolean, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.slot import TimeSlot
+
+
+class Court(Base):
+    __tablename__ = "courts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    slots: Mapped[List["TimeSlot"]] = relationship(
+        "TimeSlot", back_populates="court", cascade="all, delete-orphan"
+    )

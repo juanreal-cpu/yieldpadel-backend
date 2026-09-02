@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Afluenc.IA | YieldPadel - Dashboard de Recepción</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #0B0F19;
+      color: #F1F5F9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background-color: #111827;
+      border-bottom: 1px solid #1E293B;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .logo-brand {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #06B6D4;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-badge {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: #38BDF8;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .venue-tag {
+      font-size: 0.8rem;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-left: 1px solid #1E293B;
+      padding-left: 1rem;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .badge-live {
+      background-color: rgba(6, 78, 59, 0.7);
+      color: #10B981;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 0.35rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #10B981;
+      box-shadow: 0 0 10px #10B981;
+      animation: pulse-dot-anim 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-dot-anim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+    }
+
+    .btn-icon {
+      background: #1E293B;
+      color: #CBD5E1;
+      border: 1px solid #334155;
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: #334155;
+      color: white;
+    }
+
+    /* Main Container */
+    .main-container {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 1.5rem;
+      max-width: 1440px;
+      margin: 1.75rem auto;
+      padding: 0 1.5rem;
+      width: 100%;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .main-container {
+        grid-template-columns: 1fr;
+        padding: 0 1rem;
+      }
+    }
+
+    /* Toolbar */
+    .toolbar-container {
+      background-color: #111827;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .filter-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pill-group {
+      display: flex;
+      background: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 0.25rem;
+      gap: 0.25rem;
+    }
+
+    .filter-pill {
+      border: none;
+      background: transparent;
+      color: #94A3B8;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-pill.active {
+      background: #0284C7;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+
+    .filter-pill:hover:not(.active) {
+      color: #FFFFFF;
+      background: #1E293B;
+    }
+
+    /* Cards */
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .slot-card {
+      background-color: #161F30;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .slot-card:hover {
+      border-color: rgba(6, 182, 212, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .slot-card.booked {
+      background-color: #10231D;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.6rem;
+    }
+
+    .slot-time {
+      color: #38BDF8;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .slot-court {
+      font-size: 0.75rem;
+      color: #94A3B8;
+      background: #0B0F19;
+      border: 1px solid #1E293B;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-full {
+      background-color: #065F46;
+      color: #34D399;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
+    .badge-split {
+      background-color: #0E7490;
+      color: #67E8F9;
+      border: 1px solid rgba(103, 232, 249, 0.4);
+    }
+
+    .badge-cat {
+      background-color: #1E293B;
+      color: #CBD5E1;
+      border: 1px solid #334155;
+    }
+
+    .badge-hold {
+      background-color: #78350F;
+      color: #FBBF24;
+      border: 1px solid rgba(251, 191, 36, 0.4);
+    }
+
+    /* Players list inside card */
+    .players-box {
+      background: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 0.65rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .players-box-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #94A3B8;
+      margin-bottom: 0.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .players-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .player-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #161F30;
+      border: 1px solid #1E293B;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+    }
+
+    .player-chip {
+      color: #E2E8F0;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: help;
+    }
+
+    .player-phone-tag {
+      font-size: 0.65rem;
+      color: #64748B;
+      font-family: monospace;
+      margin-left: 0.25rem;
+    }
+
+    .btn-drop-chip {
+      background: transparent;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #EF4444;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.15s;
+    }
+
+    .btn-drop-chip:hover {
+      background: #EF4444;
+      color: white;
+    }
+
+    .progress-track {
+      background-color: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 9999px;
+      height: 8px;
+      width: 100%;
+      overflow: hidden;
+      margin: 0.4rem 0;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, #0284C7, #38BDF8);
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.3s;
+    }
+
+    .slot-footer {
+      border-top: 1px solid #1E293B;
+      padding-top: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .price-label {
+      font-size: 0.7rem;
+      color: #94A3B8;
+      text-transform: uppercase;
+    }
+
+    .price-value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #10B981;
+    }
+
+    .btn-hold {
+      width: 100%;
+      background-color: #0284C7;
+      color: #FFFFFF;
+      border: none;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .btn-hold:hover {
+      background-color: #0369A1;
+    }
+
+    .status-confirmed-box {
+      width: 100%;
+      background-color: rgba(6, 95, 70, 0.4);
+      color: #34D399;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .sidebar-card {
+      background-color: #111827;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #CBD5E1;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric-box {
+      background-color: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #94A3B8;
+      margin-bottom: 0.25rem;
+    }
+
+    .metric-number {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+
+    /* WhatsApp Parser Box */
+    .wa-textarea {
+      width: 100%;
+      background-color: #0B0F19;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0.65rem;
+      color: #F1F5F9;
+      font-size: 0.75rem;
+      font-family: monospace;
+      resize: vertical;
+      min-height: 100px;
+      margin-bottom: 0.5rem;
+      outline: none;
+    }
+
+    .wa-textarea:focus {
+      border-color: #06B6D4;
+    }
+
+    .btn-wa {
+      width: 100%;
+      background-color: #059669;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .btn-wa:hover {
+      background-color: #047857;
+    }
+
+    .wa-result-box {
+      background: #0B0F19;
+      border: 1px solid #10B981;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.72rem;
+      color: #A7F3D0;
+      white-space: pre-wrap;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .btn-simulate {
+      width: 100%;
+      background-color: #059669;
+      color: #FFFFFF;
+      border: none;
+      padding: 0.55rem 0.85rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-top: 0.4rem;
+    }
+
+    .active-hold-item {
+      background-color: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .event-feed {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .event-item {
+      background-color: #0B0F19;
+      border: 1px solid #1E293B;
+      padding: 0.5rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .event-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #06B6D4;
+      flex-shrink: 0;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background-color: #161F30;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 1.5rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #1E293B;
+      padding-bottom: 0.5rem;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .btn-close {
+      background: transparent;
+      border: none;
+      color: #94A3B8;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 0.85rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #CBD5E1;
+      margin-bottom: 0.35rem;
+    }
+
+    .form-control {
+      width: 100%;
+      background-color: #0B0F19;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      color: #FFFFFF;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #06B6D4;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid #334155;
+      color: #94A3B8;
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .btn-submit {
+      background: #0284C7;
+      color: white;
+      border: none;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo-brand">
+        Afluenc.IA | YieldPadel
+        <span class="logo-badge">PRO</span>
+      </div>
+      <div class="venue-tag">
+        📍 Capital Pádel Club
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="badge-live">
+        <div class="pulse-dot"></div>
+        API Live: 8000
+      </div>
+      <button onclick="refreshData()" class="btn-icon" title="Refrescar">
+        ↻ Refrescar
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Columna Izquierda: Slots Grid -->
+    <section>
+      
+      <!-- Toolbar -->
+      <div class="toolbar-container">
+        <div class="filter-group">
+          <span class="filter-label">Filtro:</span>
+          <div class="pill-group">
+            <button onclick="setFilter('ALL')" id="btn-filter-all" class="filter-pill active">Todos</button>
+            <button onclick="setFilter('FULL_COURT')" id="btn-filter-full" class="filter-pill">Cancha Completa</button>
+            <button onclick="setFilter('SPLIT_MATCH')" id="btn-filter-split" class="filter-pill">Partidos Abiertos</button>
+          </div>
+        </div>
+
+        <div style="font-size: 0.8rem; color: #94A3B8; font-weight: 600;">
+          📅 Turnos de Hoy
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span>Grilla de Turnos</span>
+        <span id="slots-count" style="font-size: 0.8rem; color: #38BDF8; font-weight: 600;">Cargando...</span>
+      </div>
+
+      <div id="slots-grid" class="slots-grid">
+        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #64748B;">
+          Cargando turnos desde FastAPI...
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Columna Derecha: Métricas, WhatsApp Parser & Bajas -->
+    <aside class="sidebar">
+
+      <!-- Card 1: Parser WhatsApp de Convocatorias -->
+      <div class="sidebar-card">
+        <div class="sidebar-title">
+          <span>📲 Parser WhatsApp</span>
+          <span style="color: #10B981; font-size: 0.7rem;">Convocatorias</span>
+        </div>
+        <p style="font-size: 0.72rem; color: #94A3B8; margin-bottom: 0.4rem;">
+          Pega el texto de WhatsApp para parsear jugadores con 🎾 e identidad canónica:
+        </p>
+
+        <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 02 SEPTIEMBRE
+Categoría: 4ta
+⌚2:00pm - 3:30pm
+📍Bogotá Pádel Center
+💰15.000
+🎾Juanda
+🎾Edinson
+🎾Charlie
+🎾 Jose G
+PARTIDO CERRADO</textarea>
+
+        <div class="form-group" style="margin-bottom: 0.5rem;">
+          <input type="tel" id="wa-sender-phone" placeholder="Teléfono remitente (ej: +573001234567)" class="form-control" style="font-size: 0.75rem; padding: 0.4rem 0.6rem;">
+        </div>
+
+        <button onclick="parseWhatsApp()" class="btn-wa">
+          🚀 Sincronizar Convocatoria
+        </button>
+
+        <div id="wa-result" style="display: none;" class="wa-result-box"></div>
+      </div>
+
+      <!-- Card 2: Métricas del Día -->
+      <div class="sidebar-card">
+        <div class="sidebar-title">
+          <span>Métricas Operativas</span>
+          <span style="color: #10B981; font-size: 0.75rem;">● En Vivo</span>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-header">
+            <span>Ingresos del Día</span>
+            <span style="color: #38BDF8;">Confirmado</span>
+          </div>
+          <div id="metric-revenue" class="metric-number">$0</div>
+          <div style="font-size: 0.7rem; color: #64748B;">COP (Acumulado hoy)</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-header">
+            <span>RevPAST Estimado</span>
+            <span style="color: #10B981;">Meta: $1.5M</span>
+          </div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #FFFFFF;">$1.200.000 COP</div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 78%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Holds Activos & Prueba Rápida -->
+      <div class="sidebar-card">
+        <div class="sidebar-title">
+          <span>Holds Activos</span>
+          <span style="color: #FBBF24; font-size: 0.7rem;">Bold / Wompi</span>
+        </div>
+
+        <div id="active-holds-container">
+          <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.75rem; text-align: center; font-size: 0.72rem; color: #64748B;">
+            No hay holds activos en este momento.
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Eventos Recientes -->
+      <div class="sidebar-card">
+        <div class="sidebar-title">
+          <span>Eventos Recientes</span>
+          <span style="color: #94A3B8; font-size: 0.7rem;">Auditoría</span>
+        </div>
+
+        <div id="event-feed" class="event-feed">
+          <div class="event-item">
+            <div class="event-dot"></div>
+            <div>
+              <div style="font-weight: 600; color: #F1F5F9;">Sistema Inicializado</div>
+              <div style="color: #64748B; font-size: 0.68rem;">Capital Pádel Club Core Activo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Modal Interactivo para Apartar Turno -->
+  <div id="hold-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">Apartar Turno</div>
+        <button onclick="closeModal()" class="btn-close">✕</button>
+      </div>
+
+      <form id="hold-form" onsubmit="handleHoldSubmit(event)">
+        <input type="hidden" id="modal-slot-id">
+        <input type="hidden" id="modal-slot-mode">
+
+        <div class="form-group">
+          <label class="form-label">Condición de Pago / Tipo de Cliente</label>
+          <select id="modal-tier" onchange="calculateModalPrice()" class="form-control" style="background: #111827; border-color: #38BDF8; font-weight: 600;">
+            <option value="STANDARD">Estándar (Pago Pasarela Bold - Hold 15 min)</option>
+            <option value="VIP_PAY_ON_SITE">VIP (Pago en Recepción - Sin Expiración)</option>
+            <option value="MEMBER">Membresía / Socio (Costo $0 - Exento)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nombre del Jugador / Cliente</label>
+          <input type="text" id="modal-name" required placeholder="Ej: Juanda" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Teléfono Canónico (WhatsApp)</label>
+          <input type="tel" id="modal-phone" required placeholder="+57 300 123 4567" value="+57 " class="form-control">
+        </div>
+
+        <div class="form-group" id="modal-spots-wrapper">
+          <label class="form-label">Cupos a Reservar</label>
+          <select id="modal-spots-select" onchange="calculateModalPrice()" class="form-control">
+            <option value="1">1 Cupo</option>
+            <option value="2">2 Cupos</option>
+            <option value="3">3 Cupos</option>
+            <option value="4">4 Cupos</option>
+          </select>
+        </div>
+
+        <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <span style="font-size: 0.68rem; color: #94A3B8; display: block;">Total a Pagar:</span>
+            <span id="modal-total-display" style="font-size: 1.15rem; font-weight: 800; color: #38BDF8;">$0</span>
+          </div>
+          <div id="modal-ttl-info" style="text-align: right; font-size: 0.72rem; color: #FBBF24; font-weight: 700;">
+            ⏳ TTL 15:00 min
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" onclick="closeModal()" class="btn-cancel">Cancelar</button>
+          <button type="submit" id="btn-submit-hold" class="btn-submit">Confirmar Reserva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Cancelación / Baja de Jugador -->
+  <div id="drop-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">Cancelar Cupo (Baja)</div>
+        <button onclick="closeDropModal()" class="btn-close">✕</button>
+      </div>
+
+      <form id="drop-form" onsubmit="handleDropSubmit(event)">
+        <input type="hidden" id="drop-slot-id">
+        
+        <p style="font-size: 0.75rem; color: #CBD5E1; margin-bottom: 1rem;">
+          Para liberar este cupo, ingresa el <strong>número de teléfono titular</strong> asociado a la reserva para verificar tu identidad:
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Jugador a Cancelar</label>
+          <input type="text" id="drop-player-display" readonly class="form-control" style="background: #111827; color: #94A3B8;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Teléfono Titular (Autenticación requerida)</label>
+          <input type="tel" id="drop-phone-input" required placeholder="+57 300 123 4567" class="form-control">
+          <span style="font-size: 0.68rem; color: #64748B;">Si el teléfono no coincide, el servidor rechazará con 403 Forbidden.</span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" onclick="closeDropModal()" class="btn-cancel">Cerrar</button>
+          <button type="submit" id="btn-submit-drop" class="btn-submit" style="background: #DC2626;">Confirmar Baja</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin.includes('8000') ? window.location.origin : 'http://127.0.0.1:8000';
+
+    let allSlots = [];
+    let currentFilter = 'ALL';
+    let selectedSlot = null;
+    let activeHoldsMap = {};
+
+    function formatCOP(num) {
+      return '$' + Number(num || 0).toLocaleString('es-CO') + ' COP';
+    }
+
+    function addEvent(title, subtitle, type = 'info') {
+      const feed = document.getElementById('event-feed');
+      const timeStr = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      const div = document.createElement('div');
+      div.className = 'event-item';
+      div.innerHTML = `
+        <div class="event-dot" style="${type === 'green' ? 'background: #10B981;' : (type === 'amber' ? 'background: #FBBF24;' : (type === 'red' ? 'background: #EF4444;' : ''))}"></div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; color: #F1F5F9;">${title}</div>
+          <div style="color: #64748B; font-size: 0.68rem;">${subtitle} • ${timeStr}</div>
+        </div>
+      `;
+      feed.insertBefore(div, feed.firstChild);
+      while (feed.children.length > 15) feed.removeChild(feed.lastChild);
+    }
+
+    function setFilter(mode) {
+      currentFilter = mode;
+      document.getElementById('btn-filter-all').className = 'filter-pill' + (mode === 'ALL' ? ' active' : '');
+      document.getElementById('btn-filter-full').className = 'filter-pill' + (mode === 'FULL_COURT' ? ' active' : '');
+      document.getElementById('btn-filter-split').className = 'filter-pill' + (mode === 'SPLIT_MATCH' ? ' active' : '');
+      renderSlots();
+    }
+
+    async function refreshData() {
+      try {
+        await fetch(`${API_BASE}/api/v1/holds/check-expirations`, { method: 'POST' }).catch(() => {});
+        const res = await fetch(`${API_BASE}/api/v1/slots/?only_available=false`);
+        if (!res.ok) throw new Error('Error al conectar con la API');
+        allSlots = await res.json();
+        renderSlots();
+        updateMetrics();
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      }
+    }
+
+    function renderSlots() {
+      const grid = document.getElementById('slots-grid');
+      const countEl = document.getElementById('slots-count');
+
+      let filtered = allSlots;
+      if (currentFilter !== 'ALL') {
+        filtered = allSlots.filter(s => s.mode === currentFilter);
+      }
+
+      countEl.textContent = `${filtered.length} turno${filtered.length === 1 ? '' : 's'}`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1/-1; background: #161F30; border: 1px dashed #334155; border-radius: 12px; padding: 2.5rem; text-align: center;">
+            <div style="font-size: 1rem; color: #E2E8F0; margin-bottom: 0.5rem; font-weight: 600;">No hay turnos para este filtro</div>
+            <button onclick="seedDemo()" class="btn-hold" style="width: auto; margin: 0 auto;">Sembrar Turnos Demo</button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(slot => {
+        const isOpenMatch = slot.mode === 'SPLIT_MATCH';
+        const isFull = slot.status === 'FULLY_BOOKED' || slot.available_spots === 0;
+        const totalOccupied = slot.booked_spots + slot.held_spots;
+        const percent = Math.min(100, Math.round((totalOccupied / slot.capacity) * 100));
+
+        const startH = slot.start_time.slice(0, 5);
+        const endH = slot.end_time.slice(0, 5);
+        const priceStr = formatCOP(isOpenMatch ? slot.price_per_spot : slot.total_price);
+        const priceSub = isOpenMatch ? 'por jugador' : 'cancha completa';
+
+        const modeBadge = isOpenMatch 
+          ? `<span class="badge badge-split">Partido Abierto</span>`
+          : `<span class="badge badge-full">Cancha Completa</span>`;
+
+        const catBadge = `<span class="badge badge-cat">Cat. ${slot.category || '4ta'}</span>`;
+
+        const holdBadge = slot.held_spots > 0
+          ? `<span class="badge badge-hold">Hold Activo (${slot.held_spots})</span>`
+          : '';
+
+        // Render participantes canónicos
+        const participants = slot.participants || [];
+        let playersHtml = '';
+        if (participants.length > 0) {
+          const rows = participants.map(p => {
+            const phoneClean = p.phone || '';
+            const tooltip = `Tel: ${phoneClean} • Condición: ${p.client_tier || 'STANDARD'}${p.host_phone ? ' (Host: ' + p.host_phone + ')' : ''}`;
+            return `
+              <div class="player-row">
+                <span class="player-chip" title="${tooltip}">
+                  🎾 <strong>${p.display_name}</strong>
+                  <span class="player-phone-tag">${phoneClean.length > 13 ? phoneClean.slice(0,13) + '..' : phoneClean}</span>
+                </span>
+                <button onclick="openDropModal(${slot.id}, '${p.display_name}', '${p.phone}')" class="btn-drop-chip" title="Solicitar baja">
+                  Baja ✕
+                </button>
+              </div>
+            `;
+          }).join('');
+
+          playersHtml = `
+            <div class="players-box">
+              <div class="players-box-title">
+                <span>Jugadores Anotados (${participants.length}/${slot.capacity}):</span>
+              </div>
+              <div class="players-chips">${rows}</div>
+            </div>
+          `;
+        }
+
+        let actionHtml = '';
+        if (isFull) {
+          actionHtml = `
+            <div class="status-confirmed-box">
+              ✓ Turno Completo (${slot.capacity}/${slot.capacity})
+            </div>
+          `;
+        } else {
+          actionHtml = `
+            <button onclick="openHoldModal(${slot.id})" class="btn-hold">
+              Apartar Turno
+            </button>
+          `;
+        }
+
+        return `
+          <div class="slot-card ${isFull ? 'booked' : ''}">
+            <div>
+              <div class="slot-header">
+                <span class="slot-time">${startH} - ${endH}</span>
+                <span class="slot-court">${slot.court_name || 'Cancha ' + slot.court_id}</span>
+              </div>
+
+              <div class="badges-row">
+                ${modeBadge}
+                ${catBadge}
+                ${holdBadge}
+              </div>
+
+              ${playersHtml}
+
+              <div class="capacity-section">
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94A3B8; margin-bottom: 0.35rem;">
+                  <span>Ocupación:</span>
+                  <span style="color: white; font-weight: 700;">${totalOccupied} / ${slot.capacity} (${slot.available_spots} libres)</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" style="width: ${percent}%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="slot-footer">
+              <div class="price-row">
+                <span class="price-label">${priceSub}</span>
+                <span class="price-value">${priceStr}</span>
+              </div>
+              ${actionHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function seedDemo() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/slots/seed`, { method: 'POST' });
+        if (res.ok) {
+          addEvent('Datos Demo Creados', 'Cancha y turnos generados');
+          await refreshData();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function openHoldModal(slotId) {
+      const slot = allSlots.find(s => s.id === slotId);
+      if (!slot) return;
+      selectedSlot = slot;
+
+      document.getElementById('modal-slot-id').value = slot.id;
+      document.getElementById('modal-slot-mode').value = slot.mode;
+      document.getElementById('modal-title').textContent = slot.mode === 'FULL_COURT' 
+        ? 'Apartar Cancha Completa' 
+        : 'Apartar Cupo / Partido Abierto';
+
+      const wrapper = document.getElementById('modal-spots-wrapper');
+      const select = document.getElementById('modal-spots-select');
+
+      if (slot.mode === 'FULL_COURT') {
+        wrapper.style.display = 'none';
+        select.value = "4";
+      } else {
+        wrapper.style.display = 'block';
+        select.innerHTML = '';
+        for (let i = 1; i <= slot.available_spots; i++) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.textContent = `${i} Cupo${i > 1 ? 's' : ''}`;
+          select.appendChild(opt);
+        }
+      }
+
+      calculateModalPrice();
+      document.getElementById('hold-modal').classList.add('open');
+    }
+
+    function calculateModalPrice() {
+      if (!selectedSlot) return;
+      const tier = document.getElementById('modal-tier').value;
+      const display = document.getElementById('modal-total-display');
+      const ttlInfo = document.getElementById('modal-ttl-info');
+
+      if (tier === 'MEMBER') {
+        display.textContent = '$0 COP';
+        display.style.color = '#10B981';
+        ttlInfo.textContent = '✓ Socio Exento';
+        ttlInfo.style.color = '#10B981';
+        return;
+      }
+
+      if (tier === 'VIP_PAY_ON_SITE') {
+        ttlInfo.textContent = '📍 Cobro en Recepción';
+        ttlInfo.style.color = '#38BDF8';
+      } else {
+        ttlInfo.textContent = '⏳ TTL 15:00 min';
+        ttlInfo.style.color = '#FBBF24';
+      }
+
+      display.style.color = '#38BDF8';
+      if (selectedSlot.mode === 'FULL_COURT') {
+        display.textContent = formatCOP(selectedSlot.total_price);
+      } else {
+        const spots = Number(document.getElementById('modal-spots-select').value) || 1;
+        const total = spots * Number(selectedSlot.price_per_spot);
+        display.textContent = formatCOP(total);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('hold-modal').classList.remove('open');
+    }
+
+    async function handleHoldSubmit(e) {
+      e.preventDefault();
+      const slotId = Number(document.getElementById('modal-slot-id').value);
+      const mode = document.getElementById('modal-slot-mode').value;
+      const name = document.getElementById('modal-name').value.trim();
+      const phone = document.getElementById('modal-phone').value.trim();
+      const tier = document.getElementById('modal-tier').value;
+      const spots = mode === 'FULL_COURT' ? 4 : Number(document.getElementById('modal-spots-select').value);
+
+      const btn = document.getElementById('btn-submit-hold');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/holds/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slot_id: slotId,
+            customer_name: name,
+            customer_phone: phone,
+            spots_held: spots,
+            client_tier: tier
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al apartar');
+
+        if (tier === 'MEMBER') {
+          addEvent(`Membresía: ${data.customer_name}`, `Ref ${data.payment_reference} ($0)`, 'green');
+        } else if (tier === 'VIP_PAY_ON_SITE') {
+          addEvent(`Reserva VIP: ${data.customer_name}`, `Ref ${data.payment_reference} (Paga en recepción)`, 'green');
+        } else {
+          addEvent(`Hold Creado: ${data.customer_name}`, `Ref ${data.payment_reference} (15m Bold)`, 'amber');
+          registerHoldTimer(data);
+        }
+
+        closeModal();
+        await refreshData();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar Reserva';
+      }
+    }
+
+    // Modal de Baja / Drop Player
+    function openDropModal(slotId, playerName, knownPhone) {
+      document.getElementById('drop-slot-id').value = slotId;
+      document.getElementById('drop-player-display').value = playerName;
+      document.getElementById('drop-phone-input').value = (knownPhone && !knownPhone.includes('-WA-') && !knownPhone.includes('unknown')) ? knownPhone : '+57 ';
+      document.getElementById('drop-modal').classList.add('open');
+    }
+
+    function closeDropModal() {
+      document.getElementById('drop-modal').classList.remove('open');
+    }
+
+    async function handleDropSubmit(e) {
+      e.preventDefault();
+      const slotId = Number(document.getElementById('drop-slot-id').value);
+      const phone = document.getElementById('drop-phone-input').value.trim();
+      const playerName = document.getElementById('drop-player-display').value;
+
+      const btn = document.getElementById('btn-submit-drop');
+      btn.disabled = true;
+      btn.textContent = 'Validando baja...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/slots/drop-player`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slot_id: slotId,
+            sender_phone: phone
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(`[${res.status}] ${data.detail || 'Error en baja'}`);
+        }
+
+        addEvent('Cupo Liberado (Baja)', `${playerName} (${data.freed_phone}) canceló su cupo. Slot reabierto.`, 'green');
+        closeDropModal();
+        await refreshData();
+      } catch (err) {
+        alert("Error de seguridad: " + err.message);
+        addEvent('Baja Rechazada (403)', `${phone} no es titular de ${playerName}`, 'red');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar Baja';
+      }
+    }
+
+    // Parser WhatsApp
+    async function parseWhatsApp() {
+      const raw = document.getElementById('wa-input').value;
+      const senderPhone = document.getElementById('wa-sender-phone').value.trim();
+      const resultBox = document.getElementById('wa-result');
+
+      try {
+        const payload = { raw_text: raw };
+        if (senderPhone) payload.sender_phone = senderPhone;
+
+        const res = await fetch(`${API_BASE}/api/v1/slots/parse-open-match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al procesar convocatoria');
+
+        resultBox.style.display = 'block';
+        resultBox.textContent = data.whatsapp_reply;
+
+        addEvent('Convocatoria WhatsApp Sincronizada', `${data.players.length}/4 jugadores • ${data.is_closed ? 'CERRADO' : 'ABIERTO'}`, 'green');
+        await refreshData();
+      } catch (err) {
+        resultBox.style.display = 'block';
+        resultBox.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    function registerHoldTimer(hold) {
+      const expMs = new Date(hold.expires_at).getTime();
+      activeHoldsMap[hold.payment_reference] = {
+        ...hold,
+        expMs: expMs
+      };
+      renderActiveHolds();
+    }
+
+    function renderActiveHolds() {
+      const container = document.getElementById('active-holds-container');
+      const holds = Object.values(activeHoldsMap);
+
+      if (holds.length === 0) {
+        container.innerHTML = `
+          <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.75rem; text-align: center; font-size: 0.72rem; color: #64748B;">
+            No hay holds activos en este momento.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = holds.map(h => {
+        const diff = Math.max(0, Math.floor((h.expMs - Date.now()) / 1000));
+        const mm = String(Math.floor(diff / 60)).padStart(2, '0');
+        const ss = String(diff % 60).padStart(2, '0');
+
+        return `
+          <div class="active-hold-item">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.75rem; font-weight: 800; color: #38BDF8;">${h.payment_reference}</span>
+              <span style="background: rgba(120, 53, 15, 0.4); color: #FBBF24; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.68rem; font-weight: 700;">⏳ ${mm}:${ss}</span>
+            </div>
+            <div style="font-size: 0.72rem; color: #CBD5E1; margin: 0.35rem 0;">
+              ${h.customer_name} (${h.spots_held} cupo${h.spots_held > 1 ? 's' : ''}) • <strong>${formatCOP(h.amount_to_pay)}</strong>
+            </div>
+            <button onclick="simulateWebhookPayment('${h.payment_reference}')" class="btn-simulate">
+              ✓ Simular Pago Webhook
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function simulateWebhookPayment(ref) {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/webhooks/payment-mock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payment_reference: ref,
+            status: 'APPROVED',
+            transaction_id: 'TX-' + Math.random().toString(36).substring(2, 9).toUpperCase()
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al procesar');
+
+        delete activeHoldsMap[ref];
+        renderActiveHolds();
+        addEvent('Pago Confirmado Bold', `Ref ${ref} • ${formatCOP(data.amount_paid)}`, 'green');
+        await refreshData();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function updateMetrics() {
+      let total = 0;
+      allSlots.forEach(s => {
+        const p = Number(s.price_per_spot) || 0;
+        total += (s.booked_spots * p);
+      });
+      document.getElementById('metric-revenue').textContent = formatCOP(total).replace(' COP', '');
+    }
+
+    setInterval(() => {
+      const now = Date.now();
+      let changed = false;
+      Object.keys(activeHoldsMap).forEach(ref => {
+        if (activeHoldsMap[ref].expMs <= now) {
+          delete activeHoldsMap[ref];
+          addEvent('Hold Expirado', `Ref ${ref} liberado`, 'amber');
+          changed = true;
+        }
+      });
+      if (Object.keys(activeHoldsMap).length > 0 || changed) renderActiveHolds();
+    }, 1000);
+
+    setInterval(refreshData, 5000);
+    refreshData();
+  </script>
+</body>
+</html>
