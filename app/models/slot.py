@@ -1,4 +1,5 @@
-﻿import enum
+import enum
+import uuid
 from datetime import date, time, datetime
 from typing import TYPE_CHECKING, List
 from decimal import Decimal
@@ -13,6 +14,7 @@ from sqlalchemy import (
     String,
     Time,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -57,8 +59,8 @@ class TimeSlot(Base):
     __tablename__ = "time_slots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    court_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("courts.id", ondelete="CASCADE"), nullable=False, index=True
+    court_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("courts.id", ondelete="CASCADE"), nullable=False, index=True
     )
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)

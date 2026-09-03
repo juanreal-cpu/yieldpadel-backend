@@ -1,6 +1,7 @@
 from datetime import date, time
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Union
+import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.slot import SlotMode, SlotStatus
@@ -16,13 +17,13 @@ class CourtCreate(CourtBase):
 
 
 class CourtResponse(CourtBase):
-    id: int
+    id: Union[uuid.UUID, int, str]
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class TimeSlotBase(BaseModel):
-    court_id: int
+    court_id: Union[uuid.UUID, int, str]
     date: date
     start_time: time
     end_time: time
@@ -46,7 +47,7 @@ class SlotParticipant(BaseModel):
 
 class TimeSlotResponse(BaseModel):
     id: int
-    court_id: int
+    court_id: Union[uuid.UUID, int, str]
     court_name: Optional[str] = None
     date: date
     start_time: time

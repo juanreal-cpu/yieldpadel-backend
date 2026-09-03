@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class Booking(Base):
-    __tablename__ = "bookings"
+    __tablename__ = "yield_bookings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     slot_id: Mapped[int] = mapped_column(

@@ -153,9 +153,9 @@ async def list_slots(
 @router.post("/seed", status_code=status.HTTP_201_CREATED)
 async def seed_demo_data(db: AsyncSession = Depends(get_db)):
     """Crea una cancha demo y slots de prueba para hoy si no existen."""
-    court_stmt = select(Court).where(Court.name == "Cancha Central 1")
+    court_stmt = select(Court).where(Court.is_active == True)
     court_res = await db.execute(court_stmt)
-    court = court_res.scalar_one_or_none()
+    court = court_res.scalars().first()
 
     if not court:
         court = Court(name="Cancha Central 1", is_active=True)
@@ -202,9 +202,9 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
         ]
         db.add_all(sample_slots)
         await db.commit()
-        return {"message": "Datos de demostración sembrados correctamente", "court_id": court.id, "slots_created": len(sample_slots)}
+        return {"message": "Datos de demostración sembrados correctamente", "court_id": str(court.id), "slots_created": len(sample_slots)}
 
-    return {"message": "Los datos de demostración ya se encontraban presentes", "court_id": court.id}
+    return {"message": "Los datos de demostración ya se encontraban presentes", "court_id": str(court.id)}
 
 
 def parse_time_token(t_str: str) -> time:
