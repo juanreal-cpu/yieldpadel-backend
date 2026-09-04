@@ -54,7 +54,8 @@ async def serve_dashboard():
     return HTMLResponse("<h1>Dashboard de Recepción no encontrado</h1>", status_code=404)
 
 
-from app.api.v1.endpoints import whatsapp_webhook
+from app.api.v1.endpoints import whatsapp_webhook, radar
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(whatsapp_webhook.router, prefix="/api/v1/whatsapp", tags=["whatsapp"])
+app.include_router(radar.router, prefix="/api/v1/radar", tags=["Radar & Market Analytics"])

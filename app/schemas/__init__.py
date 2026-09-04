@@ -20,6 +20,11 @@ from app.schemas.booking import (
     PaymentMockWebhook,
     BookingResponse,
 )
+from app.schemas.radar import (
+    RadarMatch,
+    RadarKPIs,
+    RadarUploadResponse,
+)
 
 __all__ = [
     "CourtBase",
@@ -38,4 +43,7 @@ __all__ = [
     "HoldExpirationCheckResponse",
     "PaymentMockWebhook",
     "BookingResponse",
+    "RadarMatch",
+    "RadarKPIs",
+    "RadarUploadResponse",
 ]

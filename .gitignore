@@ -1,4 +1,4 @@
-﻿# Virtual environment
+# Virtual environment
 venv/
 .venv/
 env/
@@ -34,3 +34,9 @@ payload.json
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Radar uploaded data & exports
+data/radar/raw/*
+!data/radar/raw/.gitkeep
+data/radar/processed/*
+!data/radar/processed/.gitkeep

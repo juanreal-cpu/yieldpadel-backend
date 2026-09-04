@@ -1,0 +1,36 @@
+﻿from typing import Dict, List, Optional
+from pydantic import BaseModel, Field
+
+
+class RadarMatch(BaseModel):
+    message_date: Optional[str] = None
+    message_time: Optional[str] = None
+    organizer: str
+    time_slot: Optional[str] = None
+    category: Optional[str] = None
+    court: Optional[str] = None
+    price_per_player: float = 0.0
+    spots_count: int = 0
+    players: List[str] = Field(default_factory=list)
+    is_closed: bool = False
+    estimated_revenue: float = 0.0
+    raw_snippet: Optional[str] = None
+
+
+class RadarKPIs(BaseModel):
+    total_matches_detected: int = 0
+    closed_matches: int = 0
+    open_matches: int = 0
+    closure_rate_percent: float = 0.0
+    estimated_total_revenue: float = 0.0
+    unique_players_count: int = 0
+    top_time_slots: Dict[str, int] = Field(default_factory=dict)
+
+
+class RadarUploadResponse(BaseModel):
+    status: str = "success"
+    filename: str
+    raw_file_path: str
+    processed_csv_path: str
+    kpis: RadarKPIs
+    matches: List[RadarMatch] = Field(default_factory=list)
