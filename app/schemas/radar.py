@@ -37,3 +37,36 @@ class RadarUploadResponse(BaseModel):
     processed_csv_path: str
     kpis: RadarKPIs
     matches: List[RadarMatch] = Field(default_factory=list)
+
+
+class ClubSummary(BaseModel):
+    club_name: str
+    total_matches: int = 0
+    closed_matches: int = 0
+    open_matches: int = 0
+    closure_rate_percent: float = 0.0
+    estimated_revenue: int = 0
+    unique_players: int = 0
+    standard_matches: int = 0
+    americano_matches: int = 0
+    top_time_slots: Dict[str, int] = Field(default_factory=dict)
+
+
+class GlobalMarketMetrics(BaseModel):
+    total_clubs: int = 0
+    total_matches: int = 0
+    closed_matches: int = 0
+    open_matches: int = 0
+    closure_rate_percent: float = 0.0
+    total_estimated_revenue: int = 0
+    total_unique_players: int = 0
+    top_time_slots: Dict[str, int] = Field(default_factory=dict)
+
+
+class RadarBatchConsolidatedResponse(BaseModel):
+    status: str = "success"
+    files_processed: List[str] = Field(default_factory=list)
+    master_csv_path: str
+    total_records: int = 0
+    clubs_summary: Dict[str, ClubSummary] = Field(default_factory=dict)
+    global_market_metrics: GlobalMarketMetrics

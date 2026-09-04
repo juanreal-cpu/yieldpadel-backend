@@ -389,3 +389,186 @@ def parse_whatsapp_export(
         "kpis": kpis,
         "matches": matches,
     }
+
+
+MASTER_CSV_PATH = os.path.join(PROCESSED_DIR, "radar_master_consolidated.csv")
+
+
+def extract_club_name_from_filename(filename: str) -> str:
+    """
+    Extracts a normalized club name from filename.
+    Examples:
+      - '20260904_143354_capital_padel_maloka.txt' -> 'capital_padel_maloka'
+      - 'capital_padel_maloka.txt' -> 'capital_padel_maloka'
+      - 'Bogota Padel Center.txt' -> 'bogota_padel_center'
+    """
+    base = os.path.basename(filename)
+    if base.lower().endswith(".txt"):
+        base = base[:-4]
+    # Remove timestamp prefix like YYYYMMDD_HHMMSS_
+    base = re.sub(r"^\d{8}_\d{6}_", "", base)
+    # Replace non-alphanumeric (spaces, dots) with underscores
+    base = re.sub(r"[^\w\-]", "_", base)
+    # Clean multiple underscores
+    base = re.sub(r"_+", "_", base).strip("_")
+    return base.lower() or "club_desconocido"
+
+
+def process_batch_files(files_data: List[tuple]) -> Dict[str, Any]:
+    """
+    Processes multiple WhatsApp export files (.txt), extracts matches for each club,
+    writes a master consolidated CSV (data/radar/processed/radar_master_consolidated.csv),
+    and returns comparative KPIs per club as well as global market metrics.
+
+    files_data: List of (filename, file_content)
+    """
+    all_master_rows: List[Dict[str, Any]] = []
+    clubs_summary: Dict[str, Dict[str, Any]] = {}
+    processed_filenames: List[str] = []
+    global_time_slots: Counter = Counter()
+    global_unique_players_set = set()
+
+    for filename, content in files_data:
+        club_name = extract_club_name_from_filename(filename)
+        processed_filenames.append(filename)
+
+        parsed = parse_whatsapp_export(content, filename)
+        matches = parsed["matches"]
+        kpis = parsed["kpis"]
+
+        clubs_summary[club_name] = {
+            "club_name": club_name,
+            "total_matches": kpis["total_matches_detected"],
+            "closed_matches": kpis["closed_matches"],
+            "open_matches": kpis["open_matches"],
+            "closure_rate_percent": kpis["closure_rate_percent"],
+            "estimated_revenue": kpis["estimated_total_revenue"],
+            "unique_players": kpis["unique_players_count"],
+            "standard_matches": kpis["standard_matches"],
+            "americano_matches": kpis["americano_matches"],
+            "top_time_slots": kpis["top_time_slots"],
+        }
+
+        for m in matches:
+            master_row = dict(m)
+            master_row["club_name"] = club_name
+            all_master_rows.append(master_row)
+
+            if m.get("time_slot"):
+                global_time_slots[m["time_slot"]] += 1
+            for p in m.get("players", []):
+                if len(p) > 1:
+                    global_unique_players_set.add(p.strip().title())
+
+    total_clubs = len(clubs_summary)
+    total_matches = len(all_master_rows)
+    closed_matches = sum(1 for m in all_master_rows if m["is_closed"])
+    open_matches = total_matches - closed_matches
+    closure_rate = round((closed_matches / total_matches * 100.0), 2) if total_matches > 0 else 0.0
+    total_estimated_revenue = sum(m["estimated_revenue"] for m in all_master_rows if m["is_closed"])
+    total_unique_players = len(global_unique_players_set)
+    top_time_slots = dict(global_time_slots.most_common(10))
+
+    global_market_metrics = {
+        "total_clubs": total_clubs,
+        "total_matches": total_matches,
+        "closed_matches": closed_matches,
+        "open_matches": open_matches,
+        "closure_rate_percent": closure_rate,
+        "total_estimated_revenue": total_estimated_revenue,
+        "total_unique_players": total_unique_players,
+        "top_time_slots": top_time_slots,
+    }
+
+    # Write Master Consolidated CSV
+    master_fieldnames = [
+        "club_name",
+        "message_date",
+        "message_time",
+        "organizer",
+        "time_slot",
+        "category",
+        "court",
+        "match_type",
+        "price_per_player",
+        "spots_count",
+        "is_closed",
+        "estimated_revenue",
+        "players",
+    ]
+
+    with open(MASTER_CSV_PATH, mode="w", newline="", encoding="utf-8-sig") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=master_fieldnames)
+        writer.writeheader()
+        for m in all_master_rows:
+            row = {
+                "club_name": m["club_name"],
+                "message_date": m["message_date"] or "",
+                "message_time": m["message_time"] or "",
+                "organizer": m["organizer"],
+                "time_slot": m["time_slot"] or "",
+                "category": m["category"] or "",
+                "court": m["court"] or "",
+                "match_type": m["match_type"],
+                "price_per_player": m["price_per_player"],
+                "spots_count": m["spots_count"],
+                "is_closed": "SI" if m["is_closed"] else "NO",
+                "estimated_revenue": m["estimated_revenue"],
+                "players": "; ".join(m["players"]),
+            }
+            writer.writerow(row)
+
+    return {
+        "status": "success",
+        "files_processed": processed_filenames,
+        "master_csv_path": MASTER_CSV_PATH,
+        "total_records": len(all_master_rows),
+        "clubs_summary": clubs_summary,
+        "global_market_metrics": global_market_metrics,
+    }
+
+
+def process_batch_raw_folder(folder_path: str = RAW_DIR) -> Dict[str, Any]:
+    """
+    Scans RAW_DIR (data/radar/raw/) for all .txt files, processes them,
+    and returns the consolidated master response.
+    """
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path, exist_ok=True)
+
+    txt_files = [
+        f for f in os.listdir(folder_path)
+        if f.lower().endswith(".txt") and os.path.isfile(os.path.join(folder_path, f))
+    ]
+
+    if not txt_files:
+        return {
+            "status": "no_files_found",
+            "files_processed": [],
+            "master_csv_path": MASTER_CSV_PATH,
+            "total_records": 0,
+            "clubs_summary": {},
+            "global_market_metrics": {
+                "total_clubs": 0,
+                "total_matches": 0,
+                "closed_matches": 0,
+                "open_matches": 0,
+                "closure_rate_percent": 0.0,
+                "total_estimated_revenue": 0,
+                "total_unique_players": 0,
+                "top_time_slots": {},
+            },
+        }
+
+    files_data: List[tuple] = []
+    for f_name in sorted(txt_files):
+        f_path = os.path.join(folder_path, f_name)
+        try:
+            with open(f_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            with open(f_path, "r", encoding="latin-1", errors="replace") as f:
+                content = f.read()
+        files_data.append((f_name, content))
+
+    return process_batch_files(files_data)

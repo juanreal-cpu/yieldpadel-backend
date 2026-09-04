@@ -24,6 +24,9 @@ from app.schemas.radar import (
     RadarMatch,
     RadarKPIs,
     RadarUploadResponse,
+    ClubSummary,
+    GlobalMarketMetrics,
+    RadarBatchConsolidatedResponse,
 )
 
 __all__ = [
@@ -46,4 +49,7 @@ __all__ = [
     "RadarMatch",
     "RadarKPIs",
     "RadarUploadResponse",
+    "ClubSummary",
+    "GlobalMarketMetrics",
+    "RadarBatchConsolidatedResponse",
 ]
