@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.services.whatsapp import (
+    MESSAGES_CACHE,
     process_incoming_whatsapp_message,
     send_whatsapp_message,
 )
@@ -22,6 +23,8 @@ class SimulateWhatsAppMessage(BaseModel):
     sender_phone: str
     sender_name: Optional[str] = None
     raw_text: str
+    quoted_text: Optional[str] = None
+    context: Optional[dict] = None
 
 
 @router.get("/webhook")
@@ -44,11 +47,7 @@ async def receive_webhook(
 ):
     """
     Recepción de eventos de WhatsApp Cloud API (Meta).
-    Soporta dinámicas de grupo:
-    - Intención de entrada ('voy', 'entro', 'juego', 'me anoto')
-    - Intención de salida ('me bajo', 'cancelo')
-    - Listas completas de convocatoria
-    Responde con atributos inmutables del inventario y despacha vía Meta Graph API.
+    Extrae contexto de mensaje citado ('context') y despacha intenciones con mutabilidad estricta.
     """
     try:
         body = await request.json()
@@ -69,6 +68,7 @@ async def receive_webhook(
 
                 messages = value.get("messages", [])
                 for msg in messages:
+                    msg_id = msg.get("id")
                     raw_from = msg.get("from", "")
                     if not raw_from:
                         continue
@@ -80,14 +80,33 @@ async def receive_webhook(
                     if not message_text:
                         continue
 
-                    print(f"[WHATSAPP INCOMING] Mensaje de {sender_phone} ({sender_name}): {message_text}")
+                    # Guardar mensaje entrante en cache si tiene ID
+                    if msg_id:
+                        MESSAGES_CACHE[msg_id] = message_text
 
-                    # Procesar mensaje a través del servicio de WhatsApp con reconocimiento de intenciones
+                    # Extracción precisa del contexto de cita ('context')
+                    context = msg.get("context", {})
+                    quoted_text = None
+                    if context:
+                        quoted_text = (
+                            context.get("quoted_message", {}).get("body")
+                            or context.get("quoted_message", {}).get("text", {}).get("body")
+                            or context.get("body")
+                            or context.get("text")
+                        )
+                        if not quoted_text and context.get("id"):
+                            quoted_text = MESSAGES_CACHE.get(context.get("id"))
+
+                    print(f"[WHATSAPP INCOMING] Mensaje de {sender_phone} ({sender_name}): '{message_text}' | Quoted: {bool(quoted_text)}")
+
+                    # Procesar mensaje a través del servicio con contexto de cita
                     reply_text = await process_incoming_whatsapp_message(
                         db=db,
                         sender_phone=sender_phone,
                         sender_name=sender_name,
                         raw_text=message_text,
+                        quoted_text=quoted_text,
+                        context=context,
                     )
 
                     if reply_text:
@@ -101,7 +120,6 @@ async def receive_webhook(
         logger.error(f"Error handling WhatsApp webhook: {e}", exc_info=True)
         print(f"[WHATSAPP WEBHOOK ERROR] Error procesando webhook: {e}")
 
-    # Siempre responder HTTP 200 a Meta
     return {"status": "received"}
 
 
@@ -111,18 +129,32 @@ async def simulate_incoming_message(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Endpoint de simulación para pruebas automáticas y manuales del flujo de WhatsApp.
-    Permite probar intenciones de 'voy', 'me bajo', listas completas y verificar inmutabilidad.
+    Endpoint de simulación para pruebas del flujo de WhatsApp con soporte de mensajes citados.
     """
+    # Resolver quoted_text si viene en context
+    quoted_text = payload.quoted_text
+    if not quoted_text and payload.context:
+        ctx = payload.context
+        quoted_text = (
+            ctx.get("quoted_message", {}).get("body")
+            or ctx.get("quoted_message", {}).get("text", {}).get("body")
+            or ctx.get("body")
+            or ctx.get("text")
+            or (MESSAGES_CACHE.get(ctx.get("id")) if ctx.get("id") else None)
+        )
+
     reply_text = await process_incoming_whatsapp_message(
         db=db,
         sender_phone=payload.sender_phone,
         sender_name=payload.sender_name,
         raw_text=payload.raw_text,
+        quoted_text=quoted_text,
+        context=payload.context,
     )
     return {
         "status": "processed",
         "sender_phone": payload.sender_phone,
         "sender_name": payload.sender_name,
+        "quoted_text_received": bool(quoted_text),
         "reply": reply_text,
     }

@@ -302,27 +302,11 @@ DISCARD_PLAYER_PATTERNS = [
 
 def clean_and_validate_player_name(raw_name: str) -> Optional[str]:
     """
-    Limpia números, viñetas, guiones, emojis de cupos o corchetes y valida
-    estrictamente que el nombre de jugador sea válido y no un texto del sistema o cupo libre.
+    Limpia números, viñetas, guiones, emojis y valida
+    estrictamente que el nombre de jugador sea válido y no una cabecera, fecha, horario o cupo libre.
     """
-    if not raw_name:
-        return None
-    # Eliminar índices numéricos iniciales, viñetas, guiones, emojis como ⚡ y corchetes
-    cleaned = re.sub(r"^[\d\.\-\)\:\s\[\]⚡\*\#\+]+", "", raw_name).strip()
-    cleaned = re.sub(r"[\[\]\*\#]+$", "", cleaned).strip()
-
-    if len(cleaned) < 2:
-        return None
-
-    cleaned_upper = cleaned.upper()
-    for pattern in DISCARD_PLAYER_PATTERNS:
-        if pattern in cleaned_upper:
-            return None
-
-    if not any(c.isalnum() for c in cleaned):
-        return None
-
-    return cleaned
+    from app.services.whatsapp import clean_player_name
+    return clean_player_name(raw_name)
 
 
 @router.post("/parse-open-match", response_model=WhatsAppConvocatoriaResponse, status_code=status.HTTP_200_OK)
