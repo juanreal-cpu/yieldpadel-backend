@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.services.whatsapp import (
     MESSAGES_CACHE,
+    get_player_incidents,
+    normalize_phone,
     process_incoming_whatsapp_message,
     send_whatsapp_message,
 )
@@ -158,3 +160,19 @@ async def simulate_incoming_message(
         "quoted_text_received": bool(quoted_text),
         "reply": reply_text,
     }
+
+
+@router.get("/player-history/{phone}")
+async def get_player_history(
+    phone: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Consulta el historial de incidencias y bajas tardías de un jugador."""
+    norm_phone = normalize_phone(phone)
+    incidents = await get_player_incidents(db, norm_phone)
+    return {
+        "phone": norm_phone,
+        "total_incidents": len(incidents),
+        "incidents": incidents,
+    }
+

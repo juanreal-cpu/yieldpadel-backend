@@ -2,8 +2,10 @@
 YieldPadel - Servicio de WhatsApp
 Maneja dinámicas de grupo, reconocimiento de comandos por intención ('voy', 'me bajo'),
 extracción precisa del turno en mensajes citados (context / reply),
-control estricto de mutabilidad de atributos del inventario (fecha, horarios, precio y cancha)
-y detección flexible de jugadores en listas con filtrado riguroso de cabeceras.
+control estricto de mutabilidad de atributos del inventario (fecha, horarios, precio y cancha),
+detección flexible de jugadores con filtrado riguroso de cabeceras,
+fallback inteligente de nombres (WhatsApp profile -> historial BD -> teléfono enmascarado),
+y sistema de validaciones temporales y alertas de cancelación tardía con registro de incidencias.
 """
 
 import logging
@@ -21,11 +23,16 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.models.court import Court
 from app.models.slot import ClientTier, SlotMode, SlotStatus, TimeSlot
+from app.models.incident import PlayerIncident
 
 logger = logging.getLogger("yieldpadel.whatsapp")
 
 # Cache en memoria de mensajes enviados y recibidos por ID (wamid) para resolver citas
 MESSAGES_CACHE: Dict[str, str] = {}
+
+# Parámetros del sistema de cancelación
+CANCELLATION_GRACE_MINUTES = getattr(settings, "CANCELLATION_GRACE_MINUTES", 30)
+CONFIRMATION_GRACE_MINUTES = 10
 
 # -----------------------------------------------------------------------------
 # Expresiones regulares para reconocimiento de intenciones
@@ -143,6 +150,41 @@ def normalize_phone(phone: Optional[str]) -> str:
     return digits
 
 
+def mask_phone(phone: Optional[str]) -> str:
+    """
+    Enmascara un número telefónico para visualización pública:
+    Ejemplo: '+573134567547' -> '+57 313 ***547'
+             '3134567547'   -> '+57 313 ***547'
+    """
+    if not phone:
+        return "+57 *** ***000"
+
+    digits = re.sub(r"\D", "", str(phone))
+    if digits.startswith("57") and len(digits) == 12:
+        area = digits[2:5]
+        last3 = digits[-3:]
+        return f"+57 {area} ***{last3}"
+    elif len(digits) == 10 and digits.startswith("3"):
+        area = digits[:3]
+        last3 = digits[-3:]
+        return f"+57 {area} ***{last3}"
+    elif len(digits) >= 7:
+        prefix = f"+{digits[:2]}" if digits.startswith("57") else (f"+{digits[0]}" if str(phone).startswith("+") else "")
+        remaining = digits[2:] if digits.startswith("57") else digits
+        first3 = remaining[:3]
+        last3 = remaining[-3:]
+        return f"{prefix} {first3} ***{last3}".strip()
+    return f"+57 *** ***{digits[-3:] if len(digits) >= 3 else '000'}"
+
+
+def is_masked_phone(val: str) -> bool:
+    """Detecta si una cadena representa un teléfono enmascarado (ej: '+57 313 ***547')."""
+    if not val:
+        return False
+    clean = val.strip()
+    return bool(re.match(r"^\+?\d{1,3}\s*\d{2,4}\s*\*{2,4}\s*\d{2,4}$", clean))
+
+
 def parse_time_token(token: str) -> time:
     """Parsea tokens como '2:00pm', '14:00', '3pm', '9:30am'."""
     clean = token.strip().lower()
@@ -178,10 +220,11 @@ def detect_intent(text: str) -> str:
 
 def clean_player_name(raw_name: str) -> Optional[str]:
     """
-    Limpieza estricta de nombres de jugador (Evitar fechas, horarios o cabeceras como nombres):
+    Limpieza estricta de nombres de jugador:
+    - Preserva teléfonos con máscara (+57 313 ***547).
     - Filtra y descarta si contiene emojis de calendario, reloj, sede, dinero o trofeo.
     - Filtra y descarta si contiene dígitos o fechas (ej: '24', '15000', '2:00pm').
-    - Un jugador solo es válido si es una cadena de texto alfabética limpia.
+    - Un jugador solo es válido si es una cadena de texto alfabética limpia o un teléfono enmascarado.
     """
     if not raw_name:
         return None
@@ -192,8 +235,17 @@ def clean_player_name(raw_name: str) -> Optional[str]:
             return None
 
     # Remover viñetas, números de lista iniciales (ej: '1.', '2)', '3 -'), emojis y corchetes
-    cleaned = re.sub(r"^[0-9\.\-\)\:\s\[\]\(\)⚡\*\#\+🎾🏓🏸👤🔥✅]+", "", raw_name).strip()
-    cleaned = re.sub(r"[0-9\.\-\)\:\s\[\]\(\)⚡\*\#\+🎾🏓🏸👤🔥✅]+$", "", cleaned).strip()
+    cleaned = re.sub(r"^[0-9\.\-\)\:\s\[\]\(\)\⚡\*\#\+🎾🏓🏸👤🔥✅]+", "", raw_name).strip()
+    cleaned = re.sub(r"[0-9\.\-\)\:\s\[\]\(\)\⚡\*\#\+🎾🏓🏸👤🔥✅]+$", "", cleaned).strip()
+
+    # Si el valor es un teléfono enmascarado, aceptarlo directamente
+    if is_masked_phone(cleaned):
+        return cleaned
+    raw_cleaned = re.sub(r"^[0-9\.\-\)\:\s\[\]\(\)\⚡\#🎾🏓🏸👤🔥✅]+", "", raw_name).strip()
+    if is_masked_phone(raw_cleaned):
+        return raw_cleaned
+    if is_masked_phone(raw_name):
+        return raw_name.strip()
 
     if len(cleaned) < 2:
         return None
@@ -276,8 +328,8 @@ def parse_flexible_player_list(raw_text: str) -> List[str]:
     return players
 
 
-def extract_player_name_from_join(text: str, default_name: Optional[str] = None) -> str:
-    """Extrae apodo explícito en mensajes de entrada ('voy (Pipe)', 'entro - Carlos')."""
+def extract_explicit_nickname(text: str) -> Optional[str]:
+    """Extrae apodo explícito en mensajes de entrada ('voy (Pipe)', 'entro - Carlos', 'anótenme a Juan')."""
     paren_match = re.search(r"\(([^)]+)\)", text)
     if paren_match:
         cand = clean_player_name(paren_match.group(1))
@@ -296,10 +348,115 @@ def extract_player_name_from_join(text: str, default_name: Optional[str] = None)
         if cand:
             return cand
 
+    return None
+
+
+def extract_player_name_from_join(text: str, default_name: Optional[str] = None) -> str:
+    """Extrae apodo explícito en mensajes de entrada ('voy (Pipe)', 'entro - Carlos')."""
+    nick = extract_explicit_nickname(text)
+    if nick:
+        return nick
     if default_name and clean_player_name(default_name):
         return clean_player_name(default_name)
-
     return "Jugador"
+
+
+async def find_prior_player_name(db: AsyncSession, sender_phone: str) -> Optional[str]:
+    """
+    Busca si sender_phone ya tiene un display_name registrado en la base de datos:
+    1. Participantes previos de TimeSlot (JSON players_names)
+    2. Booking (yield_bookings)
+    3. SlotHold (slot_holds)
+    Descarta 'Jugador' o teléfonos enmascarados.
+    """
+    norm_phone = normalize_phone(sender_phone)
+    if not norm_phone:
+        return None
+
+    digits = re.sub(r"\D", "", norm_phone)
+    last_7 = digits[-7:] if len(digits) >= 7 else digits
+
+    # 1. Buscar en TimeSlot.players_names recientes
+    try:
+        stmt = select(TimeSlot).order_by(TimeSlot.id.desc()).limit(100)
+        res = await db.execute(stmt)
+        slots = res.scalars().all()
+        for s in slots:
+            participants = to_participants_list(s.players_names)
+            for p in participants:
+                p_phone = normalize_phone(p.get("phone"))
+                h_phone = normalize_phone(p.get("host_phone"))
+                if p_phone == norm_phone or h_phone == norm_phone or (last_7 and (last_7 in p_phone or last_7 in h_phone)):
+                    cand = p.get("display_name")
+                    if cand and cand != "Jugador" and not is_masked_phone(cand):
+                        cleaned = clean_player_name(cand)
+                        if cleaned:
+                            return cleaned
+    except Exception as e:
+        logger.warning(f"Error checking prior player names in TimeSlot: {e}")
+
+    # 2. Buscar en Booking
+    try:
+        from app.models.booking import Booking
+        stmt_b = select(Booking.customer_name).where(Booking.customer_phone.like(f"%{last_7}%")).order_by(Booking.id.desc()).limit(10)
+        res_b = await db.execute(stmt_b)
+        names_b = res_b.scalars().all()
+        for cand in names_b:
+            if cand and cand != "Jugador" and not is_masked_phone(cand):
+                cleaned = clean_player_name(cand)
+                if cleaned:
+                    return cleaned
+    except Exception as e:
+        logger.warning(f"Error checking prior player names in Booking: {e}")
+
+    # 3. Buscar en SlotHold
+    try:
+        from app.models.slot import SlotHold
+        stmt_h = select(SlotHold.customer_name).where(SlotHold.customer_phone.like(f"%{last_7}%")).order_by(SlotHold.id.desc()).limit(10)
+        res_h = await db.execute(stmt_h)
+        names_h = res_h.scalars().all()
+        for cand in names_h:
+            if cand and cand != "Jugador" and not is_masked_phone(cand):
+                cleaned = clean_player_name(cand)
+                if cleaned:
+                    return cleaned
+    except Exception as e:
+        logger.warning(f"Error checking prior player names in SlotHold: {e}")
+
+    return None
+
+
+async def resolve_join_player_name(
+    db: AsyncSession,
+    raw_text: str,
+    sender_name: Optional[str],
+    sender_phone: str,
+) -> str:
+    """
+    Jerarquía estricta de nombres para 'voy':
+    1. Apodo explícito en el texto ('voy (Pipe)', 'entro - Carlos').
+    2. Nombre del perfil de WhatsApp (sender_name).
+    3. Historial en BD de sender_phone (TimeSlot, Booking, SlotHold).
+    4. Teléfono enmascarado (ej. '+57 313 ***547') en lugar de la palabra 'Jugador'.
+    """
+    # 1. Apodo explícito
+    nickname = extract_explicit_nickname(raw_text)
+    if nickname:
+        return nickname
+
+    # 2. Nombre del perfil de WhatsApp
+    if sender_name and str(sender_name).strip():
+        cleaned_sender = clean_player_name(str(sender_name).strip())
+        if cleaned_sender:
+            return cleaned_sender
+
+    # 3. Buscar display_name previo en la base de datos
+    prior_name = await find_prior_player_name(db, sender_phone)
+    if prior_name:
+        return prior_name
+
+    # 4. Fallback a teléfono con máscara
+    return mask_phone(sender_phone)
 
 
 def to_participants_list(raw_players: any) -> List[dict]:
@@ -416,7 +573,7 @@ async def find_target_slot(
        Busca estrictamente el slot que coincida con el horario del mensaje citado y NO busca otro slot.
     2. Si no hay mensaje citado:
        - Si se menciona un slot ID explícito o fecha/hora en raw_text, lo busca.
-       - Si must_be_registered=True (baja), busca el turno donde el usuario esté inscrito.
+       - Si must_be_registered=True (baja), busca el turno donde el usuario esté inscrito (futuro o pasado reciente).
        - Si es entrada ('voy'), busca el turno abierto más próximo.
     """
     today = date.today()
@@ -428,7 +585,6 @@ async def find_target_slot(
         q_slot_id, q_date, q_start, q_end = parse_slot_info_from_text(quoted_text)
         logger.info(f"Parsed quoted context -> slot_id={q_slot_id}, date={q_date}, start={q_start}, end={q_end}")
 
-        # a) Si el texto citado tiene ID explícito de turno
         if q_slot_id:
             stmt = select(TimeSlot).options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds)).where(TimeSlot.id == q_slot_id)
             res = await db.execute(stmt)
@@ -436,7 +592,6 @@ async def find_target_slot(
             if slot:
                 return slot
 
-        # b) Si el texto citado tiene fecha y hora de inicio
         target_d = q_date or today
         if q_start:
             stmt = (
@@ -449,7 +604,6 @@ async def find_target_slot(
             if slot:
                 return slot
 
-        # Si había mensaje citado pero no coincidió con ningún turno en BD, NO buscar el primer slot libre del día
         logger.warning(f"Quoted context provided but no matching slot found in DB: date={target_d}, start={q_start}")
         return None
 
@@ -467,9 +621,10 @@ async def find_target_slot(
             if slot:
                 return slot
 
-    # b) Si es baja ('me bajo'), localizar turno futuro donde el usuario esté inscrito
+    # b) Si es baja ('me bajo'), localizar turno donde el usuario esté inscrito
     norm_sender = normalize_phone(sender_phone) if sender_phone else None
     if must_be_registered and norm_sender:
+        # Primero turnos de hoy en adelante
         stmt = (
             select(TimeSlot)
             .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
@@ -479,6 +634,21 @@ async def find_target_slot(
         res = await db.execute(stmt)
         active_slots = res.scalars().all()
         for s in active_slots:
+            participants = to_participants_list(s.players_names)
+            for p in participants:
+                if normalize_phone(p.get("phone")) == norm_sender or normalize_phone(p.get("host_phone")) == norm_sender:
+                    return s
+
+        # Buscar en turnos recientes pasados para poder rechazar adecuadamente con aviso de concluido
+        stmt_past = (
+            select(TimeSlot)
+            .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
+            .where(TimeSlot.date >= today - timedelta(days=3))
+            .order_by(TimeSlot.date.desc(), TimeSlot.start_time.desc())
+        )
+        res_past = await db.execute(stmt_past)
+        past_slots = res_past.scalars().all()
+        for s in past_slots:
             participants = to_participants_list(s.players_names)
             for p in participants:
                 if normalize_phone(p.get("phone")) == norm_sender or normalize_phone(p.get("host_phone")) == norm_sender:
@@ -527,8 +697,10 @@ def format_whatsapp_reply(slot: TimeSlot) -> str:
     start_str = slot.start_time.strftime("%I:%M%p").lower()
     end_str = slot.end_time.strftime("%I:%M%p").lower()
 
-    # INMUTABILIDAD ESTRICTA DE SEDE Y TARIFA
-    court_name = slot.court.name if slot.court else "Capital Pádel Club"
+    try:
+        court_name = slot.court.name if (hasattr(slot, "court") and slot.court) else "Capital Pádel Club"
+    except Exception:
+        court_name = "Capital Pádel Club"
     category = slot.category or "4ta"
     price_per_spot = (slot.total_price / Decimal(slot.capacity)).quantize(Decimal("0.01"))
     price_formatted = f"{int(price_per_spot):,}".replace(",", ".")
@@ -570,6 +742,54 @@ def format_whatsapp_reply(slot: TimeSlot) -> str:
         )
 
 
+async def record_player_incident(
+    db: AsyncSession,
+    player_phone: str,
+    player_name: str,
+    slot_id: int,
+    incident_type: str = "late_cancellation",
+    description: str = "Baja tardía con menos de 30 min de anticipación",
+) -> PlayerIncident:
+    """Registra una incidencia en el historial del jugador."""
+    incident = PlayerIncident(
+        player_phone=player_phone,
+        player_name=player_name,
+        slot_id=slot_id,
+        incident_type=incident_type,
+        description=description,
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(incident)
+    return incident
+
+
+async def get_player_incidents(db: AsyncSession, phone: str) -> List[dict]:
+    """Obtiene el historial de incidencias de un jugador."""
+    norm_phone = normalize_phone(phone)
+    digits = re.sub(r"\D", "", norm_phone)
+    last_7 = digits[-7:] if len(digits) >= 7 else digits
+
+    stmt = (
+        select(PlayerIncident)
+        .where(PlayerIncident.player_phone.like(f"%{last_7}%"))
+        .order_by(PlayerIncident.created_at.desc())
+    )
+    res = await db.execute(stmt)
+    records = res.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "player_phone": r.player_phone,
+            "player_name": r.player_name,
+            "slot_id": r.slot_id,
+            "incident_type": r.incident_type,
+            "description": r.description,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in records
+    ]
+
+
 async def process_join_intent(
     db: AsyncSession,
     sender_phone: str,
@@ -579,10 +799,9 @@ async def process_join_intent(
 ) -> str:
     """
     Procesa intención de entrada ('voy', 'entro', 'juego', 'me anoto'):
-    - Si responde citando un turno, localiza estrictamente ese horario y añade al remitente
-      en el siguiente cupo libre preservando a los demás jugadores.
-    - Si no cita mensaje, localiza el turno abierto más próximo.
-    - Protege la inmutabilidad de tarifa y sede.
+    - Aplica jerarquía de nombres: apodo explícito -> perfil WhatsApp -> historial BD -> teléfono con máscara.
+    - Localiza el slot citado o el turno abierto más próximo.
+    - Si completa capacidad, marca slot.closed_at y confirma partido cerrado.
     """
     norm_sender = normalize_phone(sender_phone)
     slot = await find_target_slot(
@@ -612,7 +831,7 @@ async def process_join_intent(
     # Validar no duplicidad
     if norm_sender in existing_phones:
         player_obj = next((p for p in participants if normalize_phone(p.get("phone")) == norm_sender), None)
-        p_name = player_obj.get("display_name") if player_obj else "Jugador"
+        p_name = player_obj.get("display_name") if player_obj else mask_phone(norm_sender)
         date_str = slot.date.strftime("%d/%m/%Y")
         start_str = slot.start_time.strftime("%I:%M%p").lower()
         return (
@@ -630,10 +849,16 @@ async def process_join_intent(
             f"Por favor consulta otros turnos abiertos en recepción."
         )
 
-    # Inscribir en el primer cupo libre preservando a todos los demás jugadores
-    display_name = extract_player_name_from_join(raw_text, default_name=sender_name)
-    new_spot_index = len(participants) + 1
+    # 1. Resolver display_name con fallback estricto:
+    # Perfil WhatsApp -> Historial BD (TimeSlot, Booking, SlotHold) -> Teléfono con máscara (ej. '+57 313 ***547')
+    display_name = await resolve_join_player_name(
+        db=db,
+        raw_text=raw_text,
+        sender_name=sender_name,
+        sender_phone=norm_sender,
+    )
 
+    new_spot_index = len(participants) + 1
     participants.append({
         "spot_index": new_spot_index,
         "phone": norm_sender,
@@ -645,7 +870,13 @@ async def process_join_intent(
     slot.mode = SlotMode.SPLIT_MATCH
     slot.players_names = participants
     slot.booked_spots = len(participants)
-    slot.status = SlotStatus.FULLY_BOOKED if slot.booked_spots >= slot.capacity else SlotStatus.PARTIALLY_BOOKED
+
+    if slot.booked_spots >= slot.capacity:
+        slot.status = SlotStatus.FULLY_BOOKED
+        if not slot.closed_at:
+            slot.closed_at = datetime.now(timezone.utc)
+    else:
+        slot.status = SlotStatus.PARTIALLY_BOOKED
 
     # Inmutabilidad: Preservar total_price, court_id, date, start_time y end_time intactos
     await db.commit()
@@ -663,8 +894,15 @@ async def process_drop_intent(
 ) -> str:
     """
     Procesa intención de salida ('me bajo', 'no voy', 'cancelo'):
-    - Valida estrictamente que sender_phone corresponda a un cupo activo.
-    - Libera la posición a [CUPO DISPONIBLE] y reabre el turno.
+    - Valida que sender_phone corresponda a un cupo activo en un turno.
+    - Rechaza la baja si el partido ya está en curso o en el pasado.
+    - Si faltan menos de 30 minutos:
+        * Si el turno se cerró hace menos de 10 min: baja sin penalidad (confirmación de última hora).
+        * Si llevaba cerrado más tiempo:
+            a) Registra incidencia 'late_cancellation' en historial del jugador.
+            b) Envía advertencia al usuario.
+            c) Emite alerta de urgencia al grupo: '🚨 ¡SE BUSCA 1 JUGADOR URGENTE!...'
+    - Si faltan más de 30 minutos: baja normal y republica la lista con [CUPO DISPONIBLE].
     """
     norm_sender = normalize_phone(sender_phone)
     if not norm_sender:
@@ -702,7 +940,48 @@ async def process_drop_intent(
             f"El número {norm_sender} no tiene asignado un cupo en el turno #{slot.id}."
         )
 
-    # Remover y re-indexar
+    date_str = slot.date.strftime("%d/%m/%Y")
+    start_str = slot.start_time.strftime("%I:%M%p").lower()
+    end_str = slot.end_time.strftime("%I:%M%p").lower()
+    court_name = slot.court.name if slot.court else "Capital Pádel Club"
+
+    # -------------------------------------------------------------------------
+    # VALIDACIÓN TEMPORAL 1: Partido Pasado o en Curso
+    # -------------------------------------------------------------------------
+    now = datetime.now()
+    today = now.date()
+    now_time = now.time()
+
+    is_past_or_current = (slot.date < today) or (slot.date == today and slot.start_time <= now_time)
+    if is_past_or_current:
+        return (
+            "⚠️ *PARTIDO EN CURSO O FINALIZADO* ⚠️\n"
+            f"El turno de las {start_str} - {end_str} ({date_str}) ya está en juego o ha finalizado.\n"
+            "No es posible procesar la baja de un partido en curso o pasado."
+        )
+
+    # -------------------------------------------------------------------------
+    # VALIDACIÓN TEMPORAL 2: Ventana de 30 min y Cierre Reciente de 10 min
+    # -------------------------------------------------------------------------
+    slot_dt = datetime.combine(slot.date, slot.start_time)
+    minutes_until_start = (slot_dt - now).total_seconds() / 60
+
+    is_late = (minutes_until_start < CANCELLATION_GRACE_MINUTES)
+    is_recent_close = False
+    mins_since_close = None
+
+    if is_late and slot.closed_at:
+        if slot.closed_at.tzinfo is not None:
+            now_for_close = datetime.now(timezone.utc)
+            mins_since_close = (now_for_close - slot.closed_at).total_seconds() / 60
+        else:
+            now_for_close = datetime.now()
+            mins_since_close = (now_for_close - slot.closed_at).total_seconds() / 60
+
+        if 0 <= mins_since_close <= CONFIRMATION_GRACE_MINUTES:
+            is_recent_close = True
+
+    # Remover participante y re-indexar los restantes
     participants.pop(matched_idx)
     for i, p in enumerate(participants, start=1):
         p["spot_index"] = i
@@ -710,22 +989,74 @@ async def process_drop_intent(
     slot.players_names = participants
     slot.booked_spots = len(participants)
     slot.status = SlotStatus.AVAILABLE if slot.booked_spots == 0 else SlotStatus.PARTIALLY_BOOKED
+    slot.closed_at = None  # Al abrirse un cupo, deja de estar cerrado
 
-    await db.commit()
-    await db.refresh(slot)
+    logger.info(f"Player {norm_sender} ({matched_player.get('display_name')}) dropped from slot {slot.id}")
 
-    logger.info(f"Player {norm_sender} ({matched_player['display_name']}) dropped from slot {slot.id}")
+    if is_late and not is_recent_close:
+        # a) Registrar una incidencia de baja tardía (late_cancellation) en el historial del jugador
+        await record_player_incident(
+            db=db,
+            player_phone=norm_sender,
+            player_name=matched_player.get("display_name", mask_phone(norm_sender)),
+            slot_id=slot.id,
+            incident_type="late_cancellation",
+            description=f"Baja tardía con {max(0, int(minutes_until_start))} min de anticipación en turno #{slot.id}",
+        )
+        await db.commit()
+        await db.refresh(slot)
 
-    date_str = slot.date.strftime("%d/%m/%Y")
-    start_str = slot.start_time.strftime("%I:%M%p").lower()
-    end_str = slot.end_time.strftime("%I:%M%p").lower()
+        # b) Advertencia al usuario
+        warning_msg = "⚠️ Tu baja se procesó con menos de 30 min de anticipación. Queda asentada en tu historial de reservas."
 
-    reopened_reply = format_whatsapp_reply(slot)
-    return (
-        f"✅ *BAJA CONFIRMADA EN YIELDPADEL*\n"
-        f"Tu cupo en el turno de las {start_str} - {end_str} ({date_str}) ha sido liberado exitosamente.\n\n"
-        f"{reopened_reply}"
-    )
+        # c) Mensaje de alerta de urgencia al grupo
+        urgency_alert = (
+            "🚨 ¡SE BUSCA 1 JUGADOR URGENTE!\n"
+            f"Turno: {start_str} - {end_str} | {court_name}\n"
+            "Un cupo se acaba de liberar. Responde 'VOY' para entrar a la pista."
+        )
+
+        group_id = os.getenv("WHATSAPP_GROUP_ID") or getattr(settings, "WHATSAPP_GROUP_ID", None)
+        if group_id:
+            try:
+                await send_whatsapp_message(to_phone=group_id, message_body=urgency_alert)
+            except Exception as e:
+                logger.error(f"Error despachando alerta de urgencia al grupo {group_id}: {e}")
+
+        reopened_reply = format_whatsapp_reply(slot)
+        return (
+            f"✅ *BAJA PROCESADA CON ADVERTENCIA*\n"
+            f"Tu cupo en el turno de las {start_str} - {end_str} ({date_str}) ha sido liberado.\n\n"
+            f"{warning_msg}\n\n"
+            f"{urgency_alert}\n\n"
+            f"{reopened_reply}"
+        )
+
+    elif is_late and is_recent_close:
+        # Cerró hace menos de 10 minutos: baja sin penalidad
+        await db.commit()
+        await db.refresh(slot)
+
+        mins_label = int(mins_since_close) if mins_since_close is not None else 0
+        reopened_reply = format_whatsapp_reply(slot)
+        return (
+            f"✅ *BAJA PROCESADA SIN PENALIDAD*\n"
+            f"Entendemos que el partido se confirmó hace menos de 10 minutos ({mins_label} min). "
+            f"Tu cupo en el turno de las {start_str} - {end_str} ({date_str}) ha sido liberado sin penalidad por confirmación de última hora.\n\n"
+            f"{reopened_reply}"
+        )
+
+    else:
+        # Faltan más de 30 minutos: baja normal
+        await db.commit()
+        await db.refresh(slot)
+
+        reopened_reply = format_whatsapp_reply(slot)
+        return (
+            f"✅ *BAJA CONFIRMADA EN YIELDPADEL*\n"
+            f"Tu cupo en el turno de las {start_str} - {end_str} ({date_str}) ha sido liberado exitosamente.\n\n"
+            f"{reopened_reply}"
+        )
 
 
 async def process_list_intent(
@@ -760,7 +1091,6 @@ async def process_incoming_whatsapp_message(
     Orquestador principal de mensajes entrantes.
     Resuelve el texto citado desde context si no viene explícito.
     """
-    # Si viene context pero no quoted_text, resolverlo
     if not quoted_text and context:
         quoted_text = (
             context.get("quoted_message", {}).get("body")

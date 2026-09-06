@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import date, time, datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 from decimal import Decimal
 from sqlalchemy import (
     Date,
@@ -22,6 +22,7 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.court import Court
     from app.models.booking import Booking
+    from app.models.incident import PlayerIncident
 
 
 class SlotMode(str, enum.Enum):
@@ -82,13 +83,17 @@ class TimeSlot(Base):
     # Nuevos campos para jugadores y categoría
     players_names: Mapped[List[str]] = mapped_column(JSON, default=list, nullable=False)
     category: Mapped[str] = mapped_column(String(50), default="4ta", nullable=False)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    court: Mapped["Court"] = relationship("Court", back_populates="slots")
+    court: Mapped["Court"] = relationship("Court", back_populates="slots", lazy="selectin")
     holds: Mapped[List["SlotHold"]] = relationship(
         "SlotHold", back_populates="slot", cascade="all, delete-orphan"
     )
     bookings: Mapped[List["Booking"]] = relationship(
         "Booking", back_populates="slot", cascade="all, delete-orphan"
+    )
+    incidents: Mapped[List["PlayerIncident"]] = relationship(
+        "PlayerIncident", back_populates="slot", cascade="all, delete-orphan"
     )
 
 

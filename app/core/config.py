@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     WHATSAPP_VERIFY_TOKEN: str = "yieldpadel_secret_token_2026"
     WHATSAPP_PHONE_NUMBER_ID: str | None = None
     WHATSAPP_ACCESS_TOKEN: str | None = None
+    WHATSAPP_GROUP_ID: str | None = None
+    CANCELLATION_GRACE_MINUTES: int = 30
 
     model_config = SettingsConfigDict(
         env_file=".env",

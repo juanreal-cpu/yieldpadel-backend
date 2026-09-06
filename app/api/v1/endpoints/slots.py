@@ -518,6 +518,12 @@ async def parse_open_match(
     # Inmutabilidad: slot.total_price NO se sobreescribe con datos del usuario
     slot.status = slot_status
 
+    if is_closed:
+        if not slot.closed_at:
+            slot.closed_at = datetime.now(timezone.utc)
+    else:
+        slot.closed_at = None
+
     await db.commit()
     await db.refresh(slot)
 

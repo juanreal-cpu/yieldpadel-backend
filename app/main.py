@@ -13,6 +13,14 @@ async def lifespan(app: FastAPI):
     # Crear tablas al iniciar la aplicación
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        try:
+            from sqlalchemy import text
+            if "sqlite" in str(engine.url):
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN closed_at TIMESTAMP"))
+            else:
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP WITH TIME ZONE"))
+        except Exception:
+            pass
     yield
     # Limpieza al apagar la aplicación
     await engine.dispose()
