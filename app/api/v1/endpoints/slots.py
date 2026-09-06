@@ -374,17 +374,9 @@ async def parse_open_match(
     else:
         price_per_spot = Decimal("15000.00")
 
-    # 5. Parsear jugadores (líneas con 🎾)
-    raw_players = []
-    for line in raw.splitlines():
-        if "🎾" in line:
-            candidate = line.split("🎾", 1)[1].strip()
-            valid_name = clean_and_validate_player_name(candidate)
-            if valid_name:
-                raw_players.append(valid_name)
-
-    # Limitar a la capacidad estándar de pádel (4 jugadores)
-    raw_players = raw_players[:4]
+    # 5. Parsear jugadores (flexible: 🎾, otros emojis, números, guiones o texto)
+    from app.services.whatsapp import parse_flexible_player_list
+    raw_players = parse_flexible_player_list(raw)
     spots_count = len(raw_players)
     free_spots = max(0, 4 - spots_count)
     is_closed = (spots_count == 4)
@@ -468,22 +460,26 @@ async def parse_open_match(
     prev_names_set = set(prev_by_name.keys())
     incoming_names_set = set(p.strip().lower() for p in raw_players)
 
+    # Inmutabilidad: Precio oficial por cupo y sede extraídos directamente del inventario en BD
+    official_price_per_spot = (slot.total_price / Decimal(slot.capacity)).quantize(Decimal("0.01"))
+    court_name = slot.court.name if slot.court else "Capital Pádel Club"
+
     # c) Anti-overbooking: si el slot ya está lleno (4/4) y la convocatoria entrante intenta sobrecupar o registrar otro grupo
     if slot.booked_spots >= 4 and slot.status == SlotStatus.FULLY_BOOKED:
         if spots_count >= 4 and incoming_names_set != prev_names_set:
             warning_reply = (
                 f"⚠️ *TURNO COMPLETO SIN CUPOS DISPONIBLES* ⚠️\n"
-                f"📍 Capital Pádel Club\n"
+                f"📍 {court_name}\n"
                 f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n\n"
                 f"Este turno ya completó sus 4 cupos y se encuentra cerrado.\n"
                 f"No hay cupos disponibles para esta franja horaria."
             )
             return WhatsAppConvocatoriaResponse(
-                date=str(target_date),
-                start_time=str(start_t),
-                end_time=str(end_t),
+                date=str(slot.date),
+                start_time=str(slot.start_time),
+                end_time=str(slot.end_time),
                 category=category,
-                price_per_spot=price_per_spot,
+                price_per_spot=official_price_per_spot,
                 players=raw_players,
                 participants=[SlotParticipant(**p) for p in prev_participants],
                 spots_count=4,
@@ -535,23 +531,23 @@ async def parse_open_match(
     slot.players_names = participants
     slot.booked_spots = spots_count
     slot.category = category
-    slot.total_price = price_per_spot * Decimal(4)
+    # Inmutabilidad: slot.total_price NO se sobreescribe con datos del usuario
     slot.status = slot_status
 
     await db.commit()
     await db.refresh(slot)
 
-    # 7. Generar mensaje de respuesta para el grupo de WhatsApp
-    start_str = start_t.strftime("%I:%M%p").lower()
-    end_str = end_t.strftime("%I:%M%p").lower()
-    date_formatted = target_date.strftime("%d/%m/%Y")
-    price_formatted = f"{int(price_per_spot):,}".replace(",", ".")
+    # 7. Generar mensaje de respuesta para el grupo de WhatsApp con atributos inmutables
+    start_str = slot.start_time.strftime("%I:%M%p").lower()
+    end_str = slot.end_time.strftime("%I:%M%p").lower()
+    date_formatted = slot.date.strftime("%d/%m/%Y")
+    price_formatted = f"{int(official_price_per_spot):,}".replace(",", ".")
 
     if is_closed:
         players_list = "\n".join([f"{i+1}. 🎾 {p}" for i, p in enumerate(raw_players)])
         reply = (
             f"✅ ¡PARTIDO CERRADO Y CONFIRMADO! (4/4) 🎾\n"
-            f"📍 Capital Pádel Club\n"
+            f"📍 {court_name}\n"
             f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n"
             f"🏆 Categoría: {category}\n"
             f"💰 Cuota: ${price_formatted} COP / jugador\n\n"
@@ -569,7 +565,7 @@ async def parse_open_match(
 
         reply = (
             f"🎾 PARTIDO ABIERTO ({spots_count}/4)\n"
-            f"📍 Capital Pádel Club\n"
+            f"📍 {court_name}\n"
             f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n"
             f"🏆 Categoría: {category}\n"
             f"💰 Cuota: ${price_formatted} COP / jugador\n\n"
@@ -578,11 +574,11 @@ async def parse_open_match(
         )
 
     return WhatsAppConvocatoriaResponse(
-        date=str(target_date),
-        start_time=str(start_t),
-        end_time=str(end_t),
+        date=str(slot.date),
+        start_time=str(slot.start_time),
+        end_time=str(slot.end_time),
         category=category,
-        price_per_spot=price_per_spot,
+        price_per_spot=official_price_per_spot,
         players=raw_players,
         participants=[SlotParticipant(**p) for p in participants],
         spots_count=spots_count,

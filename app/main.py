@@ -76,8 +76,8 @@ async def serve_dashboard():
     return HTMLResponse(content=html_content, status_code=200, media_type="text/html")
 
 
-from app.api.v1.endpoints import whatsapp_webhook, radar
+from app.api.v1.endpoints import whatsapp, radar
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
-app.include_router(whatsapp_webhook.router, prefix="/api/v1/whatsapp", tags=["whatsapp"])
+app.include_router(whatsapp.router, prefix="/api/v1/whatsapp", tags=["whatsapp"])
 app.include_router(radar.router, prefix="/api/v1/radar", tags=["Radar & Market Analytics"])
