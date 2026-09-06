@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./yieldpadel.db"
     HOLD_EXPIRATION_MINUTES: int = 15
     WHATSAPP_VERIFY_TOKEN: str = "yieldpadel_secret_token_2026"
+    WHATSAPP_PHONE_NUMBER_ID: str | None = None
+    WHATSAPP_ACCESS_TOKEN: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
