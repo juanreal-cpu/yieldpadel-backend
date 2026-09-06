@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
+from app.core.timezone import BOGOTA_TZ, get_bogota_now, get_bogota_today
 from app.models.court import Court
 from app.models.slot import ClientTier, SlotMode, SlotStatus, TimeSlot
 from app.models.incident import PlayerIncident
@@ -492,7 +493,7 @@ def parse_slot_info_from_text(text: str) -> Tuple[Optional[int], Optional[date],
     if not text:
         return None, None, None, None
 
-    today = date.today()
+    today = get_bogota_today()
     slot_id = None
     target_date = None
     start_t = None
@@ -576,7 +577,7 @@ async def find_target_slot(
        - Si must_be_registered=True (baja), busca el turno donde el usuario esté inscrito (futuro o pasado reciente).
        - Si es entrada ('voy'), busca el turno abierto más próximo.
     """
-    today = date.today()
+    today = get_bogota_today()
 
     # -------------------------------------------------------------------------
     # CASO 1: Extracción precisa desde MENSAJE CITADO
@@ -946,11 +947,11 @@ async def process_drop_intent(
     court_name = slot.court.name if slot.court else "Capital Pádel Club"
 
     # -------------------------------------------------------------------------
-    # VALIDACIÓN TEMPORAL 1: Partido Pasado o en Curso
+    # VALIDACIÓN TEMPORAL 1: Partido Pasado o en Curso (Zona Horaria Colombia)
     # -------------------------------------------------------------------------
-    now = datetime.now()
-    today = now.date()
-    now_time = now.time()
+    now_bogota = get_bogota_now()
+    today = now_bogota.date()
+    now_time = now_bogota.time()
 
     is_past_or_current = (slot.date < today) or (slot.date == today and slot.start_time <= now_time)
     if is_past_or_current:
@@ -963,20 +964,19 @@ async def process_drop_intent(
     # -------------------------------------------------------------------------
     # VALIDACIÓN TEMPORAL 2: Ventana de 30 min y Cierre Reciente de 10 min
     # -------------------------------------------------------------------------
-    slot_dt = datetime.combine(slot.date, slot.start_time)
-    minutes_until_start = (slot_dt - now).total_seconds() / 60
+    slot_dt = datetime.combine(slot.date, slot.start_time).replace(tzinfo=BOGOTA_TZ)
+    minutes_until_start = (slot_dt - now_bogota).total_seconds() / 60
 
     is_late = (minutes_until_start < CANCELLATION_GRACE_MINUTES)
     is_recent_close = False
     mins_since_close = None
 
     if is_late and slot.closed_at:
+        now_utc = datetime.now(timezone.utc)
         if slot.closed_at.tzinfo is not None:
-            now_for_close = datetime.now(timezone.utc)
-            mins_since_close = (now_for_close - slot.closed_at).total_seconds() / 60
+            mins_since_close = (now_utc - slot.closed_at).total_seconds() / 60
         else:
-            now_for_close = datetime.now()
-            mins_since_close = (now_for_close - slot.closed_at).total_seconds() / 60
+            mins_since_close = (now_utc - slot.closed_at.replace(tzinfo=timezone.utc)).total_seconds() / 60
 
         if 0 <= mins_since_close <= CONFIRMATION_GRACE_MINUTES:
             is_recent_close = True

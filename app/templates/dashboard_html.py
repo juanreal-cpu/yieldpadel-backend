@@ -26,14 +26,14 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     header {
       background-color: #111827;
       border-bottom: 1px solid #1E293B;
-      padding: 1rem 2rem;
+      padding: 0.85rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       position: sticky;
       top: 0;
-      z-index: 50;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 60;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
     .header-left {
@@ -60,7 +60,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       font-size: 0.7rem;
       padding: 0.15rem 0.45rem;
       border-radius: 4px;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .venue-tag {
@@ -127,16 +127,16 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     /* Main Container */
     .main-container {
       display: grid;
-      grid-template-columns: 1fr 360px;
-      gap: 1.5rem;
-      max-width: 1440px;
-      margin: 1.75rem auto;
-      padding: 0 1.5rem;
+      grid-template-columns: 1fr 350px;
+      gap: 1.25rem;
+      max-width: 1750px;
+      margin: 1.25rem auto;
+      padding: 0 1.25rem;
       width: 100%;
       flex: 1;
     }
 
-    @media (max-width: 1024px) {
+    @media (max-width: 1200px) {
       .main-container {
         grid-template-columns: 1fr;
         padding: 0 1rem;
@@ -148,23 +148,30 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       background-color: #111827;
       border: 1px solid #1E293B;
       border-radius: 12px;
-      padding: 0.85rem 1.25rem;
+      padding: 0.85rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .toolbar-row {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
+      gap: 0.75rem;
     }
 
     .filter-group {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      flex-wrap: wrap;
     }
 
     .filter-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: #94A3B8;
       text-transform: uppercase;
@@ -176,17 +183,17 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       background: #0B0F19;
       border: 1px solid #1E293B;
       border-radius: 8px;
-      padding: 0.25rem;
-      gap: 0.25rem;
+      padding: 0.2rem;
+      gap: 0.2rem;
     }
 
     .filter-pill {
       border: none;
       background: transparent;
       color: #94A3B8;
-      padding: 0.35rem 0.85rem;
+      padding: 0.32rem 0.75rem;
       border-radius: 6px;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
@@ -203,10 +210,10 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       background: #1E293B;
     }
 
-        .date-nav-group {
+    .date-nav-group {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
     }
 
@@ -214,7 +221,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       border: none;
       background: transparent;
       color: #94A3B8;
-      padding: 0.35rem 0.75rem;
+      padding: 0.32rem 0.65rem;
       border-radius: 6px;
       font-size: 0.75rem;
       font-weight: 700;
@@ -240,7 +247,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       color: #F1F5F9;
       font-size: 0.78rem;
       font-weight: 600;
-      padding: 0.35rem 0.65rem;
+      padding: 0.32rem 0.55rem;
       outline: none;
       cursor: pointer;
       color-scheme: dark;
@@ -264,409 +271,604 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       gap: 0.35rem;
     }
 
-    /* Cards */
-    .section-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #FFFFFF;
-      margin-bottom: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .slots-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1rem;
-    }
-
-    .slot-card {
-      background-color: #161F30;
+    .select-control {
+      background-color: #0B0F19;
       border: 1px solid #1E293B;
-      border-radius: 12px;
-      padding: 1.25rem;
-      transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .slot-card:hover {
-      border-color: rgba(6, 182, 212, 0.5);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    }
-
-    .slot-card.booked {
-      background-color: #10231D;
-      border-color: rgba(16, 185, 129, 0.3);
-    }
-
-    .slot-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 0.6rem;
-    }
-
-    .slot-time {
-      color: #38BDF8;
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    .slot-court {
+      border-radius: 8px;
+      color: #F1F5F9;
       font-size: 0.75rem;
-      color: #94A3B8;
-      background: #0B0F19;
-      border: 1px solid #1E293B;
-      padding: 0.2rem 0.5rem;
-      border-radius: 6px;
       font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .select-control:focus {
+      border-color: #38BDF8;
     }
 
-    .badges-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-bottom: 0.85rem;
-    }
-
-    .badge {
+    .btn-seed {
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+      color: white;
+      border: none;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.3rem;
-      padding: 0.2rem 0.55rem;
-      border-radius: 6px;
-      font-size: 0.7rem;
+      gap: 0.4rem;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-seed:hover {
+      background: linear-gradient(135deg, #047857 0%, #059669 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Section Title & Legend */
+    .section-title {
+      font-size: 1.05rem;
       font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .calendar-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      font-size: 0.7rem;
+      color: #94A3B8;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .legend-box {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    .legend-box.emerald {
+      background: #10B981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+    }
+    .legend-box.amber {
+      background: #F59E0B;
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+    }
+    .legend-box.purple {
+      background: #A855F7;
+      box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
+    }
+    .legend-box.gray {
+      background: #475569;
+    }
+
+    /* Calendar Wrapper & Matrix Grid */
+    .calendar-wrapper {
+      background-color: #0F172A;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      position: relative;
+      max-height: 840px;
+      overflow-y: auto;
+    }
+
+    .calendar-matrix {
+      display: grid;
+      position: relative;
+      min-width: 1020px;
+      background-color: #0B0F19;
+    }
+
+    /* Header Columns (Row 1) */
+    .time-col-header {
+      position: sticky;
+      top: 0;
+      left: 0;
+      z-index: 45;
+      background: #111827;
+      border-bottom: 2px solid #38BDF8;
+      border-right: 1px solid #1E293B;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .court-header {
+      position: sticky;
+      top: 0;
+      z-index: 35;
+      background: #111827;
+      border-bottom: 2px solid #38BDF8;
+      border-right: 1px solid #1E293B;
+      padding: 0.65rem 0.5rem;
+      text-align: center;
+    }
+
+    .court-header-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #F8FAFC;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .court-header-badge {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 0.12rem 0.45rem;
+      border-radius: 4px;
+      margin-top: 0.2rem;
+      display: inline-block;
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
-
-    .badge-full {
-      background-color: #065F46;
-      color: #34D399;
-      border: 1px solid rgba(52, 211, 153, 0.4);
+    .badge-central {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38BDF8;
     }
-
-        .badge-closed {
-      background-color: rgba(185, 28, 28, 0.4);
-      color: #FCA5A5;
-      border: 1px solid rgba(248, 113, 113, 0.4);
-    }
-
-    .badge-split {
-      background-color: #0E7490;
-      color: #67E8F9;
-      border: 1px solid rgba(103, 232, 249, 0.4);
-    }
-
-    .badge-cat {
-      background-color: #1E293B;
-      color: #CBD5E1;
-      border: 1px solid #334155;
-    }
-
-    .badge-hold {
-      background-color: #78350F;
-      color: #FBBF24;
-      border: 1px solid rgba(251, 191, 36, 0.4);
-    }
-
-    /* Players list inside card */
-    .players-box {
-      background: #0B0F19;
-      border: 1px solid #1E293B;
-      border-radius: 8px;
-      padding: 0.65rem;
-      margin-bottom: 0.85rem;
-    }
-
-    .players-box-title {
-      font-size: 0.7rem;
-      font-weight: 700;
+    .badge-std {
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.25);
       color: #94A3B8;
-      margin-bottom: 0.4rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
 
-    .players-chips {
+    /* Vertical Time Labels (Col 1, Rows 2-35) */
+    .time-slot-label {
+      position: sticky;
+      left: 0;
+      z-index: 25;
+      background: #0B0F19;
+      border-right: 1px solid #1E293B;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.07);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #64748B;
+      font-weight: 600;
+      height: 52px;
+    }
+
+    /* Background Grid Cells */
+    .grid-bg-cell {
+      border-right: 1px solid #1E293B;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+      height: 52px;
+      box-sizing: border-box;
+    }
+
+    /* Slot Card Block inside Calendar Matrix */
+    .matrix-slot-card {
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      justify-content: space-between;
+      margin: 2px 3px;
+      height: calc(100% - 4px);
+      position: relative;
+      z-index: 15;
+      transition: all 0.2s ease;
+      overflow: hidden;
+      box-sizing: border-box;
+      backdrop-filter: blur(4px);
     }
 
-    .player-row {
+    .matrix-slot-card:hover {
+      transform: translateY(-1px);
+      z-index: 22;
+    }
+
+    /* Card Color Schemes */
+    /* 1. Purple: Americano / Torneo */
+    .card-theme-purple {
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.25) 0%, rgba(88, 28, 135, 0.42) 100%);
+      border: 1px solid #A855F7;
+      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.2);
+    }
+    .card-theme-purple:hover {
+      border-color: #C084FC;
+      box-shadow: 0 4px 16px rgba(168, 85, 247, 0.35);
+    }
+
+    /* 2. Blue / Emerald: Paid / Closed (4/4) */
+    .card-theme-emerald {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(6, 78, 59, 0.4) 100%);
+      border: 1px solid #10B981;
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+    }
+    .card-theme-emerald:hover {
+      border-color: #34D399;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+    }
+
+    /* 3. Yellow / Amber: Open match (1/4 to 3/4) */
+    .card-theme-amber {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(180, 83, 9, 0.38) 100%);
+      border: 1px solid #F59E0B;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.2);
+    }
+    .card-theme-amber:hover {
+      border-color: #FBBF24;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+    }
+
+    /* 4. Soft Gray: Available / Free */
+    .card-theme-gray {
+      background: rgba(30, 41, 59, 0.55);
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+    }
+    .card-theme-gray:hover {
+      border-color: #38BDF8;
+      background: rgba(30, 41, 59, 0.85);
+    }
+
+    /* Pulsing Alert Animation for < 30 min */
+    @keyframes urgent-pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
+        border-color: #EF4444;
+      }
+      70% {
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+        border-color: #F87171;
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        border-color: #EF4444;
+      }
+    }
+
+    .urgent-alert-box {
+      animation: urgent-pulse 1.8s infinite;
+    }
+
+    .badge-urgent {
+      background: #EF4444;
+      color: #FFFFFF;
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0.12rem 0.35rem;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      letter-spacing: 0.02em;
+    }
+
+    /* Inside Card Elements */
+    .card-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #161F30;
-      border: 1px solid #1E293B;
-      padding: 0.3rem 0.5rem;
-      border-radius: 6px;
-      font-size: 0.72rem;
+      margin-bottom: 0.25rem;
     }
 
-    .player-chip {
-      color: #E2E8F0;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      cursor: help;
+    .card-time {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
-    .player-phone-tag {
-      font-size: 0.65rem;
-      color: #64748B;
-      font-family: monospace;
-      margin-left: 0.25rem;
-    }
-
-    .btn-drop-chip {
-      background: transparent;
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #EF4444;
+    .card-dur-badge {
+      font-size: 0.62rem;
+      font-weight: 700;
       padding: 0.1rem 0.35rem;
       border-radius: 4px;
-      font-size: 0.65rem;
+      background: rgba(255, 255, 255, 0.12);
+      color: #E2E8F0;
+    }
+
+    .card-badges {
+      display: flex;
+      gap: 0.3rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 0.35rem;
+    }
+
+    .card-badge-status {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 0.12rem 0.4rem;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-status-closed {
+      background: rgba(16, 185, 129, 0.3);
+      color: #6EE7B7;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+    }
+    .badge-status-open {
+      background: rgba(245, 158, 11, 0.3);
+      color: #FCD34D;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+    }
+    .badge-status-tournament {
+      background: rgba(168, 85, 247, 0.3);
+      color: #E9D5FF;
+      border: 1px solid rgba(168, 85, 247, 0.5);
+    }
+    .badge-status-free {
+      background: rgba(148, 163, 184, 0.2);
+      color: #CBD5E1;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .card-category {
+      font-size: 0.62rem;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38BDF8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    /* Player mini chips inside matrix card */
+    .card-players {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      margin: 0.25rem 0;
+      max-height: 85px;
+      overflow-y: auto;
+    }
+
+    .card-player-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 0.15rem 0.35rem;
+      font-size: 0.68rem;
+    }
+
+    .btn-card-drop {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #FCA5A5;
+      font-size: 0.6rem;
+      border-radius: 3px;
+      padding: 0.05rem 0.3rem;
       cursor: pointer;
       font-weight: 700;
       transition: all 0.15s;
     }
-
-    .btn-drop-chip:hover {
+    .btn-card-drop:hover {
       background: #EF4444;
       color: white;
     }
 
-    .progress-track {
-      background-color: #0B0F19;
-      border: 1px solid #1E293B;
-      border-radius: 9999px;
-      height: 8px;
-      width: 100%;
-      overflow: hidden;
-      margin: 0.4rem 0;
-    }
-
-    .progress-fill {
-      background: linear-gradient(90deg, #0284C7, #38BDF8);
-      height: 100%;
-      border-radius: 9999px;
-      transition: width 0.3s;
-    }
-
-    .slot-footer {
-      border-top: 1px solid #1E293B;
-      padding-top: 0.85rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .price-row {
+    .card-footer {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
+      margin-top: 0.25rem;
+      padding-top: 0.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .price-label {
-      font-size: 0.7rem;
-      color: #94A3B8;
-      text-transform: uppercase;
-    }
-
-    .price-value {
-      font-size: 1.2rem;
+    .card-price {
+      font-size: 0.75rem;
       font-weight: 800;
+      color: #38BDF8;
+    }
+    .card-price-sub {
+      font-size: 0.6rem;
+      color: #94A3B8;
+      display: block;
+    }
+
+    .btn-card-action {
+      background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+      color: white;
+      border: none;
+      padding: 0.22rem 0.55rem;
+      border-radius: 5px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-card-action:hover {
+      background: linear-gradient(135deg, #0369A1 0%, #075985 100%);
+    }
+
+    .card-full-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
       color: #10B981;
     }
 
-    .btn-hold {
-      width: 100%;
-      background-color: #0284C7;
-      color: #FFFFFF;
-      border: none;
-      padding: 0.65rem 1rem;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-    }
-
-    .btn-hold:hover {
-      background-color: #0369A1;
-    }
-
-    .status-confirmed-box {
-      width: 100%;
-      background-color: rgba(6, 95, 70, 0.4);
-      color: #34D399;
-      border: 1px solid rgba(52, 211, 153, 0.3);
-      padding: 0.65rem 1rem;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.8rem;
-      text-align: center;
-    }
-
-    /* Sidebar */
+    /* Sidebar Components */
     .sidebar {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1.25rem;
     }
 
     .sidebar-card {
       background-color: #111827;
       border: 1px solid #1E293B;
       border-radius: 12px;
-      padding: 1.25rem;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      padding: 1.15rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     }
 
     .sidebar-title {
-      font-size: 0.85rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #CBD5E1;
-      margin-bottom: 1rem;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 0.75rem;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+    }
+
+    .wa-textarea {
+      width: 100%;
+      height: 120px;
+      background-color: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      color: #F1F5F9;
+      padding: 0.6rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.72rem;
+      resize: vertical;
+      outline: none;
+      margin-bottom: 0.5rem;
+    }
+
+    .wa-textarea:focus {
+      border-color: #10B981;
+    }
+
+    .btn-wa {
+      width: 100%;
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+      color: white;
+      border: none;
+      padding: 0.6rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .btn-wa:hover {
+      background: linear-gradient(135deg, #047857 0%, #059669 100%);
+    }
+
+    .wa-result-box {
+      margin-top: 0.65rem;
+      background: #0B0F19;
+      border: 1px solid #065F46;
+      border-radius: 8px;
+      padding: 0.65rem;
+      font-size: 0.7rem;
+      color: #A7F3D0;
+      white-space: pre-wrap;
+      font-family: monospace;
+      max-height: 180px;
+      overflow-y: auto;
     }
 
     .metric-box {
       background-color: #0B0F19;
       border: 1px solid #1E293B;
-      border-radius: 10px;
-      padding: 0.85rem 1rem;
-      margin-bottom: 0.75rem;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.65rem;
     }
 
     .metric-header {
       display: flex;
       justify-content: space-between;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: #94A3B8;
       margin-bottom: 0.25rem;
     }
 
     .metric-number {
-      font-size: 1.6rem;
+      font-size: 1.4rem;
       font-weight: 800;
       color: #FFFFFF;
+      letter-spacing: -0.02em;
     }
 
-    /* WhatsApp Parser Box */
-    .wa-textarea {
-      width: 100%;
-      background-color: #0B0F19;
-      border: 1px solid #334155;
+    .active-hold-item {
+      background: #0B0F19;
+      border: 1px solid #B45309;
       border-radius: 8px;
       padding: 0.65rem;
-      color: #F1F5F9;
-      font-size: 0.75rem;
-      font-family: monospace;
-      resize: vertical;
-      min-height: 100px;
       margin-bottom: 0.5rem;
-      outline: none;
-    }
-
-    .wa-textarea:focus {
-      border-color: #06B6D4;
-    }
-
-    .btn-wa {
-      width: 100%;
-      background-color: #059669;
-      color: white;
-      border: none;
-      padding: 0.6rem 1rem;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.8rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-    }
-
-    .btn-wa:hover {
-      background-color: #047857;
-    }
-
-    .wa-result-box {
-      background: #0B0F19;
-      border: 1px solid #10B981;
-      border-radius: 8px;
-      padding: 0.75rem;
-      margin-top: 0.75rem;
-      font-size: 0.72rem;
-      color: #A7F3D0;
-      white-space: pre-wrap;
-      max-height: 150px;
-      overflow-y: auto;
     }
 
     .btn-simulate {
       width: 100%;
-      background-color: #059669;
-      color: #FFFFFF;
-      border: none;
-      padding: 0.55rem 0.85rem;
+      background: #1E293B;
+      color: #10B981;
+      border: 1px solid #059669;
+      padding: 0.35rem;
       border-radius: 6px;
+      font-size: 0.7rem;
       font-weight: 700;
-      font-size: 0.8rem;
       cursor: pointer;
-      margin-top: 0.4rem;
+      margin-top: 0.35rem;
+      transition: all 0.2s;
     }
 
-    .active-hold-item {
-      background-color: #0B0F19;
-      border: 1px solid #1E293B;
-      border-radius: 8px;
-      padding: 0.75rem;
-      margin-bottom: 0.6rem;
+    .btn-simulate:hover {
+      background: #065F46;
+      color: white;
     }
 
     .event-feed {
-      max-height: 180px;
-      overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
+      gap: 0.5rem;
+      max-height: 220px;
+      overflow-y: auto;
     }
 
     .event-item {
-      background-color: #0B0F19;
-      border: 1px solid #1E293B;
-      padding: 0.5rem 0.7rem;
-      border-radius: 6px;
-      font-size: 0.72rem;
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.72rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #1E293B;
     }
 
     .event-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background-color: #06B6D4;
+      background: #38BDF8;
+      margin-top: 0.3rem;
       flex-shrink: 0;
     }
 
@@ -674,12 +876,12 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 100;
-      padding: 1rem;
     }
 
     .modal-backdrop.open {
@@ -687,26 +889,24 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     }
 
     .modal-box {
-      background-color: #161F30;
-      border: 1px solid #334155;
-      border-radius: 14px;
-      padding: 1.5rem;
+      background-color: #111827;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      width: 90%;
       max-width: 440px;
-      width: 100%;
-      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.6);
+      padding: 1.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
-      border-bottom: 1px solid #1E293B;
-      padding-bottom: 0.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .modal-title {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: #FFFFFF;
     }
@@ -715,12 +915,12 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       background: transparent;
       border: none;
       color: #94A3B8;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       cursor: pointer;
     }
 
     .form-group {
-      margin-bottom: 0.85rem;
+      margin-bottom: 1rem;
     }
 
     .form-label {
@@ -734,44 +934,29 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     .form-control {
       width: 100%;
       background-color: #0B0F19;
-      border: 1px solid #334155;
+      border: 1px solid #1E293B;
       border-radius: 8px;
-      padding: 0.6rem 0.75rem;
-      color: #FFFFFF;
-      font-size: 0.85rem;
+      color: #F1F5F9;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.8rem;
       outline: none;
     }
 
     .form-control:focus {
-      border-color: #06B6D4;
-    }
-
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-      margin-top: 1.25rem;
-    }
-
-    .btn-cancel {
-      background: transparent;
-      border: 1px solid #334155;
-      color: #94A3B8;
-      padding: 0.55rem 0.85rem;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      cursor: pointer;
+      border-color: #38BDF8;
     }
 
     .btn-submit {
-      background: #0284C7;
+      width: 100%;
+      background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
       color: white;
       border: none;
-      padding: 0.55rem 1.1rem;
+      padding: 0.65rem;
       border-radius: 8px;
-      font-size: 0.85rem;
       font-weight: 700;
+      font-size: 0.85rem;
       cursor: pointer;
+      margin-top: 0.5rem;
     }
   </style>
 </head>
@@ -780,15 +965,15 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
   <!-- Header -->
   <header>
     <div class="header-left">
-      <div class="logo-brand">
-        Afluenc.IA | YieldPadel
-        <span class="logo-badge">PRO</span>
-      </div>
+      <a href="/dashboard" class="logo-brand">
+        <span>⚡ Afluenc.IA</span>
+        <span class="logo-badge">YieldPadel</span>
+      </a>
       <div class="venue-tag">
-        📍 Capital Pádel Club
+        <span>📍 Capital Pádel Club</span>
+        <span style="color: #38BDF8; font-weight: 700;">(5 Canchas)</span>
       </div>
     </div>
-
     <div class="header-right">
       <div class="badge-live">
         <div class="pulse-dot"></div>
@@ -803,40 +988,75 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
   <!-- Main Container -->
   <main class="main-container">
 
-    <!-- Columna Izquierda: Slots Grid -->
+    <!-- Columna Izquierda: Calendario Tipo Matriz de 5 Canchas -->
     <section>
       
-      <!-- Toolbar -->
+      <!-- Toolbar Multi-Día, Zoom y Filtros -->
       <div class="toolbar-container">
-        <div class="filter-group">
-          <span class="filter-label">Filtro:</span>
-          <div class="pill-group">
-            <button onclick="setFilter('ALL')" id="btn-filter-all" class="filter-pill active">Todos</button>
-            <button onclick="setFilter('FULL_COURT')" id="btn-filter-full" class="filter-pill">Cancha Completa</button>
-            <button onclick="setFilter('SPLIT_MATCH')" id="btn-filter-split" class="filter-pill">Partidos Abiertos</button>
+        
+        <!-- Fila 1: Selector de Fecha -->
+        <div class="toolbar-row">
+          <div class="date-nav-group">
+            <span class="filter-label">Fecha:</span>
+            <div class="pill-group">
+              <button onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="date-pill" title="Ver ayer">◀ Ayer</button>
+              <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">● Hoy</button>
+              <button onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="date-pill" title="Ver mañana">Mañana ▶</button>
+            </div>
+            <input type="date" id="date-picker" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha libre" />
+            <span id="current-date-label" class="current-date-badge">📅 Hoy</span>
           </div>
+
+          <!-- Botón de Sembrar Turnos 5 Canchas -->
+          <button onclick="seedFiveCourts()" id="btn-seed-courts" class="btn-seed" title="Poblar turnos de 1h, 1.5h y 2h para las 5 canchas">
+            🌱 + Sembrar Turnos 5 Canchas
+          </button>
         </div>
 
-        <!-- Selector de Fecha Multi-Día -->
-        <div class="date-nav-group">
-          <div class="pill-group">
-            <button onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="date-pill" title="Ver ayer">◀ Ayer</button>
-            <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">● Hoy</button>
-            <button onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="date-pill" title="Ver mañana">Mañana ▶</button>
+        <!-- Fila 2: Zoom de Cancha y Filtros de Estado -->
+        <div class="toolbar-row">
+          
+          <div class="filter-group">
+            <span class="filter-label">Zoom Cancha:</span>
+            <select id="court-zoom-select" onchange="setCourtZoom(this.value)" class="select-control">
+              <option value="ALL">🏟️ Todas las Canchas (1-5)</option>
+            </select>
           </div>
-          <input type="date" id="date-picker" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha libre" />
-          <span id="current-date-label" class="current-date-badge">📅 Hoy</span>
+
+          <div class="filter-group">
+            <span class="filter-label">Filtro Estado:</span>
+            <div class="pill-group">
+              <button onclick="setStatusFilter('ALL')" id="btn-status-all" class="filter-pill active">Todos</button>
+              <button onclick="setStatusFilter('OPEN')" id="btn-status-open" class="filter-pill">Por Completar (Abiertos)</button>
+              <button onclick="setStatusFilter('PAID')" id="btn-status-paid" class="filter-pill">Pagados</button>
+            </div>
+          </div>
+
         </div>
+
       </div>
 
+      <!-- Título de Sección y Leyenda Visual -->
       <div class="section-title">
-        <span>Grilla de Turnos</span>
-        <span id="slots-count" style="font-size: 0.8rem; color: #38BDF8; font-weight: 600;">Cargando...</span>
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span>📅 Matriz Calendario Operativo</span>
+          <span id="slots-count" style="font-size: 0.75rem; color: #38BDF8; font-weight: 600; background: rgba(56,189,248,0.1); padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid rgba(56,189,248,0.25);">Cargando...</span>
+        </div>
+        
+        <div class="calendar-legend">
+          <span class="legend-item"><span class="legend-box emerald"></span> Pagado / Cerrado (4/4)</span>
+          <span class="legend-item"><span class="legend-box amber"></span> Abierto (1-3)</span>
+          <span class="legend-item"><span class="legend-box purple"></span> Americano / Torneo</span>
+          <span class="legend-item"><span class="legend-box gray"></span> Disponible</span>
+        </div>
       </div>
 
-      <div id="slots-grid" class="slots-grid">
-        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #64748B;">
-          Cargando turnos desde FastAPI...
+      <!-- Contenedor Matriz Calendario con Franjas Horarias (06:00 a 23:00) -->
+      <div class="calendar-wrapper" id="calendar-wrapper">
+        <div id="calendar-matrix" class="calendar-matrix">
+          <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: #64748B;">
+            Cargando matriz de 5 canchas desde FastAPI...
+          </div>
         </div>
       </div>
 
@@ -855,7 +1075,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
           Pega el texto de WhatsApp para parsear jugadores con 🎾 e identidad canónica:
         </p>
 
-        <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 02 SEPTIEMBRE
+        <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 06 SEPTIEMBRE
 Categoría: 4ta
 ⌚2:00pm - 3:30pm
 📍Bogotá Pádel Center
@@ -890,7 +1110,7 @@ PARTIDO CERRADO</textarea>
             <span style="color: #38BDF8;">Confirmado</span>
           </div>
           <div id="metric-revenue" class="metric-number">$0</div>
-          <div style="font-size: 0.7rem; color: #64748B;">COP (Acumulado hoy)</div>
+          <div style="font-size: 0.7rem; color: #64748B;">COP (Acumulado día consultado)</div>
         </div>
 
         <div class="metric-box">
@@ -899,13 +1119,13 @@ PARTIDO CERRADO</textarea>
             <span style="color: #10B981;">Meta: $1.5M</span>
           </div>
           <div style="font-size: 1.3rem; font-weight: 800; color: #FFFFFF;">$1.200.000 COP</div>
-          <div class="progress-track">
-            <div class="progress-fill" style="width: 78%;"></div>
+          <div class="progress-track" style="background: #1E293B; height: 6px; border-radius: 999px; overflow: hidden; margin-top: 0.4rem;">
+            <div class="progress-fill" style="width: 78%; background: #10B981; height: 100%;"></div>
           </div>
         </div>
       </div>
 
-      <!-- Card 3: Holds Activos & Prueba Rápida -->
+      <!-- Card 3: Holds Activos -->
       <div class="sidebar-card">
         <div class="sidebar-title">
           <span>Holds Activos</span>
@@ -931,7 +1151,7 @@ PARTIDO CERRADO</textarea>
             <div class="event-dot"></div>
             <div>
               <div style="font-weight: 600; color: #F1F5F9;">Sistema Inicializado</div>
-              <div style="color: #64748B; font-size: 0.68rem;">Capital Pádel Club Core Activo</div>
+              <div style="color: #64748B; font-size: 0.68rem;">Capital Pádel Club (Matriz 5 Canchas Activa)</div>
             </div>
           </div>
         </div>
@@ -963,85 +1183,77 @@ PARTIDO CERRADO</textarea>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Nombre del Jugador / Cliente</label>
-          <input type="text" id="modal-name" required placeholder="Ej: Juanda" class="form-control">
+          <label class="form-label">Nombre del Cliente</label>
+          <input type="text" id="modal-name" required placeholder="Ej: Juan David Rivas" class="form-control">
         </div>
 
         <div class="form-group">
-          <label class="form-label">Teléfono Canónico (WhatsApp)</label>
-          <input type="tel" id="modal-phone" required placeholder="+57 300 123 4567" value="+57 " class="form-control">
+          <label class="form-label">Teléfono (WhatsApp)</label>
+          <input type="tel" id="modal-phone" required placeholder="+57 300 123 4567" class="form-control">
         </div>
 
         <div class="form-group" id="modal-spots-wrapper">
-          <label class="form-label">Cupos a Reservar</label>
-          <select id="modal-spots-select" onchange="calculateModalPrice()" class="form-control">
-            <option value="1">1 Cupo</option>
-            <option value="2">2 Cupos</option>
-            <option value="3">3 Cupos</option>
-            <option value="4">4 Cupos</option>
-          </select>
+          <label class="form-label">Cupos a Apartar</label>
+          <select id="modal-spots-select" onchange="calculateModalPrice()" class="form-control"></select>
         </div>
 
-        <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <div>
-            <span style="font-size: 0.68rem; color: #94A3B8; display: block;">Total a Pagar:</span>
-            <span id="modal-total-display" style="font-size: 1.15rem; font-weight: 800; color: #38BDF8;">$0</span>
+        <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.75rem; color: #94A3B8;">
+            <span>Total a Pagar:</span>
+            <span id="modal-ttl-info" style="color: #FBBF24; font-weight: 700;">⏳ TTL 15:00 min</span>
           </div>
-          <div id="modal-ttl-info" style="text-align: right; font-size: 0.72rem; color: #FBBF24; font-weight: 700;">
-            ⏳ TTL 15:00 min
+          <div id="modal-total-display" style="font-size: 1.3rem; font-weight: 800; color: #38BDF8;">
+            $0 COP
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" onclick="closeModal()" class="btn-cancel">Cancelar</button>
-          <button type="submit" id="btn-submit-hold" class="btn-submit">Confirmar Reserva</button>
-        </div>
+        <button type="submit" id="btn-submit-hold" class="btn-submit">
+          Confirmar Reserva
+        </button>
       </form>
     </div>
   </div>
 
-  <!-- Modal de Cancelación / Baja de Jugador -->
+  <!-- Modal Interactivo para Baja / Cancelación -->
   <div id="drop-modal" class="modal-backdrop">
     <div class="modal-box">
       <div class="modal-header">
-        <div class="modal-title">Cancelar Cupo (Baja)</div>
+        <div class="modal-title">Solicitar Baja de Jugador</div>
         <button onclick="closeDropModal()" class="btn-close">✕</button>
       </div>
 
       <form id="drop-form" onsubmit="handleDropSubmit(event)">
         <input type="hidden" id="drop-slot-id">
-        
-        <p style="font-size: 0.75rem; color: #CBD5E1; margin-bottom: 1rem;">
-          Para liberar este cupo, ingresa el <strong>número de teléfono titular</strong> asociado a la reserva para verificar tu identidad:
-        </p>
 
         <div class="form-group">
-          <label class="form-label">Jugador a Cancelar</label>
-          <input type="text" id="drop-player-display" readonly class="form-control" style="background: #111827; color: #94A3B8;">
+          <label class="form-label">Jugador a dar de baja:</label>
+          <input type="text" id="drop-player-display" readonly class="form-control" style="color: #94A3B8; background: #0B0F19;">
         </div>
 
         <div class="form-group">
-          <label class="form-label">Teléfono Titular (Autenticación requerida)</label>
-          <input type="tel" id="drop-phone-input" required placeholder="+57 300 123 4567" class="form-control">
-          <span style="font-size: 0.68rem; color: #64748B;">Si el teléfono no coincide, el servidor rechazará con 403 Forbidden.</span>
+          <label class="form-label">Teléfono del Solicitante (WhatsApp):</label>
+          <input type="tel" id="drop-phone-input" required class="form-control" placeholder="+57 300 123 4567">
+          <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.35rem;">
+            * Por seguridad y control anti-suplantación, solo el titular o su host pueden liberar el cupo.
+          </p>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" onclick="closeDropModal()" class="btn-cancel">Cerrar</button>
-          <button type="submit" id="btn-submit-drop" class="btn-submit" style="background: #DC2626;">Confirmar Baja</button>
-        </div>
+        <button type="submit" id="btn-submit-drop" class="btn-submit" style="background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);">
+          Confirmar Baja
+        </button>
       </form>
     </div>
   </div>
 
+  <!-- Scripts -->
   <script>
-    const API_BASE = (window.location.origin && window.location.origin !== 'null' && window.location.protocol.startsWith('http')) ? window.location.origin : 'http://127.0.0.1:8000';
-
+    const API_BASE = '';
     let allSlots = [];
-    let currentFilter = 'ALL';
-    let selectedSlot = null;
+    let allCourts = [];
     let activeHoldsMap = {};
-    let selectedDate = getLocalDateString(new Date());
+    let selectedSlot = null;
+    let currentStatusFilter = 'ALL'; // ALL, OPEN, PAID
+    let selectedCourtZoom = 'ALL';   // ALL or court UUID/ID
 
     function getLocalDateString(d) {
       const year = d.getFullYear();
@@ -1049,6 +1261,8 @@ PARTIDO CERRADO</textarea>
       const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
+
+    let selectedDate = getLocalDateString(new Date());
 
     function setDate(dateStr) {
       if (!dateStr) return;
@@ -1115,6 +1329,7 @@ PARTIDO CERRADO</textarea>
 
     function addEvent(title, subtitle, type = 'info') {
       const feed = document.getElementById('event-feed');
+      if (!feed) return;
       const timeStr = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       
       const div = document.createElement('div');
@@ -1130,172 +1345,263 @@ PARTIDO CERRADO</textarea>
       while (feed.children.length > 15) feed.removeChild(feed.lastChild);
     }
 
-    function setFilter(mode) {
-      currentFilter = mode;
-      document.getElementById('btn-filter-all').className = 'filter-pill' + (mode === 'ALL' ? ' active' : '');
-      document.getElementById('btn-filter-full').className = 'filter-pill' + (mode === 'FULL_COURT' ? ' active' : '');
-      document.getElementById('btn-filter-split').className = 'filter-pill' + (mode === 'SPLIT_MATCH' ? ' active' : '');
-      renderSlots();
+    function setStatusFilter(status) {
+      currentStatusFilter = status;
+      document.getElementById('btn-status-all').className = 'filter-pill' + (status === 'ALL' ? ' active' : '');
+      document.getElementById('btn-status-open').className = 'filter-pill' + (status === 'OPEN' ? ' active' : '');
+      document.getElementById('btn-status-paid').className = 'filter-pill' + (status === 'PAID' ? ' active' : '');
+      renderCalendarMatrix();
+    }
+
+    function setCourtZoom(courtVal) {
+      selectedCourtZoom = courtVal;
+      renderCalendarMatrix();
+    }
+
+    async function fetchCourts() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/slots/courts`);
+        if (res.ok) {
+          allCourts = await res.json();
+          // Update Zoom Dropdown
+          const select = document.getElementById('court-zoom-select');
+          if (select) {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="ALL">🏟️ Todas las Canchas (1-5)</option>';
+            allCourts.forEach((c, idx) => {
+              const opt = document.createElement('option');
+              opt.value = c.id;
+              opt.textContent = `📍 ${c.name}`;
+              select.appendChild(opt);
+            });
+            if (currentVal && (currentVal === 'ALL' || allCourts.some(c => String(c.id) === String(currentVal)))) {
+              select.value = currentVal;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching courts:', err);
+      }
     }
 
     async function refreshData() {
       try {
         await fetch(`${API_BASE}/api/v1/holds/check-expirations`, { method: 'POST' }).catch(() => {});
+        if (allCourts.length === 0) {
+          await fetchCourts();
+        }
         const dateQuery = selectedDate ? `&date=${selectedDate}` : '';
         const res = await fetch(`${API_BASE}/api/v1/slots/?only_available=false${dateQuery}`);
         if (!res.ok) throw new Error('Error al conectar con la API');
         allSlots = await res.json();
-        renderSlots();
+        renderCalendarMatrix();
         updateMetrics();
       } catch (err) {
         console.error('Error fetching data:', err);
       }
     }
 
-    function renderSlots() {
-      const grid = document.getElementById('slots-grid');
+    function renderCalendarMatrix() {
+      const container = document.getElementById('calendar-matrix');
       const countEl = document.getElementById('slots-count');
+      if (!container) return;
 
-      let filtered = allSlots;
-      if (currentFilter !== 'ALL') {
-        filtered = allSlots.filter(s => s.mode === currentFilter);
+      // Filter courts according to zoom
+      let displayedCourts = allCourts;
+      if (selectedCourtZoom !== 'ALL') {
+        displayedCourts = allCourts.filter(c => String(c.id) === String(selectedCourtZoom));
+        if (displayedCourts.length === 0) displayedCourts = allCourts;
       }
 
-      countEl.textContent = `${filtered.length} turno${filtered.length === 1 ? '' : 's'} (${selectedDate})`;
+      // Configure Grid Template Columns
+      if (displayedCourts.length > 1) {
+        container.style.gridTemplateColumns = `75px repeat(${displayedCourts.length}, minmax(190px, 1fr))`;
+        container.style.minWidth = `${75 + displayedCourts.length * 190}px`;
+      } else {
+        container.style.gridTemplateColumns = `75px 1fr`;
+        container.style.minWidth = `100%`;
+      }
 
-      if (filtered.length === 0) {
-        grid.innerHTML = `
-          <div style="grid-column: 1/-1; background: #161F30; border: 1px dashed #334155; border-radius: 12px; padding: 2.5rem; text-align: center;">
-            <div style="font-size: 1rem; color: #E2E8F0; margin-bottom: 0.5rem; font-weight: 600;">No hay turnos para ${formatDateDisplay(selectedDate)}</div>
-            <p style="font-size: 0.78rem; color: #94A3B8; margin-bottom: 1rem;">Puedes sembrar turnos demo para este día o navegar a otra fecha.</p>
-            <button onclick="seedDemo()" class="btn-hold" style="width: auto; margin: 0 auto;">Sembrar Turnos Demo (${selectedDate})</button>
+      // Filter slots according to Status
+      let filteredSlots = allSlots;
+      if (currentStatusFilter === 'OPEN') {
+        filteredSlots = allSlots.filter(s => s.mode === 'SPLIT_MATCH' && s.booked_spots > 0 && (s.booked_spots + s.held_spots) < s.capacity);
+      } else if (currentStatusFilter === 'PAID') {
+        filteredSlots = allSlots.filter(s => s.status === 'FULLY_BOOKED' || (s.booked_spots + s.held_spots) >= s.capacity);
+      }
+
+      if (countEl) {
+        countEl.textContent = `${filteredSlots.length} turno${filteredSlots.length === 1 ? '' : 's'} (${formatDateDisplay(selectedDate)})`;
+      }
+
+      // Operational range: 06:00 to 23:00 (34 slots of 30 mins)
+      const START_MINUTES = 360; // 06:00
+      const END_MINUTES = 1380;  // 23:00
+      const TOTAL_SLOTS = (END_MINUTES - START_MINUTES) / 30; // 34 intervals
+
+      let html = '';
+
+      // 1. Sticky Header Row (Row 1)
+      html += `<div class="time-col-header" style="grid-row: 1; grid-column: 1;">HORA</div>`;
+      displayedCourts.forEach((c, idx) => {
+        const isCentral = c.name.toLowerCase().includes('central') || idx === 0;
+        html += `
+          <div class="court-header" style="grid-row: 1; grid-column: ${idx + 2};">
+            <div class="court-header-title" title="${c.name}">${c.name}</div>
+            <span class="court-header-badge ${isCentral ? 'badge-central' : 'badge-std'}">
+              ${isCentral ? '⭐ Central' : 'Pista ' + (c.court_number || (idx + 1))}
+            </span>
           </div>
         `;
-        return;
+      });
+
+      // 2. Background Grid: Time labels (Col 1) and Empty Court cells (Col 2..N)
+      for (let i = 0; i < TOTAL_SLOTS; i++) {
+        const rowNum = i + 2; // Rows 2 to 35
+        const curMin = START_MINUTES + i * 30;
+        const hh = String(Math.floor(curMin / 60)).padStart(2, '0');
+        const mm = String(curMin % 60).padStart(2, '0');
+        const timeLabel = `${hh}:${mm}`;
+
+        html += `<div class="time-slot-label" style="grid-row: ${rowNum}; grid-column: 1;">${timeLabel}</div>`;
+
+        displayedCourts.forEach((c, cIdx) => {
+          html += `<div class="grid-bg-cell" style="grid-row: ${rowNum}; grid-column: ${cIdx + 2};"></div>`;
+        });
       }
 
-      grid.innerHTML = filtered.map(slot => {
-        const isOpenMatch = slot.mode === 'SPLIT_MATCH';
-        const isFull = slot.status === 'FULLY_BOOKED' || slot.available_spots === 0;
-        const totalOccupied = slot.booked_spots + slot.held_spots;
-        const percent = Math.min(100, Math.round((totalOccupied / slot.capacity) * 100));
+      // 3. Render Slot Cards as Grid Blocks
+      // For urgency calculation: check if match is today and starts within 30 min
+      const todayStr = getLocalDateString(new Date());
+      const isToday = (selectedDate === todayStr);
+      const now = new Date();
+      const currentNowMin = now.getHours() * 60 + now.getMinutes();
 
-        const startH = slot.start_time.slice(0, 5);
-        const endH = slot.end_time.slice(0, 5);
-        const priceStr = formatCOP(isOpenMatch ? slot.price_per_spot : slot.total_price);
-        const priceSub = isOpenMatch ? 'por jugador' : 'cancha completa';
+      filteredSlots.forEach(slot => {
+        // Find court column
+        const courtIdx = displayedCourts.findIndex(c => String(c.id) === String(slot.court_id));
+        if (courtIdx === -1) return; // slot is in a court filtered out by zoom
+        const colNum = courtIdx + 2;
 
-        let modeBadge = '';
-        if (isOpenMatch) {
-          modeBadge = isFull 
-            ? `<span class="badge badge-closed">PARTIDO CERRADO</span>`
-            : `<span class="badge badge-split">PARTIDO ABIERTO</span>`;
-        } else {
-          modeBadge = isFull
-            ? `<span class="badge badge-closed">CANCHA OCUPADA</span>`
-            : `<span class="badge badge-full">CANCHA COMPLETA</span>`;
+        // Parse times
+        const [sh, sm] = slot.start_time.split(':').map(Number);
+        const [eh, em] = slot.end_time.split(':').map(Number);
+        const slotStartMin = sh * 60 + sm;
+        const slotEndMin = eh * 60 + em;
+
+        // Determine grid row and span
+        if (slotStartMin < START_MINUTES || slotStartMin >= END_MINUTES) return;
+        const rowStart = Math.floor((slotStartMin - START_MINUTES) / 30) + 2;
+        const durationMin = slotEndMin - slotStartMin;
+        const rowSpan = Math.max(1, Math.round(durationMin / 30));
+
+        // Color coding & Categories
+        const catLower = (slot.category || '').toLowerCase();
+        const isTournament = catLower.includes('americano') || catLower.includes('torneo');
+        const isFull = slot.status === 'FULLY_BOOKED' || (slot.booked_spots + slot.held_spots) >= slot.capacity;
+        const isOpenMatch = slot.mode === 'SPLIT_MATCH' && slot.booked_spots > 0 && !isFull;
+        const isAvailable = !isTournament && !isFull && !isOpenMatch;
+
+        let themeClass = 'card-theme-gray';
+        let statusBadge = `<span class="card-badge-status badge-status-free">⚪ LIBRE</span>`;
+
+        if (isTournament) {
+          themeClass = 'card-theme-purple';
+          statusBadge = `<span class="card-badge-status badge-status-tournament">🏆 ${slot.category}</span>`;
+        } else if (isFull) {
+          themeClass = 'card-theme-emerald';
+          statusBadge = `<span class="card-badge-status badge-status-closed">✓ CERRADO (4/4)</span>`;
+        } else if (isOpenMatch) {
+          themeClass = 'card-theme-amber';
+          statusBadge = `<span class="card-badge-status badge-status-open">⚡ ABIERTO (${slot.booked_spots}/${slot.capacity})</span>`;
         }
 
-        const catBadge = `<span class="badge badge-cat">Cat. ${slot.category || '4ta'}</span>`;
+        // Urgency check (< 30 min)
+        const minutesUntilStart = slotStartMin - currentNowMin;
+        const isUrgent = isToday && isOpenMatch && (minutesUntilStart > 0 && minutesUntilStart <= 30);
+        if (isUrgent) {
+          themeClass += ' urgent-alert-box';
+        }
 
-        const holdBadge = slot.held_spots > 0
-          ? `<span class="badge badge-hold">Hold Activo (${slot.held_spots})</span>`
-          : '';
+        const durLabel = durationMin === 60 ? '1h' : (durationMin === 90 ? '1.5h' : (durationMin === 120 ? '2h' : (durationMin / 60).toFixed(1) + 'h'));
+        const priceStr = formatCOP(slot.mode === 'SPLIT_MATCH' ? slot.price_per_spot : slot.total_price);
+        const priceSub = slot.mode === 'SPLIT_MATCH' ? 'por cupo' : 'cancha total';
 
-        // Render participantes canónicos
+        // Participants list
         const participants = slot.participants || [];
         let playersHtml = '';
-        if (participants.length > 0) {
-          const rows = participants.map(p => {
-            const phoneClean = p.phone || '';
-            const tooltip = `Tel: ${phoneClean} • Condición: ${p.client_tier || 'STANDARD'}${p.host_phone ? ' (Host: ' + p.host_phone + ')' : ''}`;
-            return `
-              <div class="player-row">
-                <span class="player-chip" title="${tooltip}">
-                  🎾 <strong>${p.display_name}</strong>
-                  <span class="player-phone-tag">${phoneClean.length > 13 ? phoneClean.slice(0,13) + '..' : phoneClean}</span>
-                </span>
-                <button onclick="openDropModal(${slot.id}, '${p.display_name}', '${p.phone}')" class="btn-drop-chip" title="Solicitar baja">
-                  Baja ✕
-                </button>
-              </div>
-            `;
-          }).join('');
-
-          playersHtml = `
-            <div class="players-box">
-              <div class="players-box-title">
-                <span>Jugadores Anotados (${participants.length}/${slot.capacity}):</span>
-              </div>
-              <div class="players-chips">${rows}</div>
+        if (participants.length > 0 && rowSpan >= 3) {
+          const pRows = participants.map(p => `
+            <div class="card-player-item">
+              <span title="Tel: ${p.phone || ''} • ${p.client_tier}">🎾 ${p.display_name}</span>
+              <button onclick="openDropModal(${slot.id}, '${p.display_name}', '${p.phone}')" class="btn-card-drop" title="Solicitar baja">✕</button>
             </div>
-          `;
+          `).join('');
+          playersHtml = `<div class="card-players">${pRows}</div>`;
         }
 
-        let actionHtml = '';
+        // Action Button
+        let actionBtn = '';
         if (isFull) {
-          actionHtml = `
-            <div class="status-confirmed-box">
-              ✓ Turno Completo (${slot.capacity}/${slot.capacity})
-            </div>
-          `;
+          actionBtn = `<span class="card-full-badge">✓ Completo</span>`;
         } else {
-          actionHtml = `
-            <button onclick="openHoldModal(${slot.id})" class="btn-hold">
-              Apartar Turno
-            </button>
-          `;
+          actionBtn = `<button onclick="openHoldModal(${slot.id})" class="btn-card-action">Apartar</button>`;
         }
 
-        return `
-          <div class="slot-card ${isFull ? 'booked' : ''}">
+        html += `
+          <div class="matrix-slot-card ${themeClass}" style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum};">
             <div>
-              <div class="slot-header">
-                <span class="slot-time">${startH} - ${endH}</span>
-                <span class="slot-court">${slot.court_name || 'Cancha ' + slot.court_id}</span>
+              <div class="card-top">
+                <span class="card-time">${slot.start_time.slice(0, 5)} - ${slot.end_time.slice(0, 5)}</span>
+                <span class="card-dur-badge">${durLabel}</span>
               </div>
 
-              <div class="badges-row">
-                ${modeBadge}
-                ${catBadge}
-                ${holdBadge}
+              <div class="card-badges">
+                ${statusBadge}
+                ${isUrgent ? '<span class="badge-urgent">⚠️ &lt; 30 min</span>' : ''}
+                ${slot.category && !isTournament ? `<span class="card-category">Cat. ${slot.category}</span>` : ''}
               </div>
 
               ${playersHtml}
-
-              <div class="capacity-section">
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94A3B8; margin-bottom: 0.35rem;">
-                  <span>Ocupación:</span>
-                  <span style="color: white; font-weight: 700;">${totalOccupied} / ${slot.capacity} (${slot.available_spots} libres)</span>
-                </div>
-                <div class="progress-track">
-                  <div class="progress-fill" style="width: ${percent}%;"></div>
-                </div>
-              </div>
             </div>
 
-            <div class="slot-footer">
-              <div class="price-row">
-                <span class="price-label">${priceSub}</span>
-                <span class="price-value">${priceStr}</span>
+            <div class="card-footer">
+              <div>
+                <span class="card-price">${priceStr}</span>
+                <span class="card-price-sub">${priceSub}</span>
               </div>
-              ${actionHtml}
+              ${actionBtn}
             </div>
           </div>
         `;
-      }).join('');
+      });
+
+      container.innerHTML = html;
     }
 
-    async function seedDemo() {
+    async function seedFiveCourts() {
+      const btn = document.getElementById('btn-seed-courts');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Sembrando...';
+      }
       try {
         const query = selectedDate ? `?date=${selectedDate}` : '';
         const res = await fetch(`${API_BASE}/api/v1/slots/seed${query}`, { method: 'POST' });
+        const data = await res.json();
         if (res.ok) {
-          addEvent('Datos Demo Creados', `Fecha: ${selectedDate}`, 'green');
+          addEvent('Turnos Sembrados en 5 Canchas', `${data.slots_created || 0} slots • ${formatDateDisplay(selectedDate)}`, 'green');
           await refreshData();
+        } else {
+          alert(data.detail || 'Error al sembrar turnos');
         }
-      } catch (e) {
-        console.error(e);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🌱 + Sembrar Turnos 5 Canchas';
+        }
       }
     }
 
@@ -1584,15 +1890,17 @@ PARTIDO CERRADO</textarea>
       if (Object.keys(activeHoldsMap).length > 0 || changed) renderActiveHolds();
     }, 1000);
 
+    // Initial setup
     const picker = document.getElementById('date-picker');
     if (picker) picker.value = selectedDate;
     updateDateUI();
-    setInterval(refreshData, 5000);
-    refreshData();
+    fetchCourts().then(() => {
+      refreshData();
+    });
+    setInterval(refreshData, 6000);
   </script>
 </body>
 </html>
 """
 
-# Alias for compatibility
 DASHBOARD_HTML = RECEPTION_DASHBOARD_HTML

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.core.timezone import get_bogota_now, get_bogota_today
 from app.models.court import Court
 from app.models.slot import HoldStatus, SlotMode, SlotStatus, TimeSlot, SlotHold
 from app.schemas.slot import (
@@ -150,118 +151,236 @@ async def list_slots(
     return response_list
 
 
+async def ensure_five_courts(db: AsyncSession) -> List[Court]:
+    """Garantiza la existencia y numeración de las 5 canchas estándar del club."""
+    import uuid
+    res = await db.execute(select(Court).where(Court.is_active == True))
+    courts = list(res.scalars().all())
+
+    court_map = {c.name: c for c in courts}
+    num_map = {c.court_number: c for c in courts if getattr(c, "court_number", None) is not None}
+
+    sample_club_id = None
+    for c in courts:
+        if getattr(c, "club_id", None):
+            sample_club_id = c.club_id
+            break
+    if not sample_club_id:
+        sample_club_id = uuid.uuid4()
+
+    court_definitions = [
+        (1, "Cancha Central 1"),
+        (2, "Cancha 2"),
+        (3, "Cancha 3"),
+        (4, "Cancha 4"),
+        (5, "Cancha 5"),
+    ]
+
+    changed = False
+    for num, name in court_definitions:
+        existing = num_map.get(num) or court_map.get(name)
+        if existing:
+            if existing.name != name:
+                existing.name = name
+                changed = True
+            if getattr(existing, "court_number", None) != num:
+                existing.court_number = num
+                changed = True
+        else:
+            new_court = Court(
+                id=uuid.uuid4(),
+                club_id=sample_club_id,
+                court_number=num,
+                name=name,
+                is_active=True,
+            )
+            db.add(new_court)
+            changed = True
+
+    if changed:
+        await db.commit()
+        res = await db.execute(select(Court).where(Court.is_active == True))
+        courts = list(res.scalars().all())
+
+    courts.sort(key=lambda c: (getattr(c, "court_number", None) or 99, c.name))
+    return courts
+
+
+@router.get("/courts", response_model=List[CourtResponse])
+async def get_courts(db: AsyncSession = Depends(get_db)):
+    """Obtiene el listado ordenado de las 5 canchas activas del club."""
+    courts = await ensure_five_courts(db)
+    return courts
+
+
 @router.post("/seed", status_code=status.HTTP_201_CREATED)
 async def seed_demo_data(
     target_date: Optional[date] = Query(None, alias="date", description="Fecha específica para sembrar turnos demo"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Crea una cancha demo y turnos de prueba (ayer, hoy, mañana o fecha especificada) si no existen."""
-    court_stmt = select(Court).where(Court.is_active == True)
-    court_res = await db.execute(court_stmt)
-    court = court_res.scalars().first()
-
-    if not court:
-        court = Court(name="Cancha Central 1", is_active=True)
-        db.add(court)
-        await db.flush()
-
-    today = date.today()
+    """
+    Siembra turnos de demostración para las 5 canchas con duraciones de 1h, 1.5h y 2h,
+    cubriendo franjas de 06:00 a 23:00 con estados variados:
+    - Azul / Esmeralda: Pagado / Cerrado (4/4)
+    - Amarillo / Ámbar: Partido Abierto (1/4 a 3/4)
+    - Morado: Americano / Torneo
+    - Gris suave: Disponible / Libre
+    """
+    courts = await ensure_five_courts(db)
+    today = get_bogota_today()
     dates_to_seed = [target_date] if target_date else [today - timedelta(days=1), today, today + timedelta(days=1)]
+
+    # Plantillas de turnos por número de cancha con duraciones de 1h, 1.5h y 2h
+    court_templates = {
+        1: [  # Cancha Central 1
+            {"start": time(6, 0), "end": time(7, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("80000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(7, 0), "end": time(8, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("120000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(8, 30), "end": time(10, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("100000.00"), "booked": 3, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573001112233", "display_name": "Juan Perez", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573002223344", "display_name": "Carlos Gomez", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 3, "phone": "+573003334455", "display_name": "Mateo Silva", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None},
+            ]},
+            {"start": time(10, 0), "end": time(12, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("160000.00"), "booked": 4, "cat": "Americano", "status": SlotStatus.FULLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573101111111", "display_name": "Felipe R", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573102222222", "display_name": "David M", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 3, "phone": "+573103333333", "display_name": "Santiago T", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 4, "phone": "+573104444444", "display_name": "Lucas B", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(12, 0), "end": time(13, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("70000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(14, 0), "end": time(15, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("112000.00"), "booked": 2, "cat": "3ra", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573151112233", "display_name": "Andres B", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573152223344", "display_name": "Diego V", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(16, 0), "end": time(18, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("160000.00"), "booked": 4, "cat": "Open", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(18, 0), "end": time(19, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("140000.00"), "booked": 4, "cat": "2da", "status": SlotStatus.FULLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573161111111", "display_name": "Camila S", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573162222222", "display_name": "Paula G", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 3, "phone": "+573163333333", "display_name": "Mariana O", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 4, "phone": "+573164444444", "display_name": "Valentina C", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(20, 0), "end": time(22, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("180000.00"), "booked": 4, "cat": "Torneo Nocturno", "status": SlotStatus.FULLY_BOOKED, "players": []},
+        ],
+        2: [  # Cancha 2
+            {"start": time(6, 30), "end": time(8, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("90000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(8, 0), "end": time(9, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("80000.00"), "booked": 1, "cat": "5ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573181112233", "display_name": "Esteban R", "client_tier": "STANDARD", "host_phone": None}
+            ]},
+            {"start": time(9, 30), "end": time(11, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("150000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(11, 30), "end": time(12, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("70000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(14, 0), "end": time(16, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("140000.00"), "booked": 3, "cat": "Americano Express", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573171112233", "display_name": "Pablo M", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573172223344", "display_name": "Tomas K", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 3, "phone": "+573173334455", "display_name": "Nicolas D", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(16, 30), "end": time(18, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("110000.00"), "booked": 2, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573121112233", "display_name": "German L", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573122223344", "display_name": "Oscar P", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(18, 30), "end": time(20, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("140000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(20, 0), "end": time(21, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("100000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+        ],
+        3: [  # Cancha 3
+            {"start": time(7, 0), "end": time(8, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("75000.00"), "booked": 0, "cat": "5ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(8, 0), "end": time(10, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("150000.00"), "booked": 4, "cat": "Americano Femenino", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(10, 30), "end": time(12, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("112000.00"), "booked": 3, "cat": "3ra", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573111112233", "display_name": "Alvaro H", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573112223344", "display_name": "Jorge E", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 3, "phone": "+573113334455", "display_name": "Mauricio C", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(13, 0), "end": time(14, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("60000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(14, 30), "end": time(16, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("120000.00"), "booked": 4, "cat": "4ta", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(16, 30), "end": time(18, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("130000.00"), "booked": 2, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573191112233", "display_name": "Cristian V", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573192223344", "display_name": "Hernan T", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(19, 0), "end": time(20, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("140000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(21, 0), "end": time(22, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("80000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+        ],
+        4: [  # Cancha 4
+            {"start": time(6, 0), "end": time(7, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("80000.00"), "booked": 0, "cat": "5ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(8, 0), "end": time(9, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("100000.00"), "booked": 2, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573211112233", "display_name": "Sergio N", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573212223344", "display_name": "Daniel J", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(10, 0), "end": time(11, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("70000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(11, 30), "end": time(13, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("150000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(14, 0), "end": time(15, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("112000.00"), "booked": 1, "cat": "3ra", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573221112233", "display_name": "Jaime B", "client_tier": "STANDARD", "host_phone": None}
+            ]},
+            {"start": time(16, 0), "end": time(17, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("80000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(17, 30), "end": time(19, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("160000.00"), "booked": 4, "cat": "Torneo Mixto", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(20, 0), "end": time(21, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("130000.00"), "booked": 4, "cat": "2da", "status": SlotStatus.FULLY_BOOKED, "players": []},
+        ],
+        5: [  # Cancha 5
+            {"start": time(7, 0), "end": time(8, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("110000.00"), "booked": 4, "cat": "4ta", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(9, 0), "end": time(10, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("70000.00"), "booked": 0, "cat": "5ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(10, 30), "end": time(12, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("130000.00"), "booked": 3, "cat": "Americano Iniciación", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573231112233", "display_name": "Luis F", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573232223344", "display_name": "Mario Z", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 3, "phone": "+573233334455", "display_name": "Guillermo R", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(13, 0), "end": time(14, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("60000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+            {"start": time(14, 30), "end": time(16, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("110000.00"), "booked": 2, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
+                {"spot_index": 1, "phone": "+573241112233", "display_name": "Rodrigo A", "client_tier": "STANDARD", "host_phone": None},
+                {"spot_index": 2, "phone": "+573242223344", "display_name": "Samuel Q", "client_tier": "STANDARD", "host_phone": None},
+            ]},
+            {"start": time(16, 30), "end": time(18, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("120000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(18, 30), "end": time(20, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("150000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
+            {"start": time(21, 0), "end": time(22, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("90000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
+        ],
+    }
 
     total_created = 0
     for d in dates_to_seed:
-        existing_res = await db.execute(
-            select(TimeSlot.start_time).where(TimeSlot.court_id == court.id, TimeSlot.date == d)
-        )
-        existing_times = set(existing_res.scalars().all())
         is_past = d < today
-        day_slots = [
-            TimeSlot(
-                court_id=court.id,
-                date=d,
-                start_time=time(8, 0),
-                end_time=time(9, 30),
-                total_price=Decimal("120000.00"),
-                mode=SlotMode.FULL_COURT,
-                capacity=4,
-                booked_spots=4 if is_past else 0,
-                status=SlotStatus.FULLY_BOOKED if is_past else SlotStatus.AVAILABLE,
-            ),
-            TimeSlot(
-                court_id=court.id,
-                date=d,
-                start_time=time(10, 0),
-                end_time=time(11, 30),
-                total_price=Decimal("60000.00"),
-                mode=SlotMode.SPLIT_MATCH,
-                capacity=4,
-                booked_spots=4 if is_past else 0,
-                category="4ta",
-                status=SlotStatus.FULLY_BOOKED if is_past else SlotStatus.AVAILABLE,
-            ),
-            TimeSlot(
-                court_id=court.id,
-                date=d,
-                start_time=time(14, 0),
-                end_time=time(15, 30),
-                total_price=Decimal("60000.00"),
-                mode=SlotMode.SPLIT_MATCH,
-                capacity=4,
-                booked_spots=4 if is_past else 0,
-                category="4ta",
-                status=SlotStatus.FULLY_BOOKED if is_past else SlotStatus.AVAILABLE,
-            ),
-            TimeSlot(
-                court_id=court.id,
-                date=d,
-                start_time=time(16, 0),
-                end_time=time(17, 30),
-                total_price=Decimal("72000.00"),
-                mode=SlotMode.SPLIT_MATCH,
-                capacity=4,
-                booked_spots=4 if is_past else 1,
-                category="4ta",
-                players_names=[{"spot_index": 1, "phone": "+573001234567", "display_name": "Andres B", "client_tier": "STANDARD", "host_phone": None}] if not is_past else [],
-                status=SlotStatus.FULLY_BOOKED if is_past else SlotStatus.PARTIALLY_BOOKED,
-            ),
-            TimeSlot(
-                court_id=court.id,
-                date=d,
-                start_time=time(18, 0),
-                end_time=time(19, 30),
-                total_price=Decimal("140000.00"),
-                mode=SlotMode.FULL_COURT,
-                capacity=4,
-                booked_spots=0,
-                status=SlotStatus.AVAILABLE,
-            ),
-            TimeSlot(
-                court_id=court.id,
-                date=d,
-                start_time=time(20, 0),
-                end_time=time(21, 30),
-                total_price=Decimal("80000.00"),
-                mode=SlotMode.SPLIT_MATCH,
-                capacity=4,
-                booked_spots=0,
-                category="3ra",
-                status=SlotStatus.AVAILABLE,
-            ),
-        ]
-        to_add = [s for s in day_slots if s.start_time not in existing_times]
-        if to_add:
-            db.add_all(to_add)
-            total_created += len(to_add)
+        for idx, court in enumerate(courts, start=1):
+            court_num = getattr(court, "court_number", None) or idx
+            templates = court_templates.get(court_num, court_templates[1])
+
+            existing_res = await db.execute(
+                select(TimeSlot.start_time).where(TimeSlot.court_id == court.id, TimeSlot.date == d)
+            )
+            existing_times = set(existing_res.scalars().all())
+
+            to_add = []
+            for tpl in templates:
+                if tpl["start"] in existing_times:
+                    continue
+                slot_booked = 4 if is_past else tpl["booked"]
+                slot_status = SlotStatus.FULLY_BOOKED if (is_past or slot_booked >= 4) else (
+                    SlotStatus.PARTIALLY_BOOKED if slot_booked > 0 else SlotStatus.AVAILABLE
+                )
+                players = [] if is_past else tpl["players"]
+
+                to_add.append(
+                    TimeSlot(
+                        court_id=court.id,
+                        date=d,
+                        start_time=tpl["start"],
+                        end_time=tpl["end"],
+                        total_price=tpl["price"],
+                        mode=tpl["mode"],
+                        capacity=4,
+                        booked_spots=slot_booked,
+                        category=tpl["cat"],
+                        players_names=players,
+                        status=slot_status,
+                    )
+                )
+
+            if to_add:
+                db.add_all(to_add)
+                total_created += len(to_add)
 
     if total_created > 0:
         await db.commit()
         return {
-            "message": f"Se sembraron {total_created} turnos demo correctamente",
-            "court_id": str(court.id),
+            "message": f"Se sembraron {total_created} turnos demo exitosamente en las 5 canchas",
+            "courts_count": len(courts),
             "slots_created": total_created,
         }
 
-    return {"message": "Los datos de demostración ya se encontraban presentes", "court_id": str(court.id)}
+    return {"message": "Los datos de demostración ya se encontraban presentes para todas las canchas", "courts_count": len(courts), "slots_created": 0}
 
 
 def parse_time_token(t_str: str) -> time:
@@ -318,7 +437,7 @@ async def parse_open_match(
     raw = payload.raw_text
 
     # 1. Parsear fecha
-    target_date = date.today()
+    target_date = get_bogota_today()
     months = {
         "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
         "julio": 7, "agosto": 8, "septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
