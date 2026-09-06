@@ -201,6 +201,67 @@
       background: #1E293B;
     }
 
+        .date-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .date-pill {
+      border: none;
+      background: transparent;
+      color: #94A3B8;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .date-pill.active {
+      background: #0284C7;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+
+    .date-pill:hover:not(.active) {
+      color: #FFFFFF;
+      background: #1E293B;
+    }
+
+    .date-picker-input {
+      background-color: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      color: #F1F5F9;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      outline: none;
+      cursor: pointer;
+      color-scheme: dark;
+      transition: border-color 0.2s;
+    }
+
+    .date-picker-input:focus {
+      border-color: #06B6D4;
+    }
+
+    .current-date-badge {
+      font-size: 0.78rem;
+      color: #38BDF8;
+      font-weight: 700;
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
     /* Cards */
     .section-title {
       font-size: 1.15rem;
@@ -754,8 +815,15 @@
           </div>
         </div>
 
-        <div style="font-size: 0.8rem; color: #94A3B8; font-weight: 600;">
-          📅 Turnos de Hoy
+        <!-- Selector de Fecha Multi-Día -->
+        <div class="date-nav-group">
+          <div class="pill-group">
+            <button onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="date-pill" title="Ver ayer">◀ Ayer</button>
+            <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">● Hoy</button>
+            <button onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="date-pill" title="Ver mañana">Mañana ▶</button>
+          </div>
+          <input type="date" id="date-picker" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha libre" />
+          <span id="current-date-label" class="current-date-badge">📅 Hoy</span>
         </div>
       </div>
 
@@ -971,6 +1039,73 @@ PARTIDO CERRADO</textarea>
     let currentFilter = 'ALL';
     let selectedSlot = null;
     let activeHoldsMap = {};
+    let selectedDate = getLocalDateString(new Date());
+
+    function getLocalDateString(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function setDate(dateStr) {
+      if (!dateStr) return;
+      selectedDate = dateStr;
+      const picker = document.getElementById('date-picker');
+      if (picker) picker.value = dateStr;
+      updateDateUI();
+      refreshData();
+    }
+
+    function setRelativeDate(offsetDays) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      setDate(getLocalDateString(d));
+    }
+
+    function onDateInputChange(val) {
+      if (val) {
+        setDate(val);
+      }
+    }
+
+    function formatDateDisplay(dateStr) {
+      const parts = dateStr.split('-');
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      const todayStr = getLocalDateString(new Date());
+
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = getLocalDateString(yesterday);
+
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = getLocalDateString(tomorrow);
+
+      let label = '';
+      if (dateStr === todayStr) label = 'Hoy • ';
+      else if (dateStr === yesterdayStr) label = 'Ayer • ';
+      else if (dateStr === tomorrowStr) label = 'Mañana • ';
+
+      const formatted = d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+      return label + formatted;
+    }
+
+    function updateDateUI() {
+      const todayStr = getLocalDateString(new Date());
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = getLocalDateString(yesterday);
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = getLocalDateString(tomorrow);
+
+      const btnYesterday = document.getElementById('btn-date-yesterday');
+      const btnToday = document.getElementById('btn-date-today');
+      const btnTomorrow = document.getElementById('btn-date-tomorrow');
+      const label = document.getElementById('current-date-label');
+
+      if (btnYesterday) btnYesterday.className = 'date-pill' + (selectedDate === yesterdayStr ? ' active' : '');
+      if (btnToday) btnToday.className = 'date-pill' + (selectedDate === todayStr ? ' active' : '');
+      if (btnTomorrow) btnTomorrow.className = 'date-pill' + (selectedDate === tomorrowStr ? ' active' : '');
+      if (label) label.textContent = '📅 ' + formatDateDisplay(selectedDate);
+    }
 
     function formatCOP(num) {
       return '$' + Number(num || 0).toLocaleString('es-CO') + ' COP';
@@ -1004,7 +1139,8 @@ PARTIDO CERRADO</textarea>
     async function refreshData() {
       try {
         await fetch(`${API_BASE}/api/v1/holds/check-expirations`, { method: 'POST' }).catch(() => {});
-        const res = await fetch(`${API_BASE}/api/v1/slots/?only_available=false`);
+        const dateQuery = selectedDate ? `&date=${selectedDate}` : '';
+        const res = await fetch(`${API_BASE}/api/v1/slots/?only_available=false${dateQuery}`);
         if (!res.ok) throw new Error('Error al conectar con la API');
         allSlots = await res.json();
         renderSlots();
@@ -1023,13 +1159,14 @@ PARTIDO CERRADO</textarea>
         filtered = allSlots.filter(s => s.mode === currentFilter);
       }
 
-      countEl.textContent = `${filtered.length} turno${filtered.length === 1 ? '' : 's'}`;
+      countEl.textContent = `${filtered.length} turno${filtered.length === 1 ? '' : 's'} (${selectedDate})`;
 
       if (filtered.length === 0) {
         grid.innerHTML = `
           <div style="grid-column: 1/-1; background: #161F30; border: 1px dashed #334155; border-radius: 12px; padding: 2.5rem; text-align: center;">
-            <div style="font-size: 1rem; color: #E2E8F0; margin-bottom: 0.5rem; font-weight: 600;">No hay turnos para este filtro</div>
-            <button onclick="seedDemo()" class="btn-hold" style="width: auto; margin: 0 auto;">Sembrar Turnos Demo</button>
+            <div style="font-size: 1rem; color: #E2E8F0; margin-bottom: 0.5rem; font-weight: 600;">No hay turnos para ${formatDateDisplay(selectedDate)}</div>
+            <p style="font-size: 0.78rem; color: #94A3B8; margin-bottom: 1rem;">Puedes sembrar turnos demo para este día o navegar a otra fecha.</p>
+            <button onclick="seedDemo()" class="btn-hold" style="width: auto; margin: 0 auto;">Sembrar Turnos Demo (${selectedDate})</button>
           </div>
         `;
         return;
@@ -1149,9 +1286,10 @@ PARTIDO CERRADO</textarea>
 
     async function seedDemo() {
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/seed`, { method: 'POST' });
+        const query = selectedDate ? `?date=${selectedDate}` : '';
+        const res = await fetch(`${API_BASE}/api/v1/slots/seed${query}`, { method: 'POST' });
         if (res.ok) {
-          addEvent('Datos Demo Creados', 'Cancha y turnos generados');
+          addEvent('Datos Demo Creados', `Fecha: ${selectedDate}`, 'green');
           await refreshData();
         }
       } catch (e) {
@@ -1444,6 +1582,9 @@ PARTIDO CERRADO</textarea>
       if (Object.keys(activeHoldsMap).length > 0 || changed) renderActiveHolds();
     }, 1000);
 
+    const picker = document.getElementById('date-picker');
+    if (picker) picker.value = selectedDate;
+    updateDateUI();
     setInterval(refreshData, 5000);
     refreshData();
   </script>

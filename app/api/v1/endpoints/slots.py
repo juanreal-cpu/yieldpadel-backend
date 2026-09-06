@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timezone, timedelta
 from decimal import Decimal
 import re
 from typing import List, Optional
@@ -151,8 +151,11 @@ async def list_slots(
 
 
 @router.post("/seed", status_code=status.HTTP_201_CREATED)
-async def seed_demo_data(db: AsyncSession = Depends(get_db)):
-    """Crea una cancha demo y slots de prueba para hoy si no existen."""
+async def seed_demo_data(
+    target_date: Optional[date] = Query(None, alias="date", description="Fecha específica para sembrar turnos demo"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Crea una cancha demo y turnos de prueba (ayer, hoy, mañana o fecha especificada) si no existen."""
     court_stmt = select(Court).where(Court.is_active == True)
     court_res = await db.execute(court_stmt)
     court = court_res.scalars().first()
@@ -163,15 +166,70 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
         await db.flush()
 
     today = date.today()
-    existing_slots = await db.execute(select(TimeSlot).where(TimeSlot.court_id == court.id, TimeSlot.date == today))
-    if not existing_slots.scalars().first():
-        sample_slots = [
+    dates_to_seed = [target_date] if target_date else [today - timedelta(days=1), today, today + timedelta(days=1)]
+
+    total_created = 0
+    for d in dates_to_seed:
+        existing_res = await db.execute(
+            select(TimeSlot.start_time).where(TimeSlot.court_id == court.id, TimeSlot.date == d)
+        )
+        existing_times = set(existing_res.scalars().all())
+        is_past = d < today
+        day_slots = [
             TimeSlot(
                 court_id=court.id,
-                date=today,
+                date=d,
                 start_time=time(8, 0),
                 end_time=time(9, 30),
                 total_price=Decimal("120000.00"),
+                mode=SlotMode.FULL_COURT,
+                capacity=4,
+                booked_spots=4 if is_past else 0,
+                status=SlotStatus.FULLY_BOOKED if is_past else SlotStatus.AVAILABLE,
+            ),
+            TimeSlot(
+                court_id=court.id,
+                date=d,
+                start_time=time(10, 0),
+                end_time=time(11, 30),
+                total_price=Decimal("60000.00"),
+                mode=SlotMode.SPLIT_MATCH,
+                capacity=4,
+                booked_spots=4 if is_past else 0,
+                category="4ta",
+                status=SlotStatus.FULLY_BOOKED if is_past else SlotStatus.AVAILABLE,
+            ),
+            TimeSlot(
+                court_id=court.id,
+                date=d,
+                start_time=time(14, 0),
+                end_time=time(15, 30),
+                total_price=Decimal("60000.00"),
+                mode=SlotMode.SPLIT_MATCH,
+                capacity=4,
+                booked_spots=4 if is_past else 0,
+                category="4ta",
+                status=SlotStatus.FULLY_BOOKED if is_past else SlotStatus.AVAILABLE,
+            ),
+            TimeSlot(
+                court_id=court.id,
+                date=d,
+                start_time=time(16, 0),
+                end_time=time(17, 30),
+                total_price=Decimal("72000.00"),
+                mode=SlotMode.SPLIT_MATCH,
+                capacity=4,
+                booked_spots=4 if is_past else 1,
+                category="4ta",
+                players_names=[{"spot_index": 1, "phone": "+573001234567", "display_name": "Andres B", "client_tier": "STANDARD", "host_phone": None}] if not is_past else [],
+                status=SlotStatus.FULLY_BOOKED if is_past else SlotStatus.PARTIALLY_BOOKED,
+            ),
+            TimeSlot(
+                court_id=court.id,
+                date=d,
+                start_time=time(18, 0),
+                end_time=time(19, 30),
+                total_price=Decimal("140000.00"),
                 mode=SlotMode.FULL_COURT,
                 capacity=4,
                 booked_spots=0,
@@ -179,30 +237,29 @@ async def seed_demo_data(db: AsyncSession = Depends(get_db)):
             ),
             TimeSlot(
                 court_id=court.id,
-                date=today,
-                start_time=time(10, 0),
-                end_time=time(11, 30),
-                total_price=Decimal("120000.00"),
+                date=d,
+                start_time=time(20, 0),
+                end_time=time(21, 30),
+                total_price=Decimal("80000.00"),
                 mode=SlotMode.SPLIT_MATCH,
                 capacity=4,
                 booked_spots=0,
+                category="3ra",
                 status=SlotStatus.AVAILABLE,
             ),
-            TimeSlot(
-                court_id=court.id,
-                date=today,
-                start_time=time(16, 0),
-                end_time=time(17, 30),
-                total_price=Decimal("140000.00"),
-                mode=SlotMode.SPLIT_MATCH,
-                capacity=4,
-                booked_spots=1,
-                status=SlotStatus.PARTIALLY_BOOKED,
-            ),
         ]
-        db.add_all(sample_slots)
+        to_add = [s for s in day_slots if s.start_time not in existing_times]
+        if to_add:
+            db.add_all(to_add)
+            total_created += len(to_add)
+
+    if total_created > 0:
         await db.commit()
-        return {"message": "Datos de demostración sembrados correctamente", "court_id": str(court.id), "slots_created": len(sample_slots)}
+        return {
+            "message": f"Se sembraron {total_created} turnos demo correctamente",
+            "court_id": str(court.id),
+            "slots_created": total_created,
+        }
 
     return {"message": "Los datos de demostración ya se encontraban presentes", "court_id": str(court.id)}
 
@@ -332,31 +389,111 @@ async def parse_open_match(
     free_spots = max(0, 4 - spots_count)
     is_closed = (spots_count == 4)
 
-    # 6. Sincronizar o crear TimeSlot en la base de datos
-    court_stmt = select(Court).where(Court.is_active == True)
-    court_res = await db.execute(court_stmt)
-    court = court_res.scalars().first()
-    if not court:
-        court = Court(name="Cancha Central 1", is_active=True)
-        db.add(court)
-        await db.flush()
+    # 6. Validación estricta de inventario en WhatsApp (Anti-overbooking)
+    start_str = start_t.strftime("%I:%M%p").lower()
+    end_str = end_t.strftime("%I:%M%p").lower()
+    date_formatted = target_date.strftime("%d/%m/%Y")
+    price_formatted = f"{int(price_per_spot):,}".replace(",", ".")
 
+    # Buscar slots existentes para esta fecha y franja horaria
     slot_stmt = (
         select(TimeSlot)
         .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
         .where(
-            TimeSlot.court_id == court.id,
             TimeSlot.date == target_date,
             TimeSlot.start_time == start_t,
         )
     )
-    existing_slot_res = await db.execute(slot_stmt)
-    slot = existing_slot_res.scalar_one_or_none()
+    existing_slots_res = await db.execute(slot_stmt)
+    matching_slots = existing_slots_res.scalars().all()
+
+    # a) Si no existe ningún turno programado para la fecha y hora:
+    if not matching_slots:
+        warning_reply = (
+            f"⚠️ *TURNO NO ENCONTRADO EN SISTEMA* ⚠️\n"
+            f"📍 Capital Pádel Club\n"
+            f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n\n"
+            f"No existe un turno habilitado en la programación del club para este horario.\n"
+            f"Por favor consulta en recepción o en el Dashboard los turnos oficiales antes de convocar."
+        )
+        return WhatsAppConvocatoriaResponse(
+            date=str(target_date),
+            start_time=str(start_t),
+            end_time=str(end_t),
+            category=category,
+            price_per_spot=price_per_spot,
+            players=raw_players,
+            participants=[],
+            spots_count=spots_count,
+            free_spots=free_spots,
+            is_closed=False,
+            slot_id=None,
+            whatsapp_reply=warning_reply,
+        )
+
+    # b) Filtrar slots que admitan convocatoria (no bloqueados y en modo SPLIT_MATCH o status AVAILABLE)
+    eligible_slots = [
+        s for s in matching_slots
+        if s.status != SlotStatus.BLOCKED and (s.mode == SlotMode.SPLIT_MATCH or s.status == SlotStatus.AVAILABLE)
+    ]
+
+    if not eligible_slots:
+        warning_reply = (
+            f"⚠️ *TURNO NO DISPONIBLE PARA CONVOCATORIA* ⚠️\n"
+            f"📍 Capital Pádel Club\n"
+            f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n\n"
+            f"Este horario no admite convocatoria abierta (cancha completa ya reservada o turno bloqueado).\n"
+            f"Por favor consulta otros turnos disponibles en recepción."
+        )
+        return WhatsAppConvocatoriaResponse(
+            date=str(target_date),
+            start_time=str(start_t),
+            end_time=str(end_t),
+            category=category,
+            price_per_spot=price_per_spot,
+            players=raw_players,
+            participants=[],
+            spots_count=spots_count,
+            free_spots=free_spots,
+            is_closed=False,
+            slot_id=None,
+            whatsapp_reply=warning_reply,
+        )
+
+    # Seleccionar el slot preferente (el que ya es SPLIT_MATCH o el primero AVAILABLE)
+    slot = next((s for s in eligible_slots if s.mode == SlotMode.SPLIT_MATCH), eligible_slots[0])
+
+    prev_participants = to_participants_list(slot.players_names) if slot else []
+    prev_by_name = {p["display_name"].strip().lower(): p for p in prev_participants}
+    prev_names_set = set(prev_by_name.keys())
+    incoming_names_set = set(p.strip().lower() for p in raw_players)
+
+    # c) Anti-overbooking: si el slot ya está lleno (4/4) y la convocatoria entrante intenta sobrecupar o registrar otro grupo
+    if slot.booked_spots >= 4 and slot.status == SlotStatus.FULLY_BOOKED:
+        if spots_count >= 4 and incoming_names_set != prev_names_set:
+            warning_reply = (
+                f"⚠️ *TURNO COMPLETO SIN CUPOS DISPONIBLES* ⚠️\n"
+                f"📍 Capital Pádel Club\n"
+                f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n\n"
+                f"Este turno ya completó sus 4 cupos y se encuentra cerrado.\n"
+                f"No hay cupos disponibles para esta franja horaria."
+            )
+            return WhatsAppConvocatoriaResponse(
+                date=str(target_date),
+                start_time=str(start_t),
+                end_time=str(end_t),
+                category=category,
+                price_per_spot=price_per_spot,
+                players=raw_players,
+                participants=[SlotParticipant(**p) for p in prev_participants],
+                spots_count=4,
+                free_spots=0,
+                is_closed=True,
+                slot_id=slot.id,
+                whatsapp_reply=warning_reply,
+            )
 
     # Estructurar participantes canónicos
-    prev_participants = to_participants_list(slot.players_names) if slot else []
-    prev_by_name = {p["display_name"].lower(): p for p in prev_participants}
-
     norm_sender = normalize_phone(payload.sender_phone) if payload.sender_phone else None
     assigned_sender = False
 
@@ -394,28 +531,12 @@ async def parse_open_match(
         SlotStatus.PARTIALLY_BOOKED if spots_count > 0 else SlotStatus.AVAILABLE
     )
 
-    if slot:
-        slot.mode = SlotMode.SPLIT_MATCH
-        slot.players_names = participants
-        slot.booked_spots = spots_count
-        slot.category = category
-        slot.total_price = price_per_spot * Decimal(4)
-        slot.status = slot_status
-    else:
-        slot = TimeSlot(
-            court_id=court.id,
-            date=target_date,
-            start_time=start_t,
-            end_time=end_t,
-            total_price=price_per_spot * Decimal(4),
-            mode=SlotMode.SPLIT_MATCH,
-            capacity=4,
-            booked_spots=spots_count,
-            players_names=participants,
-            category=category,
-            status=slot_status,
-        )
-        db.add(slot)
+    slot.mode = SlotMode.SPLIT_MATCH
+    slot.players_names = participants
+    slot.booked_spots = spots_count
+    slot.category = category
+    slot.total_price = price_per_spot * Decimal(4)
+    slot.status = slot_status
 
     await db.commit()
     await db.refresh(slot)
