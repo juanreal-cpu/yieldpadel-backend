@@ -222,6 +222,52 @@ def parse_time_token(t_str: str) -> time:
     return time(hours, minutes)
 
 
+DISCARD_PLAYER_PATTERNS = [
+    "CUPO DISPONIBLE",
+    "CUPO LIBRE",
+    "DISPONIBLE",
+    "LIBRE",
+    "PARTIDO CERRADO",
+    "PARTIDO ABIERTO",
+    "CERRADO",
+    "ABIERTO",
+    "CUPOS LIMITADOS",
+    "INSCRÍBETE",
+    "INSCRIBETE",
+    "POR CONFIRMAR",
+    "LISTA DE ESPERA",
+    "ESPERA",
+    "CANCELADO",
+    "VACANTE",
+    "PENDIENTE",
+]
+
+
+def clean_and_validate_player_name(raw_name: str) -> Optional[str]:
+    """
+    Limpia números, viñetas, guiones, emojis de cupos o corchetes y valida
+    estrictamente que el nombre de jugador sea válido y no un texto del sistema o cupo libre.
+    """
+    if not raw_name:
+        return None
+    # Eliminar índices numéricos iniciales, viñetas, guiones, emojis como ⚡ y corchetes
+    cleaned = re.sub(r"^[\d\.\-\)\:\s\[\]⚡\*\#\+]+", "", raw_name).strip()
+    cleaned = re.sub(r"[\[\]\*\#]+$", "", cleaned).strip()
+
+    if len(cleaned) < 2:
+        return None
+
+    cleaned_upper = cleaned.upper()
+    for pattern in DISCARD_PLAYER_PATTERNS:
+        if pattern in cleaned_upper:
+            return None
+
+    if not any(c.isalnum() for c in cleaned):
+        return None
+
+    return cleaned
+
+
 @router.post("/parse-open-match", response_model=WhatsAppConvocatoriaResponse, status_code=status.HTTP_200_OK)
 async def parse_open_match(
     payload: WhatsAppConvocatoriaRequest,
@@ -275,14 +321,16 @@ async def parse_open_match(
     raw_players = []
     for line in raw.splitlines():
         if "🎾" in line:
-            p_name = line.split("🎾", 1)[1].strip()
-            p_name = re.sub(r"^[\d\.\-\)\s]+", "", p_name).strip()
-            if p_name and not p_name.upper().startswith("PARTIDO"):
-                raw_players.append(p_name)
+            candidate = line.split("🎾", 1)[1].strip()
+            valid_name = clean_and_validate_player_name(candidate)
+            if valid_name:
+                raw_players.append(valid_name)
 
+    # Limitar a la capacidad estándar de pádel (4 jugadores)
+    raw_players = raw_players[:4]
     spots_count = len(raw_players)
     free_spots = max(0, 4 - spots_count)
-    is_closed = spots_count >= 4 or "PARTIDO CERRADO" in raw.upper()
+    is_closed = (spots_count == 4)
 
     # 6. Sincronizar o crear TimeSlot en la base de datos
     court_stmt = select(Court).where(Court.is_active == True)
@@ -381,7 +429,7 @@ async def parse_open_match(
     if is_closed:
         players_list = "\n".join([f"{i+1}. 🎾 {p}" for i, p in enumerate(raw_players)])
         reply = (
-            f"✅ *¡PARTIDO CERRADO Y CONFIRMADO!* 🎾\n"
+            f"✅ ¡PARTIDO CERRADO Y CONFIRMADO! (4/4) 🎾\n"
             f"📍 Capital Pádel Club\n"
             f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n"
             f"🏆 Categoría: {category}\n"
@@ -390,16 +438,22 @@ async def parse_open_match(
             f"🔒 *Cancha asegurada en sistema. ¡Nos vemos en la pista!*"
         )
     else:
-        players_list = "\n".join([f"{i+1}. 🎾 {p}" for i, p in enumerate(raw_players)]) if raw_players else "Ninguno aún"
+        slot_lines = []
+        for i in range(1, 5):
+            if i <= spots_count:
+                slot_lines.append(f"{i}. 🎾 {raw_players[i - 1]}")
+            else:
+                slot_lines.append(f"{i}. ⚡ [CUPO DISPONIBLE]")
+        players_list = "\n".join(slot_lines)
+
         reply = (
-            f"🎾 *CONVOCATORIA PARTIDO ABIERTO*\n"
+            f"🎾 PARTIDO ABIERTO ({spots_count}/4)\n"
             f"📍 Capital Pádel Club\n"
             f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n"
             f"🏆 Categoría: {category}\n"
             f"💰 Cuota: ${price_formatted} COP / jugador\n\n"
             f"👥 *Inscritos ({spots_count}/4):*\n{players_list}\n\n"
-            f"⚡ *¡Quedan {free_spots} cupo(s) disponible(s)!*\n"
-            f"Aparta tu cupo directamente en recepción o por enlace YieldPadel."
+            f"⚡ *¡Quedan {free_spots} cupo(s) disponible(s)! Aparta tu cupo directamente respondiendo a esta lista.*"
         )
 
     return WhatsAppConvocatoriaResponse(
