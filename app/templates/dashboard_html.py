@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+"""Embedded Dashboard HTML View for Capital Pádel Club Reception."""
+
+RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -1449,3 +1451,7 @@ PARTIDO CERRADO</textarea>
   </script>
 </body>
 </html>
+"""
+
+# Alias for compatibility
+DASHBOARD_HTML = RECEPTION_DASHBOARD_HTML
