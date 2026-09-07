@@ -4,9 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Afluenc.IA | YieldPadel - Panel Operativo SaaS</title>
+  
+  <!-- Tailwind CSS CDN Oficial & Configuración Segura -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#f0fdf4', 500: '#10b981', 600: '#059669', 900: '#064e3b' }
+          }
+        }
+      }
+    }
+  </script>
+
   <!-- Leaflet CSS & JS for Geospatial Radar Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <style>
     /* Leaflet Custom Pins */
     .radar-pin-target {
@@ -1961,34 +1977,34 @@
         </div>
 
         <!-- Menú Vertical de Navegación -->
-        <nav class="sidebar-nav modular-nav-bar">
-          <button class="sidebar-nav-item active" id="tab-matrix" onclick="switchMainView('view-matrix')">
-            <span class="nav-icon">📅</span>
-            <span class="nav-text">Matriz Calendario</span>
+        <nav class="space-y-1" id="main-sidebar-nav">
+          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-900 transition active" id="tab-calendar" onclick="switchMainView('view-calendar')">
+            <span class="text-base">📅</span>
+            <span>Matriz Calendario</span>
           </button>
-          <button class="sidebar-nav-item" id="tab-yield" onclick="switchMainView('view-yield')">
-            <span class="nav-icon">🏆</span>
-            <span class="nav-text">Torneos Americanos</span>
+          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-tournaments" onclick="switchMainView('view-tournaments')">
+            <span class="text-base">🏆</span>
+            <span>Torneos Americanos</span>
           </button>
-          <button class="sidebar-nav-item" id="tab-crm" onclick="switchMainView('view-crm')">
-            <span class="nav-icon">👥</span>
-            <span class="nav-text">CRM Jugadores</span>
+          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-crm" onclick="switchMainView('view-crm')">
+            <span class="text-base">👥</span>
+            <span>CRM Jugadores</span>
           </button>
-          <button class="sidebar-nav-item" id="tab-radar" onclick="switchMainView('view-radar')">
-            <span class="nav-icon">📈</span>
-            <span class="nav-text">Radar de Precios</span>
+          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-radar" onclick="switchMainView('view-radar')">
+            <span class="text-base">📈</span>
+            <span>Radar de Precios</span>
           </button>
-          <button class="sidebar-nav-item" id="tab-indicators" onclick="switchMainView('view-indicators')">
-            <span class="nav-icon">💡</span>
-            <span class="nav-text">Motor de Yield</span>
+          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-yield" onclick="switchMainView('view-yield')">
+            <span class="text-base">💡</span>
+            <span>Motor de Yield</span>
           </button>
-          <button class="sidebar-nav-item" id="tab-config" onclick="switchMainView('view-config')">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-text">Configuración del Club</span>
+          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-config" onclick="switchMainView('view-config')">
+            <span class="text-base">⚙️</span>
+            <span>Configuración del Club</span>
           </button>
-          <button class="sidebar-nav-item" id="tab-audit" onclick="switchMainView('view-audit')">
-            <span class="nav-icon">🛡️</span>
-            <span class="nav-text">Auditoría & Usuarios</span>
+          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-audit" onclick="switchMainView('view-audit')">
+            <span class="text-base">🛡️</span>
+            <span>Auditoría & Usuarios</span>
           </button>
         </nav>
       </div>
@@ -2094,111 +2110,80 @@
         <!-- ======================================================== -->
         <!-- VISTA 1: 📅 MATRIZ CALENDARIO (OPERACIÓN EN TIEMPO REAL) -->
         <!-- ======================================================== -->
-        <div id="view-matrix" class="modular-view">
+        <div id="view-calendar" class="modular-view">
           
           <!-- BARRA DE HERRAMIENTAS OPERATIVA (Card Blanca 2 Filas) -->
-<!-- BARRA DE CONTROL EN 2 FILAS CON ESTÉTICA SAAS LIMPIA -->
-          <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex flex-col gap-3.5">
+<!-- ======================================================== -->
+          <!-- CABECERA PROFESIONAL SAAS: SEPARACIÓN EN 2 NIVELES LIMPIOS -->
+          <!-- ======================================================== -->
+          <div class="mb-6 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             
-            <!-- FILA 1: Fecha & Acciones Principales -->
-            <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-              
-              <!-- Izquierda: Selector compacto de navegación temporal -->
-              <div class="flex items-center gap-2">
-                <div class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 shadow-sm">
-                  <button type="button" onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="px-2.5 py-1.5 text-xs font-semibold rounded-md text-slate-700 hover:bg-white hover:shadow-xs transition" title="Día anterior">
-                    &lt;
-                  </button>
-                  <button type="button" onclick="setRelativeDate(0)" id="btn-date-today" class="px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-900 shadow-xs transition" title="Ir a hoy">
-                    Hoy
-                  </button>
-                  <button type="button" onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="px-2.5 py-1.5 text-xs font-semibold rounded-md text-slate-700 hover:bg-white hover:shadow-xs transition" title="Día siguiente">
-                    &gt;
-                  </button>
+            <!-- NIVEL 1: Header de Acciones Principales (bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between) -->
+            <div class="bg-white border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+              <!-- Izquierda: Navegación Temporal y Fecha -->
+              <div class="flex items-center gap-3">
+                <div class="flex items-center rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+                  <button id="btn-prev-day" onclick="shiftDay(-1)" class="p-1.5 hover:bg-slate-100 rounded text-slate-600 transition" title="Día anterior">‹</button>
+                  <button id="btn-today" onclick="goToToday()" class="px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded transition" title="Ir a hoy">Hoy</button>
+                  <button id="btn-next-day" onclick="shiftDay(1)" class="p-1.5 hover:bg-slate-100 rounded text-slate-600 transition" title="Día siguiente">›</button>
                 </div>
-                <input type="date" id="selected-date" onchange="onDateInputChange(this.value)" class="h-9 px-3 text-sm rounded-lg border border-slate-300 bg-white shadow-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900" title="Seleccionar fecha" />
+                <input type="date" id="selected-date" onchange="onDateInputChange(this.value)" class="h-9 px-3 text-sm border border-slate-200 rounded-lg shadow-sm text-slate-700 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
               </div>
 
-              <!-- Derecha: Botones de acción agrupados con estilo profesional -->
+              <!-- Derecha: Botones de Acción SaaS Agrupados -->
               <div class="flex items-center gap-2 flex-wrap">
-                <!-- [🏆 + Torneo Americano] (bg-violet-600 hover:bg-violet-700 text-white shadow-sm) -->
-                <button type="button" onclick="openCreateAmericanoModal()" id="btn-create-americano" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition">
-                  <span>🏆</span> + Torneo Americano
+                <button type="button" onclick="openCreateAmericanoModal()" id="btn-create-americano" class="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 transition">
+                  🏆 + Torneo Americano
                 </button>
-
-                <!-- [📢 Difundir WhatsApp] (bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm) -->
-                <button type="button" onclick="broadcastAvailability()" id="btn-broadcast-avail" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
-                  <span>📢</span> Difundir WhatsApp
+                <button type="button" onclick="broadcastAvailability()" id="btn-broadcast-avail" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 transition">
+                  📢 Difundir WhatsApp
                 </button>
-
-                <!-- [⚡ Remate Flash] (border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100) -->
-                <button type="button" onclick="broadcastPromoUrgent()" id="btn-broadcast-promo" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-xs">
-                  <span>⚡</span> Remate Flash
-                  <span class="px-1 py-0.2 text-[9px] font-bold bg-rose-200 text-rose-800 rounded-full">-25%</span>
+                <button type="button" onclick="broadcastPromoUrgent()" id="btn-broadcast-promo" class="border border-rose-300 bg-rose-50 text-rose-700 text-xs font-semibold px-3.5 py-2 rounded-lg hover:bg-rose-100 transition shadow-xs flex items-center gap-1.5">
+                  ⚡ Remate Flash
                 </button>
-
-                <!-- [🌱 Sembrar 7 Días] (border border-slate-200 hover:bg-slate-50 text-slate-700) -->
-                <button type="button" onclick="seedFiveCourts()" id="btn-seed-courts" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 transition shadow-xs">
-                  <span>🌱</span> Sembrar 7 Días
+                <button type="button" onclick="seedFiveCourts()" id="btn-seed-courts" class="border border-slate-200 bg-white text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-lg hover:bg-slate-50 transition shadow-xs flex items-center gap-1.5">
+                  🌱 Sembrar 7 Días
                 </button>
+                <div id="active-user-badge" class="ml-2 flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-xs" title="Sesión activa">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span id="active-user-display">👤 Camilo Real (Recepción)</span>
+                </div>
               </div>
-
             </div>
 
-            <!-- FILA 2: Deporte y Filtros de Visualización -->
-            <div class="flex flex-wrap items-center justify-between gap-3 pt-0.5">
-              
-              <!-- Izquierda: Selector de Deporte como Pestañas/Pills (Segmented Control) -->
-              <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 gap-1" id="sport-selector-container">
-                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="sport-pill active px-3 py-1.5 text-xs font-semibold rounded-md transition" title="5 Pistas de Pádel">
+            <!-- NIVEL 2: Filtros y Deporte (bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4) -->
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+              <!-- Segmented Control de Deportes (Tabs tipo pastilla) -->
+              <div class="flex items-center gap-1.5" id="sport-selector-container">
+                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="bg-slate-900 text-white rounded-lg px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm transition active">
                   🎾 Pádel
                 </button>
-                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="sport-pill px-3 py-1.5 text-xs font-semibold rounded-md transition" title="2 Pistas de Pickleball">
+                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
                   🏓 Pickleball
                 </button>
-                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="sport-pill px-3 py-1.5 text-xs font-semibold rounded-md transition" title="1 Cancha de Arena de Vóley">
+                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
                   🏐 Vóley
                 </button>
-                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="sport-pill px-3 py-1.5 text-xs font-semibold rounded-md transition" title="1 Estudio de Pilates">
+                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
                   🧘 Pilates
                 </button>
               </div>
 
-              <!-- Centro: Filtro horario en línea horizontal minimalista -->
-              <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 gap-1 shadow-xs" id="time-filter-container">
-                <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="timeline-btn active px-2.5 py-1 text-xs font-medium rounded-md transition">
-                  Todo el día
-                </button>
-                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="timeline-btn px-2.5 py-1 text-xs font-medium rounded-md transition">
-                  Mañana (6-12)
-                </button>
-                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="timeline-btn px-2.5 py-1 text-xs font-medium rounded-md transition">
-                  Tarde (12-18)
-                </button>
-                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="timeline-btn px-2.5 py-1 text-xs font-medium rounded-md transition">
-                  Noche (18-24)
-                </button>
+              <!-- Filtro Horario Horizontal Compacto -->
+              <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm" id="time-filter-container">
+                <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="px-3 py-1 text-xs font-semibold rounded bg-slate-900 text-white transition active">Todo el día</button>
+                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition">Mañana (6-12)</button>
+                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition">Tarde (12-18)</button>
+                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition">Noche (18-24)</button>
               </div>
 
-              <!-- Derecha: Filtro de estado y desplegable compacto de Cancha -->
-              <div class="flex items-center gap-3">
-                <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 gap-1 shadow-xs">
-                  <button type="button" onclick="setStatusFilter('ALL')" id="btn-status-all" class="filter-pill active px-2.5 py-1 text-xs font-medium rounded-md">
-                    Todos
-                  </button>
-                  <button type="button" onclick="setStatusFilter('OPEN')" id="btn-status-open" class="filter-pill px-2.5 py-1 text-xs font-medium rounded-md">
-                    Abiertos
-                  </button>
-                  <button type="button" onclick="setStatusFilter('PAID')" id="btn-status-paid" class="filter-pill px-2.5 py-1 text-xs font-medium rounded-md">
-                    Pagados
-                  </button>
-                </div>
-
-                <select id="court-zoom-select" onchange="setCourtZoom(this.value)" class="h-8 text-xs rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 shadow-xs">
-                  <option value="ALL">🏟️ Todas las Canchas</option>
+              <!-- Selector de Cancha a la derecha con select nativo estilizado en Tailwind -->
+              <div class="flex items-center gap-2">
+                <label for="court-zoom-select" class="text-xs font-medium text-slate-500">Pista:</label>
+                <select id="court-zoom-select" onchange="setCourtZoom(this.value)" class="h-8 text-xs border border-slate-200 rounded-lg bg-white px-2.5 text-slate-700 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-sm">
+                  <option value="ALL">🏟️ Todas las pistas</option>
                 </select>
               </div>
-
             </div>
 
           </div>
@@ -2287,7 +2272,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 2: 🏆 TORNEOS AMERICANOS (GESTIÓN Y HISTÓRICO)    -->
         <!-- ======================================================== -->
-        <div id="view-yield" class="modular-view" style="display: none;">
+        <div id="view-tournaments" class="modular-view hidden" style="display: none;">
           <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2349,7 +2334,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 3: 👥 CRM JUGADORES                                -->
         <!-- ======================================================== -->
-        <div id="view-crm" class="modular-view" style="display: none;">
+        <div id="view-crm" class="modular-view hidden" style="display: none;">
           <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2437,7 +2422,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 4: 📈 RADAR DE PRECIOS                            -->
         <!-- ======================================================== -->
-        <div id="view-radar" class="modular-view" style="display: none;">
+        <div id="view-radar" class="modular-view hidden" style="display: none;">
           <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
             
             <!-- Header con Controles de Franja y Ciudad -->
@@ -2608,7 +2593,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 5: 💡 MOTOR DE YIELD & INDICADORES                -->
         <!-- ======================================================== -->
-        <div id="view-indicators" class="modular-view" style="display: none;">
+        <div id="view-yield" class="modular-view hidden" style="display: none;">
           <div style="max-width: 1050px; margin: 0 auto;">
             <div style="margin-bottom: 1.5rem;">
               <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
@@ -2651,7 +2636,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 6: ⚙️ CONFIGURACIÓN DEL CLUB                      -->
         <!-- ======================================================== -->
-        <div id="view-config" class="modular-view" style="display: none;">
+        <div id="view-config" class="modular-view hidden" style="display: none;">
           <div style="max-width: 1050px; margin: 0 auto;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2763,7 +2748,7 @@
         <!-- ======================================================== -->
         <!-- VISTA MODULAR: 🛡️ AUDITORÍA & GESTIÓN DE USUARIOS RBAC    -->
         <!-- ======================================================== -->
-        <div id="view-audit" class="modular-view" style="display: none;">
+        <div id="view-audit" class="modular-view hidden" style="display: none;">
           <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
             
             <!-- Encabezado de la Vista de Auditoría -->
@@ -3181,14 +3166,25 @@
     let selectedCourtZoom = 'ALL';    // ALL or court UUID/ID
 
     function setSportFilter(sport) {
-      currentSportFilter = (sport || 'PADEL').toUpperCase();
-      
-      const sports = ['PADEL', 'PICKLEBALL', 'VOLLEYBALL', 'PILATES'];
-      sports.forEach(s => {
-        const btn = document.getElementById('btn-sport-' + s.toLowerCase());
+      let sUpper = (sport || 'PADEL').toUpperCase();
+      if (sUpper === 'VOLEY') sUpper = 'VOLLEYBALL';
+      currentSportFilter = sUpper;
+
+      const sports = {
+        PADEL: 'btn-sport-padel',
+        PICKLEBALL: 'btn-sport-pickleball',
+        VOLLEYBALL: 'btn-sport-volleyball',
+        PILATES: 'btn-sport-pilates'
+      };
+
+      Object.entries(sports).forEach(([key, btnId]) => {
+        const btn = document.getElementById(btnId);
         if (btn) {
-          const isActive = (s === currentSportFilter);
-          btn.className = 'sport-pill px-3 py-1.5 text-xs font-semibold rounded-md transition' + (isActive ? ' active' : '');
+          if (key === currentSportFilter) {
+            btn.className = 'bg-slate-900 text-white rounded-lg px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm transition active';
+          } else {
+            btn.className = 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition';
+          }
         }
       });
 
@@ -3197,6 +3193,7 @@
       selectedCourtZoom = 'ALL';
       renderCalendarMatrix();
     }
+    window.selectSportFilter = setSportFilter;
 
     function updateSportHeaders() {
       const titleEl = document.getElementById('matrix-title-text');
@@ -3253,59 +3250,122 @@
     let selectedDate = getColombiaTodayString();
 
     // Switch Modular Views en Sidebar Vertical (Infallible implementation)
-    function switchMainView(viewName) {
+    window.switchMainView = function(viewId) {
       try {
-        let cleanId = (viewName || 'view-matrix').toString().trim();
+        let cleanId = (viewId || 'view-calendar').toString().trim();
         if (!cleanId.startsWith('view-')) {
           cleanId = 'view-' + cleanId;
         }
 
-        const allKnownViews = [
-          'view-matrix',
-          'view-yield',
+        // Aliases de compatibilidad
+        if (cleanId === 'view-matrix') cleanId = 'view-calendar';
+        if (cleanId === 'view-indicators') cleanId = 'view-yield';
+
+        const allViews = [
+          'view-calendar',
+          'view-tournaments',
           'view-crm',
           'view-radar',
-          'view-indicators',
+          'view-yield',
           'view-config',
           'view-audit'
         ];
 
-        allKnownViews.forEach(v => {
-          const el = document.getElementById(v);
+        allViews.forEach(id => {
+          const el = document.getElementById(id);
           if (el) {
-            el.style.display = (v === cleanId) ? 'block' : 'none';
+            if (id === cleanId) {
+              el.classList.remove('hidden');
+              el.style.display = 'block';
+            } else {
+              el.classList.add('hidden');
+              el.style.display = 'none';
+            }
           }
         });
 
-        // Actualizar estados visuales de los tabs en el sidebar (fondo slate-100 text-slate-900 font-medium)
-        document.querySelectorAll('.sidebar-nav-item').forEach(tab => {
-          tab.classList.remove('active');
-        });
+        // Actualizar clases activas en botones de sidebar (bg-slate-100 text-slate-900 font-semibold vs text-slate-600 hover:bg-slate-50)
+        const navMapping = {
+          'view-calendar': 'tab-calendar',
+          'view-tournaments': 'tab-tournaments',
+          'view-crm': 'tab-crm',
+          'view-radar': 'tab-radar',
+          'view-yield': 'tab-yield',
+          'view-config': 'tab-config',
+          'view-audit': 'tab-audit'
+        };
 
-        const tabSuffix = cleanId.replace('view-', '');
-        const activeTab = document.getElementById('tab-' + tabSuffix);
-        if (activeTab) {
-          activeTab.classList.add('active');
-        }
+        Object.entries(navMapping).forEach(([vId, tId]) => {
+          const btn = document.getElementById(tId);
+          if (btn) {
+            if (vId === cleanId) {
+              btn.className = 'sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-900 transition active';
+            } else {
+              btn.className = 'sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition';
+            }
+          }
+        });
 
         // Cargas específicas por módulo
         if (cleanId === 'view-config' && typeof loadClubConfig === 'function') {
           loadClubConfig();
         } else if (cleanId === 'view-crm' && typeof loadCRMDirectory === 'function') {
           loadCRMDirectory();
-        } else if (cleanId === 'view-yield' && typeof loadTournamentsList === 'function') {
+        } else if (cleanId === 'view-tournaments' && typeof loadTournamentsList === 'function') {
           loadTournamentsList();
+        } else if (cleanId === 'view-yield' && typeof loadYieldEngineStats === 'function') {
+          loadYieldEngineStats();
         } else if (cleanId === 'view-radar' && typeof initRadarMap === 'function') {
           initRadarMap();
         } else if (cleanId === 'view-audit' && typeof loadAuditData === 'function') {
           loadAuditData();
+        } else if (cleanId === 'view-calendar' && typeof fetchSlots === 'function') {
+          fetchSlots();
         }
       } catch (err) {
         console.error('Error al cambiar de vista:', err);
       }
+    };
+    function switchMainView(v) { window.switchMainView(v); }
+
+    // Helpers de navegación temporal
+    function shiftDay(delta) {
+      const input = document.getElementById('selected-date');
+      const cur = (input && input.value) ? input.value : (selectedDate || '2026-09-07');
+      const parts = cur.split('-').map(Number);
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      d.setDate(d.getDate() + delta);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const newDateStr = `${y}-${m}-${day}`;
+      if (input) input.value = newDateStr;
+      selectedDate = newDateStr;
+      updateDateUI();
+      fetchSlots();
     }
 
-        let currentCRMCategory = 'ALL';
+    function goToToday() {
+      const input = document.getElementById('selected-date');
+      selectedDate = getColombiaTodayString() || '2026-09-07';
+      if (input) input.value = selectedDate;
+      updateDateUI();
+      fetchSlots();
+    }
+
+    function setRelativeDate(offset) {
+      if (offset === 0) goToToday();
+      else shiftDay(offset);
+    }
+
+    function onDateInputChange(val) {
+      if (!val) return;
+      selectedDate = val;
+      updateDateUI();
+      fetchSlots();
+    }
+
+    let currentCRMCategory = 'ALL';
     let currentCRMSegment = 'ALL';
 
     function filterCRMCategory(category) {
@@ -4021,15 +4081,27 @@ ${data.message}`);
 
     function setTimeFilter(timeFilter) {
       currentTimeFilter = (timeFilter || 'ALL').toUpperCase();
-      ['all', 'morning', 'afternoon', 'night'].forEach(t => {
-        const btn = document.getElementById('btn-time-' + t);
+      const tods = {
+        ALL: 'btn-time-all',
+        MORNING: 'btn-time-morning',
+        AFTERNOON: 'btn-time-afternoon',
+        NIGHT: 'btn-time-night'
+      };
+
+      Object.entries(tods).forEach(([key, btnId]) => {
+        const btn = document.getElementById(btnId);
         if (btn) {
-          const isActive = (currentTimeFilter === t.toUpperCase());
-          btn.className = 'timeline-btn px-2.5 py-1 text-xs font-medium rounded-md transition' + (isActive ? ' active' : '');
+          if (key === currentTimeFilter) {
+            btn.className = 'px-3 py-1 text-xs font-semibold rounded bg-slate-900 text-white transition active';
+          } else {
+            btn.className = 'px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition';
+          }
         }
       });
+
       renderCalendarMatrix();
     }
+    window.filterTimeOfDay = setTimeFilter;
 
     function setCourtZoom(courtVal) {
       selectedCourtZoom = courtVal;
@@ -4066,10 +4138,10 @@ ${data.message}`);
       // 2. Mostrar indicador de carga activo
       if (container) {
         container.innerHTML = `
-          <div id="loading-spinner" style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; text-align: center; color: #64748B;">
-            <div style="display: inline-block; width: 36px; height: 36px; border: 3px solid #E2E8F0; border-radius: 50%; border-top-color: #0284C7; animation: spin 0.8s linear infinite; margin-bottom: 0.75rem;"></div>
-            <div style="font-size: 0.85rem; font-weight: 700; color: #0F172A;">Cargando turnos de la jornada...</div>
-            <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Consultando disponibilidad y tarifas dinámicas</div>
+          <div id="loading-spinner" style="grid-column: 1/-1;" class="py-16 flex flex-col items-center justify-center text-center">
+            <div class="inline-block w-9 h-9 border-3 border-slate-200 border-t-emerald-600 rounded-full animate-spin mb-3"></div>
+            <div class="text-sm font-bold text-slate-800">Cargando turnos de la jornada...</div>
+            <div class="text-xs text-slate-500 mt-1">Consultando disponibilidad y tarifas de ${currentSportFilter}</div>
           </div>
         `;
       }
@@ -4088,24 +4160,29 @@ ${data.message}`);
         const slotList = Array.isArray(data) ? data : (data.slots || []);
         allSlots = slotList;
 
-        // Ocultar siempre el spinner (#loading-spinner)
+        // Ocultar siempre el spinner
         const spinner = document.getElementById('loading-spinner') || document.getElementById('grid-loader');
         if (spinner) spinner.style.display = 'none';
 
-        // Si slotList viene vacío, renderizar empty state amigable
+        // Si slotList viene vacío, renderizar contenedor con mensaje claro y botón para sembrar turnos
         if (slotList.length === 0) {
           if (container) {
             container.style.gridTemplateColumns = '1fr';
             container.style.minWidth = '100%';
             container.innerHTML = `
-              <div class="py-12 text-center text-slate-400 font-medium" style="grid-column: 1/-1; padding: 3rem 1rem; text-align: center; color: #94A3B8; font-weight: 500;">
-                No hay turnos para este deporte en la fecha seleccionada.
+              <div class="col-span-full py-16 text-center bg-white border border-slate-200 rounded-xl p-8 my-4 shadow-sm" style="grid-column: 1/-1;">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3 text-2xl">
+                  📅
+                </div>
+                <h3 class="text-base font-bold text-slate-800 mb-1">No hay turnos para este deporte en la fecha seleccionada</h3>
+                <p class="text-xs text-slate-500 mb-4 max-w-md mx-auto">No se encontraron franjas horarias programadas para ${currentSportFilter} el ${selectedDate}. Puedes generar la grilla automáticamente con un clic.</p>
+                <button type="button" onclick="seedFiveCourts()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                  <span>🌱</span> Sembrar Turnos para los Próximos 7 Días
+                </button>
               </div>
             `;
           }
-          if (countEl) {
-            countEl.textContent = `0 turnos (${formatDateDisplay(selectedDate)})`;
-          }
+          if (countEl) countEl.textContent = `0 turnos (${formatDateDisplay(selectedDate)})`;
           updateMetrics();
           return;
         }
@@ -4113,13 +4190,16 @@ ${data.message}`);
         try {
           renderCalendarMatrix();
         } catch (renderErr) {
-          console.error("Error en renderCalendarMatrix:", renderErr);
+          console.error("Error defensivo en renderCalendarMatrix:", renderErr);
           if (container) {
             container.style.gridTemplateColumns = '1fr';
             container.style.minWidth = '100%';
             container.innerHTML = `
-              <div class="py-12 text-center text-slate-400 font-medium" style="grid-column: 1/-1; padding: 3rem 1rem; text-align: center; color: #94A3B8; font-weight: 500;">
-                No hay turnos para este deporte en la fecha seleccionada.
+              <div class="col-span-full py-16 text-center bg-white border border-slate-200 rounded-xl p-8 my-4 shadow-sm" style="grid-column: 1/-1;">
+                <h3 class="text-sm font-semibold text-slate-700">No hay turnos para este deporte en la fecha seleccionada.</h3>
+                <button type="button" onclick="seedFiveCourts()" class="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm">
+                  🌱 Sembrar Turnos
+                </button>
               </div>
             `;
           }
@@ -4134,14 +4214,20 @@ ${data.message}`);
           container.style.gridTemplateColumns = '1fr';
           container.style.minWidth = '100%';
           container.innerHTML = `
-            <div class="py-12 text-center text-slate-400 font-medium" style="grid-column: 1/-1; padding: 3rem 1rem; text-align: center; color: #94A3B8; font-weight: 500;">
-              No hay turnos para este deporte en la fecha seleccionada.
+            <div class="col-span-full py-16 text-center bg-white border border-slate-200 rounded-xl p-8 my-4 shadow-sm" style="grid-column: 1/-1;">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-rose-50 text-rose-500 mb-3 text-2xl">
+                ⚠️
+              </div>
+              <h3 class="text-base font-bold text-slate-800 mb-1">Fallo de conexión al cargar turnos</h3>
+              <p class="text-xs text-slate-500 mb-4 max-w-md mx-auto">No se pudo consultar el servidor en este momento. Verifica tu conexión o intenta sembrar los turnos.</p>
+              <button type="button" onclick="fetchSlots()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition">
+                ↻ Reintentar Carga
+              </button>
             </div>
           `;
         }
       }
     }
-
     const refreshData = fetchSlots;
 
     function renderCalendarMatrix() {
@@ -5217,23 +5303,27 @@ ${data.message}`);
     function initDashboard() {
       try {
         if (typeof fetchCurrentUser === 'function') fetchCurrentUser();
-        const todayStr = getColombiaTodayString() || '2026-09-07';
         const picker = document.getElementById('selected-date') || document.getElementById('date-picker');
-        if (picker && !picker.value) {
-          picker.value = todayStr;
+        if (picker && (!picker.value || picker.value === '')) {
+          picker.value = '2026-09-07';
         }
-        selectedDate = (picker && picker.value) ? picker.value : todayStr;
+        selectedDate = (picker && picker.value) ? picker.value : '2026-09-07';
         updateDateUI();
         fetchCourts().then(() => {
           fetchSlots();
+        }).catch(err => {
+          console.warn("fetchCourts inicial con advertencia:", err);
+          fetchSlots();
         });
+
+        // Refresco periódico pasivo cada 30 segundos
         setInterval(() => {
           if (!isAnyModalOrDrawerOpen()) {
             fetchSlots();
           }
         }, 30000);
-      } catch (initErr) {
-        console.error('Error inicializando el dashboard:', initErr);
+      } catch (err) {
+        console.error("Error defensivo en initDashboard:", err);
       }
     }
 
