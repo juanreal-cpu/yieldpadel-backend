@@ -2127,14 +2127,10 @@
 
               <!-- Derecha: Botones de Acción SaaS Agrupados -->
               <div class="flex items-center gap-2 flex-wrap">
-                <button id="btn-create-americano" onclick="openCreateAmericanoModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">🏆 + Torneo Americano</button>
-                <button id="btn-broadcast-whatsapp" onclick="broadcastAvailability()" class="px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">📢 Difundir WhatsApp</button>
-                <button id="btn-flash-sale" onclick="broadcastPromoUrgent()" class="px-3.5 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">⚡ Remate Flash -25%</button>
-                <button id="btn-seed-week" onclick="seedWeeklySlots()" class="px-3.5 py-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">🌱 Sembrar 7 Días</button>
-                <div id="active-user-badge" class="ml-2 flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-xs" title="Sesión activa">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span id="active-user-display">👤 Camilo Real (Recepción)</span>
-                </div>
+                <button id="btn-create-americano" onclick="openCreateAmericanoModal()" class="px-3.5 py-2 text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">🏆 + Torneo Americano</button>
+                <button id="btn-broadcast-whatsapp" onclick="broadcastAvailability()" class="px-3.5 py-2 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">📢 Difundir WhatsApp</button>
+                <button id="btn-flash-sale" onclick="broadcastPromoUrgent()" class="px-3.5 py-2 text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">⚡ Remate Flash</button>
+                <button id="btn-seed-week" onclick="seedWeeklySlots()" class="px-3.5 py-2 text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">🌱 Sembrar 7 Días</button>
               </div>
             </div>
 
@@ -2145,13 +2141,13 @@
                 <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="bg-slate-900 text-white rounded-lg px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm transition active">
                   🎾 Pádel (5 Pistas)
                 </button>
-                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
                   🏓 Pickleball (2)
                 </button>
-                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
                   🏐 Vóley (1)
                 </button>
-                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
                   🧘 Pilates (1)
                 </button>
               </div>
@@ -3135,26 +3131,47 @@
   <!-- ======================================================== -->
   <script>
     // ========================================================
-    // DEFINICIÓN GLOBAL DE FUNCIONES DE NAVEGACIÓN (Window Scope)
+    // DEFINICIÓN GLOBAL DE FUNCIONES DE NAVEGACIÓN Y BOT DRAWER (Window Scope)
     // ========================================================
-    window.switchMainView = function(viewId) {
+    window.toggleBotDrawer = function(force) {
+      const drawer = document.getElementById('bot-drawer');
+      const backdrop = document.getElementById('bot-drawer-backdrop');
+      if (drawer) {
+        if (typeof force === 'boolean') {
+          drawer.classList.toggle('hidden', !force);
+          drawer.classList.toggle('active', force);
+        } else {
+          const isHidden = drawer.classList.toggle('hidden');
+          drawer.classList.toggle('active', !isHidden);
+        }
+      }
+      if (backdrop) {
+        if (typeof force === 'boolean') {
+          backdrop.classList.toggle('active', force);
+        } else {
+          backdrop.classList.toggle('active');
+        }
+      }
+    };
+
+    window.switchMainView = function(viewName) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-      let cleanName = (viewId || 'calendar').toString().trim().replace(/^view-/, '');
+      let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
       if (cleanName === 'matrix') cleanName = 'calendar';
       if (cleanName === 'indicators') cleanName = 'yield';
 
       const target = document.getElementById('view-' + cleanName);
-      if (target) target.classList.remove('hidden');
-
-      document.querySelectorAll('.sidebar-link').forEach(link => {
-        link.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
-        link.classList.add('text-slate-600');
+      if (target) {
+        target.classList.remove('hidden');
+      }
+      document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
+        btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
+        btn.classList.add('text-slate-600');
       });
-
-      const active = document.getElementById('btn-nav-' + cleanName);
-      if (active) {
-        active.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
-        active.classList.remove('text-slate-600');
+      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('tab-' + cleanName);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
+        activeBtn.classList.remove('text-slate-600');
       }
 
       // Cargas bajo demanda por vista
@@ -3187,7 +3204,7 @@
           if (key === currentSportFilter) {
             btn.className = 'bg-slate-900 text-white rounded-lg px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm transition active';
           } else {
-            btn.className = 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition';
+            btn.className = 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition';
           }
         }
       });
@@ -3199,6 +3216,7 @@
     };
 
     // Aliases globales
+    function toggleBotDrawer(f) { window.toggleBotDrawer(f); }
     function switchMainView(v) { window.switchMainView(v); }
     function setSportFilter(s) { window.setSportFilter(s); }
     window.selectSportFilter = window.setSportFilter;
@@ -4085,95 +4103,49 @@ ${data.message}`);
       if (dateInput && !dateInput.value) {
         dateInput.value = '2026-09-07';
       }
-      if (typeof selectedDate === 'undefined' || !selectedDate) {
-        selectedDate = (dateInput && dateInput.value) ? dateInput.value : '2026-09-07';
-      }
+      const currentDate = (dateInput && dateInput.value) ? dateInput.value : (typeof selectedDate !== 'undefined' && selectedDate ? selectedDate : '2026-09-07');
+      selectedDate = currentDate;
 
-      if (container) {
-        container.innerHTML = `
-          <div id="loading-spinner" style="grid-column: 1/-1;" class="py-16 flex flex-col items-center justify-center text-center">
-            <div class="inline-block w-9 h-9 border-3 border-slate-200 border-t-emerald-600 rounded-full animate-spin mb-3"></div>
-            <div class="text-sm font-bold text-slate-800">Cargando turnos de la jornada...</div>
-            <div class="text-xs text-slate-500 mt-1">Consultando disponibilidad y tarifas de ${currentSportFilter || window.currentSport || 'PADEL'}</div>
-          </div>
-        `;
-      }
+      const currentSport = (typeof currentSportFilter !== 'undefined' && currentSportFilter ? currentSportFilter : (window.currentSport || 'PADEL')).toUpperCase();
+      window.currentSport = currentSport;
+      currentSportFilter = currentSport;
 
       try {
-        await fetch(`${API_BASE}/api/v1/holds/check-expirations`, { method: 'POST' }).catch(() => {});
+        await fetch('/api/v1/holds/check-expirations', { method: 'POST' }).catch(() => {});
         if (allCourts.length === 0) {
           await fetchCourts();
         }
 
-        const dateQuery = selectedDate ? `&date=${selectedDate}` : '';
-        const res = await fetch(`${API_BASE}/api/v1/slots/?only_available=false${dateQuery}`);
-        if (!res.ok) throw new Error(`Error al conectar con la API (${res.status})`);
+        const slotsUrl = '/api/v1/slots/?date=' + encodeURIComponent(currentDate) + '&sport=' + encodeURIComponent(currentSport || 'PADEL');
+        const res = await fetch(slotsUrl);
+
+        if (res.status === 404) {
+          allSlots = [];
+          renderCalendarMatrix();
+          updateMetrics();
+          return;
+        }
+
+        if (!res.ok) {
+          console.warn('API slots error status:', res.status);
+          allSlots = [];
+          renderCalendarMatrix();
+          updateMetrics();
+          return;
+        }
 
         const data = await res.json();
         const slotList = Array.isArray(data) ? data : (data.slots || []);
         allSlots = slotList;
 
-        if (slotList.length === 0) {
-          if (container) {
-            container.style.gridTemplateColumns = '1fr';
-            container.style.minWidth = '100%';
-            container.innerHTML = `
-              <div class="col-span-full py-16 text-center bg-white border border-slate-200 rounded-xl p-8 my-4 shadow-sm" style="grid-column: 1/-1;">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3 text-2xl">
-                  📅
-                </div>
-                <h3 class="text-base font-bold text-slate-800 mb-1">No hay turnos para este deporte en la fecha seleccionada</h3>
-                <p class="text-xs text-slate-500 mb-4 max-w-md mx-auto">No se encontraron franjas horarias programadas para ${currentSportFilter || 'PADEL'} el ${selectedDate}. Puedes generar la grilla automáticamente con un clic.</p>
-                <button type="button" onclick="seedWeeklySlots()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
-                  <span>🌱</span> Sembrar Turnos para los Próximos 7 Días
-                </button>
-              </div>
-            `;
-          }
-          if (countEl) countEl.textContent = `0 turnos (${formatDateDisplay(selectedDate)})`;
-          updateMetrics();
-          return;
-        }
-
-        try {
-          renderCalendarMatrix();
-        } catch (renderErr) {
-          console.error("Error defensivo en renderCalendarMatrix:", renderErr);
-          if (container) {
-            container.style.gridTemplateColumns = '1fr';
-            container.style.minWidth = '100%';
-            container.innerHTML = `
-              <div class="col-span-full py-16 text-center bg-white border border-slate-200 rounded-xl p-8 my-4 shadow-sm" style="grid-column: 1/-1;">
-                <h3 class="text-sm font-semibold text-slate-700">No hay turnos para este deporte en la fecha seleccionada.</h3>
-                <button type="button" onclick="seedWeeklySlots()" class="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm">
-                  🌱 Sembrar Turnos
-                </button>
-              </div>
-            `;
-          }
-        }
-
+        renderCalendarMatrix();
         updateMetrics();
       } catch (err) {
-        console.error('Error fetching data:', err);
-        if (container) {
-          container.style.gridTemplateColumns = '1fr';
-          container.style.minWidth = '100%';
-          container.innerHTML = `
-            <div class="col-span-full py-16 text-center bg-white border border-slate-200 rounded-xl p-8 my-4 shadow-sm" style="grid-column: 1/-1;">
-              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-rose-50 text-rose-500 mb-3 text-2xl">
-                ⚠️
-              </div>
-              <h3 class="text-base font-bold text-slate-800 mb-1">Fallo de conexión al cargar turnos</h3>
-              <p class="text-xs text-slate-500 mb-4 max-w-md mx-auto">No se pudo consultar el servidor en este momento. Verifica tu conexión o intenta sembrar los turnos.</p>
-              <button type="button" onclick="fetchSlots()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition">
-                ↻ Reintentar Carga
-              </button>
-            </div>
-          `;
-        }
+        console.warn('Error fetching slots:', err);
+        allSlots = [];
+        renderCalendarMatrix();
+        updateMetrics();
       } finally {
-        // Al finalizar fetchSlots(), ejecuta de forma incondicional:
         const spinner = document.getElementById('loading-spinner');
         if (spinner) spinner.classList.add('hidden');
         const gridLoader = document.getElementById('grid-loader');
@@ -4190,21 +4162,27 @@ ${data.message}`);
 
       // 1. Filtrar canchas estrictamente por el deporte activo (sin fallback a otras disciplinas)
       let sportCourts = allCourts.filter(c => (c.sport_type || 'PADEL').toUpperCase() === currentSportFilter);
-      sportCourts.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-
       if (sportCourts.length === 0) {
-        const spinner = document.getElementById('loading-spinner') || document.getElementById('grid-loader');
-        if (spinner) spinner.style.display = 'none';
-        container.style.gridTemplateColumns = '1fr';
-        container.style.minWidth = '100%';
-        container.innerHTML = `
-          <div class="py-12 text-center text-slate-400 font-medium" style="grid-column: 1/-1; padding: 3rem 1rem; text-align: center; color: #94A3B8; font-weight: 500;">
-            No hay turnos para este deporte en la fecha seleccionada.
-          </div>
-        `;
-        if (countEl) countEl.textContent = `0 turnos (${formatDateDisplay(selectedDate)})`;
-        return;
+        if (currentSportFilter === 'PICKLEBALL') {
+          sportCourts = [
+            { id: 'pb1', name: 'Pista PB 1', sport_type: 'PICKLEBALL', max_capacity: 4 },
+            { id: 'pb2', name: 'Pista PB 2', sport_type: 'PICKLEBALL', max_capacity: 4 }
+          ];
+        } else if (currentSportFilter === 'VOLLEYBALL') {
+          sportCourts = [{ id: 'vb1', name: 'Pista Vóley Playa', sport_type: 'VOLLEYBALL', max_capacity: 12 }];
+        } else if (currentSportFilter === 'PILATES') {
+          sportCourts = [{ id: 'pi1', name: 'Estudio Pilates', sport_type: 'PILATES', max_capacity: 10 }];
+        } else {
+          sportCourts = [
+            { id: 'c1', name: 'Pista 1 Central', sport_type: 'PADEL', max_capacity: 4 },
+            { id: 'c2', name: 'Pista 2 Panorámica', sport_type: 'PADEL', max_capacity: 4 },
+            { id: 'c3', name: 'Pista 3 Cristal', sport_type: 'PADEL', max_capacity: 4 },
+            { id: 'c4', name: 'Pista 4 Club', sport_type: 'PADEL', max_capacity: 4 },
+            { id: 'c5', name: 'Pista 5 Pro', sport_type: 'PADEL', max_capacity: 4 }
+          ];
+        }
       }
+      sportCourts.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
       // 2. Filtrar canchas según zoom
       let displayedCourts = sportCourts;
@@ -4213,7 +4191,7 @@ ${data.message}`);
         if (displayedCourts.length === 0) displayedCourts = sportCourts;
       }
 
-      // 3. Configurar Grid Columns
+      // 3. Configurar Grid Columns - Columna de horas fija de 75px
       if (displayedCourts.length > 1) {
         container.style.gridTemplateColumns = `75px repeat(${displayedCourts.length}, minmax(190px, 1fr))`;
         container.style.minWidth = `${75 + displayedCourts.length * 190}px`;
@@ -4236,8 +4214,8 @@ ${data.message}`);
         filteredSlots = sportSlots.filter(s => s.status === 'FULLY_BOOKED' || (s.booked_spots + s.held_spots) >= s.capacity);
       }
 
-      let START_MINUTES = 360;
-      let END_MINUTES = 1440;
+      let START_MINUTES = 360; // 6:00 AM
+      let END_MINUTES = 1440;  // 11:30 PM (hasta las 24:00)
 
       if (currentTimeFilter === 'MORNING') {
         START_MINUTES = 360;
@@ -4260,20 +4238,6 @@ ${data.message}`);
 
       if (countEl) {
         countEl.textContent = `${visibleSlots.length} turno${visibleSlots.length === 1 ? '' : 's'} (${formatDateDisplay(selectedDate)})`;
-      }
-
-      // Si no hay turnos visibles para este deporte / filtros, mostrar empty state
-      if (visibleSlots.length === 0) {
-        const spinner = document.getElementById('loading-spinner') || document.getElementById('grid-loader');
-        if (spinner) spinner.style.display = 'none';
-        container.style.gridTemplateColumns = '1fr';
-        container.style.minWidth = '100%';
-        container.innerHTML = `
-          <div class="py-12 text-center text-slate-400 font-medium" style="grid-column: 1/-1; padding: 3rem 1rem; text-align: center; color: #94A3B8; font-weight: 500;">
-            No hay turnos para este deporte en la fecha seleccionada.
-          </div>
-        `;
-        return;
       }
 
       let html = '';
@@ -4303,7 +4267,7 @@ ${data.message}`);
         `;
       });
 
-      // Background Grid: Time labels & Empty Court cells
+      // Background Grid: Time labels (Columna fija de horas 6:00 AM a 11:30 PM) & Empty Court cells
       for (let i = 0; i < TOTAL_SLOTS; i++) {
         const rowNum = i + 2;
         const curMin = START_MINUTES + i * 30;
@@ -4316,6 +4280,17 @@ ${data.message}`);
         displayedCourts.forEach((c, cIdx) => {
           html += `<div class="grid-bg-cell" style="grid-row: ${rowNum}; grid-column: ${cIdx + 2};"></div>`;
         });
+      }
+
+      // Si no hay turnos visibles, mostrar el estado vacío limpio centrado sobre las canchas
+      if (visibleSlots.length === 0) {
+        html += `
+          <div style="grid-row: 2 / span ${TOTAL_SLOTS}; grid-column: 2 / -1; display: flex; align-items: center; justify-content: center; z-index: 25; pointer-events: auto; padding: 2rem;">
+            <div class='py-12 text-center'><p class='text-slate-500 mb-3'>No hay turnos programados para esta fecha.</p><button onclick='seedWeeklySlots()' class='px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition'>🌱 Generar Turnos Ahora</button></div>
+          </div>
+        `;
+        container.innerHTML = html;
+        return;
       }
 
       // Slot Cards

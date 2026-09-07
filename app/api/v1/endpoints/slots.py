@@ -218,7 +218,7 @@ async def list_slots(
     slot_date: Optional[date] = Query(None, alias="date", description="Filtrar por fecha"),
     mode: Optional[SlotMode] = Query(None, description="Filtrar por modo FULL_COURT o SPLIT_MATCH"),
     sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES)"),
-    only_available: bool = Query(True, description="Mostrar únicamente slots con cupos disponibles"),
+    only_available: bool = Query(False, description="Mostrar únicamente slots con cupos disponibles"),
     db: AsyncSession = Depends(get_db),
 ):
     stmt = select(TimeSlot).options(
@@ -231,7 +231,11 @@ async def list_slots(
     if mode:
         stmt = stmt.where(TimeSlot.mode == mode)
     if sport:
-        stmt = stmt.where(TimeSlot.sport_type == sport.upper())
+        s_upper = sport.upper()
+        if s_upper == "PADEL":
+            stmt = stmt.where((TimeSlot.sport_type == "PADEL") | (TimeSlot.sport_type.is_(None)))
+        else:
+            stmt = stmt.where(TimeSlot.sport_type == s_upper)
 
     result = await db.execute(stmt)
     slots = result.scalars().all()
