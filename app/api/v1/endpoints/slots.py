@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.timezone import get_bogota_now, get_bogota_today
-from app.services import calculate_recommended_price
+from app.services import calculate_recommended_price, get_club_config, update_club_config
 from app.models.court import Court
 from app.models.slot import HoldStatus, SlotMode, SlotStatus, TimeSlot, SlotHold
 from app.schemas.slot import (
@@ -21,6 +21,8 @@ from app.schemas.slot import (
     WhatsAppConvocatoriaRequest,
     WhatsAppConvocatoriaResponse,
     ReserveOrBlockRequest,
+    CreateAmericanoRequest,
+    ClubConfigRequest,
 )
 
 router = APIRouter()
@@ -123,6 +125,9 @@ def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse
         is_promo=bool(yield_info.get("is_promo", False) or getattr(slot, "is_promo", False)),
         recommended_price=yield_info.get("recommended_price"),
         pricing_tier=yield_info.get("pricing_tier"),
+        tournament_type=getattr(slot, "tournament_type", None),
+        prize_pool=getattr(slot, "prize_pool", None),
+        tournament_name=getattr(slot, "tournament_name", None),
     )
 
 
@@ -460,6 +465,171 @@ async def reserve_or_block_slot(
 
     now_utc = datetime.now(timezone.utc)
     return compute_slot_response(slot, now_utc)
+
+
+@router.post("/create-americano", response_model=List[TimeSlotResponse])
+async def create_americano(
+    payload: CreateAmericanoRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Crea un evento Torneo Americano bloqueando simultáneamente de 2 a 5 canchas
+    durante 2h, 2.5h o 3h continuas, con bolsa de premios y modalidad PAREJA_FIJA o INDIVIDUAL.
+    """
+    if len(payload.court_ids) < 2:
+        raise HTTPException(status_code=400, detail="Un torneo americano requiere seleccionar al menos 2 canchas.")
+    if len(payload.court_ids) > 5:
+        raise HTTPException(status_code=400, detail="No se pueden seleccionar más de 5 canchas para un americano.")
+
+    # Calcular end_time sumando minutos
+    t_name = payload.get_name() if hasattr(payload, "get_name") else (payload.tournament_name or getattr(payload, "name", "Torneo Americano"))
+    duration_mins = payload.get_duration_minutes() if hasattr(payload, "get_duration_minutes") else int(getattr(payload, "duration_hours", 2.0) * 60)
+    start_dt = datetime.combine(payload.date, payload.start_time)
+    end_dt = start_dt + timedelta(minutes=duration_mins)
+    end_time_val = time(23, 59) if (end_dt.time() == time(0, 0) or end_dt.date() > payload.date) else end_dt.time()
+
+    created_slots = []
+    now_utc = datetime.now(timezone.utc)
+
+    for court_id_str in payload.court_ids:
+        import uuid
+        try:
+            c_uuid = uuid.UUID(court_id_str)
+        except Exception:
+            court_res = await db.execute(select(Court).where(Court.name.like(f"%{court_id_str}%")))
+            c_obj = court_res.scalars().first()
+            if not c_obj:
+                continue
+            c_uuid = c_obj.id
+
+        # Buscar slots de esta cancha que se solapen con el horario del torneo
+        overlap_stmt = (
+            select(TimeSlot)
+            .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
+            .where(
+                TimeSlot.court_id == c_uuid,
+                TimeSlot.date == payload.date,
+                TimeSlot.start_time < end_time_val,
+                TimeSlot.end_time > payload.start_time,
+            )
+        )
+        res_overlap = await db.execute(overlap_stmt)
+        overlap_slots = list(res_overlap.scalars().all())
+
+        prize_val = payload.prize_pool or Decimal("300000.00")
+        prize_str = f"${int(prize_val):,} COP"
+        label_t = "Pareja Fija" if payload.tournament_type == "PAREJA_FIJA" else "Individual"
+        cat_label = f"Americano ({label_t})"
+
+        player_entry = [{
+            "spot_index": 1,
+            "phone": "+57-AMERICANO",
+            "display_name": f"🏆 {t_name} ({prize_str})",
+            "client_tier": "VIP_PAY_ON_SITE",
+            "host_phone": None,
+        }]
+
+        if overlap_slots:
+            # Reutilizar el primer slot como bloque de torneo y eliminar los demás solapados
+            main_slot = overlap_slots[0]
+            main_slot.start_time = payload.start_time
+            main_slot.end_time = end_time_val
+            main_slot.slot_type = "AMERICANO"
+            main_slot.tournament_type = payload.tournament_type
+            main_slot.tournament_name = t_name
+            main_slot.prize_pool = prize_val
+            main_slot.category = cat_label
+            main_slot.status = SlotStatus.FULLY_BOOKED
+            main_slot.booked_spots = 4
+            main_slot.total_price = prize_val
+            main_slot.players_names = player_entry
+
+            for extra in overlap_slots[1:]:
+                await db.delete(extra)
+
+            created_slots.append(main_slot)
+        else:
+            new_slot = TimeSlot(
+                court_id=c_uuid,
+                date=payload.date,
+                start_time=payload.start_time,
+                end_time=end_time_val,
+                total_price=prize_val,
+                mode=SlotMode.FULL_COURT,
+                capacity=4,
+                booked_spots=4,
+                category=cat_label,
+                status=SlotStatus.FULLY_BOOKED,
+                slot_type="AMERICANO",
+                tournament_type=payload.tournament_type,
+                tournament_name=t_name,
+                prize_pool=prize_val,
+                players_names=player_entry,
+                is_promo=False,
+            )
+            db.add(new_slot)
+            created_slots.append(new_slot)
+
+    await db.commit()
+    for s in created_slots:
+        await db.refresh(s)
+
+    return [compute_slot_response(s, now_utc) for s in created_slots]
+
+
+@router.get("/club-config")
+async def get_club_configuration(db: AsyncSession = Depends(get_db)):
+    """Retorna la configuración operativa del club y las 5 canchas."""
+    config = get_club_config()
+    courts = await ensure_five_courts(db)
+    return {
+        **config,
+        "config": config,
+        "courts": [
+            {
+                "id": str(c.id),
+                "court_number": getattr(c, "court_number", idx + 1),
+                "name": c.name,
+                "is_active": c.is_active,
+            }
+            for idx, c in enumerate(courts)
+        ]
+    }
+
+
+@router.post("/club-config")
+async def update_club_configuration(
+    payload: ClubConfigRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Actualiza en caliente la configuración de tarifas y canchas del club."""
+    updated = update_club_config(payload.model_dump(exclude_unset=True, exclude={"courts"}))
+    if payload.courts:
+        courts = await ensure_five_courts(db)
+        court_map = {str(c.id): c for c in courts}
+        for c_data in payload.courts:
+            cid = str(c_data.get("id"))
+            if cid in court_map:
+                if "name" in c_data and c_data["name"]:
+                    court_map[cid].name = c_data["name"]
+                if "is_active" in c_data:
+                    court_map[cid].is_active = bool(c_data["is_active"])
+        await db.commit()
+
+    courts = await ensure_five_courts(db)
+    return {
+        "message": "Configuración del club actualizada exitosamente",
+        "config": updated,
+        "courts": [
+            {
+                "id": str(c.id),
+                "court_number": getattr(c, "court_number", idx + 1),
+                "name": c.name,
+                "is_active": c.is_active,
+            }
+            for idx, c in enumerate(courts)
+        ]
+    }
 
 
 def parse_time_token(t_str: str) -> time:

@@ -1,13 +1,18 @@
 import logging
+import os
+from datetime import date
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.timezone import get_bogota_today
 from app.services.whatsapp import (
     MESSAGES_CACHE,
+    generate_availability_broadcast,
+    generate_promo_urgent_broadcast,
     get_player_incidents,
     normalize_phone,
     process_incoming_whatsapp_message,
@@ -175,4 +180,87 @@ async def get_player_history(
         "total_incidents": len(incidents),
         "incidents": incidents,
     }
+
+
+class BroadcastRequest(BaseModel):
+    target_date: Optional[str] = None
+    group_id: Optional[str] = None
+
+
+@router.post("/broadcast-availability")
+async def broadcast_availability(
+    payload: Optional[BroadcastRequest] = None,
+    target_date: Optional[str] = Query(None),
+    group_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Despacha el resumen de turnos libres del día al grupo de WhatsApp.
+    Permite enviar parámetros por JSON body o Query params.
+    """
+    d_str = (payload.target_date if payload and payload.target_date else None) or target_date
+    parsed_date = None
+    if d_str:
+        try:
+            parsed_date = date.fromisoformat(d_str)
+        except ValueError:
+            parsed_date = get_bogota_today()
+    else:
+        parsed_date = get_bogota_today()
+
+    target_group = (
+        (payload.group_id if payload and payload.group_id else None)
+        or group_id
+        or os.getenv("WHATSAPP_BROADCAST_GROUP_ID", "573130000000")
+    )
+
+    broadcast_text, total_slots = await generate_availability_broadcast(db, target_date=parsed_date)
+    sent_success = await send_whatsapp_message(to_phone=target_group, message_body=broadcast_text)
+
+    return {
+        "status": "sent" if sent_success else "simulated",
+        "target_date": str(parsed_date),
+        "total_slots": total_slots,
+        "recipient": target_group,
+        "broadcast_text": broadcast_text,
+    }
+
+
+@router.post("/broadcast-promo-urgent")
+async def broadcast_promo_urgent(
+    payload: Optional[BroadcastRequest] = None,
+    target_date: Optional[str] = Query(None),
+    group_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Filtra slots vacíos críticos (< 3 horas) y envía alerta con descuento Flash (-25%) al grupo de WhatsApp.
+    """
+    d_str = (payload.target_date if payload and payload.target_date else None) or target_date
+    parsed_date = None
+    if d_str:
+        try:
+            parsed_date = date.fromisoformat(d_str)
+        except ValueError:
+            parsed_date = get_bogota_today()
+    else:
+        parsed_date = get_bogota_today()
+
+    target_group = (
+        (payload.group_id if payload and payload.group_id else None)
+        or group_id
+        or os.getenv("WHATSAPP_BROADCAST_GROUP_ID", "573130000000")
+    )
+
+    broadcast_text, total_critical = await generate_promo_urgent_broadcast(db, target_date=parsed_date)
+    sent_success = await send_whatsapp_message(to_phone=target_group, message_body=broadcast_text)
+
+    return {
+        "status": "sent" if sent_success else "simulated",
+        "target_date": str(parsed_date),
+        "total_critical_slots": total_critical,
+        "recipient": target_group,
+        "broadcast_text": broadcast_text,
+    }
+
 

@@ -98,57 +98,104 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       height: 8px;
       border-radius: 50%;
       background-color: #10B981;
-      box-shadow: 0 0 10px #10B981;
-      animation: pulse-dot-anim 2s infinite ease-in-out;
+      animation: pulse 2s infinite;
     }
 
-    @keyframes pulse-dot-anim {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.2); }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
     }
 
     .btn-icon {
       background: #1E293B;
-      color: #CBD5E1;
       border: 1px solid #334155;
-      padding: 0.45rem 0.75rem;
-      border-radius: 8px;
-      cursor: pointer;
+      color: #F1F5F9;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
       font-size: 0.8rem;
       font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
       transition: all 0.2s;
     }
-
     .btn-icon:hover {
       background: #334155;
-      color: white;
+      border-color: #475569;
     }
 
-    /* Main Container */
-    .main-container {
-      display: grid;
-      grid-template-columns: 1fr 350px;
-      gap: 1.25rem;
-      max-width: 1750px;
-      margin: 1.25rem auto;
-      padding: 0 1.25rem;
+    /* Modular Navigation Bar */
+    .modular-nav-bar {
+      background-color: #0F172A;
+      border-bottom: 1px solid #1E293B;
+      padding: 0 2rem;
+      display: flex;
+      gap: 0.35rem;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+      position: sticky;
+      top: 55px;
+      z-index: 55;
+    }
+    .modular-nav-bar::-webkit-scrollbar {
+      display: none;
+    }
+    .nav-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #94A3B8;
+      padding: 0.8rem 1.15rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .nav-tab:hover {
+      color: #F1F5F9;
+      background: rgba(30, 41, 59, 0.45);
+    }
+    .nav-tab.active {
+      color: #38BDF8;
+      border-bottom-color: #38BDF8;
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    /* Views Layout */
+    .modular-view {
       width: 100%;
+    }
+
+    /* Main Container (Matriz View) */
+    .main-container {
       flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      padding: 1.5rem 2rem;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     @media (max-width: 1200px) {
       .main-container {
         grid-template-columns: 1fr;
-        padding: 0 1rem;
       }
     }
 
-    /* Toolbar */
+    /* Toolbar Container */
     .toolbar-container {
       background-color: #111827;
       border: 1px solid #1E293B;
       border-radius: 12px;
-      padding: 0.85rem 1.15rem;
+      padding: 1rem 1.25rem;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
@@ -250,25 +297,39 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       padding: 0.32rem 0.55rem;
       outline: none;
       cursor: pointer;
-      color-scheme: dark;
-      transition: border-color 0.2s;
     }
-
     .date-picker-input:focus {
-      border-color: #06B6D4;
+      border-color: #38BDF8;
     }
 
     .current-date-badge {
       font-size: 0.78rem;
-      color: #38BDF8;
       font-weight: 700;
-      background: rgba(6, 182, 212, 0.1);
-      border: 1px solid rgba(6, 182, 212, 0.25);
-      padding: 0.3rem 0.6rem;
+      color: #38BDF8;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 0.28rem 0.65rem;
       border-radius: 6px;
+    }
+
+    .btn-seed {
+      background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+      color: #FFFFFF;
+      border: none;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-seed:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
     }
 
     .select-control {
@@ -278,42 +339,19 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       color: #F1F5F9;
       font-size: 0.75rem;
       font-weight: 600;
-      padding: 0.35rem 0.65rem;
+      padding: 0.32rem 0.65rem;
       outline: none;
       cursor: pointer;
-      transition: border-color 0.2s;
     }
     .select-control:focus {
       border-color: #38BDF8;
     }
 
-    .btn-seed {
-      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
-      color: white;
-      border: none;
-      padding: 0.4rem 0.85rem;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-    .btn-seed:hover {
-      background: linear-gradient(135deg, #047857 0%, #059669 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-    }
-
     /* Section Title & Legend */
     .section-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #FFFFFF;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #F1F5F9;
       margin-bottom: 0.75rem;
       display: flex;
       justify-content: space-between;
@@ -324,10 +362,11 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
 
     .calendar-legend {
       display: flex;
-      align-items: center;
       gap: 0.85rem;
+      align-items: center;
       font-size: 0.7rem;
       color: #94A3B8;
+      font-weight: 600;
       flex-wrap: wrap;
     }
 
@@ -338,78 +377,41 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     }
 
     .legend-box {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 3px;
-      display: inline-block;
     }
-    .legend-box.emerald {
-      background: #10B981;
-      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
-    }
-    .legend-box.amber {
-      background: #F59E0B;
-      box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
-    }
-    .legend-box.cyan {
-      background: #06B6D4;
-      box-shadow: 0 0 6px rgba(6, 182, 212, 0.6);
-    }
-    .legend-box.purple {
-      background: #A855F7;
-      box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
-    }
-    .legend-box.gray {
-      background: #475569;
-    }
+    .legend-box.emerald { background: #10B981; }
+    .legend-box.amber { background: #F59E0B; }
+    .legend-box.cyan { background: #06B6D4; }
+    .legend-box.purple { background: #A855F7; }
+    .legend-box.gray { background: #64748B; border: 1px dashed #94A3B8; }
 
-    /* Calendar Wrapper & Matrix Grid */
+    /* Calendar Grid Matrix */
     .calendar-wrapper {
-      background-color: #0F172A;
+      background-color: #111827;
       border: 1px solid #1E293B;
       border-radius: 12px;
       overflow-x: auto;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
       position: relative;
-      max-height: 840px;
-      overflow-y: auto;
     }
 
     .calendar-matrix {
       display: grid;
       position: relative;
-      min-width: 1020px;
-      background-color: #0B0F19;
-    }
-
-    /* Header Columns (Row 1) */
-    .time-col-header {
-      position: sticky;
-      top: 0;
-      left: 0;
-      z-index: 45;
-      background: #111827;
-      border-bottom: 2px solid #38BDF8;
-      border-right: 1px solid #1E293B;
-      padding: 0.75rem 0.5rem;
-      text-align: center;
-      font-size: 0.72rem;
-      font-weight: 800;
-      color: #94A3B8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     .court-header {
+      background: #1E293B;
+      border-bottom: 2px solid #334155;
+      border-right: 1px solid #1E293B;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
       position: sticky;
       top: 0;
-      z-index: 35;
-      background: #111827;
-      border-bottom: 2px solid #38BDF8;
-      border-right: 1px solid #1E293B;
-      padding: 0.65rem 0.5rem;
-      text-align: center;
+      z-index: 30;
+      user-select: none;
     }
 
     .court-header-title {
@@ -423,61 +425,74 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     }
 
     .court-header-badge {
-      font-size: 0.62rem;
+      display: inline-block;
+      font-size: 0.65rem;
       font-weight: 700;
-      padding: 0.12rem 0.45rem;
+      padding: 0.15rem 0.45rem;
       border-radius: 4px;
       margin-top: 0.2rem;
-      display: inline-block;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
     }
     .badge-central {
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.4);
-      color: #38BDF8;
+      background: rgba(245, 158, 11, 0.15);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
     .badge-std {
-      background: rgba(148, 163, 184, 0.12);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      color: #94A3B8;
+      background: rgba(56, 189, 248, 0.12);
+      color: #38BDF8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
     }
 
-    /* Vertical Time Labels (Col 1, Rows 2-N) */
+    .time-col-header {
+      background: #1E293B;
+      border-bottom: 2px solid #334155;
+      border-right: 1px solid #334155;
+      padding: 0.75rem 0.4rem;
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #94A3B8;
+      position: sticky;
+      top: 0;
+      left: 0;
+      z-index: 40;
+    }
+
     .time-slot-label {
+      background: #0F172A;
+      border-bottom: 1px solid #1E293B;
+      border-right: 1px solid #334155;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94A3B8;
+      text-align: center;
       position: sticky;
       left: 0;
-      z-index: 25;
-      background: #0B0F19;
-      border-right: 1px solid #1E293B;
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.07);
+      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.68rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      color: #64748B;
-      font-weight: 600;
-      height: 52px;
+      height: 60px;
     }
 
-    /* Background Grid Cells */
     .grid-bg-cell {
+      border-bottom: 1px dashed rgba(30, 41, 59, 0.7);
       border-right: 1px solid #1E293B;
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
-      height: 52px;
+      height: 60px;
       box-sizing: border-box;
+      pointer-events: none;
     }
 
-    /* Slot Card Block inside Calendar Matrix */
+    /* Matrix Slot Card */
     .matrix-slot-card {
+      margin: 2px 4px;
       border-radius: 8px;
       padding: 0.5rem 0.65rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      margin: 2px 3px;
-      height: calc(100% - 4px);
       position: relative;
       z-index: 15;
       transition: all 0.2s ease;
@@ -494,13 +509,13 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     /* Card Color Schemes */
     /* 1. Purple: Americano / Torneo */
     .card-theme-purple {
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.25) 0%, rgba(88, 28, 135, 0.42) 100%);
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.28) 0%, rgba(88, 28, 135, 0.45) 100%);
       border: 1px solid #A855F7;
-      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.2);
+      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.25);
     }
     .card-theme-purple:hover {
       border-color: #C084FC;
-      box-shadow: 0 4px 16px rgba(168, 85, 247, 0.35);
+      box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
     }
 
     /* 2. Blue / Emerald: Paid / Closed (4/4) */
@@ -702,108 +717,106 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
 
     .card-category {
       font-size: 0.62rem;
-      font-weight: 700;
-      background: rgba(56, 189, 248, 0.15);
-      color: #38BDF8;
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #94A3B8;
+      background: rgba(15, 23, 42, 0.6);
       padding: 0.1rem 0.35rem;
       border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    /* Player mini chips inside matrix card */
     .card-players {
       display: flex;
       flex-direction: column;
       gap: 0.2rem;
-      margin: 0.25rem 0;
-      max-height: 85px;
-      overflow-y: auto;
+      margin: 0.35rem 0;
     }
 
     .card-player-item {
+      font-size: 0.7rem;
+      color: #E2E8F0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 4px;
+      background: rgba(15, 23, 42, 0.5);
       padding: 0.15rem 0.35rem;
-      font-size: 0.68rem;
+      border-radius: 4px;
     }
 
     .btn-card-drop {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.25);
+      border: 1px solid rgba(239, 68, 68, 0.5);
       color: #FCA5A5;
       font-size: 0.6rem;
+      padding: 0.05rem 0.25rem;
       border-radius: 3px;
-      padding: 0.05rem 0.3rem;
       cursor: pointer;
-      font-weight: 700;
-      transition: all 0.15s;
+      line-height: 1;
     }
     .btn-card-drop:hover {
-      background: #EF4444;
-      color: white;
+      background: rgba(239, 68, 68, 0.5);
+      color: #FFFFFF;
     }
 
     .card-footer {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-top: 0.25rem;
-      padding-top: 0.25rem;
+      align-items: flex-end;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 0.35rem;
+      margin-top: 0.35rem;
     }
 
     .card-price {
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 800;
-      color: #38BDF8;
+      color: #FFFFFF;
     }
+
     .card-price-sub {
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       color: #94A3B8;
       display: block;
     }
 
-    .btn-card-action {
-      background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
-      color: white;
-      border: none;
-      padding: 0.22rem 0.55rem;
-      border-radius: 5px;
-      font-size: 0.68rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-card-action:hover {
-      background: linear-gradient(135deg, #0369A1 0%, #075985 100%);
-    }
-
     .btn-card-reserve {
-      background: linear-gradient(135deg, #059669 0%, #0D9488 100%);
-      color: white;
-      border: none;
-      padding: 0.22rem 0.55rem;
-      border-radius: 5px;
-      font-size: 0.68rem;
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #38BDF8;
+      font-size: 0.65rem;
       font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
       cursor: pointer;
       transition: all 0.2s;
     }
     .btn-card-reserve:hover {
-      background: linear-gradient(135deg, #047857 0%, #0F766E 100%);
+      background: #0284C7;
+      color: #FFFFFF;
+    }
+
+    .btn-card-action {
+      background: rgba(245, 158, 11, 0.25);
+      border: 1px solid rgba(245, 158, 11, 0.6);
+      color: #FCD34D;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-card-action:hover {
+      background: #D97706;
+      color: #FFFFFF;
     }
 
     .card-full-badge {
       font-size: 0.65rem;
+      color: #6EE7B7;
       font-weight: 700;
-      color: #10B981;
     }
 
-    /* Sidebar Components */
+    /* Sidebar */
     .sidebar {
       display: flex;
       flex-direction: column;
@@ -814,20 +827,50 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       background-color: #111827;
       border: 1px solid #1E293B;
       border-radius: 12px;
-      padding: 1.15rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      padding: 1.25rem;
     }
 
     .sidebar-title {
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: #FFFFFF;
-      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #F1F5F9;
+      margin-bottom: 0.85rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid #1E293B;
+      padding-bottom: 0.5rem;
     }
 
+    .metric-box {
+      background-color: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+    .metric-box:last-child {
+      margin-bottom: 0;
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: #94A3B8;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .metric-number {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #38BDF8;
+      font-family: ui-monospace, monospace;
+    }
+
+    /* WhatsApp Textarea & Button */
     .wa-textarea {
       width: 100%;
       height: 120px;
@@ -835,133 +878,88 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       border: 1px solid #1E293B;
       border-radius: 8px;
       color: #F1F5F9;
-      padding: 0.6rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.72rem;
+      padding: 0.65rem;
+      font-size: 0.75rem;
       resize: vertical;
-      outline: none;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.65rem;
+      font-family: ui-monospace, monospace;
     }
-
     .wa-textarea:focus {
       border-color: #10B981;
+      outline: none;
     }
 
     .btn-wa {
       width: 100%;
-      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
-      color: white;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #FFFFFF;
       border: none;
-      padding: 0.6rem;
+      padding: 0.65rem;
       border-radius: 8px;
-      font-weight: 700;
       font-size: 0.8rem;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       gap: 0.4rem;
+      box-shadow: 0 2px 10px rgba(5, 150, 105, 0.3);
       transition: all 0.2s;
     }
-
     .btn-wa:hover {
-      background: linear-gradient(135deg, #047857 0%, #059669 100%);
+      filter: brightness(1.15);
     }
 
     .wa-result-box {
-      margin-top: 0.65rem;
-      background: #0B0F19;
-      border: 1px solid #065F46;
-      border-radius: 8px;
-      padding: 0.65rem;
-      font-size: 0.7rem;
-      color: #A7F3D0;
-      white-space: pre-wrap;
-      font-family: monospace;
-      max-height: 180px;
-      overflow-y: auto;
-    }
-
-    .metric-box {
+      margin-top: 0.75rem;
       background-color: #0B0F19;
       border: 1px solid #1E293B;
       border-radius: 8px;
-      padding: 0.75rem;
-      margin-bottom: 0.65rem;
-    }
-
-    .metric-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.72rem;
-      color: #94A3B8;
-      margin-bottom: 0.25rem;
-    }
-
-    .metric-number {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: #FFFFFF;
-      letter-spacing: -0.02em;
-    }
-
-    .active-hold-item {
-      background: #0B0F19;
-      border: 1px solid #B45309;
-      border-radius: 8px;
       padding: 0.65rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .btn-simulate {
-      width: 100%;
-      background: #1E293B;
-      color: #10B981;
-      border: 1px solid #059669;
-      padding: 0.35rem;
-      border-radius: 6px;
       font-size: 0.7rem;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 0.35rem;
-      transition: all 0.2s;
+      color: #94A3B8;
+      white-space: pre-wrap;
+      max-height: 140px;
+      overflow-y: auto;
     }
 
-    .btn-simulate:hover {
-      background: #065F46;
-      color: white;
-    }
-
+    /* Event Feed */
     .event-feed {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      max-height: 220px;
+      max-height: 240px;
       overflow-y: auto;
     }
 
     .event-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.6rem;
       font-size: 0.72rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid #1E293B;
+      color: #94A3B8;
+      padding: 0.45rem 0.6rem;
+      background-color: #0B0F19;
+      border-radius: 6px;
+      border-left: 3px solid #0284C7;
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-start;
     }
 
     .event-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #38BDF8;
-      margin-top: 0.3rem;
+      background-color: #38BDF8;
+      margin-top: 4px;
       flex-shrink: 0;
     }
 
-    /* Modal Backdrop and Box */
+    /* Modals */
     .modal-backdrop {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(4px);
       display: none;
@@ -969,65 +967,68 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       justify-content: center;
       z-index: 100;
     }
-
-    .modal-backdrop.open {
+    .modal-backdrop.active {
       display: flex;
     }
 
     .modal-box {
-      background-color: #111827;
+      background: #111827;
       border: 1px solid #1E293B;
       border-radius: 12px;
-      width: 90%;
-      max-width: 480px;
       padding: 1.5rem;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #1E293B;
+      padding-bottom: 0.6rem;
     }
 
     .modal-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #FFFFFF;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #F1F5F9;
     }
 
     .btn-close {
       background: transparent;
       border: none;
-      color: #94A3B8;
-      font-size: 1.25rem;
+      color: #64748B;
+      font-size: 1.1rem;
       cursor: pointer;
+    }
+    .btn-close:hover {
+      color: #F1F5F9;
     }
 
     .form-group {
-      margin-bottom: 1rem;
+      margin-bottom: 0.85rem;
     }
 
     .form-label {
       display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #CBD5E1;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94A3B8;
       margin-bottom: 0.35rem;
     }
 
     .form-control {
       width: 100%;
-      background-color: #0B0F19;
+      background: #0B0F19;
       border: 1px solid #1E293B;
-      border-radius: 8px;
+      border-radius: 6px;
       color: #F1F5F9;
-      padding: 0.55rem 0.75rem;
-      font-size: 0.8rem;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.78rem;
       outline: none;
     }
-
     .form-control:focus {
       border-color: #38BDF8;
     }
@@ -1035,23 +1036,29 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     .btn-submit {
       width: 100%;
       background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
-      color: white;
+      color: #FFFFFF;
       border: none;
       padding: 0.65rem;
       border-radius: 8px;
+      font-size: 0.8rem;
       font-weight: 700;
-      font-size: 0.85rem;
       cursor: pointer;
       margin-top: 0.5rem;
+      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35);
+    }
+    .btn-submit:hover {
+      filter: brightness(1.15);
     }
 
-    /* Yield Info Callout inside Modal */
-    .yield-callout {
-      background: #0B0F19;
-      border: 1px solid #1E293B;
-      border-radius: 8px;
-      padding: 0.85rem;
-      margin-bottom: 1rem;
+    /* Pro Placeholders */
+    .pro-badge {
+      background: linear-gradient(135deg, #A855F7 0%, #6366F1 100%);
+      color: #FFFFFF;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
     }
   </style>
 </head>
@@ -1080,109 +1087,151 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="main-container">
+  <!-- Modular Navigation Bar -->
+  <nav class="modular-nav-bar">
+    <button class="nav-tab active" id="tab-matrix" onclick="switchMainView('view-matrix')">
+      📅 Matriz Calendario
+    </button>
+    <button class="nav-tab" id="tab-radar" onclick="switchMainView('view-radar')">
+      📈 Radar Precios
+    </button>
+    <button class="nav-tab" id="tab-crm" onclick="switchMainView('view-crm')">
+      👥 CRM Jugadores
+    </button>
+    <button class="nav-tab" id="tab-indicators" onclick="switchMainView('view-indicators')">
+      📊 Indicadores
+    </button>
+    <button class="nav-tab" id="tab-config" onclick="switchMainView('view-config')">
+      ⚙️ Config Club
+    </button>
+    <button class="nav-tab" id="tab-yield" onclick="switchMainView('view-yield')">
+      💡 Yield & Eventos
+    </button>
+  </nav>
 
-    <!-- Columna Izquierda: Calendario Tipo Matriz de 5 Canchas -->
-    <section>
-      
-      <!-- Toolbar Multi-Día, Zoom y Filtros -->
-      <div class="toolbar-container">
+  <!-- ======================================================== -->
+  <!-- VISTA 1: 📅 MATRIZ CALENDARIO (OPERACIÓN EN TIEMPO REAL) -->
+  <!-- ======================================================== -->
+  <div id="view-matrix" class="modular-view">
+    <main class="main-container">
+
+      <!-- Columna Izquierda: Calendario Tipo Matriz de 5 Canchas -->
+      <section>
         
-        <!-- Fila 1: Selector de Fecha y Botón Sembrar 7 Días -->
-        <div class="toolbar-row">
-          <div class="date-nav-group">
-            <span class="filter-label">Fecha:</span>
-            <div class="pill-group">
-              <button onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="date-pill" title="Ver ayer">◀ Ayer</button>
-              <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">● Hoy</button>
-              <button onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="date-pill" title="Ver mañana">Mañana ▶</button>
-            </div>
-            <input type="date" id="date-picker" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha libre" />
-            <span id="current-date-label" class="current-date-badge">📅 Hoy</span>
-          </div>
-
-          <!-- Botón de Sembrar Turnos 5 Canchas (7 Días) -->
-          <button onclick="seedFiveCourts()" id="btn-seed-courts" class="btn-seed" title="Poblar los próximos 7 días para las 5 canchas en bloques de 90 min">
-            🌱 + Sembrar Turnos (7 Días / 5 Canchas)
-          </button>
-        </div>
-
-        <!-- Fila 2: Franjas Horarias, Zoom Cancha y Filtros de Estado -->
-        <div class="toolbar-row">
+        <!-- Toolbar Multi-Día, Zoom y Filtros -->
+        <div class="toolbar-container">
           
-          <!-- Filtro Franjas Horarias -->
-          <div class="filter-group">
-            <span class="filter-label">Franja Horaria:</span>
-            <div class="pill-group">
-              <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="filter-pill active" title="Ver toda la jornada (06:00 a 24:00)">Todas</button>
-              <button onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="filter-pill" title="Ver jornada de la mañana">Mañana (&lt;12pm)</button>
-              <button onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="filter-pill" title="Ver jornada de la tarde">Tarde (12pm-6pm)</button>
-              <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="filter-pill" title="Ver jornada nocturna">Noche (&gt;6pm)</button>
+          <!-- Fila 1: Selector de Fecha, Torneo Americano, Difusión y Sembrado -->
+          <div class="toolbar-row">
+            <div class="date-nav-group">
+              <span class="filter-label">Fecha:</span>
+              <div class="pill-group">
+                <button onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="date-pill" title="Ver ayer">◀ Ayer</button>
+                <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">● Hoy</button>
+                <button onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="date-pill" title="Ver mañana">Mañana ▶</button>
+              </div>
+              <input type="date" id="date-picker" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha libre" />
+              <span id="current-date-label" class="current-date-badge">📅 Hoy</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <!-- Botón Crear Torneo Americano -->
+              <button onclick="openCreateAmericanoModal()" id="btn-create-americano" class="btn-seed" style="background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%); box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);" title="Crear Torneo Americano multi-pista (2h, 2.5h, 3h)">
+                🏆 + Crear Americano
+              </button>
+
+              <!-- Botón Difundir Disponibilidad en WhatsApp -->
+              <button onclick="broadcastAvailability()" id="btn-broadcast-avail" class="btn-seed" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);" title="Enviar resumen de turnos libres del día al grupo de WhatsApp">
+                📢 Difundir Disponibilidad
+              </button>
+
+              <!-- Botón Remate Canchas Críticas -->
+              <button onclick="broadcastPromoUrgent()" id="btn-broadcast-promo" class="btn-seed" style="background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%); box-shadow: 0 2px 8px rgba(225, 29, 72, 0.4);" title="Remate Flash de turnos críticos vacíos (< 3h) con -25% de descuento">
+                ⚡ Remate Flash
+              </button>
+
+              <!-- Botón de Sembrar Turnos 5 Canchas (7 Días) -->
+              <button onclick="seedFiveCourts()" id="btn-seed-courts" class="btn-seed" title="Poblar los próximos 7 días para las 5 canchas en bloques de 90 min">
+                🌱 + Sembrar Turnos (7 Días)
+              </button>
             </div>
           </div>
 
-          <div class="filter-group">
-            <span class="filter-label">Zoom Cancha:</span>
-            <select id="court-zoom-select" onchange="setCourtZoom(this.value)" class="select-control">
-              <option value="ALL">🏟️ Todas las Canchas (1-5)</option>
-            </select>
+          <!-- Fila 2: Franjas Horarias, Zoom Cancha y Filtros de Estado -->
+          <div class="toolbar-row">
+            
+            <!-- Filtro Franjas Horarias -->
+            <div class="filter-group">
+              <span class="filter-label">Franja Horaria:</span>
+              <div class="pill-group">
+                <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="filter-pill active" title="Ver toda la jornada (06:00 a 24:00)">Todas</button>
+                <button onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="filter-pill" title="Ver jornada de la mañana">Mañana (&lt;12pm)</button>
+                <button onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="filter-pill" title="Ver jornada de la tarde">Tarde (12pm-6pm)</button>
+                <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="filter-pill" title="Ver jornada nocturna">Noche (&gt;6pm)</button>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <span class="filter-label">Zoom Cancha:</span>
+              <select id="court-zoom-select" onchange="setCourtZoom(this.value)" class="select-control">
+                <option value="ALL">🏟️ Todas las Canchas (1-5)</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <span class="filter-label">Estado:</span>
+              <div class="pill-group">
+                <button onclick="setStatusFilter('ALL')" id="btn-status-all" class="filter-pill active">Todos</button>
+                <button onclick="setStatusFilter('OPEN')" id="btn-status-open" class="filter-pill">Abiertos (1-3)</button>
+                <button onclick="setStatusFilter('PAID')" id="btn-status-paid" class="filter-pill">Pagados</button>
+              </div>
+            </div>
+
           </div>
 
-          <div class="filter-group">
-            <span class="filter-label">Estado:</span>
-            <div class="pill-group">
-              <button onclick="setStatusFilter('ALL')" id="btn-status-all" class="filter-pill active">Todos</button>
-              <button onclick="setStatusFilter('OPEN')" id="btn-status-open" class="filter-pill">Abiertos (1-3)</button>
-              <button onclick="setStatusFilter('PAID')" id="btn-status-paid" class="filter-pill">Pagados</button>
+        </div>
+
+        <!-- Título de Sección y Leyenda Visual -->
+        <div class="section-title">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span>📅 Matriz Calendario Operativo (5 Canchas)</span>
+            <span id="slots-count" style="font-size: 0.75rem; color: #38BDF8; font-weight: 600; background: rgba(56,189,248,0.1); padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid rgba(56,189,248,0.25);">Cargando...</span>
+          </div>
+          
+          <div class="calendar-legend">
+            <span class="legend-item"><span class="legend-box emerald"></span> Pagado / Cerrado (4/4)</span>
+            <span class="legend-item"><span class="legend-box amber"></span> Abierto (1-3)</span>
+            <span class="legend-item"><span class="legend-box cyan"></span> 🎾 Clase / Academia</span>
+            <span class="legend-item"><span class="legend-box purple"></span> 🏆 Americano / Torneo</span>
+            <span class="legend-item"><span class="legend-box gray"></span> Disponible (Click para Reservar)</span>
+          </div>
+        </div>
+
+        <!-- Contenedor Matriz Calendario con Franjas Horarias -->
+        <div class="calendar-wrapper" id="calendar-wrapper">
+          <div id="calendar-matrix" class="calendar-matrix">
+            <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: #64748B;">
+              Cargando matriz de 5 canchas desde FastAPI...
             </div>
           </div>
-
         </div>
 
-      </div>
+      </section>
 
-      <!-- Título de Sección y Leyenda Visual -->
-      <div class="section-title">
-        <div style="display: flex; align-items: center; gap: 0.6rem;">
-          <span>📅 Matriz Calendario Operativo (Bloques 90 min)</span>
-          <span id="slots-count" style="font-size: 0.75rem; color: #38BDF8; font-weight: 600; background: rgba(56,189,248,0.1); padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid rgba(56,189,248,0.25);">Cargando...</span>
-        </div>
-        
-        <div class="calendar-legend">
-          <span class="legend-item"><span class="legend-box emerald"></span> Pagado / Cerrado (4/4)</span>
-          <span class="legend-item"><span class="legend-box amber"></span> Abierto (1-3)</span>
-          <span class="legend-item"><span class="legend-box cyan"></span> 🎾 Clase / Academia</span>
-          <span class="legend-item"><span class="legend-box purple"></span> Americano / Torneo</span>
-          <span class="legend-item"><span class="legend-box gray"></span> Disponible (Click para Reservar)</span>
-        </div>
-      </div>
+      <!-- Columna Derecha: Métricas, WhatsApp Parser & Bajas -->
+      <aside class="sidebar">
 
-      <!-- Contenedor Matriz Calendario con Franjas Horarias -->
-      <div class="calendar-wrapper" id="calendar-wrapper">
-        <div id="calendar-matrix" class="calendar-matrix">
-          <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: #64748B;">
-            Cargando matriz de 5 canchas desde FastAPI...
+        <!-- Card 1: Parser WhatsApp de Convocatorias -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <span>📲 Parser WhatsApp</span>
+            <span style="color: #10B981; font-size: 0.7rem;">Convocatorias</span>
           </div>
-        </div>
-      </div>
+          <p style="font-size: 0.72rem; color: #94A3B8; margin-bottom: 0.4rem;">
+            Pega el texto de WhatsApp para parsear jugadores con 🎾 e identidad canónica:
+          </p>
 
-    </section>
-
-    <!-- Columna Derecha: Métricas, WhatsApp Parser & Bajas -->
-    <aside class="sidebar">
-
-      <!-- Card 1: Parser WhatsApp de Convocatorias -->
-      <div class="sidebar-card">
-        <div class="sidebar-title">
-          <span>📲 Parser WhatsApp</span>
-          <span style="color: #10B981; font-size: 0.7rem;">Convocatorias</span>
-        </div>
-        <p style="font-size: 0.72rem; color: #94A3B8; margin-bottom: 0.4rem;">
-          Pega el texto de WhatsApp para parsear jugadores con 🎾 e identidad canónica:
-        </p>
-
-        <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 07 SEPTIEMBRE
+          <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 07 SEPTIEMBRE
 Categoría: 4ta
 ⌚6:00pm - 7:30pm
 📍Bogotá Pádel Center
@@ -1193,112 +1242,481 @@ Categoría: 4ta
 🎾 Jose G
 PARTIDO CERRADO</textarea>
 
-        <div class="form-group" style="margin-bottom: 0.5rem;">
-          <input type="tel" id="wa-sender-phone" placeholder="Teléfono remitente (ej: +573001234567)" class="form-control" style="font-size: 0.75rem; padding: 0.4rem 0.6rem;">
-        </div>
-
-        <button onclick="parseWhatsApp()" class="btn-wa">
-          🚀 Sincronizar Convocatoria
-        </button>
-
-        <div id="wa-result" style="display: none;" class="wa-result-box"></div>
-      </div>
-
-      <!-- Card 2: Métricas del Día -->
-      <div class="sidebar-card">
-        <div class="sidebar-title">
-          <span>Métricas Operativas</span>
-          <span style="color: #10B981; font-size: 0.75rem;">● En Vivo</span>
-        </div>
-
-        <div class="metric-box">
-          <div class="metric-header">
-            <span>Ingresos del Día</span>
-            <span style="color: #38BDF8;">Confirmado</span>
+          <div class="form-group" style="margin-bottom: 0.5rem;">
+            <input type="tel" id="wa-sender-phone" placeholder="Teléfono remitente (ej: +573001234567)" class="form-control" style="font-size: 0.75rem; padding: 0.4rem 0.6rem;">
           </div>
-          <div id="metric-revenue" class="metric-number">$0</div>
-          <div style="font-size: 0.7rem; color: #64748B;">COP (Acumulado día consultado)</div>
+
+          <button onclick="parseWhatsApp()" class="btn-wa">
+            🚀 Sincronizar Convocatoria
+          </button>
+
+          <div id="wa-result" style="display: none;" class="wa-result-box"></div>
         </div>
 
-        <div class="metric-box">
-          <div class="metric-header">
-            <span>RevPAST Estimado</span>
-            <span style="color: #10B981;">Meta: $1.5M</span>
+        <!-- Card 2: Métricas del Día -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <span>Métricas Operativas</span>
+            <span style="color: #10B981; font-size: 0.75rem;">● En Vivo</span>
           </div>
-          <div style="font-size: 1.3rem; font-weight: 800; color: #FFFFFF;">$1.200.000 COP</div>
-          <div class="progress-track" style="background: #1E293B; height: 6px; border-radius: 999px; overflow: hidden; margin-top: 0.4rem;">
-            <div class="progress-fill" style="width: 78%; background: #10B981; height: 100%;"></div>
+
+          <div class="metric-box">
+            <div class="metric-header">
+              <span>Ingresos del Día</span>
+              <span style="color: #38BDF8;">Confirmado</span>
+            </div>
+            <div id="metric-revenue" class="metric-number">$0</div>
+            <div style="font-size: 0.7rem; color: #64748B;">COP (Acumulado día consultado)</div>
           </div>
-        </div>
-      </div>
 
-      <!-- Card 3: Holds Activos -->
-      <div class="sidebar-card">
-        <div class="sidebar-title">
-          <span>Holds Activos</span>
-          <span style="color: #FBBF24; font-size: 0.7rem;">Bold / Wompi</span>
-        </div>
-
-        <div id="active-holds-container">
-          <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.75rem; text-align: center; font-size: 0.72rem; color: #64748B;">
-            No hay holds activos en este momento.
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 4: Eventos Recientes -->
-      <div class="sidebar-card">
-        <div class="sidebar-title">
-          <span>Eventos Recientes</span>
-          <span style="color: #94A3B8; font-size: 0.7rem;">Auditoría</span>
-        </div>
-
-        <div id="event-feed" class="event-feed">
-          <div class="event-item">
-            <div class="event-dot"></div>
-            <div>
-              <div style="font-weight: 600; color: #F1F5F9;">Sistema Inicializado</div>
-              <div style="color: #64748B; font-size: 0.68rem;">Capital Pádel Club (Matriz 5 Canchas Activa)</div>
+          <div class="metric-box">
+            <div class="metric-header">
+              <span>RevPAST Estimado</span>
+              <span style="color: #10B981;">Meta: $1.5M</span>
+            </div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: #FFFFFF;">$1.200.000 COP</div>
+            <div class="progress-track" style="background: #1E293B; height: 6px; border-radius: 999px; overflow: hidden; margin-top: 0.4rem;">
+              <div class="progress-fill" style="width: 78%; background: #10B981; height: 100%;"></div>
             </div>
           </div>
         </div>
-      </div>
 
-    </aside>
+        <!-- Card 3: Holds Activos -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <span>Holds Activos</span>
+            <span style="color: #FBBF24; font-size: 0.7rem;">Bold / Wompi</span>
+          </div>
 
-  </main>
-
-  <!-- Modal Interactivo para Crear Reserva / Bloqueo con Yield Management -->
-  <div id="reserve-block-modal" class="modal-backdrop">
-    <div class="modal-box">
-      <div class="modal-header">
-        <div>
-          <div class="modal-title">⚡ Modal de Reserva Counter & Yield</div>
-          <div id="rb-modal-slot-desc" style="font-size: 0.75rem; color: #94A3B8; margin-top: 0.2rem;">Cargando detalles del turno...</div>
+          <div id="active-holds-container">
+            <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.75rem; text-align: center; font-size: 0.72rem; color: #64748B;">
+              No hay holds activos en este momento.
+            </div>
+          </div>
         </div>
-        <button onclick="closeReserveOrBlockModal()" class="btn-close">✕</button>
+
+        <!-- Card 4: Eventos Recientes -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <span>Eventos Recientes</span>
+            <span style="color: #38BDF8; font-size: 0.7rem;">Audit Log</span>
+          </div>
+
+          <div id="event-feed" class="event-feed">
+            <div class="event-item">
+              <div class="event-dot"></div>
+              <div>
+                <div style="font-weight: 600; color: #F1F5F9;">Sistema Inicializado</div>
+                <div style="color: #64748B; font-size: 0.68rem;">YieldPadel v3.0 listo • Modo Recepción</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+    </main>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- VISTA 2: ⚙️ CONFIG CLUB (PANEL FUNCIONAL INTERACTIVO)    -->
+  <!-- ======================================================== -->
+  <div id="view-config" class="modular-view" style="display: none; padding: 1.5rem 2rem;">
+    <div style="max-width: 1050px; margin: 0 auto;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #F1F5F9; display: flex; align-items: center; gap: 0.5rem;">
+            <span>⚙️</span> Parámetros Operativos del Club & Motor Yield
+          </h2>
+          <p style="font-size: 0.8rem; color: #94A3B8; margin-top: 0.25rem;">
+            Ajusta los parámetros base de las 5 canchas, tarifas Valle/Pico, pisos de seguridad y tiempos de gracia.
+          </p>
+        </div>
+        <button onclick="saveClubConfig()" id="btn-save-club-config" class="btn-seed" style="background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); padding: 0.6rem 1.25rem; font-size: 0.85rem;">
+          💾 Guardar Configuración
+        </button>
       </div>
 
-      <form id="reserve-block-form" onsubmit="handleReserveOrBlockSubmit(event)">
-        <input type="hidden" id="rb-slot-id">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+        
+        <!-- Card 1: Pistas del Club -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <span>🏟️ Gestión de Pistas (5 Canchas)</span>
+            <span style="color: #38BDF8; font-size: 0.72rem; font-weight: 700;">Capacidad: 5</span>
+          </div>
+          <p style="font-size: 0.72rem; color: #94A3B8; margin-bottom: 0.85rem;">
+            Personaliza el nombre y estado operativo de cada pista del complejo:
+          </p>
+          <div id="config-courts-list" style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <div style="color: #64748B; font-size: 0.75rem;">Cargando pistas...</div>
+          </div>
+        </div>
 
-        <!-- Callout de Recomendación Yield -->
-        <div class="yield-callout" id="rb-yield-box">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-            <span style="font-size: 0.72rem; color: #94A3B8; text-transform: uppercase; font-weight: 700;">Recomendación Yield</span>
-            <span id="rb-yield-badge" class="badge-yield-tier tier-valle">🌿 VALLE</span>
+        <!-- Card 2: Tarifas Dinámicas y Yield -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <span>💰 Tarifas Base & Pisos de Seguridad</span>
+            <span style="color: #10B981; font-size: 0.72rem; font-weight: 700;">Algoritmo Yield</span>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: baseline;">
-            <div id="rb-yield-price-display" style="font-size: 1.25rem; font-weight: 800; color: #38BDF8;">$80.000 COP</div>
-            <div id="rb-yield-promo-tag" style="display: none;" class="badge-yield-promo">⚡ LAST-MINUTE PROMO (-25%)</div>
+          
+          <div class="form-group">
+            <label class="form-label">Tarifa Base Franja Valle (&lt; 18:00) ($ COP)</label>
+            <input type="number" id="cfg-base-valle" class="form-control" value="80000" step="5000" style="font-weight: 700; color: #34D399;">
+            <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.2rem;">Tarifa completa 90 min ($20.000 COP por jugador).</p>
           </div>
-          <div id="rb-yield-explanation" style="font-size: 0.68rem; color: #94A3B8; margin-top: 0.35rem; line-height: 1.3;">
-            Tarifa dinámica sugerida según ocupación y proximidad horaria.
+
+          <div class="form-group">
+            <label class="form-label">Tarifa Base Franja Pico (≥ 18:00 o Fin de Semana) ($ COP)</label>
+            <input type="number" id="cfg-base-pico" class="form-control" value="120000" step="5000" style="font-weight: 700; color: #F87171;">
+            <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.2rem;">Tarifa completa 90 min ($30.000 COP por jugador).</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Piso Mínimo de Seguridad (Tarifa Suelo) ($ COP)</label>
+            <input type="number" id="cfg-floor-price" class="form-control" value="60000" step="5000" style="font-weight: 700; color: #38BDF8;">
+            <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.2rem;">Ningún descuento dinámico bajará por debajo de esta cifra.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descuento Last-Minute Promo Flash (%)</label>
+            <input type="number" id="cfg-discount-pct" class="form-control" value="25" min="5" max="50" style="font-weight: 700; color: #FBBF24;">
+            <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.2rem;">Aplicado cuando faltan &lt; 3 horas para el turno disponible.</p>
+          </div>
+        </div>
+
+        <!-- Card 3: Políticas de Cancelación y Tiempos de Gracia -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <span>⚖️ Políticas de Bajas & Cancelaciones</span>
+            <span style="color: #F59E0B; font-size: 0.72rem; font-weight: 700;">Control Anti-No-Show</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tiempo de Gracia de Cancelación (Minutos)</label>
+            <input type="number" id="cfg-cancel-grace" class="form-control" value="30" min="10" max="180">
+            <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.2rem;">
+              Cancelaciones a menos de 30 min registran falta y no reembolsan a menos que se re-venda el cupo.
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tiempo de Gracia tras Confirmación (Minutos)</label>
+            <input type="number" id="cfg-confirm-grace" class="form-control" value="10" min="2" max="30">
+            <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.2rem;">
+              Permite baja sin penalidad si el turno se llenó (4/4) hace menos de 10 min (comprensión de agenda).
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Teléfono o Grupo Oficial de Difusión WhatsApp</label>
+            <input type="text" id="cfg-whatsapp-group" class="form-control" value="573130000000" style="font-family: ui-monospace, monospace;">
+            <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.2rem;">
+              Destino predeterminado de los botones de difusión masiva y remate flash.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- VISTA 3: 📈 RADAR PRECIOS (BENCHMARK COMPETITIVO EN VIVO) -->
+  <!-- ======================================================== -->
+  <div id="view-radar" class="modular-view" style="display: none; padding: 1.5rem 2rem;">
+    <div style="max-width: 1050px; margin: 0 auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #F1F5F9; display: flex; align-items: center; gap: 0.5rem;">
+            <span>📈</span> Radar de Precios & Benchmark Competitivo
+          </h2>
+          <p style="font-size: 0.8rem; color: #94A3B8; margin-top: 0.25rem;">
+            Monitoreo en tiempo real vs SportSpace, PadelZone y clubes de la zona norte de Bogotá.
+          </p>
+        </div>
+        <span class="pro-badge">PRO RADAR V2.4</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+        <div class="sidebar-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #38BDF8;">⚡ Capital Pádel Club (Nosotros)</span>
+            <span style="background: rgba(16,185,129,0.2); color: #34D399; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px;">ÓPTIMO</span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #FFFFFF;">$120.000 <span style="font-size: 0.75rem; color: #94A3B8;">COP / Pico</span></div>
+          <div style="font-size: 0.75rem; color: #64748B; margin-top: 0.25rem;">Valle: $80.000 COP • Ocupación proyectada: 88.4%</div>
+        </div>
+
+        <div class="sidebar-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #F87171;">🥊 SportSpace Pádel</span>
+            <span style="background: rgba(239,68,68,0.2); color: #F87171; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px;">+8.3% MÁS CARO</span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #FFFFFF;">$130.000 <span style="font-size: 0.75rem; color: #94A3B8;">COP / Pico</span></div>
+          <div style="font-size: 0.75rem; color: #64748B; margin-top: 0.25rem;">Valle: $90.000 COP • Sin remates last-minute automatizados</div>
+        </div>
+
+        <div class="sidebar-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #FBBF24;">📍 PadelZone Bogotá</span>
+            <span style="background: rgba(245,158,11,0.2); color: #FBBF24; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px;">PARIDAD</span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #FFFFFF;">$125.000 <span style="font-size: 0.75rem; color: #94A3B8;">COP / Pico</span></div>
+          <div style="font-size: 0.75rem; color: #64748B; margin-top: 0.25rem;">Valle: $85.000 COP • Cobro manual por transferencia</div>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-title">
+          <span>Curva de Demanda Semanal & Oportunidad de Yield</span>
+          <span style="color: #38BDF8; font-size: 0.75rem;">Algoritmo Predictivo</span>
+        </div>
+        <p style="font-size: 0.78rem; color: #94A3B8; line-height: 1.5; margin-bottom: 1rem;">
+          La mayor elasticidad de precio se concentra entre las <strong>18:00 y las 22:00</strong> de Lunes a Jueves, y Sábados en la mañana (08:00 a 12:30). Las franjas de 12:00m a 16:30m presentan una elasticidad alta: la regla promo <em>-25% Flash</em> acelera la conversión en un <strong>64%</strong> mediante el canal WhatsApp.
+        </p>
+        <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 1rem; text-align: center; color: #64748B; font-size: 0.75rem;">
+          📊 Curva de Elasticidad Horaria y Monitor de Canibalización activo.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- VISTA 4: 👥 CRM JUGADORES (SCORING & HISTORIAL)          -->
+  <!-- ======================================================== -->
+  <div id="view-crm" class="modular-view" style="display: none; padding: 1.5rem 2rem;">
+    <div style="max-width: 1050px; margin: 0 auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #F1F5F9; display: flex; align-items: center; gap: 0.5rem;">
+            <span>👥</span> CRM de Jugadores & Scoring de Fiabilidad
+          </h2>
+          <p style="font-size: 0.8rem; color: #94A3B8; margin-top: 0.25rem;">
+            Historial de asistencia, tasa de bajas tardías y categorización de miembros.
+          </p>
+        </div>
+        <span class="pro-badge">CRM ACTIVO</span>
+      </div>
+
+      <div class="sidebar-card" style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid #334155; color: #94A3B8;">
+              <th style="padding: 0.6rem 0.75rem;">JUGADOR</th>
+              <th style="padding: 0.6rem 0.75rem;">TELÉFONO</th>
+              <th style="padding: 0.6rem 0.75rem;">TIER</th>
+              <th style="padding: 0.6rem 0.75rem;">PARTIDOS</th>
+              <th style="padding: 0.6rem 0.75rem;">PUNTUALIDAD</th>
+              <th style="padding: 0.6rem 0.75rem;">INCIDENCIAS</th>
+              <th style="padding: 0.6rem 0.75rem; text-align: right;">ESTADO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #1E293B;">
+              <td style="padding: 0.65rem 0.75rem; font-weight: 700; color: #F1F5F9;">🎾 Juan David Rivas</td>
+              <td style="padding: 0.65rem 0.75rem; color: #94A3B8; font-family: monospace;">+57 300 ***547</td>
+              <td style="padding: 0.65rem 0.75rem;"><span style="background: rgba(245,158,11,0.2); color: #FBBF24; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px;">VIP</span></td>
+              <td style="padding: 0.65rem 0.75rem; font-weight: 700;">24</td>
+              <td style="padding: 0.65rem 0.75rem; color: #34D399; font-weight: 700;">99.2%</td>
+              <td style="padding: 0.65rem 0.75rem; color: #64748B;">0</td>
+              <td style="padding: 0.65rem 0.75rem; text-align: right;"><span style="color: #34D399; font-weight: 700;">✓ Confiable</span></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1E293B;">
+              <td style="padding: 0.65rem 0.75rem; font-weight: 700; color: #F1F5F9;">🎾 Edinson Martínez</td>
+              <td style="padding: 0.65rem 0.75rem; color: #94A3B8; font-family: monospace;">+57 312 ***892</td>
+              <td style="padding: 0.65rem 0.75rem;"><span style="background: rgba(56,189,248,0.2); color: #38BDF8; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px;">ESTÁNDAR</span></td>
+              <td style="padding: 0.65rem 0.75rem; font-weight: 700;">18</td>
+              <td style="padding: 0.65rem 0.75rem; color: #34D399; font-weight: 700;">96.5%</td>
+              <td style="padding: 0.65rem 0.75rem; color: #64748B;">0</td>
+              <td style="padding: 0.65rem 0.75rem; text-align: right;"><span style="color: #34D399; font-weight: 700;">✓ Confiable</span></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #1E293B;">
+              <td style="padding: 0.65rem 0.75rem; font-weight: 700; color: #F1F5F9;">🎾 Carlos Veloza</td>
+              <td style="padding: 0.65rem 0.75rem; color: #94A3B8; font-family: monospace;">+57 310 ***114</td>
+              <td style="padding: 0.65rem 0.75rem;"><span style="background: rgba(56,189,248,0.2); color: #38BDF8; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px;">ESTÁNDAR</span></td>
+              <td style="padding: 0.65rem 0.75rem; font-weight: 700;">12</td>
+              <td style="padding: 0.65rem 0.75rem; color: #FCD34D; font-weight: 700;">88.0%</td>
+              <td style="padding: 0.65rem 0.75rem; color: #F87171; font-weight: 700;">1 tardía</td>
+              <td style="padding: 0.65rem 0.75rem; text-align: right;"><span style="color: #FCD34D; font-weight: 700;">⚠️ Observación</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- VISTA 5: 📊 INDICADORES CLAVE (KPIS DE NEGOCIO)          -->
+  <!-- ======================================================== -->
+  <div id="view-indicators" class="modular-view" style="display: none; padding: 1.5rem 2rem;">
+    <div style="max-width: 1050px; margin: 0 auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #F1F5F9; display: flex; align-items: center; gap: 0.5rem;">
+            <span>📊</span> Cuadro de Mando Ejecutivo (KPIs)
+          </h2>
+          <p style="font-size: 0.8rem; color: #94A3B8; margin-top: 0.25rem;">
+            Rendimiento por pista, tasa de conversión WhatsApp y RevPAST mensual.
+          </p>
+        </div>
+        <span class="pro-badge">MÉTRICAS EN VIVO</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.25rem;">
+        <div class="sidebar-card">
+          <div style="font-size: 0.72rem; color: #94A3B8; font-weight: 700; text-transform: uppercase;">RevPAST Promedio</div>
+          <div style="font-size: 1.6rem; font-weight: 800; color: #38BDF8; margin: 0.35rem 0;">$1.250.000</div>
+          <div style="font-size: 0.7rem; color: #34D399; font-weight: 600;">↑ +14.2% vs mes anterior</div>
+        </div>
+
+        <div class="sidebar-card">
+          <div style="font-size: 0.72rem; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Ocupación Horario Prime</div>
+          <div style="font-size: 1.6rem; font-weight: 800; color: #10B981; margin: 0.35rem 0;">89.4%</div>
+          <div style="font-size: 0.7rem; color: #34D399; font-weight: 600;">5 Canchas activas</div>
+        </div>
+
+        <div class="sidebar-card">
+          <div style="font-size: 0.72rem; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Rescate de Bajas por Bot</div>
+          <div style="font-size: 1.6rem; font-weight: 800; color: #FBBF24; margin: 0.35rem 0;">91.8%</div>
+          <div style="font-size: 0.7rem; color: #94A3B8; font-weight: 600;">Reemplazados en &lt; 25 min</div>
+        </div>
+
+        <div class="sidebar-card">
+          <div style="font-size: 0.72rem; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Ticket Promedio Cupo</div>
+          <div style="font-size: 1.6rem; font-weight: 800; color: #C084FC; margin: 0.35rem 0;">$28.500 COP</div>
+          <div style="font-size: 0.7rem; color: #34D399; font-weight: 600;">Mezcla Valle / Pico</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- VISTA 6: 💡 YIELD & EVENTOS (CALENDARIO DE TORNEOS)      -->
+  <!-- ======================================================== -->
+  <div id="view-yield" class="modular-view" style="display: none; padding: 1.5rem 2rem;">
+    <div style="max-width: 1050px; margin: 0 auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #F1F5F9; display: flex; align-items: center; gap: 0.5rem;">
+            <span>💡</span> Motor de Yield & Calendario de Torneos Americanos
+          </h2>
+          <p style="font-size: 0.8rem; color: #94A3B8; margin-top: 0.25rem;">
+            Histórico de eventos creados, bolsas económicas premiadas y reglas de yield automatizadas.
+          </p>
+        </div>
+        <button onclick="openCreateAmericanoModal()" class="btn-seed" style="background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);">
+          🏆 + Nuevo Torneo Americano
+        </button>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-title">
+          <span>Reglas de Yield Activas en Producción</span>
+          <span style="color: #10B981; font-size: 0.75rem;">● Ejecución Continua</span>
+        </div>
+        <ul style="font-size: 0.78rem; color: #94A3B8; line-height: 1.6; padding-left: 1.25rem;">
+          <li><strong>Regla 1 (Diferencial Pico/Valle):</strong> Asignación automática de $120.000 COP para inicios ≥ 18:00 o fines de semana, y $80.000 COP para días hábiles diurnos.</li>
+          <li><strong>Regla 2 (Flash Last-Minute Promo):</strong> Todo bloque disponible con menos de 3 horas para el inicio adquiere insignia <code>⚡ PROMO -25%</code> respetando el piso de seguridad de $60.000 COP.</li>
+          <li><strong>Regla 3 (Multi-Pista Americano):</strong> Bloqueo simultáneo de 2 a 5 canchas para eventos continuos de 2h, 2.5h o 3h con premio económico garantizado.</li>
+          <li><strong>Regla 4 (Protección de Academia):</strong> Canchas de clase bloqueadas ante inscripciones espontáneas de WhatsApp informando al usuario sobre el profesor asignado.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODALES DE OPERACIÓN                                     -->
+  <!-- ======================================================== -->
+
+  <!-- Modal 1: Crear Torneo Americano Multi-Pista -->
+  <div id="modal-create-americano" class="modal-backdrop">
+    <div class="modal-box" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title" style="display: flex; align-items: center; gap: 0.5rem; color: #C084FC;">
+          <span>🏆</span> Crear Torneo Americano
+        </div>
+        <button onclick="closeCreateAmericanoModal()" class="btn-close">✕</button>
+      </div>
+
+      <form id="form-create-americano" onsubmit="handleCreateAmericanoSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Nombre del Torneo / Convocatoria</label>
+          <input type="text" id="americano-name" required value="Americano Viernes Prime" placeholder="Ej: Americano Nocturno Viernes" class="form-control" style="font-weight: 700;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Fecha del Torneo</label>
+            <input type="date" id="americano-date" required class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hora de Inicio</label>
+            <input type="time" id="americano-time" required value="18:00" class="form-control" style="font-weight: 700; color: #38BDF8;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Duración Continua</label>
+            <select id="americano-duration" class="form-control" style="background: #111827; border-color: #A855F7; font-weight: 700; color: #E9D5FF;">
+              <option value="120">2 Horas (120 min)</option>
+              <option value="150" selected>2.5 Horas (150 min)</option>
+              <option value="180">3 Horas (180 min)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Modalidad del Torneo</label>
+            <select id="americano-type" class="form-control" style="background: #111827; border-color: #A855F7; font-weight: 700; color: #E9D5FF;">
+              <option value="PAREJA_FIJA">Pareja Fija (Dúos)</option>
+              <option value="INDIVIDUAL">Individual (Rotativo)</option>
+            </select>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Tipo de Turno / Operación</label>
+          <label class="form-label">Selección de Pistas Simultáneas (Mínimo 2 pistas)</label>
+          <div id="americano-courts-checkboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.75rem;">
+            <!-- Renderizado dinámico de las pistas -->
+          </div>
+          <p style="font-size: 0.68rem; color: #94A3B8; margin-top: 0.35rem;">
+            * El sistema reemplazará los bloques de esa franja en las pistas elegidas y las marcará en púrpura.
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Precio por Jugador / Cupo ($ COP)</label>
+            <input type="number" id="americano-price" required step="1000" min="0" value="35000" class="form-control" style="font-weight: 700; color: #38BDF8;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bolsa de Premio Económico ($ COP)</label>
+            <input type="number" id="americano-prize" required step="10000" min="0" value="300000" class="form-control" style="font-weight: 700; color: #FBBF24;">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-americano" class="btn-submit" style="background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);">
+          🏆 Crear Torneo y Bloquear Pistas
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Reservar o Bloquear Turno Disponible -->
+  <div id="reserve-block-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title" id="rb-modal-title">Acción de Recepción sobre Pista</div>
+        <button onclick="closeReserveOrBlockModal()" class="btn-close">✕</button>
+      </div>
+
+      <form id="rb-form" onsubmit="handleReserveOrBlockSubmit(event)">
+        <input type="hidden" id="rb-slot-id">
+
+        <div class="form-group">
+          <label class="form-label">Tipo de Acción / Destino del Turno</label>
           <select id="rb-slot-type-select" onchange="onSlotTypeChange(this.value)" class="form-control" style="background: #111827; border-color: #38BDF8; font-weight: 700;">
             <option value="MATCH">🎾 Cancha Completa (Reserva Particular)</option>
             <option value="SPLIT_MATCH">👥 Partido Abierto (4 Cupos por Separado)</option>
@@ -1341,7 +1759,7 @@ PARTIDO CERRADO</textarea>
     </div>
   </div>
 
-  <!-- Modal Interactivo para Apartar Turno por Cupos (Hold) -->
+  <!-- Modal 3: Apartar Cupos (Hold) -->
   <div id="hold-modal" class="modal-backdrop">
     <div class="modal-box">
       <div class="modal-header">
@@ -1394,7 +1812,7 @@ PARTIDO CERRADO</textarea>
     </div>
   </div>
 
-  <!-- Modal Interactivo para Baja / Cancelación -->
+  <!-- Modal 4: Baja / Cancelación de Jugador -->
   <div id="drop-modal" class="modal-backdrop">
     <div class="modal-box">
       <div class="modal-header">
@@ -1425,7 +1843,9 @@ PARTIDO CERRADO</textarea>
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT DE CONTROL Y REACTIVIDAD                      -->
+  <!-- ======================================================== -->
   <script>
     const API_BASE = '';
     let allSlots = [];
@@ -1445,6 +1865,23 @@ PARTIDO CERRADO</textarea>
 
     let selectedDate = getLocalDateString(new Date());
 
+    // Switch Modular Views
+    function switchMainView(viewId) {
+      const views = ['view-matrix', 'view-radar', 'view-crm', 'view-indicators', 'view-config', 'view-yield'];
+      views.forEach(v => {
+        const el = document.getElementById(v);
+        if (el) el.style.display = (v === viewId) ? 'block' : 'none';
+      });
+
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      const activeTab = document.getElementById('tab-' + viewId.replace('view-', ''));
+      if (activeTab) activeTab.classList.add('active');
+
+      if (viewId === 'view-config') {
+        loadClubConfig();
+      }
+    }
+
     function setDate(dateStr) {
       if (!dateStr) return;
       selectedDate = dateStr;
@@ -1454,51 +1891,38 @@ PARTIDO CERRADO</textarea>
       refreshData();
     }
 
+    function onDateInputChange(val) {
+      if (val) setDate(val);
+    }
+
     function setRelativeDate(offsetDays) {
       const d = new Date();
       d.setDate(d.getDate() + offsetDays);
       setDate(getLocalDateString(d));
     }
 
-    function onDateInputChange(val) {
-      if (val) {
-        setDate(val);
-      }
-    }
-
     function formatDateDisplay(dateStr) {
-      const parts = dateStr.split('-');
-      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      const todayStr = getLocalDateString(new Date());
-
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = getLocalDateString(yesterday);
-
-      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = getLocalDateString(tomorrow);
-
-      let label = '';
-      if (dateStr === todayStr) label = 'Hoy • ';
-      else if (dateStr === yesterdayStr) label = 'Ayer • ';
-      else if (dateStr === tomorrowStr) label = 'Mañana • ';
-
-      const formatted = d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-      return label + formatted;
+      if (!dateStr) return '';
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const d = new Date(year, month - 1, day);
+      const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
     }
 
     function updateDateUI() {
       const todayStr = getLocalDateString(new Date());
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = getLocalDateString(yesterday);
-      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = getLocalDateString(tomorrow);
+      const tom = new Date(); tom.setDate(tom.getDate() + 1);
+      const tomorrowStr = getLocalDateString(tom);
+      const yest = new Date(); yest.setDate(yest.getDate() - 1);
+      const yesterdayStr = getLocalDateString(yest);
 
-      const btnYesterday = document.getElementById('btn-date-yesterday');
+      const btnYest = document.getElementById('btn-date-yesterday');
       const btnToday = document.getElementById('btn-date-today');
       const btnTomorrow = document.getElementById('btn-date-tomorrow');
       const label = document.getElementById('current-date-label');
 
-      if (btnYesterday) btnYesterday.className = 'date-pill' + (selectedDate === yesterdayStr ? ' active' : '');
+      if (btnYest) btnYest.className = 'date-pill' + (selectedDate === yesterdayStr ? ' active' : '');
       if (btnToday) btnToday.className = 'date-pill' + (selectedDate === todayStr ? ' active' : '');
       if (btnTomorrow) btnTomorrow.className = 'date-pill' + (selectedDate === tomorrowStr ? ' active' : '');
       if (label) label.textContent = '📅 ' + formatDateDisplay(selectedDate);
@@ -1516,7 +1940,7 @@ PARTIDO CERRADO</textarea>
       const div = document.createElement('div');
       div.className = 'event-item';
       div.innerHTML = `
-        <div class="event-dot" style="${type === 'green' ? 'background: #10B981;' : (type === 'amber' ? 'background: #FBBF24;' : (type === 'red' ? 'background: #EF4444;' : (type === 'cyan' ? 'background: #06B6D4;' : '')))}"></div>
+        <div class="event-dot" style="${type === 'green' ? 'background: #10B981;' : (type === 'amber' ? 'background: #FBBF24;' : (type === 'red' ? 'background: #EF4444;' : (type === 'purple' ? 'background: #C084FC;' : (type === 'cyan' ? 'background: #06B6D4;' : ''))))}"></div>
         <div style="flex: 1;">
           <div style="font-weight: 600; color: #F1F5F9;">${title}</div>
           <div style="color: #64748B; font-size: 0.68rem;">${subtitle} • ${timeStr}</div>
@@ -1620,11 +2044,6 @@ PARTIDO CERRADO</textarea>
         filteredSlots = allSlots.filter(s => s.status === 'FULLY_BOOKED' || (s.booked_spots + s.held_spots) >= s.capacity);
       }
 
-      // Determine operational time range based on Time Filter
-      // ALL: 06:00 to 24:00 (360 to 1440 min, 36 half-hours)
-      // MORNING: 06:00 to 12:00 (360 to 720 min, 12 half-hours)
-      // AFTERNOON: 12:00 to 18:00 (720 to 1080 min, 12 half-hours)
-      // NIGHT: 18:00 to 24:00 (1080 to 1440 min, 12 half-hours)
       let START_MINUTES = 360;
       let END_MINUTES = 1440;
 
@@ -1709,7 +2128,7 @@ PARTIDO CERRADO</textarea>
 
         // Color coding & Categories
         const catLower = (slot.category || '').toLowerCase();
-        const isTournament = catLower.includes('americano') || catLower.includes('torneo');
+        const isTournament = slot.slot_type === 'AMERICANO' || catLower.includes('americano') || catLower.includes('torneo');
         const isClass = (slot.slot_type === 'CLASS' || slot.slot_type === 'ACADEMY');
         const isBlocked = slot.status === 'BLOCKED' || slot.slot_type === 'MAINTENANCE';
         const isFull = !isBlocked && !isClass && (slot.status === 'FULLY_BOOKED' || (slot.booked_spots + slot.held_spots) >= slot.capacity);
@@ -1727,7 +2146,8 @@ PARTIDO CERRADO</textarea>
           statusBadge = `<span class="card-badge-status badge-status-academy">🎾 CLASE / ACADEMIA</span>`;
         } else if (isTournament) {
           themeClass = 'card-theme-purple';
-          statusBadge = `<span class="card-badge-status badge-status-tournament">🏆 ${slot.category}</span>`;
+          const modLabel = slot.tournament_type === 'PAREJA_FIJA' ? 'Parejas' : (slot.tournament_type === 'INDIVIDUAL' ? 'Individual' : (slot.tournament_type || 'Americano'));
+          statusBadge = `<span class="card-badge-status badge-status-tournament">🏆 ${slot.tournament_name || 'AMERICANO'} (${modLabel})</span>`;
         } else if (isFull) {
           themeClass = 'card-theme-emerald';
           statusBadge = `<span class="card-badge-status badge-status-closed">✓ CERRADO (4/4)</span>`;
@@ -1754,9 +2174,9 @@ PARTIDO CERRADO</textarea>
           yieldBadgesHtml += `<span class="badge-yield-tier tier-valle">🌿 VALLE</span>`;
         }
 
-        const durLabel = durationMin === 60 ? '1h' : (durationMin === 90 ? '1.5h' : (durationMin === 120 ? '2h' : (durationMin / 60).toFixed(1) + 'h'));
+        const durLabel = durationMin === 60 ? '1h' : (durationMin === 90 ? '1.5h' : (durationMin === 120 ? '2h' : (durationMin === 150 ? '2.5h' : (durationMin === 180 ? '3h' : (durationMin / 60).toFixed(1) + 'h'))));
         const priceStr = formatCOP(slot.mode === 'SPLIT_MATCH' ? slot.price_per_spot : slot.total_price);
-        const priceSub = slot.mode === 'SPLIT_MATCH' ? 'por cupo' : 'cancha total';
+        const priceSub = slot.mode === 'SPLIT_MATCH' ? 'por cupo' : (isTournament ? 'por jugador' : 'cancha total');
 
         // Class Coach & Instructor Display
         let classInfoHtml = '';
@@ -1769,6 +2189,20 @@ PARTIDO CERRADO</textarea>
             <div style="font-size: 0.62rem; color: #94A3B8; margin-bottom: 0.25rem;">
               <span style="background: rgba(15,23,42,0.7); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08);">🚫 WhatsApp Inhabilitado</span>
             </div>
+          `;
+        }
+
+        // Tournament Prize Pool Display
+        let tournamentInfoHtml = '';
+        if (isTournament) {
+          const prizeStr = slot.prize_pool ? formatCOP(slot.prize_pool) : '';
+          tournamentInfoHtml = `
+            <div style="font-size: 0.68rem; color: #E9D5FF; font-weight: 700; margin: 0.2rem 0; display: flex; align-items: center; gap: 0.25rem;">
+              <span>🏆 ${durLabel} de juego continuo</span>
+            </div>
+            ${prizeStr ? `<div style="font-size: 0.68rem; color: #FBBF24; font-weight: 700; margin-bottom: 0.25rem;">
+              <span>💰 Bolsa: ${prizeStr}</span>
+            </div>` : ''}
           `;
         }
 
@@ -1791,6 +2225,8 @@ PARTIDO CERRADO</textarea>
           actionBtn = `<span style="font-size: 0.65rem; color: #FCA5A5; font-weight: 700;">🔧 En Mantenimiento</span>`;
         } else if (isClass) {
           actionBtn = `<span style="font-size: 0.65rem; color: #38BDF8; font-weight: 700;">✓ Academia</span>`;
+        } else if (isTournament) {
+          actionBtn = `<span style="font-size: 0.65rem; color: #C084FC; font-weight: 700;">🏆 Torneo Activo</span>`;
         } else if (isFull) {
           actionBtn = `<span class="card-full-badge">✓ Completo</span>`;
         } else if (isOpenMatch) {
@@ -1818,6 +2254,7 @@ PARTIDO CERRADO</textarea>
               </div>
 
               ${classInfoHtml}
+              ${tournamentInfoHtml}
               ${playersHtml}
             </div>
 
@@ -1852,139 +2289,331 @@ PARTIDO CERRADO</textarea>
           alert(data.detail || 'Error al sembrar turnos');
         }
       } catch (err) {
-        alert('Error: ' + err.message);
+        alert('Error conectando con el servidor');
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '🌱 + Sembrar Turnos (7 Días / 5 Canchas)';
+          btn.textContent = '🌱 + Sembrar Turnos (7 Días)';
         }
       }
     }
 
-    // Modal de Reserva / Bloqueo con Yield Management
-    async function openReserveOrBlockModal(slotId) {
-      const slot = allSlots.find(s => s.id === slotId);
-      if (!slot) return;
-
-      document.getElementById('rb-slot-id').value = slot.id;
-      document.getElementById('rb-modal-slot-desc').textContent = `${slot.court_name || 'Cancha'} • ${slot.date} • ${slot.start_time.slice(0,5)} - ${slot.end_time.slice(0,5)}`;
-      document.getElementById('rb-client-name').value = '';
-      document.getElementById('rb-client-phone').value = '+57 ';
-      document.getElementById('rb-instructor-name').value = '';
-      document.getElementById('rb-slot-type-select').value = 'MATCH';
-      onSlotTypeChange('MATCH');
-
-      // Pre-cargar precio recomendado de Yield
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/yield-recommendation`);
-        if (res.ok) {
-          const yd = await res.json();
-          document.getElementById('rb-custom-price').value = yd.recommended_price || slot.total_price;
-          document.getElementById('rb-yield-price-display').textContent = formatCOP(yd.recommended_price);
-          
-          const tierBadge = document.getElementById('rb-yield-badge');
-          if (yd.pricing_tier === 'PICO') {
-            tierBadge.className = 'badge-yield-tier tier-pico';
-            tierBadge.textContent = '🔥 HORARIO PICO';
-          } else {
-            tierBadge.className = 'badge-yield-tier tier-valle';
-            tierBadge.textContent = '🌿 HORARIO VALLE';
-          }
-
-          const promoTag = document.getElementById('rb-yield-promo-tag');
-          if (yd.is_promo) {
-            promoTag.style.display = 'inline-flex';
-            promoTag.textContent = `⚡ PROMO -${yd.promo_discount_percent}% (Ahorro ${formatCOP(yd.savings)})`;
-          } else {
-            promoTag.style.display = 'none';
-          }
-
-          document.getElementById('rb-yield-explanation').textContent = yd.explanation || 'Tarifa calculada por motor dinámico de ocupación.';
-        } else {
-          document.getElementById('rb-custom-price').value = slot.total_price;
-        }
-      } catch (e) {
-        document.getElementById('rb-custom-price').value = slot.total_price;
+    // Modal Crear Torneo Americano
+    function openCreateAmericanoModal() {
+      const modal = document.getElementById('modal-create-americano');
+      if (!modal) return;
+      document.getElementById('americano-date').value = selectedDate;
+      
+      const container = document.getElementById('americano-courts-checkboxes');
+      if (container) {
+        container.innerHTML = '';
+        allCourts.forEach((c, idx) => {
+          const isChecked = idx < 3;
+          const div = document.createElement('label');
+          div.style.display = 'flex';
+          div.style.alignItems = 'center';
+          div.style.gap = '0.4rem';
+          div.style.fontSize = '0.75rem';
+          div.style.color = '#F1F5F9';
+          div.style.cursor = 'pointer';
+          div.innerHTML = `
+            <input type="checkbox" name="americano_courts" value="${c.id}" ${isChecked ? 'checked' : ''} style="accent-color: #A855F7;">
+            <span>${c.name}</span>
+          `;
+          container.appendChild(div);
+        });
       }
 
-      document.getElementById('reserve-block-modal').classList.add('open');
+      modal.classList.add('active');
     }
 
-    function closeReserveOrBlockModal() {
-      document.getElementById('reserve-block-modal').classList.remove('open');
+    function closeCreateAmericanoModal() {
+      const modal = document.getElementById('modal-create-americano');
+      if (modal) modal.classList.remove('active');
     }
 
-    function onSlotTypeChange(stype) {
-      const instructorGroup = document.getElementById('rb-instructor-group');
-      const clientNameGroup = document.getElementById('rb-client-name-group');
-      const clientPhoneGroup = document.getElementById('rb-client-phone-group');
+    async function handleCreateAmericanoSubmit(event) {
+      event.preventDefault();
+      const checkboxes = document.querySelectorAll('input[name="americano_courts"]:checked');
+      const selectedCourtIds = Array.from(checkboxes).map(cb => cb.value);
 
-      if (stype === 'CLASS') {
-        instructorGroup.style.display = 'block';
-        clientNameGroup.style.display = 'block';
-        clientPhoneGroup.style.display = 'block';
-      } else if (stype === 'MAINTENANCE') {
-        instructorGroup.style.display = 'none';
-        clientNameGroup.style.display = 'none';
-        clientPhoneGroup.style.display = 'none';
-      } else {
-        instructorGroup.style.display = 'none';
-        clientNameGroup.style.display = 'block';
-        clientPhoneGroup.style.display = 'block';
+      if (selectedCourtIds.length < 2) {
+        alert('⚠️ Debes seleccionar al menos 2 pistas simultáneas para crear un Torneo Americano.');
+        return;
       }
-    }
 
-    async function handleReserveOrBlockSubmit(e) {
-      e.preventDefault();
-      const slotId = Number(document.getElementById('rb-slot-id').value);
-      const stype = document.getElementById('rb-slot-type-select').value;
-      const instructor = document.getElementById('rb-instructor-name').value.trim();
-      const clientName = document.getElementById('rb-client-name').value.trim();
-      const clientPhone = document.getElementById('rb-client-phone').value.trim();
-      const customPrice = parseFloat(document.getElementById('rb-custom-price').value) || null;
+      const payload = {
+        tournament_name: document.getElementById('americano-name').value.trim(),
+        date: document.getElementById('americano-date').value,
+        start_time: document.getElementById('americano-time').value,
+        duration_minutes: parseInt(document.getElementById('americano-duration').value, 10),
+        tournament_type: document.getElementById('americano-type').value,
+        court_ids: selectedCourtIds,
+        price_per_spot: parseFloat(document.getElementById('americano-price').value),
+        prize_pool: parseFloat(document.getElementById('americano-prize').value)
+      };
 
-      const btn = document.getElementById('btn-submit-rb');
-      btn.disabled = true;
-      btn.textContent = 'Procesando...';
+      const submitBtn = document.getElementById('btn-submit-americano');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Bloqueando pistas...';
+      }
 
       try {
-        const payload = {
-          slot_type: stype === 'SPLIT_MATCH' ? 'MATCH' : stype,
-          mode: stype === 'SPLIT_MATCH' ? 'SPLIT_MATCH' : 'FULL_COURT',
-          instructor_name: stype === 'CLASS' ? instructor : null,
-          client_name: clientName || null,
-          client_phone: clientPhone || null,
-          custom_price: customPrice
-        };
-
-        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/reserve-or-block`, {
+        const res = await fetch(`${API_BASE}/api/v1/slots/create-americano`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Error al procesar reserva');
+        if (res.ok) {
+          addEvent('🏆 Torneo Americano Creado', `${payload.tournament_name} (${selectedCourtIds.length} canchas)`, 'purple');
+          closeCreateAmericanoModal();
+          alert(`🏆 ¡Torneo Americano '${payload.tournament_name}' creado con éxito!
 
-        if (stype === 'CLASS') {
-          addEvent(`Clase Agendada: ${instructor || 'Profesor'}`, `Alumno: ${clientName || 'Asignado'} • ${formatCOP(data.total_price)}`, 'cyan');
-        } else if (stype === 'MAINTENANCE') {
-          addEvent(`Pista Bloqueada`, `Mantenimiento preventivo en turno #${slotId}`, 'red');
+Se bloquearon ${selectedCourtIds.length} pistas en color púrpura durante ${payload.duration_minutes / 60} horas.`);
+          await refreshData();
         } else {
-          addEvent(`Reserva Confirmada`, `${clientName || 'Cancha Completa'} • ${formatCOP(data.total_price)}`, 'green');
+          alert(data.detail || 'Error al crear Torneo Americano');
         }
-
-        closeReserveOrBlockModal();
-        await refreshData();
       } catch (err) {
-        alert('Error: ' + err.message);
+        console.error(err);
+        alert('Error al contactar con la API');
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Confirmar Reserva / Bloqueo';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🏆 Crear Torneo y Bloquear Pistas';
+        }
       }
     }
 
-    // Modal de Hold
+    // WhatsApp Broadcast Functions
+    async function broadcastAvailability() {
+      const btn = document.getElementById('btn-broadcast-avail');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '📢 Difundiendo...';
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/whatsapp/broadcast-availability?target_date=${selectedDate}`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (res.ok) {
+          addEvent('📢 Difusión WhatsApp Enviada', `${data.total_slots} turnos libres compartidos al grupo`, 'green');
+          alert(`📢 ¡Difusión de Disponibilidad enviada a WhatsApp!
+
+Total turnos libres promocionados: ${data.total_slots}
+Destinatario: ${data.recipient}`);
+        } else {
+          alert(data.detail || 'Error al enviar difusión');
+        }
+      } catch (err) {
+        alert('Error al conectar con el servidor para difusión WhatsApp');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '📢 Difundir Disponibilidad';
+        }
+      }
+    }
+
+    async function broadcastPromoUrgent() {
+      const btn = document.getElementById('btn-broadcast-promo');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⚡ Rematando...';
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/whatsapp/broadcast-promo-urgent?target_date=${selectedDate}`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (res.ok) {
+          addEvent('⚡ Remate Flash Despachado', `${data.total_critical_slots} turnos promocionados (-25%)`, 'amber');
+          alert(`⚡ ¡Remate Flash despachado a WhatsApp!
+
+Se enviaron alertas de descuento (-25%) para ${data.total_critical_slots} turnos críticos vacíos.`);
+        } else {
+          alert(data.detail || 'Error al enviar remate urgente');
+        }
+      } catch (err) {
+        alert('Error al conectar con el servidor para remate de turnos');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '⚡ Remate Flash';
+        }
+      }
+    }
+
+    // Config Club Functions
+    async function loadClubConfig() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/slots/club-config`);
+        if (!res.ok) return;
+        const cfg = await res.json();
+
+        document.getElementById('cfg-base-valle').value = cfg.base_valle || 80000;
+        document.getElementById('cfg-base-pico').value = cfg.base_pico || 120000;
+        document.getElementById('cfg-floor-price').value = cfg.safety_floor || 60000;
+        document.getElementById('cfg-discount-pct').value = cfg.promo_discount_percent || 25;
+        document.getElementById('cfg-cancel-grace').value = cfg.cancellation_grace_minutes || 30;
+        document.getElementById('cfg-confirm-grace').value = cfg.confirmation_grace_minutes || 10;
+        document.getElementById('cfg-whatsapp-group').value = cfg.broadcast_group_id || '573130000000';
+
+        const listContainer = document.getElementById('config-courts-list');
+        if (listContainer && allCourts.length > 0) {
+          listContainer.innerHTML = '';
+          allCourts.forEach((c, idx) => {
+            const div = document.createElement('div');
+            div.style.background = '#0B0F19';
+            div.style.border = '1px solid #1E293B';
+            div.style.borderRadius = '8px';
+            div.style.padding = '0.5rem 0.75rem';
+            div.style.display = 'flex';
+            div.style.justifyContent = 'space-between';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-weight: 700; font-size: 0.8rem; color: #F1F5F9;">📍 Pista ${c.court_number || (idx + 1)}:</span>
+                <input type="text" value="${c.name}" id="court-name-${c.id}" class="form-control" style="width: 170px; padding: 0.2rem 0.4rem; font-size: 0.75rem;">
+              </div>
+              <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; color: #34D399; cursor: pointer;">
+                <input type="checkbox" checked id="court-active-${c.id}" style="accent-color: #10B981;"> Activa
+              </label>
+            `;
+            listContainer.appendChild(div);
+          });
+        }
+      } catch (err) {
+        console.error('Error loading club config:', err);
+      }
+    }
+
+    async function saveClubConfig() {
+      const payload = {
+        base_valle: parseFloat(document.getElementById('cfg-base-valle').value),
+        base_pico: parseFloat(document.getElementById('cfg-base-pico').value),
+        safety_floor: parseFloat(document.getElementById('cfg-floor-price').value),
+        promo_discount_percent: parseInt(document.getElementById('cfg-discount-pct').value, 10),
+        cancellation_grace_minutes: parseInt(document.getElementById('cfg-cancel-grace').value, 10),
+        confirmation_grace_minutes: parseInt(document.getElementById('cfg-confirm-grace').value, 10),
+        broadcast_group_id: document.getElementById('cfg-whatsapp-group').value.trim()
+      };
+
+      const btn = document.getElementById('btn-save-club-config');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/slots/club-config`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          addEvent('Configuración Actualizada', 'Nuevos parámetros de Yield y políticas aplicadas', 'green');
+          alert('✅ ¡Configuración del club guardada exitosamente!
+
+Los nuevos precios base y reglas de cancelación están activos.');
+          await refreshData();
+        } else {
+          alert(data.detail || 'Error al guardar configuración');
+        }
+      } catch (err) {
+        alert('Error al contactar con la API');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '💾 Guardar Configuración';
+        }
+      }
+    }
+
+    // Modal Reservar o Bloquear
+    function openReserveOrBlockModal(slotId) {
+      const slot = allSlots.find(s => s.id === slotId);
+      if (!slot) return;
+      selectedSlot = slot;
+
+      document.getElementById('rb-slot-id').value = slot.id;
+      document.getElementById('rb-slot-type-select').value = 'MATCH';
+      document.getElementById('rb-client-name').value = '';
+      document.getElementById('rb-client-phone').value = '';
+      document.getElementById('rb-instructor-name').value = '';
+      document.getElementById('rb-custom-price').value = slot.total_price || 80000;
+      onSlotTypeChange('MATCH');
+
+      const modal = document.getElementById('reserve-block-modal');
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeReserveOrBlockModal() {
+      const modal = document.getElementById('reserve-block-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function onSlotTypeChange(val) {
+      const instrGroup = document.getElementById('rb-instructor-group');
+      const clientGroup = document.getElementById('rb-client-name-group');
+      const phoneGroup = document.getElementById('rb-client-phone-group');
+
+      if (val === 'CLASS') {
+        instrGroup.style.display = 'block';
+        clientGroup.style.display = 'block';
+        phoneGroup.style.display = 'block';
+      } else if (val === 'MAINTENANCE') {
+        instrGroup.style.display = 'none';
+        clientGroup.style.display = 'none';
+        phoneGroup.style.display = 'none';
+      } else {
+        instrGroup.style.display = 'none';
+        clientGroup.style.display = 'block';
+        phoneGroup.style.display = 'block';
+      }
+    }
+
+    async function handleReserveOrBlockSubmit(event) {
+      event.preventDefault();
+      const slotId = document.getElementById('rb-slot-id').value;
+      const slotType = document.getElementById('rb-slot-type-select').value;
+      const clientName = document.getElementById('rb-client-name').value.trim();
+      const clientPhone = document.getElementById('rb-client-phone').value.trim();
+      const instructorName = document.getElementById('rb-instructor-name').value.trim();
+      const customPrice = parseFloat(document.getElementById('rb-custom-price').value) || 0;
+
+      const payload = {
+        slot_type: slotType,
+        client_name: clientName || null,
+        client_phone: clientPhone || null,
+        instructor_name: slotType === 'CLASS' ? instructorName : null,
+        custom_price: customPrice
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/book-or-block`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          addEvent('Pista Modificada', `Slot #${slotId} asignado a ${slotType}`, 'green');
+          closeReserveOrBlockModal();
+          await refreshData();
+        } else {
+          alert(data.detail || 'Error al registrar acción');
+        }
+      } catch (err) {
+        alert('Error al contactar con la API');
+      }
+    }
+
+    // Modal Hold
     function openHoldModal(slotId) {
       const slot = allSlots.find(s => s.id === slotId);
       if (!slot) return;
@@ -1992,283 +2621,158 @@ PARTIDO CERRADO</textarea>
 
       document.getElementById('modal-slot-id').value = slot.id;
       document.getElementById('modal-slot-mode').value = slot.mode;
-      document.getElementById('modal-title').textContent = slot.mode === 'FULL_COURT' 
-        ? 'Apartar Cancha Completa' 
-        : 'Apartar Cupo / Partido Abierto';
+      document.getElementById('modal-title').textContent = `Apartar Cupo: ${slot.court?.name || 'Cancha'} (${slot.start_time.slice(0, 5)})`;
+      document.getElementById('modal-name').value = '';
+      document.getElementById('modal-phone').value = '';
 
-      const wrapper = document.getElementById('modal-spots-wrapper');
-      const select = document.getElementById('modal-spots-select');
-
-      if (slot.mode === 'FULL_COURT') {
-        wrapper.style.display = 'none';
-        select.value = "4";
-      } else {
-        wrapper.style.display = 'block';
-        select.innerHTML = '';
-        for (let i = 1; i <= slot.available_spots; i++) {
-          const opt = document.createElement('option');
-          opt.value = i;
-          opt.textContent = `${i} Cupo${i > 1 ? 's' : ''}`;
-          select.appendChild(opt);
-        }
+      const freeSpots = slot.capacity - (slot.booked_spots + slot.held_spots);
+      const spotsSelect = document.getElementById('modal-spots-select');
+      spotsSelect.innerHTML = '';
+      for (let i = 1; i <= freeSpots; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `${i} Cupo${i > 1 ? 's' : ''}`;
+        spotsSelect.appendChild(opt);
       }
 
       calculateModalPrice();
-      document.getElementById('hold-modal').classList.add('open');
+      document.getElementById('hold-modal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('hold-modal').classList.remove('active');
     }
 
     function calculateModalPrice() {
       if (!selectedSlot) return;
       const tier = document.getElementById('modal-tier').value;
-      const display = document.getElementById('modal-total-display');
-      const ttlInfo = document.getElementById('modal-ttl-info');
+      const spots = parseInt(document.getElementById('modal-spots-select').value || 1, 10);
+      let unitPrice = selectedSlot.price_per_spot;
 
       if (tier === 'MEMBER') {
-        display.textContent = '$0 COP';
-        display.style.color = '#10B981';
-        ttlInfo.textContent = '✓ Socio Exento';
-        ttlInfo.style.color = '#10B981';
-        return;
+        unitPrice = 0;
+        document.getElementById('modal-ttl-info').textContent = '⚡ Membresía Activa (Costo $0)';
+      } else if (tier === 'VIP_PAY_ON_SITE') {
+        document.getElementById('modal-ttl-info').textContent = '★ Pago en Recepción (Sin Expiración)';
+      } else {
+        document.getElementById('modal-ttl-info').textContent = '⏳ TTL 15:00 min (Pasarela Bold)';
       }
 
-      if (tier === 'VIP_PAY_ON_SITE') {
-        ttlInfo.textContent = '📍 Cobro en Recepción';
-        ttlInfo.style.color = '#38BDF8';
-      } else {
-        ttlInfo.textContent = '⏳ TTL 15:00 min';
-        ttlInfo.style.color = '#FBBF24';
-      }
-
-      display.style.color = '#38BDF8';
-      if (selectedSlot.mode === 'FULL_COURT') {
-        display.textContent = formatCOP(selectedSlot.total_price);
-      } else {
-        const spots = Number(document.getElementById('modal-spots-select').value) || 1;
-        const total = spots * Number(selectedSlot.price_per_spot);
-        display.textContent = formatCOP(total);
-      }
+      document.getElementById('modal-total-display').textContent = formatCOP(unitPrice * spots);
     }
 
-    function closeModal() {
-      document.getElementById('hold-modal').classList.remove('open');
-    }
-
-    async function handleHoldSubmit(e) {
-      e.preventDefault();
-      const slotId = Number(document.getElementById('modal-slot-id').value);
-      const mode = document.getElementById('modal-slot-mode').value;
-      const name = document.getElementById('modal-name').value.trim();
-      const phone = document.getElementById('modal-phone').value.trim();
-      const tier = document.getElementById('modal-tier').value;
-      const spots = mode === 'FULL_COURT' ? 4 : Number(document.getElementById('modal-spots-select').value);
-
-      const btn = document.getElementById('btn-submit-hold');
-      btn.disabled = true;
-      btn.textContent = 'Guardando...';
+    async function handleHoldSubmit(event) {
+      event.preventDefault();
+      const slotId = document.getElementById('modal-slot-id').value;
+      const payload = {
+        spots_count: parseInt(document.getElementById('modal-spots-select').value, 10),
+        client_name: document.getElementById('modal-name').value.trim(),
+        client_phone: document.getElementById('modal-phone').value.trim(),
+        client_tier: document.getElementById('modal-tier').value
+      };
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/holds/create`, {
+        const res = await fetch(`${API_BASE}/api/v1/holds/${slotId}/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            slot_id: slotId,
-            customer_name: name,
-            customer_phone: phone,
-            spots_held: spots,
-            client_tier: tier
-          })
+          body: JSON.stringify(payload)
         });
-
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Error al apartar');
-
-        if (tier === 'MEMBER') {
-          addEvent(`Membresía: ${data.customer_name}`, `Ref ${data.payment_reference} ($0)`, 'green');
-        } else if (tier === 'VIP_PAY_ON_SITE') {
-          addEvent(`Reserva VIP: ${data.customer_name}`, `Ref ${data.payment_reference} (Paga en recepción)`, 'green');
+        if (res.ok) {
+          addEvent('Hold Creado', `${payload.client_name} apartó ${payload.spots_count} cupo(s)`, 'green');
+          closeModal();
+          await refreshData();
         } else {
-          addEvent(`Hold Creado: ${data.customer_name}`, `Ref ${data.payment_reference} (15m Bold)`, 'amber');
-          registerHoldTimer(data);
+          alert(data.detail || 'Error al apartar cupo');
         }
-
-        closeModal();
-        await refreshData();
       } catch (err) {
-        alert(err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Confirmar Reserva';
+        alert('Error al contactar con la API');
       }
     }
 
-    // Modal de Baja / Drop Player
-    function openDropModal(slotId, playerName, knownPhone) {
+    // Modal Drop
+    function openDropModal(slotId, playerName, playerPhone) {
       document.getElementById('drop-slot-id').value = slotId;
       document.getElementById('drop-player-display').value = playerName;
-      document.getElementById('drop-phone-input').value = (knownPhone && !knownPhone.includes('-WA-') && !knownPhone.includes('unknown')) ? knownPhone : '+57 ';
-      document.getElementById('drop-modal').classList.add('open');
+      document.getElementById('drop-phone-input').value = playerPhone || '';
+      document.getElementById('drop-modal').classList.add('active');
     }
 
     function closeDropModal() {
-      document.getElementById('drop-modal').classList.remove('open');
+      document.getElementById('drop-modal').classList.remove('active');
     }
 
-    async function handleDropSubmit(e) {
-      e.preventDefault();
-      const slotId = Number(document.getElementById('drop-slot-id').value);
+    async function handleDropSubmit(event) {
+      event.preventDefault();
+      const slotId = document.getElementById('drop-slot-id').value;
       const phone = document.getElementById('drop-phone-input').value.trim();
-      const playerName = document.getElementById('drop-player-display').value;
-
-      const btn = document.getElementById('btn-submit-drop');
-      btn.disabled = true;
-      btn.textContent = 'Validando baja...';
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/drop-player`, {
+        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/drop-participant`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            slot_id: slotId,
-            sender_phone: phone
-          })
+          body: JSON.stringify({ sender_phone: phone })
         });
-
         const data = await res.json();
-        if (!res.ok) {
-          throw new Error(`[${res.status}] ${data.detail || 'Error en baja'}`);
+        if (res.ok) {
+          addEvent('Baja Confirmada', `Cupo liberado en Slot #${slotId}`, 'red');
+          closeDropModal();
+          alert(data.message || 'Baja confirmada exitosamente');
+          await refreshData();
+        } else {
+          alert(data.detail || 'No fue posible dar de baja al jugador');
         }
-
-        addEvent('Cupo Liberado (Baja)', `${playerName} (${data.freed_phone}) canceló su cupo. Slot reabierto.`, 'green');
-        closeDropModal();
-        await refreshData();
       } catch (err) {
-        alert("Error de seguridad: " + err.message);
-        addEvent('Baja Rechazada (403)', `${phone} no es titular de ${playerName}`, 'red');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Confirmar Baja';
+        alert('Error al contactar con la API');
       }
     }
 
     // Parser WhatsApp
     async function parseWhatsApp() {
-      const raw = document.getElementById('wa-input').value;
-      const senderPhone = document.getElementById('wa-sender-phone').value.trim();
+      const rawText = document.getElementById('wa-input').value.trim();
+      const senderPhone = document.getElementById('wa-sender-phone').value.trim() || '+573001234567';
       const resultBox = document.getElementById('wa-result');
 
+      if (!rawText) return;
+
+      resultBox.style.display = 'block';
+      resultBox.textContent = 'Procesando mensaje con reglas de mutabilidad e identidad...';
+
       try {
-        const payload = { raw_text: raw };
-        if (senderPhone) payload.sender_phone = senderPhone;
-
-        const res = await fetch(`${API_BASE}/api/v1/slots/parse-open-match`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Error al procesar convocatoria');
-
-        resultBox.style.display = 'block';
-        resultBox.textContent = data.whatsapp_reply;
-
-        addEvent('Convocatoria WhatsApp Sincronizada', `${data.players.length}/4 jugadores • ${data.is_closed ? 'CERRADO' : 'ABIERTO'}`, 'green');
-        await refreshData();
-      } catch (err) {
-        resultBox.style.display = 'block';
-        resultBox.textContent = 'Error: ' + err.message;
-      }
-    }
-
-    function registerHoldTimer(hold) {
-      const expMs = new Date(hold.expires_at).getTime();
-      activeHoldsMap[hold.payment_reference] = {
-        ...hold,
-        expMs: expMs
-      };
-      renderActiveHolds();
-    }
-
-    function renderActiveHolds() {
-      const container = document.getElementById('active-holds-container');
-      const holds = Object.values(activeHoldsMap);
-
-      if (holds.length === 0) {
-        container.innerHTML = `
-          <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 0.75rem; text-align: center; font-size: 0.72rem; color: #64748B;">
-            No hay holds activos en este momento.
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = holds.map(h => {
-        const diff = Math.max(0, Math.floor((h.expMs - Date.now()) / 1000));
-        const mm = String(Math.floor(diff / 60)).padStart(2, '0');
-        const ss = String(diff % 60).padStart(2, '0');
-
-        return `
-          <div class="active-hold-item">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 0.75rem; font-weight: 800; color: #38BDF8;">${h.payment_reference}</span>
-              <span style="background: rgba(120, 53, 15, 0.4); color: #FBBF24; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.68rem; font-weight: 700;">⏳ ${mm}:${ss}</span>
-            </div>
-            <div style="font-size: 0.72rem; color: #CBD5E1; margin: 0.35rem 0;">
-              ${h.customer_name} (${h.spots_held} cupo${h.spots_held > 1 ? 's' : ''}) • <strong>${formatCOP(h.amount_to_pay)}</strong>
-            </div>
-            <button onclick="simulateWebhookPayment('${h.payment_reference}')" class="btn-simulate">
-              ✓ Simular Pago Webhook
-            </button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    async function simulateWebhookPayment(ref) {
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/webhooks/payment-mock`, {
+        const res = await fetch(`${API_BASE}/api/v1/whatsapp/simulate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            payment_reference: ref,
-            status: 'APPROVED',
-            transaction_id: 'TX-' + Math.random().toString(36).substring(2, 9).toUpperCase()
+            sender_phone: senderPhone,
+            sender_name: 'Recepcionista Turno',
+            raw_text: rawText
           })
         });
-
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Error al procesar');
-
-        delete activeHoldsMap[ref];
-        renderActiveHolds();
-        addEvent('Pago Confirmado Bold', `Ref ${ref} • ${formatCOP(data.amount_paid)}`, 'green');
-        await refreshData();
+        if (res.ok) {
+          resultBox.textContent = data.reply || 'Mensaje procesado exitosamente.';
+          addEvent('WhatsApp Sincronizado', 'Convocatoria procesada desde recepción', 'green');
+          await refreshData();
+        } else {
+          resultBox.textContent = `Error: ${data.detail || 'Fallo al procesar'}`;
+        }
       } catch (err) {
-        alert(err.message);
+        resultBox.textContent = 'Error conectando con el servicio de WhatsApp.';
       }
     }
 
     function updateMetrics() {
-      let total = 0;
+      let revenue = 0;
       allSlots.forEach(s => {
-        const p = Number(s.price_per_spot) || 0;
-        total += (s.booked_spots * p);
-      });
-      document.getElementById('metric-revenue').textContent = formatCOP(total).replace(' COP', '');
-    }
-
-    setInterval(() => {
-      const now = Date.now();
-      let changed = false;
-      Object.keys(activeHoldsMap).forEach(ref => {
-        if (activeHoldsMap[ref].expMs <= now) {
-          delete activeHoldsMap[ref];
-          addEvent('Hold Expirado', `Ref ${ref} liberado`, 'amber');
-          changed = true;
+        if (s.mode === 'SPLIT_MATCH') {
+          revenue += (s.booked_spots || 0) * (s.price_per_spot || 0);
+        } else {
+          if (s.status === 'FULLY_BOOKED') revenue += (s.total_price || 0);
         }
       });
-      if (Object.keys(activeHoldsMap).length > 0 || changed) renderActiveHolds();
-    }, 1000);
+      const revEl = document.getElementById('metric-revenue');
+      if (revEl) revEl.textContent = formatCOP(revenue);
+    }
 
     // Initial setup
     const picker = document.getElementById('date-picker');

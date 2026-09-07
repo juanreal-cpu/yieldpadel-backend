@@ -16,7 +16,7 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import cast, select, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -68,6 +68,26 @@ DROP_KEYWORDS = [
     r"\bno\s+alcanzo\b",
 ]
 DROP_REGEX = re.compile("|".join(DROP_KEYWORDS), re.IGNORECASE)
+
+AVAILABILITY_KEYWORDS = [
+    r"\bqu[eé]\s+horas?\s+hay\b",
+    r"\bcanchas?\s+libres?\b",
+    r"\bpistas?\s+libres?\b",
+    r"\bhay\s+turno\b",
+    r"\bhay\s+turnos\b",
+    r"\bhay\s+cancha\b",
+    r"\bhay\s+pista\b",
+    r"\bdisponibilidad\b",
+    r"\bqu[eé]\s+turnos?\s+tienen\b",
+    r"\bhorarios?\s+disponibles?\b",
+    r"\bqu[eé]\s+hay\s+hoy\b",
+    r"\bqu[eé]\s+hay\s+disponible\b",
+]
+AVAILABILITY_REGEX = re.compile("|".join(AVAILABILITY_KEYWORDS), re.IGNORECASE)
+
+import importlib
+yield_mod = importlib.import_module("app.services.yield")
+calculate_recommended_price = yield_mod.calculate_recommended_price
 
 # Emojis de cabeceras que invalidan inmediatamente una línea de jugador
 HEADER_EMOJIS = ["📅", "🗓️", "📆", "⌚", "🕒", "⏰", "📍", "🏆", "💰", "💲", "💵"]
@@ -208,12 +228,14 @@ def parse_time_token(token: str) -> time:
 
 
 def detect_intent(text: str) -> str:
-    """Clasifica el mensaje en 'DROP', 'JOIN', 'LIST' o 'UNKNOWN'."""
+    """Clasifica el mensaje en 'DROP', 'JOIN', 'AVAILABILITY', 'LIST' o 'UNKNOWN'."""
     clean = text.strip()
     if DROP_REGEX.search(clean):
         return "DROP"
     if JOIN_REGEX.search(clean):
         return "JOIN"
+    if AVAILABILITY_REGEX.search(clean) or any(w in clean.lower() for w in ["que horas hay", "qué horas hay", "canchas libres", "cancha libre", "pistas libres", "hay turno", "disponibilidad"]):
+        return "AVAILABILITY"
     if "🎾" in clean or ("1." in clean and "2." in clean) or ("cancha" in clean.lower() and "4ta" in clean.lower()):
         return "LIST"
     return "UNKNOWN"
@@ -1130,17 +1152,231 @@ async def process_incoming_whatsapp_message(
         return await process_drop_intent(db, sender_phone, raw_text, quoted_text=quoted_text)
     elif intent == "JOIN":
         return await process_join_intent(db, sender_phone, sender_name, raw_text, quoted_text=quoted_text)
+    elif intent == "AVAILABILITY":
+        return await process_availability_query(db, target_date=None, query_text=raw_text)
     elif intent == "LIST":
         return await process_list_intent(db, sender_phone, sender_name, raw_text)
     else:
         return (
             "🎾 *Asistente de Capital Pádel Club* 🎾\n\n"
-            "Puedes responder a las convocatorias de pádel con los siguientes comandos:\n"
+            "Puedes consultar y responder a las convocatorias con los siguientes comandos:\n"
+            "• *'qué horas hay'* o *'canchas libres'* para consultar la disponibilidad y tarifas del día.\n"
             "• *'voy'*, *'entro'* o *'me anoto'* (incluso citando la convocatoria) para apartar un cupo.\n"
             "• *'me bajo'* o *'cancelo'* para liberar tu cupo previamente reservado.\n"
             "• O pega la lista actualizada de jugadores para sincronizar el partido.\n\n"
             "¡Nos vemos en la pista! 🏆"
         )
+
+
+async def process_availability_query(
+    db: AsyncSession,
+    target_date: Optional[date] = None,
+    query_text: Optional[str] = None,
+) -> str:
+    """
+    Responde a consultas de disponibilidad ('qué horas hay', 'canchas libres', 'hay turno'):
+    Pide la franja de interés y lista las pistas disponibles del día con tarifas recomendadas de Yield.
+    """
+    today = get_bogota_today()
+    now_bogota = get_bogota_now()
+    d = target_date or today
+    date_str = d.strftime("%d/%m/%Y")
+    label_day = "Hoy" if d == today else d.strftime("%A").capitalize()
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date == d,
+            cast(TimeSlot.status, String) == "AVAILABLE",
+            TimeSlot.slot_type == "MATCH",
+        )
+        .order_by(TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    if d == today:
+        current_time = now_bogota.time()
+        slots = [s for s in slots if s.start_time > current_time]
+
+    if not slots:
+        return (
+            f"🎾 *DISPONIBILIDAD - CAPITAL PÁDEL CLUB* 🎾\n\n"
+            f"📅 Fecha: *{label_day} ({date_str})*\n"
+            f"En este momento todas nuestras pistas se encuentran reservadas para esta jornada.\n\n"
+            f"💡 ¿Deseas consultar la disponibilidad de *Mañana* o anotarte en lista de espera? Comunícate con recepción."
+        )
+
+    # Agrupar por franja horaria
+    morning_slots = [s for s in slots if s.start_time < time(12, 0)]
+    afternoon_slots = [s for s in slots if time(12, 0) <= s.start_time < time(18, 0)]
+    night_slots = [s for s in slots if s.start_time >= time(18, 0)]
+
+    sections = []
+
+    def format_slot_line(s: TimeSlot) -> str:
+        c_name = s.court.name if s.court else "Cancha"
+        st = s.start_time.strftime("%I:%M%p").lower()
+        et = s.end_time.strftime("%I:%M%p").lower()
+        yd = calculate_recommended_price(s)
+        p_cop = f"${int(yd['recommended_price']):,}".replace(",", ".")
+        tier_tag = "🔥 Pico" if yd["is_pico"] else "🌿 Valle"
+        if yd["is_promo"]:
+            tier_tag = "⚡ PROMO FLASH (-25%)"
+        return f"• *{st} - {et}* | {c_name} ➔ *{p_cop} COP* ({tier_tag})"
+
+    if morning_slots:
+        m_lines = "\n".join([format_slot_line(s) for s in morning_slots[:4]])
+        sections.append(f"☀️ *Mañana (< 12:00m):*\n{m_lines}")
+
+    if afternoon_slots:
+        a_lines = "\n".join([format_slot_line(s) for s in afternoon_slots[:4]])
+        sections.append(f"🌤️ *Tarde (12:00m - 06:00pm):*\n{a_lines}")
+
+    if night_slots:
+        n_lines = "\n".join([format_slot_line(s) for s in night_slots[:4]])
+        sections.append(f"🌙 *Noche / Prime (> 06:00pm):*\n{n_lines}")
+
+    body_sections = "\n\n".join(sections)
+    return (
+        f"🎾 *DISPONIBILIDAD DE PISTAS - CAPITAL PÁDEL CLUB* 🎾\n"
+        f"📅 Fecha: *{label_day} ({date_str})*\n\n"
+        f"¿En qué franja te gustaría jugar? Puedes reservar respondiendo a este mensaje:\n\n"
+        f"{body_sections}\n\n"
+        f"💬 *¿Cómo reservar?* Responde citando el turno o escribe *'VOY [Hora] [Cancha]'* para apartar de inmediato."
+    )
+
+
+async def generate_availability_broadcast(
+    db: AsyncSession,
+    target_date: Optional[date] = None,
+) -> Tuple[str, int]:
+    """
+    Genera el resumen de turnos clave libres del día para despacho masivo al grupo de WhatsApp.
+    """
+    today = get_bogota_today()
+    d = target_date or today
+    date_str = d.strftime("%d/%m/%Y")
+    now_bogota = get_bogota_now()
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date == d,
+            cast(TimeSlot.status, String) == "AVAILABLE",
+            TimeSlot.slot_type == "MATCH",
+        )
+        .order_by(TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    if d == today:
+        current_time = now_bogota.time()
+        slots = [s for s in slots if s.start_time > current_time]
+
+    total_free = len(slots)
+    if total_free == 0:
+        msg = (
+            f"🎾 *ESTADO DE PISTAS - CAPITAL PÁDEL CLUB* 🎾\n\n"
+            f"📅 Hoy {date_str}: ¡Canchas al 100% de ocupación!\n"
+            f"Agradecemos a toda la comunidad. Consulta los turnos abiertos de mañana en recepción."
+        )
+        return msg, 0
+
+    featured = slots[:6]
+    lines = []
+    for s in featured:
+        c_name = s.court.name if s.court else "Cancha"
+        st = s.start_time.strftime("%I:%M%p").lower()
+        et = s.end_time.strftime("%I:%M%p").lower()
+        yd = calculate_recommended_price(s)
+        p_cop = f"${int(yd['recommended_price']):,}".replace(",", ".")
+        tier_str = "🔥 Pico" if yd["is_pico"] else "🌿 Valle"
+        if yd["is_promo"]:
+            tier_str = "⚡ PROMO FLASH (-25%)"
+        lines.append(f"📍 {c_name} | ⌚ *{st} - {et}* ➔ *{p_cop} COP* ({tier_str})")
+
+    slots_text = "\n".join(lines)
+    msg = (
+        f"📢 *TURNOS DISPONIBLES DE PÁDEL HOY ({date_str})* 🎾\n"
+        f"¡Asegura tu cancha o partido abierto antes de que se agoten!\n\n"
+        f"{slots_text}\n\n"
+        f"⚡ *Quedan {total_free} bloques disponibles en el club.*\n"
+        f"💬 Responde directamente a este mensaje con *'VOY [Hora]'* para apartar tu cupo."
+    )
+    return msg, total_free
+
+
+async def generate_promo_urgent_broadcast(
+    db: AsyncSession,
+    target_date: Optional[date] = None,
+) -> Tuple[str, int]:
+    """
+    Filtra los slots vacíos más críticos (< 3 horas para el inicio) y genera
+    una alerta con precio de descuento '⚡ PROMO FLASH YIELD (-25%)'.
+    """
+    today = get_bogota_today()
+    now_bogota = get_bogota_now()
+    d = target_date or today
+    date_str = d.strftime("%d/%m/%Y")
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date == d,
+            cast(TimeSlot.status, String) == "AVAILABLE",
+            TimeSlot.slot_type == "MATCH",
+        )
+        .order_by(TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    urgent_slots = []
+    for s in slots:
+        slot_dt = datetime.combine(s.date, s.start_time).replace(tzinfo=BOGOTA_TZ)
+        mins = (slot_dt - now_bogota).total_seconds() / 60
+        if 0 < mins <= 180:
+            urgent_slots.append(s)
+
+    if not urgent_slots:
+        # Fallback a próximos turnos libres del día
+        future_slots = [s for s in slots if datetime.combine(s.date, s.start_time).replace(tzinfo=BOGOTA_TZ) > now_bogota][:2]
+        if not future_slots:
+            future_slots = slots[:2]
+        if not future_slots:
+            msg = (
+                f"⚡ *REMATE DE CANCHAS - YIELDPADEL* ⚡\n\n"
+                f"📅 {date_str}: No hay turnos críticos libres en este momento. ¡Todas las pistas próximas están confirmadas!"
+            )
+            return msg, 0
+        urgent_slots = future_slots
+
+    lines = []
+    for s in urgent_slots:
+        c_name = s.court.name if s.court else "Cancha"
+        st = s.start_time.strftime("%I:%M%p").lower()
+        et = s.end_time.strftime("%I:%M%p").lower()
+        yd = calculate_recommended_price(s)
+        base_p = f"${int(yd['base_price']):,}".replace(",", ".")
+        promo_p = f"${int(yd['recommended_price']):,}".replace(",", ".")
+        lines.append(
+            f"🔥 *{c_name}* | ⌚ *{st} - {et}*\n"
+            f"   💰 Tarifa Regular: ~{base_p}~ ➔ *PROMO FLASH: {promo_p} COP* (⚡ -{yd['discount_percent']}%)"
+        )
+
+    slots_text = "\n\n".join(lines)
+    msg = (
+        f"⚡ *¡REMATE FLASH YIELD - ÚLTIMA HORA!* ⚡\n"
+        f"🚨 *Turnos con descuento especial para jugar hoy* en Capital Pádel Club:\n\n"
+        f"{slots_text}\n\n"
+        f"🏃‍♂️ *¡Aprovecha antes de que se ocupen!* Responde inmediatamente *'VOY [Hora]'* para bloquear tu pista al instante."
+    )
+    return msg, len(urgent_slots)
 
 
 async def send_whatsapp_message(to_phone: str, message_body: str) -> bool:

@@ -19,6 +19,59 @@ PICO_PROMO_PRICE = Decimal("90000.00")   # Descuento -25% Last-Minute ($22.500 /
 
 DEFAULT_MIN_SAFETY_PRICE = Decimal("50000.00")  # Piso mínimo de seguridad
 
+# Estado de Configuración del Club en Caliente
+CLUB_SETTINGS: Dict[str, Any] = {
+    "valle_price": Decimal("80000.00"),
+    "pico_price": Decimal("120000.00"),
+    "min_safety_price": Decimal("50000.00"),
+    "promo_discount_percent": 25,
+    "cancellation_grace_minutes": 30,
+    "confirmation_grace_minutes": 10,
+    "whatsapp_group_id": "120363025492819234@g.us",
+}
+
+
+def get_club_config() -> Dict[str, Any]:
+    """Retorna la configuración operativa actual del club."""
+    valle = float(CLUB_SETTINGS["valle_price"])
+    pico = float(CLUB_SETTINGS["pico_price"])
+    floor = float(CLUB_SETTINGS["min_safety_price"])
+    group = str(CLUB_SETTINGS["whatsapp_group_id"])
+    return {
+        "valle_price": valle,
+        "base_valle": valle,
+        "pico_price": pico,
+        "base_pico": pico,
+        "min_safety_price": floor,
+        "safety_floor": floor,
+        "promo_discount_percent": int(CLUB_SETTINGS["promo_discount_percent"]),
+        "cancellation_grace_minutes": int(CLUB_SETTINGS["cancellation_grace_minutes"]),
+        "confirmation_grace_minutes": int(CLUB_SETTINGS["confirmation_grace_minutes"]),
+        "whatsapp_group_id": group,
+        "broadcast_group_id": group,
+    }
+
+
+def update_club_config(updates: Dict[str, Any]) -> Dict[str, Any]:
+    """Actualiza en memoria la parametrización operativa del club."""
+    # Map aliases
+    if "base_valle" in updates and "valle_price" not in updates:
+        updates["valle_price"] = updates["base_valle"]
+    if "base_pico" in updates and "pico_price" not in updates:
+        updates["pico_price"] = updates["base_pico"]
+    if "safety_floor" in updates and "min_safety_price" not in updates:
+        updates["min_safety_price"] = updates["safety_floor"]
+    if "broadcast_group_id" in updates and "whatsapp_group_id" not in updates:
+        updates["whatsapp_group_id"] = updates["broadcast_group_id"]
+
+    for k, v in updates.items():
+        if v is not None and k in CLUB_SETTINGS:
+            if "price" in k:
+                CLUB_SETTINGS[k] = Decimal(str(v))
+            else:
+                CLUB_SETTINGS[k] = v
+    return get_club_config()
+
 
 def is_pico_hour(target_date: date, start_time: time) -> bool:
     """
@@ -65,7 +118,9 @@ def calculate_recommended_price(
 
     # 1. Determinar Pico vs Valle
     pico = is_pico_hour(slot_date, start_t)
-    base_price = PICO_BASE_PRICE if pico else VALLE_BASE_PRICE
+    base_valle = CLUB_SETTINGS.get("valle_price", VALLE_BASE_PRICE)
+    base_pico = CLUB_SETTINGS.get("pico_price", PICO_BASE_PRICE)
+    base_price = base_pico if pico else base_valle
 
     # 2. Evaluar Last-Minute Promo (< 3 horas hoy para turnos sin vender)
     is_promo = False
@@ -83,7 +138,8 @@ def calculate_recommended_price(
 
         if 0 < mins_until_start <= 180:  # Menos de 3 horas
             is_promo = True
-            discount_percent = int(promo_discount_percent) if promo_discount_percent is not None else 25
+            default_discount = CLUB_SETTINGS.get("promo_discount_percent", 25)
+            discount_percent = int(promo_discount_percent) if promo_discount_percent is not None else default_discount
             pct = Decimal(str(discount_percent))
             discount_applied = (base_price * pct / Decimal("100")).quantize(Decimal("1.00"))
             recommended_price = base_price - discount_applied
@@ -94,7 +150,7 @@ def calculate_recommended_price(
         recommended_price = base_price
 
     # 3. Aplicar piso mínimo de seguridad
-    floor_price = min_safety_price if min_safety_price is not None else DEFAULT_MIN_SAFETY_PRICE
+    floor_price = min_safety_price if min_safety_price is not None else CLUB_SETTINGS.get("min_safety_price", DEFAULT_MIN_SAFETY_PRICE)
     if recommended_price < floor_price:
         recommended_price = floor_price
 

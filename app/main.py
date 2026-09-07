@@ -16,15 +16,27 @@ async def lifespan(app: FastAPI):
         try:
             from sqlalchemy import text
             if "sqlite" in str(engine.url):
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN closed_at TIMESTAMP"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN slot_type VARCHAR(50) DEFAULT 'MATCH'"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN instructor_name VARCHAR(100)"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN is_promo BOOLEAN DEFAULT FALSE"))
+                for col_def in [
+                    "closed_at TIMESTAMP",
+                    "slot_type VARCHAR(50) DEFAULT 'MATCH'",
+                    "instructor_name VARCHAR(100)",
+                    "is_promo BOOLEAN DEFAULT FALSE",
+                    "tournament_type VARCHAR(50)",
+                    "prize_pool NUMERIC(10, 2)",
+                    "tournament_name VARCHAR(150)",
+                ]:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE time_slots ADD COLUMN {col_def}"))
+                    except Exception:
+                        pass
             else:
                 await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP WITH TIME ZONE"))
                 await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS slot_type VARCHAR(50) DEFAULT 'MATCH'"))
                 await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS instructor_name VARCHAR(100)"))
                 await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_promo BOOLEAN DEFAULT FALSE"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_type VARCHAR(50)"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS prize_pool NUMERIC(10, 2)"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_name VARCHAR(150)"))
         except Exception:
             pass
     yield

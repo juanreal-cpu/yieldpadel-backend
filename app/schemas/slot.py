@@ -68,18 +68,66 @@ class TimeSlotResponse(BaseModel):
     is_promo: bool = False
     recommended_price: Optional[Decimal] = None
     pricing_tier: Optional[str] = None
+    tournament_type: Optional[str] = None
+    prize_pool: Optional[Decimal] = None
+    tournament_name: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ReserveOrBlockRequest(BaseModel):
-    slot_type: str = "MATCH"  # MATCH, CLASS, ACADEMY, MAINTENANCE
+    slot_type: str = "MATCH"  # MATCH, CLASS, ACADEMY, MAINTENANCE, AMERICANO
     instructor_name: Optional[str] = None
     custom_price: Optional[Decimal] = None
     client_name: Optional[str] = None
     client_phone: Optional[str] = None
     mode: Optional[SlotMode] = None
     notes: Optional[str] = None
+    tournament_type: Optional[str] = None
+    prize_pool: Optional[Decimal] = None
+
+
+class CreateAmericanoRequest(BaseModel):
+    name: Optional[str] = None
+    tournament_name: Optional[str] = None
+    date: date
+    start_time: time
+    duration_hours: Optional[float] = None
+    duration_minutes: Optional[int] = None
+    tournament_type: str = "PAREJA_FIJA"  # PAREJA_FIJA o INDIVIDUAL
+    court_ids: List[str]  # 2 a 5 canchas
+    price_per_participant: Optional[Decimal] = None
+    price_per_spot: Optional[Decimal] = None
+    prize_pool: Optional[Decimal] = Decimal("300000.00")
+
+    def get_name(self) -> str:
+        return self.tournament_name or self.name or "Torneo Americano"
+
+    def get_duration_minutes(self) -> int:
+        if self.duration_minutes is not None:
+            return self.duration_minutes
+        if self.duration_hours is not None:
+            return int(self.duration_hours * 60)
+        return 120
+
+    def get_price(self) -> Decimal:
+        return self.price_per_spot or self.price_per_participant or Decimal("35000.00")
+
+
+class ClubConfigRequest(BaseModel):
+    valle_price: Optional[Decimal] = None
+    base_valle: Optional[Decimal] = None
+    pico_price: Optional[Decimal] = None
+    base_pico: Optional[Decimal] = None
+    min_safety_price: Optional[Decimal] = None
+    safety_floor: Optional[Decimal] = None
+    promo_discount_percent: Optional[int] = None
+    cancellation_grace_minutes: Optional[int] = None
+    confirmation_grace_minutes: Optional[int] = None
+    whatsapp_group_id: Optional[str] = None
+    broadcast_group_id: Optional[str] = None
+    courts: Optional[List[dict]] = None
+
 
 
 class WhatsAppConvocatoriaRequest(BaseModel):

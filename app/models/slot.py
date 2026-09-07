@@ -69,14 +69,14 @@ class TimeSlot(Base):
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
     total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     mode: Mapped[SlotMode] = mapped_column(
-        Enum(SlotMode, name="slot_mode_enum", values_callable=lambda x: [e.value for e in x]),
+        Enum(SlotMode, name="slot_mode_enum", native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=SlotMode.FULL_COURT,
         nullable=False,
     )
     capacity: Mapped[int] = mapped_column(Integer, default=4, nullable=False)
     booked_spots: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     status: Mapped[SlotStatus] = mapped_column(
-        Enum(SlotStatus, name="slot_status_enum", values_callable=lambda x: [e.value for e in x]),
+        Enum(SlotStatus, name="slot_status_enum", native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=SlotStatus.AVAILABLE,
         nullable=False,
     )
@@ -90,6 +90,11 @@ class TimeSlot(Base):
     slot_type: Mapped[str] = mapped_column(String(50), default="MATCH", nullable=False)
     instructor_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     is_promo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Campos para Torneos Americanos y Eventos
+    tournament_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    prize_pool: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    tournament_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
 
     court: Mapped["Court"] = relationship("Court", back_populates="slots", lazy="selectin")
     holds: Mapped[List["SlotHold"]] = relationship(
