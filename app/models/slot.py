@@ -49,6 +49,12 @@ class ClientTier(str, enum.Enum):
     STANDARD = "STANDARD"
     VIP_PAY_ON_SITE = "VIP_PAY_ON_SITE"
     MEMBER = "MEMBER"
+    TAPIA = "TAPIA"
+    COELLO = "COELLO"
+    GALAN = "GALAN"
+    CHINGOTTO = "CHINGOTTO"
+    LEBRON = "LEBRON"
+    ESTANDAR = "ESTANDAR"
 
 
 class PaymentStatus(str, enum.Enum):

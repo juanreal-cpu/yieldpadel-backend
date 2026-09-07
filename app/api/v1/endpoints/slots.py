@@ -2,6 +2,7 @@ from datetime import date, datetime, time, timezone, timedelta
 from decimal import Decimal
 import re
 from typing import List, Optional
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from app.services.audit import log_activity
 from sqlalchemy import select
@@ -12,9 +13,11 @@ from app.core.database import get_db
 from app.core.timezone import get_bogota_now, get_bogota_today
 from app.services import calculate_recommended_price, get_club_config, update_club_config
 from app.services.whatsapp import detect_sport_from_text, get_sport_emoji, get_sport_default_capacity, format_whatsapp_reply
+import uuid
 from app.models.court import Court
 from app.models.customer import Customer
-from app.models.slot import HoldStatus, SlotMode, SlotStatus, TimeSlot, SlotHold
+from app.models.booking import Booking
+from app.models.slot import HoldStatus, SlotMode, SlotStatus, TimeSlot, SlotHold, ClientTier, PaymentStatus
 from app.schemas.slot import (
     CourtResponse,
     DropPlayerRequest,
@@ -1396,3 +1399,191 @@ async def drop_player(
         available_spots=slot_resp.available_spots,
         status=slot_resp.status,
     )
+
+
+class AssignSpotRequest(BaseModel):
+    slot_id: int
+    customer_name: Optional[str] = None
+    client_name: Optional[str] = None
+    customer_phone: Optional[str] = None
+    client_phone: Optional[str] = None
+    spots_count: int = Field(default=1, ge=1, le=4)
+    method: str = "COUNTER"  # "COUNTER", "MEMBERSHIP", "DIRECT"
+    client_tier: Optional[str] = None
+
+
+@router.post("/assign-spot", status_code=status.HTTP_200_OK)
+async def assign_spot(
+    payload: AssignSpotRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Asignación directa e inmediata de cupo(s) desde recepción:
+    - Método 'COUNTER' (Efectivo/Datáfono en counter): Confirma de una vez sin hold temporal.
+    - Método 'MEMBERSHIP': Descuenta beneficio de membresía sin pasarela de pago.
+    """
+    name = (payload.customer_name or payload.client_name or "").strip()
+    phone = (payload.customer_phone or payload.client_phone or "").strip()
+    if not name or not phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nombre y teléfono del jugador son requeridos.",
+        )
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.holds))
+        .where(TimeSlot.id == payload.slot_id)
+        .with_for_update()
+    )
+    result = await db.execute(stmt)
+    slot = result.scalar_one_or_none()
+
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El slot especificado no existe.",
+        )
+
+    if slot.status == SlotStatus.BLOCKED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El slot se encuentra bloqueado para reservas.",
+        )
+
+    now_utc = datetime.now(timezone.utc)
+
+    # Calcular cupos disponibles reales
+    active_holds_spots = sum(
+        hold.spots_held
+        for hold in slot.holds
+        if hold.status == HoldStatus.ACTIVE and ensure_utc(hold.expires_at) > now_utc
+    )
+    available_spots = slot.capacity - slot.booked_spots - active_holds_spots
+
+    if payload.spots_count > available_spots:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No hay suficientes cupos disponibles. Cupos disponibles: {available_spots}.",
+        )
+
+    method_upper = payload.method.upper()
+    is_membership = method_upper == "MEMBERSHIP" or (payload.client_tier and payload.client_tier.upper() in [
+        "MEMBER", "TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON"
+    ])
+
+    if is_membership:
+        tier_str = payload.client_tier.upper() if payload.client_tier else "MEMBER"
+        pay_status = PaymentStatus.MEMBER_EXEMPT
+        amount = Decimal("0.00")
+        ref_prefix = "MEM"
+    else:
+        tier_str = payload.client_tier.upper() if payload.client_tier else "VIP_PAY_ON_SITE"
+        pay_status = PaymentStatus.PAID if method_upper == "COUNTER" else PaymentStatus.PENDING_ON_SITE
+        price_per_spot = slot.total_price / Decimal(slot.capacity)
+        amount = (price_per_spot * Decimal(payload.spots_count)).quantize(Decimal("0.01"))
+        ref_prefix = "POS" if method_upper == "COUNTER" else "VIP"
+
+    # Actualizar participantes del slot
+    slot.booked_spots += payload.spots_count
+    current_participants = to_participants_list(slot.players_names)
+    current_participants.append({
+        "spot_index": len(current_participants) + 1,
+        "phone": phone,
+        "display_name": name,
+        "client_tier": tier_str,
+        "host_phone": None,
+    })
+    for g in range(2, payload.spots_count + 1):
+        current_participants.append({
+            "spot_index": len(current_participants) + 1,
+            "phone": f"{phone}#GUEST{g}",
+            "display_name": f"{name} (Invitado {g})",
+            "client_tier": tier_str,
+            "host_phone": phone,
+        })
+    slot.players_names = current_participants
+
+    if slot.booked_spots >= slot.capacity:
+        slot.status = SlotStatus.FULLY_BOOKED
+    else:
+        slot.status = SlotStatus.PARTIALLY_BOOKED
+
+    # Crear Booking confirmado
+    booking_ref = f"{ref_prefix}-{uuid.uuid4().hex[:8].upper()}"
+    new_booking = Booking(
+        slot_id=slot.id,
+        customer_phone=phone,
+        customer_name=name,
+        spots_booked=payload.spots_count,
+        amount_paid=amount,
+        payment_reference=booking_ref,
+        transaction_id=f"{ref_prefix}-TX-{uuid.uuid4().hex[:8].upper()}",
+        created_at=now_utc,
+        client_tier=ClientTier.MEMBER if is_membership else ClientTier.VIP_PAY_ON_SITE,
+        payment_status=pay_status,
+    )
+    db.add(new_booking)
+
+    # Crear Hold representativo en estado CONFIRMED
+    new_hold = SlotHold(
+        slot_id=slot.id,
+        customer_phone=phone,
+        customer_name=name,
+        spots_held=payload.spots_count,
+        amount_to_pay=amount,
+        expires_at=now_utc + timedelta(hours=24),
+        status=HoldStatus.CONFIRMED,
+        payment_reference=booking_ref,
+        client_tier=ClientTier.MEMBER if is_membership else ClientTier.VIP_PAY_ON_SITE,
+        payment_status=pay_status,
+    )
+    db.add(new_hold)
+
+    # Actualizar o registrar historial del cliente en CRM
+    cust_stmt = select(Customer).where(Customer.phone == phone)
+    cust_res = await db.execute(cust_stmt)
+    cust = cust_res.scalar_one_or_none()
+    if cust:
+        cust.total_bookings_completed += payload.spots_count
+        cust.is_first_visit = False
+        if cust.onboarding_status == "PENDING":
+            cust.onboarding_status = "WELCOMED"
+    else:
+        new_cust = Customer(
+            name=name,
+            phone=phone,
+            category="4ta",
+            client_type="Socio VIP" if is_membership else "Estándar",
+            membership_tier=tier_str if tier_str in ["TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON"] else "ESTANDAR",
+            total_bookings_completed=payload.spots_count,
+            is_first_visit=False,
+            onboarding_status="WELCOMED",
+        )
+        db.add(new_cust)
+
+    await db.commit()
+    await db.refresh(slot)
+
+    # Registro de auditoría
+    try:
+        await log_activity(
+            db=db,
+            action="ASSIGN_SPOT",
+            entity_name="SLOT",
+            entity_id=str(slot.id),
+            details=f"Asignación confirmada de {payload.spots_count} cupo(s) a '{name}' ({phone}) vía {payload.method}. Ref: {booking_ref}",
+            username_snapshot="Camilo Real (Recepción)"
+        )
+    except Exception as e:
+        print(f"[AUDIT LOG WARNING] Error in assign_spot: {e}")
+
+    return {
+        "status": "success",
+        "message": f"Cupo(s) asignados y confirmados con éxito para {name} ({payload.method}).",
+        "slot_id": slot.id,
+        "booked_spots": slot.booked_spots,
+        "available_spots": max(0, slot.capacity - slot.booked_spots),
+        "slot_status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
+        "booking_reference": booking_ref,
+    }

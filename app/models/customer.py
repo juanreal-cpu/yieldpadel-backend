@@ -6,6 +6,17 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
 
+import enum
+
+class MembershipTier(str, enum.Enum):
+    TAPIA = "TAPIA"
+    COELLO = "COELLO"
+    GALAN = "GALAN"
+    CHINGOTTO = "CHINGOTTO"
+    LEBRON = "LEBRON"
+    ESTANDAR = "ESTANDAR"
+
+
 class Customer(Base):
     __tablename__ = "customers"
 
@@ -14,6 +25,7 @@ class Customer(Base):
     phone: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     category: Mapped[str] = mapped_column(String(50), default="4ta", nullable=False)
     client_type: Mapped[str] = mapped_column(String(50), default="Estándar", nullable=False)
+    membership_tier: Mapped[str] = mapped_column(String(50), default="ESTANDAR", nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     # Módulo de Primera Visita y Onboarding

@@ -2,7 +2,7 @@ from datetime import date, time
 from decimal import Decimal
 from typing import List, Optional, Union
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.slot import SlotMode, SlotStatus
 
@@ -21,6 +21,13 @@ class CourtCreate(CourtBase):
 
 class CourtResponse(CourtBase):
     id: Union[uuid.UUID, int, str]
+    sport: Optional[str] = None
+
+    @model_validator(mode="after")
+    def populate_sport(self):
+        if not self.sport and self.sport_type:
+            self.sport = self.sport_type
+        return self
 
     model_config = ConfigDict(from_attributes=True)
 

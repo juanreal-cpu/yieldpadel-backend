@@ -44,6 +44,8 @@ class TournamentCardItem(BaseModel):
     slot_ids: List[int] = Field(default_factory=list)
     booked_spots: int = 0
     total_capacity: int = 8
+    registered_players_count: Optional[int] = None
+    max_players: Optional[int] = None
     price_per_player: float = 45000.0
     prize_pool: float = 250000.0
     is_finished: bool = False

@@ -34,6 +34,8 @@ def ensure_utc(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
+@router.post("", response_model=SlotHoldResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=SlotHoldResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/create", response_model=SlotHoldResponse, status_code=status.HTTP_201_CREATED)
 async def create_hold(
     payload: SlotHoldCreate,
