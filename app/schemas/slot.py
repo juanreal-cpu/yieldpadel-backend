@@ -139,6 +139,13 @@ class ClubConfigRequest(BaseModel):
     whatsapp_group_id: Optional[str] = None
     broadcast_group_id: Optional[str] = None
     courts: Optional[List[dict]] = None
+    padel_valle: Optional[Decimal] = None
+    padel_pico: Optional[Decimal] = None
+    padel_floor: Optional[Decimal] = None
+    pickleball_valle: Optional[Decimal] = None
+    pickleball_pico: Optional[Decimal] = None
+    volleyball_base: Optional[Decimal] = None
+    pilates_per_mat: Optional[Decimal] = None
 
 
 

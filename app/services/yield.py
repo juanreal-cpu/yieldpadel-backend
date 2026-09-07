@@ -24,10 +24,17 @@ CLUB_SETTINGS: Dict[str, Any] = {
     "valle_price": Decimal("80000.00"),
     "pico_price": Decimal("120000.00"),
     "min_safety_price": Decimal("50000.00"),
+    "padel_valle": Decimal("80000.00"),
+    "padel_pico": Decimal("120000.00"),
+    "padel_floor": Decimal("50000.00"),
+    "pickleball_valle": Decimal("60000.00"),
+    "pickleball_pico": Decimal("90000.00"),
+    "volleyball_base": Decimal("120000.00"),
+    "pilates_per_mat": Decimal("35000.00"),
     "promo_discount_percent": 25,
     "cancellation_grace_minutes": 30,
     "confirmation_grace_minutes": 10,
-    "whatsapp_group_id": "120363025492819234@g.us",
+    "whatsapp_group_id": "573132058547",
 }
 
 
@@ -44,6 +51,13 @@ def get_club_config() -> Dict[str, Any]:
         "base_pico": pico,
         "min_safety_price": floor,
         "safety_floor": floor,
+        "padel_valle": float(CLUB_SETTINGS.get("padel_valle", 80000.0)),
+        "padel_pico": float(CLUB_SETTINGS.get("padel_pico", 120000.0)),
+        "padel_floor": float(CLUB_SETTINGS.get("padel_floor", 50000.0)),
+        "pickleball_valle": float(CLUB_SETTINGS.get("pickleball_valle", 60000.0)),
+        "pickleball_pico": float(CLUB_SETTINGS.get("pickleball_pico", 90000.0)),
+        "volleyball_base": float(CLUB_SETTINGS.get("volleyball_base", 120000.0)),
+        "pilates_per_mat": float(CLUB_SETTINGS.get("pilates_per_mat", 35000.0)),
         "promo_discount_percent": int(CLUB_SETTINGS["promo_discount_percent"]),
         "cancellation_grace_minutes": int(CLUB_SETTINGS["cancellation_grace_minutes"]),
         "confirmation_grace_minutes": int(CLUB_SETTINGS["confirmation_grace_minutes"]),
@@ -66,7 +80,7 @@ def update_club_config(updates: Dict[str, Any]) -> Dict[str, Any]:
 
     for k, v in updates.items():
         if v is not None and k in CLUB_SETTINGS:
-            if "price" in k:
+            if "price" in k or "valle" in k or "pico" in k or "floor" in k or "base" in k or "mat" in k:
                 CLUB_SETTINGS[k] = Decimal(str(v))
             else:
                 CLUB_SETTINGS[k] = v

@@ -206,7 +206,7 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
         (6, "Pista Pickleball 1", "PICKLEBALL", 4),
         (7, "Pista Pickleball 2", "PICKLEBALL", 4),
         (8, "Cancha Arena Vóley", "VOLLEYBALL", 12),
-        (9, "Estudio Pilates", "PILATES", 12),
+        (9, "Estudio Pilates", "PILATES", 10),
     ]
 
     changed = False
@@ -634,11 +634,52 @@ async def create_americano(
     end_dt = start_dt + timedelta(minutes=duration_mins)
     end_time_val = time(23, 59) if (end_dt.time() == time(0, 0) or end_dt.date() > payload.date) else end_dt.time()
 
+    # 1. Validación Estricta Anti-Choques en todas las canchas seleccionadas
+    import uuid
+    for court_id_str in payload.court_ids:
+        c_uuid = None
+        try:
+            c_uuid = uuid.UUID(court_id_str)
+        except Exception:
+            court_res = await db.execute(select(Court).where(Court.name.ilike(f"%{court_id_str}%")))
+            c_obj = court_res.scalars().first()
+            if c_obj:
+                c_uuid = c_obj.id
+
+        if not c_uuid:
+            continue
+
+        chk_stmt = (
+            select(TimeSlot)
+            .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
+            .where(
+                TimeSlot.court_id == c_uuid,
+                TimeSlot.date == payload.date,
+                TimeSlot.start_time < end_time_val,
+                TimeSlot.end_time > payload.start_time,
+            )
+        )
+        chk_res = await db.execute(chk_stmt)
+        for s in chk_res.scalars().all():
+            has_active_holds = any(h.status == HoldStatus.ACTIVE for h in s.holds)
+            is_booked = s.status in [SlotStatus.FULLY_BOOKED, SlotStatus.PARTIALLY_BOOKED]
+            is_class = s.slot_type in ["CLASS", "ACADEMY"]
+            has_players = s.booked_spots > 0 or len(s.players_names or []) > 0
+            if is_booked or has_active_holds or is_class or has_players:
+                c_name = s.court.name if s.court else f"Pista {court_id_str}"
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Colisión detectada: La {c_name} ya tiene una reserva activa en el horario "
+                        f"{s.start_time.strftime('%H:%M')}-{s.end_time.strftime('%H:%M')} "
+                        f"(Estado: {s.slot_type}/{s.status.value}). Libera el turno antes de crear el torneo."
+                    ),
+                )
+
     created_slots = []
     now_utc = datetime.now(timezone.utc)
 
     for court_id_str in payload.court_ids:
-        import uuid
         try:
             c_uuid = uuid.UUID(court_id_str)
         except Exception:
@@ -716,16 +757,21 @@ async def create_americano(
             created_slots.append(new_slot)
 
     await db.commit()
-    for s in created_slots:
-        await db.refresh(s)
+    created_ids = [s.id for s in created_slots]
+    res_loaded = await db.execute(
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.holds), selectinload(TimeSlot.court))
+        .where(TimeSlot.id.in_(created_ids))
+    )
+    loaded_slots = res_loaded.scalars().all()
 
-    return [compute_slot_response(s, now_utc) for s in created_slots]
+    return [compute_slot_response(s, now_utc) for s in loaded_slots]
 
 
 @router.get("/club-config")
 @router.get("/admin/club-settings")
 async def get_club_configuration(db: AsyncSession = Depends(get_db)):
-    """Retorna la configuración operativa del club y las 5 canchas."""
+    """Retorna la configuración operativa del club y las canchas por deporte."""
     config = get_club_config()
     courts = await ensure_five_courts(db)
     return {
@@ -737,6 +783,8 @@ async def get_club_configuration(db: AsyncSession = Depends(get_db)):
                 "court_number": getattr(c, "court_number", idx + 1),
                 "name": c.name,
                 "is_active": c.is_active,
+                "sport_type": getattr(c, "sport_type", "PADEL") or "PADEL",
+                "max_capacity": getattr(c, "max_capacity", 4) or 4,
             }
             for idx, c in enumerate(courts)
         ]
@@ -749,7 +797,6 @@ async def update_club_configuration(
     payload: ClubConfigRequest,
     db: AsyncSession = Depends(get_db),
 ):
-
     """Actualiza en caliente la configuración de tarifas y canchas del club."""
     updated = update_club_config(payload.model_dump(exclude_unset=True, exclude={"courts"}))
     if payload.courts:
@@ -762,6 +809,10 @@ async def update_club_configuration(
                     court_map[cid].name = c_data["name"]
                 if "is_active" in c_data:
                     court_map[cid].is_active = bool(c_data["is_active"])
+                if "sport_type" in c_data and c_data["sport_type"]:
+                    court_map[cid].sport_type = str(c_data["sport_type"]).upper()
+                if "max_capacity" in c_data and c_data["max_capacity"] is not None:
+                    court_map[cid].max_capacity = int(c_data["max_capacity"])
         await db.commit()
 
     courts = await ensure_five_courts(db)
@@ -774,6 +825,8 @@ async def update_club_configuration(
                 "court_number": getattr(c, "court_number", idx + 1),
                 "name": c.name,
                 "is_active": c.is_active,
+                "sport_type": getattr(c, "sport_type", "PADEL") or "PADEL",
+                "max_capacity": getattr(c, "max_capacity", 4) or 4,
             }
             for idx, c in enumerate(courts)
         ]
