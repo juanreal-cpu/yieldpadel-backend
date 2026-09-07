@@ -20,17 +20,17 @@
     .view-section.hidden { display: none !important; }
 
     /* SOLUCIÓN RADICAL A TEXTOS EN BLANCO (FORZAR NEGRO DIRECTO) */
-    .btn-sport-filter, .time-filter-btn {
+    .btn-sport-filter, .time-filter-btn, .btn-an-sport-pill {
       color: #0f172a !important; /* Negro slate puro */
       background-color: #ffffff;
       border: 1px solid #cbd5e1;
     }
-    .btn-sport-filter.active, .time-filter-btn.active {
+    .btn-sport-filter.active, .time-filter-btn.active, .btn-an-sport-pill.active {
       color: #ffffff !important;
       background-color: #0f172a !important;
       border-color: #0f172a !important;
     }
-    .btn-sport-filter span, .time-filter-btn span {
+    .btn-sport-filter span, .time-filter-btn span, .btn-an-sport-pill span {
       color: inherit !important;
     }
 
@@ -2204,28 +2204,28 @@
             <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
               <!-- Segmented Control de Deportes (Tabs tipo pastilla) -->
               <div class="flex items-center gap-1.5" id="sport-selector-container">
-                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="btn-sport-filter active inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-bold">
+                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="btn-sport-filter active inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-bold" style="background-color: #0f172a; color: #ffffff; border: 1px solid #0f172a;">
                   <span>🎾</span> <span>Pádel (5 Pistas)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold">
+                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">
                   <span>🏓</span> <span>Pickleball (2)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold">
+                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">
                   <span>🏐</span> <span>Vóley (1)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold">
+                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">
                   <span>🧘</span> <span>Pilates (1)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('CONSOLE')" id="btn-sport-console" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold">
+                <button type="button" onclick="setSportFilter('CONSOLE')" id="btn-sport-console" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">
                   <span>🎮</span> <span>Consola (1 Sala)</span>
                 </button>
               </div>
               <!-- Filtro Horario Horizontal Compacto -->
               <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm" id="time-filter-container">
-                <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="time-filter-btn active px-3 py-1 text-xs font-semibold rounded transition"><span>Todo el día</span></button>
-                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition"><span>Mañana (6-12)</span></button>
-                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition"><span>Tarde (12-18)</span></button>
-                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition"><span>Noche (18-24)</span></button>
+                <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="time-filter-btn active px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #0f172a; color: #ffffff; border: 1px solid #0f172a;"><span>Todo el día</span></button>
+                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;"><span>Mañana (6-12)</span></button>
+                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;"><span>Tarde (12-18)</span></button>
+                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;"><span>Noche (18-24)</span></button>
               </div>
 
               <!-- Selector de Cancha a la derecha con select nativo estilizado en Tailwind -->
@@ -2723,11 +2723,11 @@
               <!-- Selector de Deporte para Analytics -->
               <!-- Selector de Deporte para Analytics (Pills) -->
               <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200" id="analytics-sport-selector">
-                <button type="button" onclick="setAnalyticsSport('PADEL')" id="btn-an-sport-padel" class="btn-an-sport-pill px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm transition active bg-slate-900 text-white">🎾 Pádel (5)</button>
-                <button type="button" onclick="setAnalyticsSport('PICKLEBALL')" id="btn-an-sport-pickleball" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300">🏓 Pickleball (2)</button>
-                <button type="button" onclick="setAnalyticsSport('VOLLEYBALL')" id="btn-an-sport-volleyball" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300">🏐 Vóley (1)</button>
-                <button type="button" onclick="setAnalyticsSport('PILATES')" id="btn-an-sport-pilates" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300">🧘 Pilates (1)</button>
-                <button type="button" onclick="setAnalyticsSport('CONSOLE')" id="btn-an-sport-console" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300">🎮 Consola (1)</button>
+                <button type="button" onclick="setAnalyticsSport('PADEL')" id="btn-an-sport-padel" class="btn-an-sport-pill px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm transition active" style="background-color: #0f172a; color: #ffffff; border: 1px solid #0f172a;">🎾 Pádel (5)</button>
+                <button type="button" onclick="setAnalyticsSport('PICKLEBALL')" id="btn-an-sport-pickleball" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">🏓 Pickleball (2)</button>
+                <button type="button" onclick="setAnalyticsSport('VOLLEYBALL')" id="btn-an-sport-volleyball" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">🏐 Vóley (1)</button>
+                <button type="button" onclick="setAnalyticsSport('PILATES')" id="btn-an-sport-pilates" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">🧘 Pilates (1)</button>
+                <button type="button" onclick="setAnalyticsSport('CONSOLE')" id="btn-an-sport-console" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">🎮 Consola (1)</button>
               </div>
 
               <!-- Control Semana Anterior / Actual / Siguiente -->
@@ -2807,24 +2807,24 @@
             </span>
             <div class="flex items-center gap-3 flex-wrap">
               <div class="flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded border border-dashed border-slate-300 bg-slate-50 inline-block"></span>
+                <span class="w-4 h-4 rounded inline-block" style="background-color: #f1f5f9; border: 1px dashed #cbd5e1;"></span>
                 <span class="text-slate-500 font-medium">0% Sin Ocupación</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded border border-amber-200 bg-amber-50 inline-block"></span>
-                <span class="text-amber-900 font-medium">1% - 40% Baja</span>
+                <span class="w-4 h-4 rounded inline-block" style="background-color: #fef3c7; border: 1px solid #f59e0b;"></span>
+                <span style="color: #78350f;" class="font-semibold">1% - 39% Baja</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded border border-sky-200 bg-sky-50 inline-block"></span>
-                <span class="text-sky-900 font-semibold">41% - 79% Media</span>
+                <span class="w-4 h-4 rounded inline-block" style="background-color: #bae6fd; border: 1px solid #0284c7;"></span>
+                <span style="color: #0369a1;" class="font-bold">40% - 74% Media</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded border border-emerald-300 bg-emerald-100 inline-block"></span>
-                <span class="text-emerald-900 font-bold">80% - 99% Alta</span>
+                <span class="w-4 h-4 rounded inline-block" style="background-color: #a7f3d0; border: 1px solid #10b981;"></span>
+                <span style="color: #065f46;" class="font-extrabold">75% - 99% Alta</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded border border-emerald-700 bg-emerald-600 inline-block"></span>
-                <span class="text-emerald-800 font-black">100% Lleno Total</span>
+                <span class="w-4 h-4 rounded inline-block" style="background-color: #059669; border: 1px solid #047857;"></span>
+                <span style="color: #059669;" class="font-black">100% Lleno Total</span>
               </div>
             </div>
           </div>
@@ -4174,9 +4174,13 @@
           const isActive = (sp === window.analyticsSport);
           btn.classList.toggle('active', isActive);
           if (isActive) {
-            btn.className = 'btn-an-sport-pill px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm transition active bg-slate-900 text-white';
+            btn.style.setProperty('background-color', '#0f172a', 'important');
+            btn.style.setProperty('color', '#ffffff', 'important');
+            btn.style.setProperty('border', '1px solid #0f172a', 'important');
           } else {
-            btn.className = 'btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300';
+            btn.style.setProperty('background-color', '#ffffff', 'important');
+            btn.style.setProperty('color', '#0f172a', 'important');
+            btn.style.setProperty('border', '1px solid #cbd5e1', 'important');
           }
         }
       });
@@ -4295,31 +4299,16 @@
           const avgRevFormatted = formatCOP(cell.average_revenue || 0);
           const bookedStr = `${cell.slots_booked}/${cell.total_slots} canchas`;
 
-          let cellContainerClass = 'p-2.5 rounded-xl text-center bg-slate-50 border border-dashed border-slate-200 text-slate-400 transition hover:shadow-sm';
-          let pctColor = 'text-slate-400';
-          let fractionColor = 'text-slate-400';
-          let revColor = 'text-slate-400 font-medium';
+          let cellStyle = 'background-color: #f1f5f9; color: #64748b; border: 1px dashed #cbd5e1;';
 
           if (occ >= 100) {
-            cellContainerClass = 'p-2.5 rounded-xl text-center bg-emerald-600 text-white font-black shadow-sm border border-emerald-700 transition hover:brightness-105';
-            pctColor = 'text-white';
-            fractionColor = 'text-emerald-100';
-            revColor = 'text-white font-black opacity-95';
-          } else if (occ >= 80) {
-            cellContainerClass = 'p-2.5 rounded-xl text-center bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold transition hover:shadow-sm';
-            pctColor = 'text-emerald-900';
-            fractionColor = 'text-emerald-800';
-            revColor = 'text-emerald-950 font-extrabold';
-          } else if (occ >= 41) {
-            cellContainerClass = 'p-2.5 rounded-xl text-center bg-sky-50 border border-sky-200 text-sky-900 font-semibold transition hover:shadow-sm';
-            pctColor = 'text-sky-900';
-            fractionColor = 'text-sky-800';
-            revColor = 'text-sky-950 font-bold';
-          } else if (occ >= 1) {
-            cellContainerClass = 'p-2.5 rounded-xl text-center bg-amber-50 border border-amber-200 text-amber-900 font-medium transition hover:shadow-sm';
-            pctColor = 'text-amber-900';
-            fractionColor = 'text-amber-800';
-            revColor = 'text-amber-950 font-bold';
+            cellStyle = 'background-color: #059669; color: #ffffff; border: 1px solid #047857; font-weight: 900; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+          } else if (occ >= 75) {
+            cellStyle = 'background-color: #a7f3d0; color: #065f46; border: 1px solid #10b981; font-weight: 800;';
+          } else if (occ >= 40) {
+            cellStyle = 'background-color: #bae6fd; color: #0369a1; border: 1px solid #0284c7; font-weight: 700;';
+          } else if (occ > 0) {
+            cellStyle = 'background-color: #fef3c7; color: #78350f; border: 1px solid #f59e0b; font-weight: 600;';
           }
 
           // Delta tooltips
@@ -4341,13 +4330,13 @@
 
           tableHtml += `
             <td class="p-1.5 align-middle text-center cell-occupancy">
-              <div class="relative group cursor-pointer ${cellContainerClass}">
-                <div class="text-base font-black tracking-tight ${pctColor}">${occ}%</div>
-                <div class="text-[10px] font-semibold mt-0.5 ${fractionColor}">${bookedStr}</div>
-                <div class="text-[10px] mt-1 ${revColor}">${avgRevFormatted}</div>
+              <div class="p-2.5 rounded-xl text-center transition hover:scale-105 cursor-pointer relative group" style="${cellStyle}">
+                <div class="text-base font-black tracking-tight" style="color: inherit;">${occ}%</div>
+                <div class="text-[11px] font-semibold opacity-90" style="color: inherit;">${bookedStr}</div>
+                <div class="text-[10px] font-bold mt-1" style="color: inherit;">${avgRevFormatted}</div>
 
                 <!-- Tooltip Hover Popover -->
-                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-56 p-3 bg-slate-900 text-white rounded-xl shadow-2xl text-xs space-y-1.5 pointer-events-none text-left border border-slate-700">
+                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-56 p-3 bg-slate-900 text-white rounded-xl shadow-2xl text-xs space-y-1.5 pointer-events-none text-left border border-slate-700 font-normal">
                   <div class="font-black border-b border-slate-700 pb-1 flex justify-between items-center text-slate-100">
                     <span>${cell.day_name || ''} • ${timeLabel}</span>
                     <span class="text-emerald-400 font-bold">${occ}%</span>
@@ -4376,6 +4365,7 @@
       tbody.innerHTML = tableHtml;
     }
     window.renderAnalyticsHeatmap = renderAnalyticsHeatmap;
+    window.renderOccupancyMatrix = renderAnalyticsHeatmap;
 
     async function loadAnalyticsHeatmap(targetDate) {
       const qDate = targetDate || window.analyticsCurrentDate || (typeof selectedDate !== 'undefined' && selectedDate ? selectedDate : '2026-09-07');
@@ -4430,7 +4420,20 @@
       Object.entries(sportsConfig).forEach(([key, btnId]) => {
         const btn = document.getElementById(btnId);
         if (btn) {
-          btn.classList.toggle('active', key === window.currentSportFilter);
+          const isActive = (key === window.currentSportFilter);
+          btn.classList.toggle('active', isActive);
+          if (isActive) {
+            btn.style.setProperty('background-color', '#0f172a', 'important');
+            btn.style.setProperty('color', '#ffffff', 'important');
+            btn.style.setProperty('border', '1px solid #0f172a', 'important');
+          } else {
+            btn.style.setProperty('background-color', '#ffffff', 'important');
+            btn.style.setProperty('color', '#0f172a', 'important');
+            btn.style.setProperty('border', '1px solid #cbd5e1', 'important');
+          }
+          btn.querySelectorAll('span').forEach(sp => {
+            sp.style.setProperty('color', 'inherit', 'important');
+          });
         }
       });
 
@@ -5401,7 +5404,20 @@ ${data.message}`);
       Object.entries(tods).forEach(([key, btnId]) => {
         const btn = document.getElementById(btnId);
         if (btn) {
-          btn.classList.toggle('active', key === currentTimeFilter);
+          const isActive = (key === currentTimeFilter);
+          btn.classList.toggle('active', isActive);
+          if (isActive) {
+            btn.style.setProperty('background-color', '#0f172a', 'important');
+            btn.style.setProperty('color', '#ffffff', 'important');
+            btn.style.setProperty('border', '1px solid #0f172a', 'important');
+          } else {
+            btn.style.setProperty('background-color', '#ffffff', 'important');
+            btn.style.setProperty('color', '#0f172a', 'important');
+            btn.style.setProperty('border', '1px solid #cbd5e1', 'important');
+          }
+          btn.querySelectorAll('span').forEach(sp => {
+            sp.style.setProperty('color', 'inherit', 'important');
+          });
         }
       });
 
