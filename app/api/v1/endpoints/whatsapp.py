@@ -182,6 +182,9 @@ async def get_player_history(
     }
 
 
+from app.services import get_club_config
+
+
 class BroadcastRequest(BaseModel):
     target_date: Optional[str] = None
     group_id: Optional[str] = None
@@ -208,10 +211,12 @@ async def broadcast_availability(
     else:
         parsed_date = get_bogota_today()
 
+    cfg = get_club_config()
+    default_group = cfg.get("whatsapp_broadcast_group") or os.getenv("WHATSAPP_BROADCAST_GROUP_ID", "+573132058547")
     target_group = (
         (payload.group_id if payload and payload.group_id else None)
         or group_id
-        or os.getenv("WHATSAPP_BROADCAST_GROUP_ID", "573130000000")
+        or default_group
     )
 
     broadcast_text, total_slots = await generate_availability_broadcast(db, target_date=parsed_date)
@@ -220,6 +225,7 @@ async def broadcast_availability(
     return {
         "status": "sent" if sent_success else "simulated",
         "target_date": str(parsed_date),
+        "total_available_slots": total_slots,
         "total_slots": total_slots,
         "recipient": target_group,
         "broadcast_text": broadcast_text,
@@ -246,10 +252,12 @@ async def broadcast_promo_urgent(
     else:
         parsed_date = get_bogota_today()
 
+    cfg = get_club_config()
+    default_group = cfg.get("whatsapp_broadcast_group") or os.getenv("WHATSAPP_BROADCAST_GROUP_ID", "+573132058547")
     target_group = (
         (payload.group_id if payload and payload.group_id else None)
         or group_id
-        or os.getenv("WHATSAPP_BROADCAST_GROUP_ID", "573130000000")
+        or default_group
     )
 
     broadcast_text, total_critical = await generate_promo_urgent_broadcast(db, target_date=parsed_date)
@@ -262,5 +270,6 @@ async def broadcast_promo_urgent(
         "recipient": target_group,
         "broadcast_text": broadcast_text,
     }
+
 
 

@@ -11,6 +11,7 @@ from app.models.slot import (
 )
 from app.models.booking import Booking
 from app.models.incident import PlayerIncident
+from app.models.customer import Customer
 
 __all__ = [
     "Base",
@@ -19,6 +20,7 @@ __all__ = [
     "SlotHold",
     "Booking",
     "PlayerIncident",
+    "Customer",
     "SlotMode",
     "SlotStatus",
     "HoldStatus",

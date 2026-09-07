@@ -81,11 +81,13 @@ class TimeSlotResponse(BaseModel):
 
 
 class ReserveOrBlockRequest(BaseModel):
-    slot_type: str = "MATCH"  # MATCH, CLASS, ACADEMY, MAINTENANCE, AMERICANO
+    slot_type: str = "MATCH"  # FULL_COURT, SPLIT_MATCH, MEMBER, PAY_AT_VENUE, CLASS, MAINTENANCE, AMERICANO
     instructor_name: Optional[str] = None
     custom_price: Optional[Decimal] = None
     client_name: Optional[str] = None
     client_phone: Optional[str] = None
+    client_category: Optional[str] = None
+    client_type: Optional[str] = None
     mode: Optional[SlotMode] = None
     notes: Optional[str] = None
     tournament_type: Optional[str] = None
@@ -95,18 +97,23 @@ class ReserveOrBlockRequest(BaseModel):
 class CreateAmericanoRequest(BaseModel):
     name: Optional[str] = None
     tournament_name: Optional[str] = None
+    modality: Optional[str] = None
+    tournament_type: Optional[str] = "PAREJA_FIJA"
     date: date
     start_time: time
     duration_hours: Optional[float] = None
     duration_minutes: Optional[int] = None
-    tournament_type: str = "PAREJA_FIJA"  # PAREJA_FIJA o INDIVIDUAL
     court_ids: List[str]  # 2 a 5 canchas
+    price_per_player: Optional[Decimal] = None
     price_per_participant: Optional[Decimal] = None
     price_per_spot: Optional[Decimal] = None
     prize_pool: Optional[Decimal] = Decimal("300000.00")
 
     def get_name(self) -> str:
         return self.tournament_name or self.name or "Torneo Americano"
+
+    def get_modality(self) -> str:
+        return self.modality or self.tournament_type or "PAREJA_FIJA"
 
     def get_duration_minutes(self) -> int:
         if self.duration_minutes is not None:
@@ -116,7 +123,7 @@ class CreateAmericanoRequest(BaseModel):
         return 120
 
     def get_price(self) -> Decimal:
-        return self.price_per_spot or self.price_per_participant or Decimal("35000.00")
+        return self.price_per_player or self.price_per_spot or self.price_per_participant or Decimal("45000.00")
 
 
 class ClubConfigRequest(BaseModel):

@@ -126,7 +126,27 @@ async def serve_dashboard():
 
 
 from app.api.v1.endpoints import whatsapp, radar
+from app.core.database import get_db
+from app.schemas.slot import ClubConfigRequest
+from app.api.v1.endpoints.slots import update_club_configuration, get_club_configuration
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(whatsapp.router, prefix="/api/v1/whatsapp", tags=["whatsapp"])
 app.include_router(radar.router, prefix="/api/v1/radar", tags=["Radar & Market Analytics"])
+
+
+@app.post("/api/v1/admin/club-settings", tags=["admin"])
+async def admin_update_club_settings(
+    payload: ClubConfigRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await update_club_configuration(payload, db)
+
+
+@app.get("/api/v1/admin/club-settings", tags=["admin"])
+async def admin_get_club_settings(
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_club_configuration(db)

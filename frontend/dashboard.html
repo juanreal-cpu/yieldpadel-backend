@@ -281,14 +281,15 @@
     }
 
     .kpi-card {
-      background-color: #1E293B;
-      border: 1px solid #334155;
+      background-color: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.6);
       border-radius: 10px;
-      padding: 0.75rem 1rem;
+      padding: 0.85rem 1rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(8px);
     }
 
     .kpi-label {
@@ -296,43 +297,43 @@
       justify-content: space-between;
       align-items: center;
       font-size: 0.68rem;
-      font-weight: 700;
+      font-weight: 600;
       color: #94A3B8;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.25rem;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
     }
 
     .kpi-tag {
       font-size: 0.6rem;
-      font-weight: 800;
-      padding: 0.1rem 0.35rem;
+      font-weight: 700;
+      padding: 0.12rem 0.4rem;
       border-radius: 4px;
       letter-spacing: 0.02em;
     }
-    .kpi-tag-cyan { background: rgba(56, 189, 248, 0.2); color: #38BDF8; }
-    .kpi-tag-emerald { background: rgba(16, 185, 129, 0.2); color: #34D399; }
-    .kpi-tag-amber { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
-    .kpi-tag-purple { background: rgba(168, 85, 247, 0.2); color: #C084FC; }
+    .kpi-tag-cyan { background: rgba(14, 165, 233, 0.15); color: #7DD3FC; border: 1px solid rgba(125, 211, 252, 0.25); }
+    .kpi-tag-emerald { background: rgba(16, 185, 129, 0.15); color: #6EE7B7; border: 1px solid rgba(110, 231, 183, 0.25); }
+    .kpi-tag-amber { background: rgba(245, 158, 11, 0.15); color: #FCD34D; border: 1px solid rgba(252, 211, 77, 0.25); }
+    .kpi-tag-purple { background: rgba(168, 85, 247, 0.15); color: #D8B4FE; border: 1px solid rgba(216, 180, 254, 0.25); }
 
     .kpi-value {
-      font-size: 1.25rem;
-      font-weight: 800;
+      font-size: 1.5rem;
+      font-weight: 600;
       color: #FFFFFF;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       margin: 0.15rem 0;
       letter-spacing: -0.02em;
     }
 
-    .kpi-val-green { color: #34D399; }
-    .kpi-val-cyan { color: #38BDF8; }
-    .kpi-val-amber { color: #FBBF24; }
-    .kpi-val-purple { color: #C084FC; }
+    .kpi-val-green { color: #FFFFFF; }
+    .kpi-val-cyan { color: #FFFFFF; }
+    .kpi-val-amber { color: #FFFFFF; }
+    .kpi-val-purple { color: #FFFFFF; }
 
     .kpi-sub {
-      font-size: 0.66rem;
-      color: #64748B;
-      font-weight: 500;
+      font-size: 0.72rem;
+      color: #94A3B8;
+      font-weight: 400;
     }
 
     .kpi-progress {
@@ -362,18 +363,11 @@
       width: 100%;
     }
 
-    /* Main Container Grid (Matriz de 5 Canchas + Aside) */
+    /* Main Container Grid (Matriz de 5 Canchas - 100% Ancho Completo) */
     .main-container {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 1.5rem;
+      display: block;
+      width: 100%;
       max-width: 100%;
-    }
-
-    @media (max-width: 1200px) {
-      .main-container {
-        grid-template-columns: 1fr;
-      }
     }
 
     /* BARRA DE HERRAMIENTAS OPERATIVA (Card Blanca, Sombra Suave) */
@@ -1445,6 +1439,268 @@
       border: 1px solid #E9D5FF;
     }
 
+
+    /* ======================================================== */
+    /* ESTILOS: PANEL AUDITORÍA INFERIOR & HOLDS                */
+    /* ======================================================== */
+    .bottom-audit-panel {
+      background-color: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      margin-top: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    .audit-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1.25rem;
+      background-color: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0;
+      cursor: pointer;
+      user-select: none;
+    }
+    .audit-panel-header:hover {
+      background-color: #F1F5F9;
+    }
+    .badge-audit-count {
+      background: #FEF3C7;
+      color: #D97706;
+      border: 1px solid #FDE68A;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+    }
+    .btn-toggle-audit {
+      background: transparent;
+      border: none;
+      color: #64748B;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .audit-panel-body {
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 900px) {
+      .audit-panel-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ======================================================== */
+    /* ESTILOS: ASISTENTE BOT FLOTANTE & DRAWER LATERAL         */
+    /* ======================================================== */
+    .btn-floating-bot {
+      position: fixed;
+      bottom: 1.75rem;
+      right: 1.75rem;
+      z-index: 100;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      padding: 0.75rem 1.35rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 16px rgba(5, 150, 105, 0.4);
+      transition: all 0.25s ease;
+    }
+    .btn-floating-bot:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+    }
+    .bot-floating-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background-color: #34D399;
+      animation: pulse 1.8s infinite;
+    }
+
+    .bot-drawer-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(2px);
+      z-index: 210;
+    }
+    .bot-drawer-backdrop.active {
+      display: block;
+    }
+
+    .bot-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 440px;
+      max-width: 92vw;
+      height: 100vh;
+      background: #FFFFFF;
+      box-shadow: -4px 0 25px rgba(0, 0, 0, 0.15);
+      z-index: 220;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bot-drawer.active {
+      transform: translateX(0);
+    }
+
+    .bot-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid #E2E8F0;
+      background: #F8FAFC;
+    }
+    .btn-close-drawer {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      line-height: 1;
+      color: #64748B;
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+    }
+    .btn-close-drawer:hover {
+      background: #E2E8F0;
+      color: #0F172A;
+    }
+
+    .bot-drawer-body {
+      padding: 1.25rem;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ======================================================== */
+    /* ESTILOS: ANIMACIÓN Y BADGE 'ON FIRE' EN SLOTS CRÍTICOS   */
+    /* ======================================================== */
+    @keyframes fireGlow {
+      0% {
+        box-shadow: 0 0 4px rgba(245, 158, 11, 0.4), inset 0 0 4px rgba(245, 158, 11, 0.1);
+        border-color: #F59E0B;
+      }
+      50% {
+        box-shadow: 0 0 14px rgba(239, 68, 68, 0.6), inset 0 0 8px rgba(245, 158, 11, 0.25);
+        border-color: #EF4444;
+      }
+      100% {
+        box-shadow: 0 0 4px rgba(245, 158, 11, 0.4), inset 0 0 4px rgba(245, 158, 11, 0.1);
+        border-color: #F59E0B;
+      }
+    }
+
+    .matrix-slot-card.slot-on-fire {
+      animation: fireGlow 2s infinite ease-in-out;
+      border: 1.5px solid #F59E0B !important;
+    }
+
+    .badge-critical-fire {
+      background: linear-gradient(135deg, #EF4444 0%, #F59E0B 100%);
+      color: #FFFFFF;
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .btn-card-remate-flash {
+      background: linear-gradient(135deg, #E11D48 0%, #EA580C 100%);
+      color: #FFFFFF;
+      border: none;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.25rem 0.55rem;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(225, 29, 72, 0.3);
+      transition: all 0.18s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.25rem;
+    }
+    .btn-card-remate-flash:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(225, 29, 72, 0.45);
+    }
+
+    /* ======================================================== */
+    /* ESTILOS: AUTOCOMPLETADO DE CLIENTES CRM EN MODAL        */
+    /* ======================================================== */
+    .customer-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 8px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+      z-index: 1000;
+      margin-top: 4px;
+    }
+    .customer-dropdown-item {
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid #F1F5F9;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.15s;
+    }
+    .customer-dropdown-item:hover {
+      background-color: #F8FAFC;
+    }
+    .customer-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .customer-item-name {
+      font-weight: 700;
+      color: #0F172A;
+      font-size: 0.8rem;
+    }
+    .customer-item-phone {
+      font-size: 0.72rem;
+      color: #64748B;
+      font-family: monospace;
+    }
+    .customer-item-badge {
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      background: #E0F2FE;
+      color: #0284C7;
+    }
   </style>
 </head>
 <body>
@@ -1697,11 +1953,10 @@
 
           </div>
 
-          <!-- Contenedor Principal: Matriz 5 Canchas + Aside de Herramientas -->
+          <!-- Contenedor Principal: Matriz 5 Canchas a Ancho Completo (100%) -->
           <main class="main-container">
 
-            <!-- Columna Izquierda: Calendario Tipo Matriz de 5 Canchas -->
-            <section>
+            <section style="width: 100%;">
               
               <!-- Título de Sección y Leyenda Visual -->
               <div class="section-title">
@@ -1730,76 +1985,50 @@
                 </div>
               </div>
 
-            </section>
-
-            <!-- Columna Derecha: Aside con Parser WhatsApp, Métricas y Holds -->
-            <aside class="sidebar">
-
-              <!-- Card 1: Parser WhatsApp de Convocatorias -->
-              <div class="sidebar-card">
-                <div class="sidebar-title">
-                  <span>📲 Parser WhatsApp</span>
-                  <span style="color: #059669; font-size: 0.7rem; font-weight: 700;">Convocatorias</span>
-                </div>
-                <p style="font-size: 0.72rem; color: #64748B; margin-bottom: 0.4rem;">
-                  Pega el texto de WhatsApp para parsear jugadores con 🎾 e identidad canónica:
-                </p>
-
-                <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 07 SEPTIEMBRE
-Categoría: 4ta
-⌚6:00pm - 7:30pm
-📍Bogotá Pádel Center
-💰30.000
-🎾Juanda
-🎾Edinson
-🎾Charlie
-🎾 Jose G
-PARTIDO CERRADO</textarea>
-
-                <div class="form-group" style="margin-bottom: 0.5rem;">
-                  <input type="tel" id="wa-sender-phone" placeholder="Teléfono remitente (ej: +573001234567)" class="form-control" style="font-size: 0.75rem; padding: 0.4rem 0.6rem;">
-                </div>
-
-                <button onclick="parseWhatsApp()" class="btn-wa">
-                  🚀 Sincronizar Convocatoria
-                </button>
-
-                <div id="wa-result" style="display: none;" class="wa-result-box"></div>
-              </div>
-
-              <!-- Card 2: Holds Activos Bold / Wompi -->
-              <div class="sidebar-card">
-                <div class="sidebar-title">
-                  <span>Holds Activos</span>
-                  <span style="color: #D97706; font-size: 0.7rem; font-weight: 700;">Bold / Wompi</span>
-                </div>
-
-                <div id="active-holds-container">
-                  <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem; text-align: center; font-size: 0.72rem; color: #64748B;">
-                    No hay holds activos en este momento.
+              <!-- PANEL INFERIOR AUDITORÍA, HOLDS ACTIVOS Y AUDIT LOG -->
+              <div class="bottom-audit-panel" id="bottom-audit-panel">
+                <div class="audit-panel-header" onclick="toggleAuditPanel()">
+                  <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-size: 1.1rem;">📋</span>
+                    <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">Holds Activos Bold/Wompi & Auditoría de Eventos</span>
+                    <span class="badge-audit-count" id="audit-holds-count">0 holds activos</span>
                   </div>
+                  <button type="button" class="btn-toggle-audit" id="btn-toggle-audit">▲ Colapsar Panel</button>
                 </div>
-              </div>
+                <div class="audit-panel-body" id="audit-panel-body">
+                  <!-- Card Holds Activos -->
+                  <div class="sidebar-card">
+                    <div class="sidebar-title">
+                      <span>Holds Activos Temporales</span>
+                      <span style="color: #D97706; font-size: 0.7rem; font-weight: 700;">Bold / Wompi (15 min)</span>
+                    </div>
+                    <div id="active-holds-container">
+                      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem; text-align: center; font-size: 0.72rem; color: #64748B;">
+                        No hay holds activos en este momento.
+                      </div>
+                    </div>
+                  </div>
 
-              <!-- Card 3: Auditoría y Eventos Recientes -->
-              <div class="sidebar-card">
-                <div class="sidebar-title">
-                  <span>Eventos Recientes</span>
-                  <span style="color: #0284C7; font-size: 0.7rem; font-weight: 700;">Audit Log</span>
-                </div>
-
-                <div id="event-feed" class="event-feed">
-                  <div class="event-item">
-                    <div class="event-dot"></div>
-                    <div>
-                      <div style="font-weight: 600; color: #0F172A;">Sistema Inicializado</div>
-                      <div style="color: #64748B; font-size: 0.68rem;">YieldPadel SaaS listo • Modo Recepción</div>
+                  <!-- Card Eventos Recientes -->
+                  <div class="sidebar-card">
+                    <div class="sidebar-title">
+                      <span>Eventos Recientes del Club</span>
+                      <span style="color: #0284C7; font-size: 0.7rem; font-weight: 700;">Audit Log en Vivo</span>
+                    </div>
+                    <div id="event-feed" class="event-feed" style="max-height: 180px; overflow-y: auto;">
+                      <div class="event-item">
+                        <div class="event-dot"></div>
+                        <div>
+                          <div style="font-weight: 600; color: #0F172A;">Sistema Inicializado</div>
+                          <div style="color: #64748B; font-size: 0.68rem;">YieldPadel SaaS listo • Modo Recepción Bogotá</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-            </aside>
+            </section>
 
           </main>
 
@@ -1862,24 +2091,24 @@ PARTIDO CERRADO</textarea>
 
             <div class="sidebar-card">
               <div class="sidebar-title">
-                <span>Directorio de Jugadores (134 Registrados)</span>
-                <span class="pro-badge">SaaS PRO</span>
+                <span>Directorio de Jugadores</span>
+                <span class="pro-badge">CRM Club</span>
               </div>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+              <div id="crm-customers-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
                 <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
-                  <div style="font-weight: 700; color: #0F172A;">Juanda Pérez</div>
-                  <div style="font-size: 0.72rem; color: #64748B;">+57 313 ***547 • 4ta Categoría</div>
-                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #059669; font-weight: 600;">14 partidos jugados • 0 no-shows</div>
+                  <div style="font-weight: 700; color: #0F172A;">Juan Real Florez</div>
+                  <div style="font-size: 0.72rem; color: #64748B;">+57 313 2058547 • 4ta Categoría</div>
+                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #059669; font-weight: 600;">Socio VIP • Cliente Fundador</div>
                 </div>
                 <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
-                  <div style="font-weight: 700; color: #0F172A;">Edinson Martínez</div>
-                  <div style="font-size: 0.72rem; color: #64748B;">+57 300 ***123 • 3ra Categoría</div>
-                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #059669; font-weight: 600;">22 partidos jugados • Cliente VIP</div>
+                  <div style="font-weight: 700; color: #0F172A;">Camilo Real</div>
+                  <div style="font-size: 0.72rem; color: #64748B;">+57 300 1234567 • 4ta Categoría</div>
+                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #0284C7; font-weight: 600;">Estándar • Jugador Semanal</div>
                 </div>
                 <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
-                  <div style="font-weight: 700; color: #0F172A;">Charlie Gómez</div>
-                  <div style="font-size: 0.72rem; color: #64748B;">+57 310 ***998 • 4ta Categoría</div>
-                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #0284C7; font-weight: 600;">8 partidos jugados • Recurrente</div>
+                  <div style="font-weight: 700; color: #0F172A;">David P</div>
+                  <div style="font-size: 0.72rem; color: #64748B;">+57 310 9876543 • 3ra Categoría</div>
+                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #7C3AED; font-weight: 600;">3ra Avanzada • Torneos</div>
                 </div>
               </div>
             </div>
@@ -2159,43 +2388,64 @@ PARTIDO CERRADO</textarea>
     </div>
   </div>
 
-  <!-- MODAL: RESERVAR O BLOQUEAR PISTA -->
+  <!-- MODAL: GESTIÓN DE TURNO (6 OPCIONES COMPLETAS & CRM AUTOCOMPLETE) -->
   <div id="reserve-block-modal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-title">
         <span>Gestión de Turno</span>
-        <button onclick="closeReserveOrBlockModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
+        <button type="button" onclick="closeReserveOrBlockModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
       </div>
       <form id="reserve-block-form" onsubmit="handleReserveOrBlockSubmit(event)">
         <input type="hidden" id="rb-slot-id" />
         
         <div class="form-group">
           <label class="form-label">Tipo de Asignación</label>
-          <select id="rb-slot-type-select" class="form-control" onchange="onSlotTypeChange(this.value)">
-            <option value="MATCH">Partido Particular Completo</option>
-            <option value="CLASS">Clase de Padel (Academia / Coach)</option>
-            <option value="MAINTENANCE">Mantenimiento de Pista (Bloqueo)</option>
+          <select id="rb-slot-type-select" class="form-control" onchange="onSlotTypeChange(this.value)" style="font-weight: 700;">
+            <option value="FULL_COURT">Partido Completo (Reserva 100% - $120.000)</option>
+            <option value="SPLIT_MATCH">Partido Abierto (Split 1/4 - Cuota por jugador)</option>
+            <option value="MEMBER">Socio / Membresía (Exento de pasarela / Hold $0)</option>
+            <option value="PAY_AT_VENUE">Pago en Sede (Pay-at-venue / Datáfono)</option>
+            <option value="CLASS">Clase de Pádel (Academia / Coach)</option>
+            <option value="MAINTENANCE">Mantenimiento / Lluvia (Bloqueo administrativo)</option>
           </select>
+        </div>
+
+        <!-- Búsqueda dinámica CRM Autocompletado -->
+        <div class="form-group" id="rb-customer-search-group" style="position: relative;">
+          <label class="form-label">🔍 Buscar Cliente (CRM Autocompletado)</label>
+          <input type="text" id="rb-customer-search" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="searchCustomersForModal(this.value)">
+          <div id="rb-customer-dropdown" class="customer-dropdown" style="display: none;"></div>
         </div>
 
         <div class="form-group" id="rb-instructor-group" style="display: none;">
           <label class="form-label">Nombre del Profesor / Instructor</label>
-          <input type="text" id="rb-instructor-name" class="form-control" placeholder="Ej: Profe Daniel" />
+          <input type="text" id="rb-instructor-name" class="form-control" placeholder="Ej: Profe Marcos Rivas">
         </div>
 
         <div class="form-group" id="rb-client-name-group">
           <label class="form-label">Nombre del Cliente / Responsable</label>
-          <input type="text" id="rb-client-name" class="form-control" placeholder="Nombre completo" />
+          <input type="text" id="rb-client-name" class="form-control" placeholder="Nombre completo">
         </div>
 
         <div class="form-group" id="rb-client-phone-group">
           <label class="form-label">Teléfono WhatsApp</label>
-          <input type="tel" id="rb-client-phone" class="form-control" placeholder="+57 300 1234567" />
+          <input type="tel" id="rb-client-phone" class="form-control" placeholder="+57 313 2058547">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;" id="rb-client-details-row">
+          <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <input type="text" id="rb-client-category" class="form-control" placeholder="4ta" value="4ta">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipo de Cliente / Socio</label>
+            <input type="text" id="rb-client-type" class="form-control" placeholder="Estándar" value="Estándar">
+          </div>
         </div>
 
         <div class="form-group" id="rb-custom-price-group">
           <label class="form-label">Precio Total Acordado ($ COP)</label>
-          <input type="number" id="rb-custom-price" class="form-control" value="80000" step="5000" />
+          <input type="number" id="rb-custom-price" class="form-control" value="120000" step="5000" style="font-weight: 700; color: #0284C7;">
         </div>
 
         <div class="modal-actions">
@@ -2360,8 +2610,47 @@ PARTIDO CERRADO</textarea>
 
       if (viewId === 'view-config') {
         loadClubConfig();
+      } else if (viewId === 'view-crm') {
+        loadCRMDirectory();
       }
     }
+
+    async function loadCRMDirectory() {
+      const grid = document.getElementById('crm-customers-grid');
+      if (!grid) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customers/`);
+        if (!res.ok) return;
+        const customers = await res.json();
+        if (customers && customers.length > 0) {
+          let h = '';
+          customers.forEach(c => {
+            const isVip = (c.client_type || '').toLowerCase().includes('vip') || (c.client_type || '').toLowerCase().includes('socio');
+            const badgeStyle = isVip ? 'background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A;' : 'background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD;';
+            h += `
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+                    <div style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">${c.name}</div>
+                    <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; ${badgeStyle}">${c.client_type}</span>
+                  </div>
+                  <div style="font-size: 0.75rem; color: #64748B; font-family: monospace;">📞 ${c.phone}</div>
+                  <div style="font-size: 0.75rem; color: #475569; margin-top: 0.25rem;">🏆 Categoría: <strong>${c.category}</strong></div>
+                  ${c.notes ? `<div style="font-size: 0.7rem; color: #94A3B8; margin-top: 0.35rem; font-style: italic;">📝 ${c.notes}</div>` : ''}
+                </div>
+                <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid #F1F5F9; font-size: 0.72rem; color: #059669; font-weight: 600;">
+                  ✓ Cliente verificado en sistema
+                </div>
+              </div>
+            `;
+          });
+          grid.innerHTML = h;
+        }
+      } catch (e) {
+        console.error('Error loading CRM directory:', e);
+      }
+    }
+
 
     function setDate(dateStr) {
       if (!dateStr) return;
@@ -2801,8 +3090,20 @@ PARTIDO CERRADO</textarea>
           actionBtnHtml = `<span class="card-full-badge">✓ Confirmado</span>`;
         }
 
+        // Detección de Turno Crítico (< 3 horas) para Animación 'On Fire' y Remate Flash
+        let isCriticalFlash = false;
+        if (isToday && (isAvailable || isOpenMatch)) {
+          const diffMinutes = slotStartMin - currentNowMin;
+          if (diffMinutes > 0 && diffMinutes <= 180) {
+            isCriticalFlash = true;
+          }
+        }
+
+        let criticalBadgeHtml = isCriticalFlash ? '<span class="badge-critical-fire">🔥 CRÍTICO (&lt;3H)</span>' : '';
+        let remateBtnHtml = isCriticalFlash ? `<button onclick="triggerFlashPromoForSlot(${slot.id})" class="btn-card-remate-flash" title="Rematar con Promo Flash -25% por WhatsApp">⚡ Rematar Ahora</button>` : '';
+
         html += `
-          <div class="matrix-slot-card ${themeClass} ${isUrgentAlert ? 'urgent-alert-box' : ''}"
+          <div class="matrix-slot-card ${themeClass} ${isUrgentAlert ? 'urgent-alert-box' : ''} ${isCriticalFlash ? 'slot-on-fire' : ''}"
                style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum};">
             <div>
               <div class="card-top">
@@ -2816,6 +3117,7 @@ PARTIDO CERRADO</textarea>
                 ${promoBadge}
                 ${categoryBadge}
                 ${isUrgentAlert ? '<span class="badge-urgent">⚠️ &lt; 30m</span>' : ''}
+                ${criticalBadgeHtml}
               </div>
 
               ${playersHtml}
@@ -2826,8 +3128,9 @@ PARTIDO CERRADO</textarea>
                 <div class="card-price">${priceFormatted}</div>
                 ${priceSubHtml}
               </div>
-              <div>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
                 ${actionBtnHtml}
+                ${remateBtnHtml}
               </div>
             </div>
           </div>
@@ -2934,7 +3237,7 @@ PARTIDO CERRADO</textarea>
       }
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/tournaments/americano`, {
+        const res = await fetch(`${API_BASE}/api/v1/slots/create-americano`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -3014,27 +3317,38 @@ PARTIDO CERRADO</textarea>
     // Cargar y Guardar Parámetros de Configuración del Club
     async function loadClubConfig() {
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/club-config`);
+        const res = await fetch(`${API_BASE}/api/v1/admin/club-settings`);
         if (res.ok) {
-          const cfg = await res.json();
+          const resData = await res.json();
+          const cfg = resData.config || resData;
           document.getElementById('cfg-base-valle').value = cfg.base_valle || 80000;
           document.getElementById('cfg-base-pico').value = cfg.base_pico || 120000;
           document.getElementById('cfg-floor-price').value = cfg.safety_floor || 60000;
           document.getElementById('cfg-discount-pct').value = cfg.promo_discount_percent || 25;
           document.getElementById('cfg-cancel-grace').value = cfg.cancellation_grace_minutes || 30;
           document.getElementById('cfg-confirm-grace').value = cfg.confirmation_grace_minutes || 10;
-          document.getElementById('cfg-whatsapp-group').value = cfg.broadcast_group_id || '573130000000';
+          document.getElementById('cfg-whatsapp-group').value = cfg.broadcast_group_id || '573132058547';
+
+          if (resData.courts && resData.courts.length > 0) {
+            allCourts = resData.courts;
+          }
         }
 
-        // Render courts list in config
+        // Render courts list in config con inputs editables y toggles activos
         const courtListEl = document.getElementById('config-courts-list');
         if (courtListEl && allCourts.length > 0) {
           let cHtml = '';
           allCourts.forEach((c, idx) => {
+            const num = c.court_number || (idx + 1);
+            const isAct = c.is_active !== false;
             cHtml += `
-              <div style="display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 0.5rem 0.75rem; border-radius: 6px;">
-                <span style="font-weight: 700; color: #0F172A; font-size: 0.8rem;">📍 ${c.name}</span>
-                <span style="background: #D1FAE5; color: #059669; font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px;">ACTIVA</span>
+              <div style="display: flex; align-items: center; gap: 0.75rem; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 0.6rem 0.85rem; border-radius: 8px;">
+                <span style="font-weight: 800; color: #475569; font-size: 0.8rem; width: 28px;">#${num}</span>
+                <input type="text" class="form-control cfg-court-name" data-court-id="${c.id}" value="${c.name}" style="flex: 1; font-weight: 700; padding: 0.35rem 0.6rem; font-size: 0.82rem;" title="Nombre de la pista" />
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 700; color: ${isAct ? '#059669' : '#64748B'}; cursor: pointer; white-space: nowrap;">
+                  <input type="checkbox" class="cfg-court-active" data-court-id="${c.id}" ${isAct ? 'checked' : ''} style="cursor: pointer;" />
+                  Activa
+                </label>
               </div>
             `;
           });
@@ -3046,6 +3360,18 @@ PARTIDO CERRADO</textarea>
     }
 
     async function saveClubConfig() {
+      const courtInputs = document.querySelectorAll('.cfg-court-name');
+      const courtsData = [];
+      courtInputs.forEach(input => {
+        const cid = input.dataset.courtId;
+        const activeBox = document.querySelector(`.cfg-court-active[data-court-id="${cid}"]`);
+        courtsData.push({
+          id: cid,
+          name: input.value.trim(),
+          is_active: activeBox ? activeBox.checked : true
+        });
+      });
+
       const payload = {
         base_valle: parseFloat(document.getElementById('cfg-base-valle').value),
         base_pico: parseFloat(document.getElementById('cfg-base-pico').value),
@@ -3053,7 +3379,8 @@ PARTIDO CERRADO</textarea>
         promo_discount_percent: parseInt(document.getElementById('cfg-discount-pct').value, 10),
         cancellation_grace_minutes: parseInt(document.getElementById('cfg-cancel-grace').value, 10),
         confirmation_grace_minutes: parseInt(document.getElementById('cfg-confirm-grace').value, 10),
-        broadcast_group_id: document.getElementById('cfg-whatsapp-group').value.trim()
+        broadcast_group_id: document.getElementById('cfg-whatsapp-group').value.trim(),
+        courts: courtsData
       };
 
       const btn = document.getElementById('btn-save-club-config');
@@ -3063,15 +3390,16 @@ PARTIDO CERRADO</textarea>
       }
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/club-config`, {
+        const res = await fetch(`${API_BASE}/api/v1/admin/club-settings`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (res.ok) {
-          addEvent('Configuración Actualizada', 'Nuevos parámetros de Yield y políticas aplicadas', 'green');
-          alert('✅ ¡Configuración del club guardada exitosamente!\n\nLos nuevos precios base y reglas de cancelación están activos.');
+          addEvent('Configuración Actualizada', 'Nuevos parámetros de Yield y nombres de pistas aplicados', 'green');
+          alert('✅ ¡Configuración del club guardada exitosamente!\n\nLas pistas y parámetros operativos han sido actualizados.');
+          if (data.courts) allCourts = data.courts;
           await fetchSlots();
         } else {
           alert(data.detail || 'Error al guardar configuración');
@@ -3086,19 +3414,31 @@ PARTIDO CERRADO</textarea>
       }
     }
 
-    // Modal Reservar o Bloquear
+    // Modal Reservar o Bloquear (6 Opciones y CRM)
     function openReserveOrBlockModal(slotId) {
       const slot = allSlots.find(s => s.id === slotId);
       if (!slot) return;
       selectedSlot = slot;
 
       document.getElementById('rb-slot-id').value = slot.id;
-      document.getElementById('rb-slot-type-select').value = 'MATCH';
       document.getElementById('rb-client-name').value = '';
       document.getElementById('rb-client-phone').value = '';
-      document.getElementById('rb-instructor-name').value = '';
-      document.getElementById('rb-custom-price').value = slot.total_price || 80000;
-      onSlotTypeChange('MATCH');
+      if (document.getElementById('rb-instructor-name')) document.getElementById('rb-instructor-name').value = '';
+      const catEl = document.getElementById('rb-client-category');
+      if (catEl) catEl.value = slot.category || '4ta';
+      const typeEl = document.getElementById('rb-client-type');
+      if (typeEl) typeEl.value = 'Estándar';
+      const searchInput = document.getElementById('rb-customer-search');
+      if (searchInput) searchInput.value = '';
+      const dropdown = document.getElementById('rb-customer-dropdown');
+      if (dropdown) dropdown.style.display = 'none';
+
+      const typeSelect = document.getElementById('rb-slot-type-select');
+      if (typeSelect) {
+        typeSelect.value = 'FULL_COURT';
+      }
+      document.getElementById('rb-custom-price').value = slot.total_price || 120000;
+      onSlotTypeChange('FULL_COURT');
 
       const modal = document.getElementById('reserve-block-modal');
       if (modal) modal.classList.add('active');
@@ -3113,19 +3453,53 @@ PARTIDO CERRADO</textarea>
       const instrGroup = document.getElementById('rb-instructor-group');
       const clientGroup = document.getElementById('rb-client-name-group');
       const phoneGroup = document.getElementById('rb-client-phone-group');
+      const detailsRow = document.getElementById('rb-client-details-row');
+      const searchGroup = document.getElementById('rb-customer-search-group');
+      const priceInput = document.getElementById('rb-custom-price');
 
       if (val === 'CLASS') {
-        instrGroup.style.display = 'block';
-        clientGroup.style.display = 'block';
-        phoneGroup.style.display = 'block';
+        if (instrGroup) instrGroup.style.display = 'block';
+        if (clientGroup) clientGroup.style.display = 'block';
+        if (phoneGroup) phoneGroup.style.display = 'block';
+        if (detailsRow) detailsRow.style.display = 'grid';
+        if (searchGroup) searchGroup.style.display = 'block';
+        if (priceInput && (!priceInput.value || priceInput.value === '0')) priceInput.value = 100000;
       } else if (val === 'MAINTENANCE') {
-        instrGroup.style.display = 'none';
-        clientGroup.style.display = 'none';
-        phoneGroup.style.display = 'none';
+        if (instrGroup) instrGroup.style.display = 'none';
+        if (clientGroup) clientGroup.style.display = 'none';
+        if (phoneGroup) phoneGroup.style.display = 'none';
+        if (detailsRow) detailsRow.style.display = 'none';
+        if (searchGroup) searchGroup.style.display = 'none';
+        if (priceInput) priceInput.value = 0;
+      } else if (val === 'MEMBER') {
+        if (instrGroup) instrGroup.style.display = 'none';
+        if (clientGroup) clientGroup.style.display = 'block';
+        if (phoneGroup) phoneGroup.style.display = 'block';
+        if (detailsRow) detailsRow.style.display = 'grid';
+        if (searchGroup) searchGroup.style.display = 'block';
+        if (priceInput) priceInput.value = 0; // Exento de pasarela / Hold $0
+      } else if (val === 'PAY_AT_VENUE') {
+        if (instrGroup) instrGroup.style.display = 'none';
+        if (clientGroup) clientGroup.style.display = 'block';
+        if (phoneGroup) phoneGroup.style.display = 'block';
+        if (detailsRow) detailsRow.style.display = 'grid';
+        if (searchGroup) searchGroup.style.display = 'block';
+        if (priceInput && (!priceInput.value || priceInput.value === '0')) priceInput.value = 120000;
+      } else if (val === 'SPLIT_MATCH') {
+        if (instrGroup) instrGroup.style.display = 'none';
+        if (clientGroup) clientGroup.style.display = 'block';
+        if (phoneGroup) phoneGroup.style.display = 'block';
+        if (detailsRow) detailsRow.style.display = 'grid';
+        if (searchGroup) searchGroup.style.display = 'block';
+        if (priceInput && (!priceInput.value || priceInput.value === '0')) priceInput.value = 120000;
       } else {
-        instrGroup.style.display = 'none';
-        clientGroup.style.display = 'block';
-        phoneGroup.style.display = 'block';
+        // FULL_COURT
+        if (instrGroup) instrGroup.style.display = 'none';
+        if (clientGroup) clientGroup.style.display = 'block';
+        if (phoneGroup) phoneGroup.style.display = 'block';
+        if (detailsRow) detailsRow.style.display = 'grid';
+        if (searchGroup) searchGroup.style.display = 'block';
+        if (priceInput && (!priceInput.value || priceInput.value === '0')) priceInput.value = 120000;
       }
     }
 
@@ -3135,26 +3509,30 @@ PARTIDO CERRADO</textarea>
       const slotType = document.getElementById('rb-slot-type-select').value;
       const clientName = document.getElementById('rb-client-name').value.trim();
       const clientPhone = document.getElementById('rb-client-phone').value.trim();
-      const instructorName = document.getElementById('rb-instructor-name').value.trim();
+      const instructorName = document.getElementById('rb-instructor-name') ? document.getElementById('rb-instructor-name').value.trim() : null;
       const customPrice = parseFloat(document.getElementById('rb-custom-price').value) || 0;
+      const clientCategory = document.getElementById('rb-client-category') ? document.getElementById('rb-client-category').value.trim() : null;
+      const clientType = document.getElementById('rb-client-type') ? document.getElementById('rb-client-type').value.trim() : null;
 
       const payload = {
         slot_type: slotType,
         client_name: clientName || null,
         client_phone: clientPhone || null,
         instructor_name: instructorName || null,
-        custom_price: customPrice
+        custom_price: customPrice,
+        client_category: clientCategory || null,
+        client_type: clientType || null
       };
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/set-type`, {
+        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/reserve-or-block`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (res.ok) {
-          addEvent('Pista Modificada', `Slot #${slotId} asignado a ${slotType}`, 'green');
+          addEvent('Turno Gestionado', `Slot #${slotId} asignado como ${slotType}`, 'green');
           closeReserveOrBlockModal();
           await fetchSlots();
         } else {
@@ -3382,7 +3760,11 @@ PARTIDO CERRADO</textarea>
       fetchCourts().then(() => {
         fetchSlots();
       });
-      setInterval(fetchSlots, 6000);
+      setInterval(() => {
+        if (!isAnyModalOrDrawerOpen()) {
+          fetchSlots();
+        }
+      }, 30000);
     }
 
     if (document.readyState === 'loading') {
@@ -3391,5 +3773,92 @@ PARTIDO CERRADO</textarea>
       initDashboard();
     }
   </script>
+  <!-- BOTÓN FLOTANTE: ASISTENTE WHATSAPP BOT -->
+  <button id="btn-floating-bot" class="btn-floating-bot" onclick="toggleBotDrawer()" title="Abrir Asistente WhatsApp Bot en vivo">
+    <span class="bot-floating-dot"></span>
+    <span>💬 Asistente Bot (En vivo)</span>
+  </button>
+
+  <!-- DRAWER LATERAL DERECHO: ASISTENTE BOT & SIMULADOR -->
+  <div id="bot-drawer-backdrop" class="bot-drawer-backdrop" onclick="toggleBotDrawer(false)"></div>
+  <div id="bot-drawer" class="bot-drawer">
+    <div class="bot-drawer-header">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="font-size: 1.35rem;">💬</span>
+        <div>
+          <div style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">Asistente WhatsApp Bot</div>
+          <div style="font-size: 0.7rem; color: #059669; font-weight: 600;">🟢 En vivo • Parser & Simulador Interactivo</div>
+        </div>
+      </div>
+      <button onclick="toggleBotDrawer(false)" class="btn-close-drawer">&times;</button>
+    </div>
+
+    <div class="bot-drawer-body">
+      <!-- Card 1: Parser WhatsApp de Convocatorias -->
+      <div class="sidebar-card">
+        <div class="sidebar-title">
+          <span>📲 Parser WhatsApp</span>
+          <span style="color: #059669; font-size: 0.7rem; font-weight: 700;">Convocatorias Directas</span>
+        </div>
+        <p style="font-size: 0.72rem; color: #64748B; margin-bottom: 0.5rem;">
+          Pega el mensaje con 🎾 o 🏐 para sincronizar el turno y los jugadores en tiempo real:
+        </p>
+
+        <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 07 SEPTIEMBRE
+Categoría: 4ta
+⌚6:00pm - 7:30pm
+📍Bogotá Pádel Center
+💰30.000
+🎾Juanda
+🎾Edinson
+🎾Charlie
+🎾 Jose G
+PARTIDO CERRADO</textarea>
+
+        <div class="form-group" style="margin-bottom: 0.5rem;">
+          <input type="tel" id="wa-sender-phone" placeholder="Teléfono remitente (ej: +573001234567)" class="form-control" style="font-size: 0.75rem; padding: 0.4rem 0.6rem;">
+        </div>
+
+        <button onclick="parseWhatsApp()" class="btn-wa">
+          🚀 Sincronizar Convocatoria
+        </button>
+
+        <div id="wa-result" style="display: none;" class="wa-result-box"></div>
+      </div>
+
+      <!-- Card 2: Simulador Interactivo con Citas ('context') -->
+      <div class="sidebar-card">
+        <div class="sidebar-title">
+          <span>🤖 Simulador de Conversación</span>
+          <span style="color: #0284C7; font-size: 0.7rem; font-weight: 700;">Interactivo</span>
+        </div>
+        <p style="font-size: 0.72rem; color: #64748B; margin-bottom: 0.5rem;">
+          Prueba las respuestas del motor conversacional con soporte de contexto y citas:
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Teléfono Remitente</label>
+          <input type="tel" id="sim-phone" class="form-control" value="+573132058547" style="font-size: 0.78rem;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nombre Remitente</label>
+          <input type="text" id="sim-name" class="form-control" value="Juan Real" style="font-size: 0.78rem;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mensaje Citado (Context / Reply To)</label>
+          <input type="text" id="sim-quoted" class="form-control" placeholder="Opcional: Turno citado o mensaje anterior" style="font-size: 0.75rem;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mensaje Entrante</label>
+          <input type="text" id="sim-text" class="form-control" placeholder="Ej: voy a las 6pm, o 'me bajo'" value="voy a las 6pm" style="font-size: 0.78rem;">
+        </div>
+        <button onclick="simulateBotMessage()" class="btn-action-cyan" style="width: 100%; justify-content: center; padding: 0.55rem;">
+          ⚡ Probar Respuesta del Bot
+        </button>
+        <div id="sim-reply-box" style="display: none; margin-top: 0.75rem; background: #0F172A; color: #38BDF8; font-family: monospace; font-size: 0.72rem; padding: 0.75rem; border-radius: 6px; white-space: pre-wrap; line-height: 1.4;"></div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

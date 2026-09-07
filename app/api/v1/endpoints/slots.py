@@ -468,6 +468,7 @@ async def get_yield_recommendation(
 
 
 @router.post("/{slot_id}/reserve-or-block", response_model=TimeSlotResponse)
+@router.post("/{slot_id}/set-type", response_model=TimeSlotResponse)
 async def reserve_or_block_slot(
     slot_id: int,
     payload: ReserveOrBlockRequest,
@@ -493,18 +494,26 @@ async def reserve_or_block_slot(
         slot.mode = payload.mode
 
     # Asignar precio personalizado o recomendado por Yield
-    if payload.custom_price is not None and payload.custom_price > 0:
+    if payload.custom_price is not None and payload.custom_price >= 0:
         slot.total_price = payload.custom_price
     else:
         yield_data = calculate_recommended_price(slot)
         slot.total_price = yield_data["recommended_price"]
 
-    # Procesar según tipo de turno
+    # Procesar según tipo de turno (6 opciones operativas completas)
     if stype == "MAINTENANCE":
+        slot.mode = SlotMode.FULL_COURT
         slot.status = SlotStatus.BLOCKED
         slot.booked_spots = slot.capacity
-        slot.players_names = [{"spot_index": 1, "phone": "+57-MANT", "display_name": "Mantenimiento", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None}]
+        slot.players_names = [{
+            "spot_index": 1,
+            "phone": "+57-MANT",
+            "display_name": payload.client_name or "Mantenimiento / Lluvia",
+            "client_tier": "BLOCKED",
+            "host_phone": None
+        }]
     elif stype in ("CLASS", "ACADEMY"):
+        slot.mode = SlotMode.FULL_COURT
         slot.status = SlotStatus.FULLY_BOOKED
         slot.booked_spots = slot.capacity
         prof_title = payload.instructor_name or "Profesor Asignado"
@@ -513,7 +522,66 @@ async def reserve_or_block_slot(
             "spot_index": 1,
             "phone": payload.client_phone or "+57-ACADEMY",
             "display_name": student_label,
-            "client_tier": "MEMBER",
+            "client_tier": payload.client_type or "MEMBER",
+            "host_phone": None
+        }]
+    elif stype == "MEMBER":
+        # Socio / Membresía (Exento de pasarela / Hold $0)
+        slot.mode = SlotMode.FULL_COURT
+        slot.status = SlotStatus.FULLY_BOOKED
+        slot.booked_spots = slot.capacity
+        if payload.custom_price is None:
+            slot.total_price = Decimal("0.00")
+        client_name = payload.client_name or "Socio VIP"
+        slot.players_names = [{
+            "spot_index": 1,
+            "phone": payload.client_phone or "+57-SOCIO",
+            "display_name": f"💎 {client_name}",
+            "client_tier": "VIP_PAY_ON_SITE",
+            "host_phone": None
+        }]
+    elif stype == "PAY_AT_VENUE":
+        # Pago en Sede (Pay-at-venue / Datáfono)
+        slot.mode = SlotMode.FULL_COURT
+        slot.status = SlotStatus.FULLY_BOOKED
+        slot.booked_spots = slot.capacity
+        client_name = payload.client_name or "Pago en Sede"
+        slot.players_names = [{
+            "spot_index": 1,
+            "phone": payload.client_phone or "+57-SEDE",
+            "display_name": f"💳 {client_name}",
+            "client_tier": "VIP_PAY_ON_SITE",
+            "host_phone": None
+        }]
+    elif stype == "SPLIT_MATCH":
+        # Partido Abierto (Split 1/4 - Cuota por jugador)
+        slot.mode = SlotMode.SPLIT_MATCH
+        if payload.client_category:
+            slot.category = payload.client_category
+        if payload.client_name:
+            slot.status = SlotStatus.PARTIALLY_BOOKED
+            slot.booked_spots = 1
+            slot.players_names = [{
+                "spot_index": 1,
+                "phone": payload.client_phone or "+57-RECEPCION",
+                "display_name": payload.client_name,
+                "client_tier": payload.client_type or "STANDARD",
+                "host_phone": None
+            }]
+        else:
+            slot.status = SlotStatus.AVAILABLE
+            slot.booked_spots = 0
+            slot.players_names = []
+    elif stype in ("FULL_COURT", "MATCH"):
+        # Partido Completo (Reserva 100% - Cancha completa)
+        slot.mode = SlotMode.FULL_COURT
+        slot.status = SlotStatus.FULLY_BOOKED
+        slot.booked_spots = slot.capacity
+        slot.players_names = [{
+            "spot_index": 1,
+            "phone": payload.client_phone or "+57-RECEPCION",
+            "display_name": payload.client_name or "Reserva Completa",
+            "client_tier": payload.client_type or "STANDARD",
             "host_phone": None
         }]
     elif payload.client_name:
@@ -523,14 +591,15 @@ async def reserve_or_block_slot(
             "spot_index": 1,
             "phone": payload.client_phone or "+57-RECEPCION",
             "display_name": payload.client_name,
-            "client_tier": "VIP_PAY_ON_SITE",
+            "client_tier": payload.client_type or "VIP_PAY_ON_SITE",
             "host_phone": None
         }]
     else:
-        # Solo actualización de tarifa recomendada
+        # Revertir a disponible si se pasa AVAILABLE o vacío
         slot.status = SlotStatus.AVAILABLE
         slot.booked_spots = 0
         slot.players_names = []
+        slot.slot_type = "MATCH"
 
     await db.commit()
     await db.refresh(slot)
@@ -540,6 +609,7 @@ async def reserve_or_block_slot(
 
 
 @router.post("/create-americano", response_model=List[TimeSlotResponse])
+@router.post("/tournaments/americano", response_model=List[TimeSlotResponse])
 async def create_americano(
     payload: CreateAmericanoRequest,
     db: AsyncSession = Depends(get_db),
@@ -547,15 +617,19 @@ async def create_americano(
     """
     Crea un evento Torneo Americano bloqueando simultáneamente de 2 a 5 canchas
     durante 2h, 2.5h o 3h continuas, con bolsa de premios y modalidad PAREJA_FIJA o INDIVIDUAL.
+    Soporta rutas POST /api/v1/slots/create-americano y POST /api/v1/slots/tournaments/americano.
     """
     if len(payload.court_ids) < 2:
         raise HTTPException(status_code=400, detail="Un torneo americano requiere seleccionar al menos 2 canchas.")
     if len(payload.court_ids) > 5:
         raise HTTPException(status_code=400, detail="No se pueden seleccionar más de 5 canchas para un americano.")
 
-    # Calcular end_time sumando minutos
-    t_name = payload.get_name() if hasattr(payload, "get_name") else (payload.tournament_name or getattr(payload, "name", "Torneo Americano"))
-    duration_mins = payload.get_duration_minutes() if hasattr(payload, "get_duration_minutes") else int(getattr(payload, "duration_hours", 2.0) * 60)
+    t_name = payload.get_name() if hasattr(payload, "get_name") else (payload.tournament_name or getattr(payload, "name", "Torneo Americano") or "Torneo Americano")
+    t_type = getattr(payload, "modality", None) or payload.tournament_type or "PAREJA_FIJA"
+    duration_mins = payload.get_duration_minutes() if hasattr(payload, "get_duration_minutes") else (
+        int(payload.duration_hours * 60) if getattr(payload, "duration_hours", None) else (payload.duration_minutes or 120)
+    )
+
     start_dt = datetime.combine(payload.date, payload.start_time)
     end_dt = start_dt + timedelta(minutes=duration_mins)
     end_time_val = time(23, 59) if (end_dt.time() == time(0, 0) or end_dt.date() > payload.date) else end_dt.time()
@@ -590,7 +664,7 @@ async def create_americano(
 
         prize_val = payload.prize_pool or Decimal("300000.00")
         prize_str = f"${int(prize_val):,} COP"
-        label_t = "Pareja Fija" if payload.tournament_type == "PAREJA_FIJA" else "Individual"
+        label_t = "Pareja Fija" if t_type == "PAREJA_FIJA" else "Individual"
         cat_label = f"Americano ({label_t})"
 
         player_entry = [{
@@ -602,12 +676,11 @@ async def create_americano(
         }]
 
         if overlap_slots:
-            # Reutilizar el primer slot como bloque de torneo y eliminar los demás solapados
             main_slot = overlap_slots[0]
             main_slot.start_time = payload.start_time
             main_slot.end_time = end_time_val
             main_slot.slot_type = "AMERICANO"
-            main_slot.tournament_type = payload.tournament_type
+            main_slot.tournament_type = t_type
             main_slot.tournament_name = t_name
             main_slot.prize_pool = prize_val
             main_slot.category = cat_label
@@ -633,7 +706,7 @@ async def create_americano(
                 category=cat_label,
                 status=SlotStatus.FULLY_BOOKED,
                 slot_type="AMERICANO",
-                tournament_type=payload.tournament_type,
+                tournament_type=t_type,
                 tournament_name=t_name,
                 prize_pool=prize_val,
                 players_names=player_entry,
@@ -650,6 +723,7 @@ async def create_americano(
 
 
 @router.get("/club-config")
+@router.get("/admin/club-settings")
 async def get_club_configuration(db: AsyncSession = Depends(get_db)):
     """Retorna la configuración operativa del club y las 5 canchas."""
     config = get_club_config()
@@ -670,10 +744,12 @@ async def get_club_configuration(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/club-config")
+@router.post("/admin/club-settings")
 async def update_club_configuration(
     payload: ClubConfigRequest,
     db: AsyncSession = Depends(get_db),
 ):
+
     """Actualiza en caliente la configuración de tarifas y canchas del club."""
     updated = update_club_config(payload.model_dump(exclude_unset=True, exclude={"courts"}))
     if payload.courts:

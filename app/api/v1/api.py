@@ -1,7 +1,8 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import slots, holds, webhooks
+from app.api.v1.endpoints import slots, holds, webhooks, customers
 
 api_router = APIRouter()
 api_router.include_router(slots.router, prefix="/slots", tags=["slots"])
 api_router.include_router(holds.router, prefix="/holds", tags=["holds"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
+api_router.include_router(customers.router, prefix="/customers", tags=["customers"])
