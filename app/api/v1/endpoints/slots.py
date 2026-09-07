@@ -3,9 +3,9 @@ from decimal import Decimal
 import re
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status, Request
 from app.services.audit import log_activity
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -30,9 +30,11 @@ from app.schemas.slot import (
     ReserveOrBlockRequest,
     CreateAmericanoRequest,
     ClubConfigRequest,
+    WeeklyTemplateSeedRequest,
 )
 
 router = APIRouter()
+
 
 
 def ensure_utc(dt: datetime) -> datetime:
@@ -463,7 +465,377 @@ async def seed_demo_data(
     }
 
 
+MALOKA_WEEKLY_EVENTS = [
+    {
+        "id": "lun_20_22",
+        "weekday": 0,  # Lunes
+        "day_name": "Lunes",
+        "start_time": time(20, 0),
+        "end_time": time(22, 0),
+        "time_str": "20:00 - 22:00",
+        "name": "Americano 5ta",
+        "modality": "PAREJA_FIJA",
+        "modality_label": "Pareja fija",
+        "category": "5ta",
+        "entry_fee": Decimal("60000.00"),
+        "prize_pool": Decimal("200000.00"),
+        "prize_label": "$200.000 COP",
+    },
+    {
+        "id": "mar_14_16",
+        "weekday": 1,  # Martes
+        "day_name": "Martes",
+        "start_time": time(14, 0),
+        "end_time": time(16, 0),
+        "time_str": "14:00 - 16:00",
+        "name": "Americano 6ta",
+        "modality": "INDIVIDUAL",
+        "modality_label": "Individual",
+        "category": "6ta",
+        "entry_fee": Decimal("25000.00"),
+        "prize_pool": Decimal("100000.00"),
+        "prize_label": "Premio sorpresa",
+    },
+    {
+        "id": "mar_20_22",
+        "weekday": 1,  # Martes
+        "day_name": "Martes",
+        "start_time": time(20, 0),
+        "end_time": time(22, 0),
+        "time_str": "20:00 - 22:00",
+        "name": "Americano 4ta-5ta",
+        "modality": "PAREJA_FIJA",
+        "modality_label": "Pareja fija",
+        "category": "4ta-5ta",
+        "entry_fee": Decimal("60000.00"),
+        "prize_pool": Decimal("200000.00"),
+        "prize_label": "$200.000 COP",
+    },
+    {
+        "id": "mie_20_22",
+        "weekday": 2,  # Miércoles
+        "day_name": "Miércoles",
+        "start_time": time(20, 0),
+        "end_time": time(22, 0),
+        "time_str": "20:00 - 22:00",
+        "name": "Americano 6ta",
+        "modality": "PAREJA_FIJA",
+        "modality_label": "Pareja fija",
+        "category": "6ta",
+        "entry_fee": Decimal("60000.00"),
+        "prize_pool": Decimal("200000.00"),
+        "prize_label": "$200.000 COP",
+    },
+    {
+        "id": "jue_14_16",
+        "weekday": 3,  # Jueves
+        "day_name": "Jueves",
+        "start_time": time(14, 0),
+        "end_time": time(16, 0),
+        "time_str": "14:00 - 16:00",
+        "name": "Americano 6ta-7ma",
+        "modality": "INDIVIDUAL",
+        "modality_label": "Individual",
+        "category": "6ta-7ma",
+        "entry_fee": Decimal("30000.00"),
+        "prize_pool": Decimal("90000.00"),
+        "prize_label": "$90.000 COP",
+    },
+    {
+        "id": "vie_18_20",
+        "weekday": 4,  # Viernes
+        "day_name": "Viernes",
+        "start_time": time(18, 0),
+        "end_time": time(20, 0),
+        "time_str": "18:00 - 20:00",
+        "name": "Americano Femenino",
+        "modality": "INDIVIDUAL",
+        "modality_label": "Individual",
+        "category": "Femenino",
+        "entry_fee": Decimal("50000.00"),
+        "prize_pool": Decimal("150000.00"),
+        "prize_label": "Chingotto",
+    },
+    {
+        "id": "sab_10_12",
+        "weekday": 5,  # Sábado
+        "day_name": "Sábado",
+        "start_time": time(10, 0),
+        "end_time": time(12, 0),
+        "time_str": "10:00 - 12:00",
+        "name": "Americano 6ta",
+        "modality": "INDIVIDUAL",
+        "modality_label": "Individual",
+        "category": "6ta",
+        "entry_fee": Decimal("60000.00"),
+        "prize_pool": Decimal("170000.00"),
+        "prize_label": "$170.000 COP",
+    },
+    {
+        "id": "sab_19_21",
+        "weekday": 5,  # Sábado
+        "day_name": "Sábado",
+        "start_time": time(19, 0),
+        "end_time": time(21, 0),
+        "time_str": "19:00 - 21:00",
+        "name": "Americano 5ta",
+        "modality": "PAREJA_FIJA",
+        "modality_label": "Pareja fija",
+        "category": "5ta",
+        "entry_fee": Decimal("60000.00"),
+        "prize_pool": Decimal("250000.00"),
+        "prize_label": "$250.000 COP",
+    },
+    {
+        "id": "dom_18_20",
+        "weekday": 6,  # Domingo
+        "day_name": "Domingo",
+        "start_time": time(18, 0),
+        "end_time": time(20, 0),
+        "time_str": "18:00 - 20:00",
+        "name": "Americano 6-8",
+        "modality": "PAREJA_FIJA",
+        "modality_label": "Pareja fija",
+        "category": "6ta-8va",
+        "entry_fee": Decimal("60000.00"),
+        "prize_pool": Decimal("250000.00"),
+        "prize_label": "$250.000 COP",
+    },
+    {
+        "id": "dom_20_22",
+        "weekday": 6,  # Domingo
+        "day_name": "Domingo",
+        "start_time": time(20, 0),
+        "end_time": time(22, 0),
+        "time_str": "20:00 - 22:00",
+        "name": "Ranking 4ta",
+        "modality": "PAREJA_FIJA",
+        "modality_label": "Pareja fija",
+        "category": "4ta",
+        "entry_fee": Decimal("100000.00"),
+        "prize_pool": Decimal("600000.00"),
+        "prize_label": "$600.000 COP",
+    },
+]
+
+
+@router.get("/weekly-template", status_code=status.HTTP_200_OK)
+async def get_weekly_template():
+    """Retorna la plantilla semanal oficial de torneos y eventos de Capital Pádel Maloka."""
+    return {
+        "template_name": "Semillero Oficial Capital Pádel Maloka",
+        "events": [
+            {
+                "id": ev["id"],
+                "weekday": ev["weekday"],
+                "day_name": ev["day_name"],
+                "start_time": ev["start_time"].strftime("%H:%M"),
+                "end_time": ev["end_time"].strftime("%H:%M"),
+                "time_str": ev["time_str"],
+                "name": ev["name"],
+                "modality": ev["modality"],
+                "modality_label": ev["modality_label"],
+                "category": ev["category"],
+                "entry_fee": float(ev["entry_fee"]),
+                "prize_pool": float(ev["prize_pool"]),
+                "prize_label": ev["prize_label"],
+            }
+            for ev in MALOKA_WEEKLY_EVENTS
+        ],
+    }
+
+
+@router.post("/seed-weekly-template", status_code=status.HTTP_201_CREATED)
+async def seed_weekly_template(
+    payload: Optional[WeeklyTemplateSeedRequest] = Body(None),
+    target_date: Optional[date] = Query(None, alias="date", description="Fecha inicial para sembrar 7 días"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Programador Semanal Inteligente (Semillero Oficial Capital Pádel Maloka):
+    - Puebla los próximos 7 días calendario para todas las canchas (Pádel, Pickleball, Vóley, Pilates, Consola).
+    - Franja operativa: 06:00 a 24:00 con bloques de 90 minutos y tarifas Valle ($80.000) / Pico ($120.000).
+    - Reserva automáticamente los eventos seleccionados de la plantilla semanal de torneos en pistas de pádel (Canchas 1 a 4)
+      con slot_type='AMERICANO' y status='FULLY_BOOKED'.
+    - CERO reservas ficticias: players_names=[] en todos los turnos disponibles y de torneo.
+    """
+    courts = await ensure_five_courts(db)
+    today = get_bogota_today()
+    raw_d = (payload.date if payload and payload.date else None) or target_date or today
+    if isinstance(raw_d, str):
+        try:
+            start_d = datetime.strptime(raw_d, "%Y-%m-%d").date()
+        except Exception:
+            start_d = today
+    else:
+        start_d = raw_d
+    dates_to_seed = [start_d + timedelta(days=i) for i in range(7)]
+
+
+    selected_ids = (
+        set(payload.selected_events)
+        if (payload and payload.selected_events is not None)
+        else {ev["id"] for ev in MALOKA_WEEKLY_EVENTS}
+    )
+
+    BLOCKS_90_MIN = [
+        (time(6, 0), time(7, 30)),
+        (time(7, 30), time(9, 0)),
+        (time(9, 0), time(10, 30)),
+        (time(10, 30), time(12, 0)),
+        (time(12, 0), time(13, 30)),
+        (time(13, 30), time(15, 0)),
+        (time(15, 0), time(16, 30)),
+        (time(16, 30), time(18, 0)),
+        (time(18, 0), time(19, 30)),
+        (time(19, 30), time(21, 0)),
+        (time(21, 0), time(22, 30)),
+        (time(22, 30), time(23, 59)),
+    ]
+
+    padel_courts = [c for c in courts if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == "PADEL"]
+    padel_courts.sort(key=lambda c: (getattr(c, "court_number", 99) or 99, c.name))
+    tourn_courts = padel_courts[:4] if len(padel_courts) >= 4 else padel_courts
+    tourn_court_ids = {c.id for c in tourn_courts}
+
+    # 1. Limpieza en lote de turnos no reservados/sin jugadores para el rango de 7 días
+    res_existing = await db.execute(
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.holds))
+        .where(TimeSlot.date.in_(dates_to_seed))
+    )
+    all_existing = res_existing.scalars().all()
+    unbooked_ids = []
+    for s in all_existing:
+        has_active_holds = any(
+            str(getattr(h, "status", "")).upper() in ("ACTIVE", "HOLDSTATUS.ACTIVE") for h in s.holds
+        )
+        has_real_players = (
+            (s.booked_spots > 0 and (s.slot_type or "MATCH") not in ("AMERICANO", "TOURNAMENT"))
+            or (len(s.players_names or []) > 0)
+        )
+        if not has_active_holds and not has_real_players:
+            unbooked_ids.append(s.id)
+
+    if unbooked_ids:
+        await db.execute(delete(TimeSlot).where(TimeSlot.id.in_(unbooked_ids)))
+        await db.flush()
+
+    # 2. Generación en lote de turnos regulares y eventos de plantilla
+    all_to_add = []
+    scheduled_events = []
+
+    for d in dates_to_seed:
+        is_weekend = d.weekday() in (5, 6)
+        day_events = [
+            ev for ev in MALOKA_WEEKLY_EVENTS
+            if ev["weekday"] == d.weekday() and ev["id"] in selected_ids
+        ]
+
+        for court in courts:
+            court_num = getattr(court, "court_number", None) or 1
+            c_sport = getattr(court, "sport_type", "PADEL") or "PADEL"
+            c_cap = getattr(court, "max_capacity", 4) or 4
+            is_tourn_court = (court.id in tourn_court_ids) and bool(day_events)
+
+            for start_t, end_t in BLOCKS_90_MIN:
+                if is_tourn_court:
+                    overlaps = any(
+                        start_t < ev["end_time"] and end_t > ev["start_time"]
+                        for ev in day_events
+                    )
+                    if overlaps:
+                        continue
+
+                is_pico = is_weekend or (start_t.hour >= 18)
+                slot_cap = c_cap
+                if c_sport == "VOLLEYBALL":
+                    base_price = Decimal("120000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH
+                    category = "Vóley Arena Mixto"
+                elif c_sport == "PILATES":
+                    base_price = Decimal("180000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH
+                    category = "Pilates Mat & Reformer"
+                elif c_sport == "PICKLEBALL":
+                    base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20)) else SlotMode.FULL_COURT
+                    category = "Pickleball Abierto"
+                elif c_sport in ("CONSOLE", "GAMING"):
+                    base_price = Decimal("20000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH
+                    category = "Gaming / Consola"
+                else:
+                    base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and court_num <= 3) else SlotMode.FULL_COURT
+                    category = "4ta"
+
+                all_to_add.append(
+                    TimeSlot(
+                        court_id=court.id,
+                        date=d,
+                        start_time=start_t,
+                        end_time=end_t,
+                        total_price=base_price,
+                        mode=slot_mode,
+                        capacity=slot_cap,
+                        booked_spots=0,
+                        category=category,
+                        players_names=[],
+                        status=SlotStatus.AVAILABLE,
+                        slot_type="MATCH",
+                        instructor_name=None,
+                        is_promo=False,
+                        sport_type=c_sport,
+                    )
+                )
+
+            if is_tourn_court:
+                for ev in day_events:
+                    cat_label = f"Americano {ev['category']} ({ev['modality_label']})"
+                    all_to_add.append(
+                        TimeSlot(
+                            court_id=court.id,
+                            date=d,
+                            start_time=ev["start_time"],
+                            end_time=ev["end_time"],
+                            total_price=ev["entry_fee"] * 4,
+                            mode=SlotMode.FULL_COURT,
+                            capacity=4,
+                            booked_spots=4,
+                            category=cat_label,
+                            status=SlotStatus.FULLY_BOOKED,
+                            slot_type="AMERICANO",
+                            tournament_type=ev["modality"],
+                            tournament_name=ev["name"],
+                            prize_pool=ev["prize_pool"],
+                            players_names=[],
+                            is_promo=False,
+                            sport_type="PADEL",
+                        )
+                    )
+                    ev_desc = f"{d.strftime('%Y-%m-%d')} ({ev['day_name']}): {ev['name']} ({ev['time_str']})"
+                    if ev_desc not in scheduled_events:
+                        scheduled_events.append(ev_desc)
+
+    if all_to_add:
+        db.add_all(all_to_add)
+
+    await db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Se sembraron exitosamente {len(all_to_add)} turnos para los 7 días con la plantilla de torneos Capital Pádel Maloka.",
+        "courts_count": len(courts),
+        "days_count": len(dates_to_seed),
+        "slots_created": len(all_to_add),
+        "tournaments_scheduled": len(scheduled_events),
+        "scheduled_events": scheduled_events,
+    }
+
+
 @router.get("/{slot_id}/yield-recommendation")
+
 async def get_yield_recommendation(
     slot_id: int,
     db: AsyncSession = Depends(get_db),

@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, date as dt_date
 from decimal import Decimal
 from typing import List, Optional, Union
 import uuid
@@ -192,3 +192,8 @@ class DropPlayerResponse(BaseModel):
     freed_phone: str
     available_spots: int
     status: SlotStatus
+
+
+class WeeklyTemplateSeedRequest(BaseModel):
+    date: Optional[Union[dt_date, str]] = None
+    selected_events: Optional[List[str]] = None
