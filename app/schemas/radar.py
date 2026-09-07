@@ -70,3 +70,35 @@ class RadarBatchConsolidatedResponse(BaseModel):
     total_records: int = 0
     clubs_summary: Dict[str, ClubSummary] = Field(default_factory=dict)
     global_market_metrics: GlobalMarketMetrics
+
+
+class CompetitorClubItem(BaseModel):
+    id: int
+    name: str
+    city: str
+    zone: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    courts_count: int = 4
+    rating: Optional[float] = 4.5
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    price_valle: float
+    price_pico: float
+    current_price: float
+    is_target_partner: bool = False
+    diff_pct: float = 0.0
+    diff_cop: float = 0.0
+
+
+class RadarClubsResponse(BaseModel):
+    status: str = "success"
+    city: str
+    franja: str
+    target_price: float
+    avg_competitor_price: float
+    competitiveness_pct: float
+    total_clubs: int
+    total_national_clubs: int
+    clubs: List[CompetitorClubItem] = Field(default_factory=list)

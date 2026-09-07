@@ -1,10 +1,19 @@
 from datetime import datetime
 import os
 import re
-from typing import List
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.radar import RadarBatchConsolidatedResponse, RadarUploadResponse
+from app.core.database import get_db
+from app.models.competitor import CompetitorClub
+from app.schemas.radar import (
+    CompetitorClubItem,
+    RadarBatchConsolidatedResponse,
+    RadarClubsResponse,
+    RadarUploadResponse,
+)
+from app.services.radar_loader import ensure_competitor_clubs, normalize_text
 from app.services.radar_service import (
     RAW_DIR,
     parse_whatsapp_export,
@@ -133,3 +142,92 @@ async def upload_multiple_chats(
         )
 
     return result
+
+
+@router.get(
+    "/clubs",
+    response_model=RadarClubsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Listado georreferenciado de clubes competidores y benchmarking de precios",
+    description="Devuelve el radar de clubes de pádel en Colombia, filtrables por ciudad y franja (VALLE/PICO), con métricas comparativas frente a Capital Pádel Club.",
+)
+async def get_radar_clubs(
+    city: str = Query("Bogota", description="Ciudad a filtrar ('Bogota', 'Medellin', 'Cali', 'all')"),
+    franja: str = Query("PICO", description="Franja horaria ('PICO' o 'VALLE')"),
+    db: AsyncSession = Depends(get_db),
+):
+    all_db_clubs = await ensure_competitor_clubs(db)
+    franja_mode = franja.upper().strip()
+    if franja_mode not in ["PICO", "VALLE"]:
+        franja_mode = "PICO"
+
+    city_clean = city.strip()
+    norm_filter = normalize_text(city_clean)
+    filter_all = norm_filter in ["all", "todos", "nacional", "colombia", ""]
+
+    target_club = next((c for c in all_db_clubs if c.is_target_partner), None)
+    if target_club:
+        target_price = float(target_club.price_pico if franja_mode == "PICO" else target_club.price_valle)
+    else:
+        target_price = 120000.0 if franja_mode == "PICO" else 80000.0
+
+    filtered_clubs = []
+    competitor_prices = []
+
+    for c in all_db_clubs:
+        c_city_norm = normalize_text(c.city)
+        if filter_all or norm_filter in c_city_norm:
+            filtered_clubs.append(c)
+            if not c.is_target_partner:
+                c_price = float(c.price_pico if franja_mode == "PICO" else c.price_valle)
+                competitor_prices.append(c_price)
+
+    if competitor_prices:
+        avg_competitor_price = round(sum(competitor_prices) / len(competitor_prices), 2)
+    else:
+        avg_competitor_price = target_price
+
+    if avg_competitor_price > 0:
+        competitiveness_pct = round(((avg_competitor_price - target_price) / avg_competitor_price) * 100, 1)
+    else:
+        competitiveness_pct = 0.0
+
+    club_items: List[CompetitorClubItem] = []
+    for c in filtered_clubs:
+        curr_p = float(c.price_pico if franja_mode == "PICO" else c.price_valle)
+        diff_cop = round(curr_p - target_price, 2)
+        diff_pct = round(((curr_p - target_price) / curr_p) * 100, 1) if curr_p > 0 else 0.0
+
+        club_items.append(
+            CompetitorClubItem(
+                id=c.id,
+                name=c.name,
+                city=c.city,
+                zone=c.zone,
+                address=c.address,
+                latitude=c.latitude,
+                longitude=c.longitude,
+                courts_count=c.courts_count or 4,
+                rating=c.rating or 4.5,
+                phone=c.phone,
+                website=c.website,
+                price_valle=float(c.price_valle),
+                price_pico=float(c.price_pico),
+                current_price=curr_p,
+                is_target_partner=bool(c.is_target_partner),
+                diff_pct=diff_pct,
+                diff_cop=diff_cop,
+            )
+        )
+
+    return RadarClubsResponse(
+        status="success",
+        city=city_clean,
+        franja=franja_mode,
+        target_price=target_price,
+        avg_competitor_price=avg_competitor_price,
+        competitiveness_pct=competitiveness_pct,
+        total_clubs=len(filtered_clubs),
+        total_national_clubs=len(all_db_clubs),
+        clubs=club_items,
+    )

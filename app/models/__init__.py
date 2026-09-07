@@ -12,6 +12,7 @@ from app.models.slot import (
 from app.models.booking import Booking
 from app.models.incident import PlayerIncident
 from app.models.customer import Customer
+from app.models.competitor import CompetitorClub
 
 __all__ = [
     "Base",
@@ -21,6 +22,7 @@ __all__ = [
     "Booking",
     "PlayerIncident",
     "Customer",
+    "CompetitorClub",
     "SlotMode",
     "SlotStatus",
     "HoldStatus",
