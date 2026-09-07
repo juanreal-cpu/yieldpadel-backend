@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.timezone import validate_slot_not_past
 from app.models.booking import Booking
 from app.models.slot import (
     ClientTier,
@@ -55,6 +56,8 @@ async def create_hold(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="El slot especificado no existe",
         )
+
+    validate_slot_not_past(slot)
 
     if slot.status == SlotStatus.BLOCKED:
         raise HTTPException(

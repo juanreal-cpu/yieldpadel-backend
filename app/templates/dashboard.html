@@ -846,6 +846,27 @@
       z-index: 22;
     }
 
+    /* TURNOS PASADOS / FINALIZADOS */
+    .card-past-unreserved {
+      background-color: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #94a3b8 !important;
+      opacity: 0.6 !important;
+      cursor: not-allowed !important;
+      user-select: none !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+    .card-past-unreserved:hover {
+      transform: none !important;
+      box-shadow: none !important;
+      border-color: #e2e8f0 !important;
+      background-color: #f1f5f9 !important;
+    }
+    .card-past-booked {
+      opacity: 0.5 !important;
+    }
+
     /* ESQUEMAS DE COLOR CLARO PROFESIONAL */
     /* 1. DISPONIBLE / LIBRE */
     .card-theme-gray {
@@ -3571,6 +3592,46 @@
       }
     }
 
+    // Obtener fecha y hora local de Colombia ('America/Bogota')
+    function getColombiaDateTime() {
+      try {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Bogota',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        const getVal = (t) => parts.find(p => p.type === t)?.value;
+        const dateStr = `${getVal('year')}-${getVal('month')}-${getVal('day')}`;
+        const timeStr = `${getVal('hour')}:${getVal('minute')}`;
+        return {
+          dateStr,
+          timeStr,
+          hour: parseInt(getVal('hour'), 10),
+          minute: parseInt(getVal('minute'), 10)
+        };
+      } catch (e) {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return {
+          dateStr: `${year}-${month}-${day}`,
+          timeStr: `${hh}:${mm}`,
+          hour: d.getHours(),
+          minute: d.getMinutes()
+        };
+      }
+    }
+
     let selectedDate = getColombiaTodayString();
 
     // Switch Modular Views en Sidebar Vertical (delegates to window.switchMainView)
@@ -4630,10 +4691,9 @@ ${data.message}`);
       }
 
       // Slot Cards
-      const todayStr = getColombiaTodayString();
+      const { dateStr: todayStr, timeStr: currentTimeStr, hour: colHour, minute: colMin } = getColombiaDateTime();
       const isToday = (selectedDate === todayStr);
-      const now = new Date();
-      const currentNowMin = now.getHours() * 60 + now.getMinutes();
+      const currentNowMin = colHour * 60 + colMin;
 
       visibleSlots.forEach(slot => {
         const courtIdx = displayedCourts.findIndex(c => String(c.id) === String(slot.court_id));
@@ -4658,9 +4718,56 @@ ${data.message}`);
         const isTournament = slot.slot_type === 'AMERICANO' || catLower.includes('americano') || catLower.includes('torneo');
         const isClass = (slot.slot_type === 'CLASS' || slot.slot_type === 'ACADEMY');
         const isBlocked = slot.status === 'BLOCKED' || slot.slot_type === 'MAINTENANCE';
+        const hasBookings = Boolean(
+          slot.status === 'FULLY_BOOKED' ||
+          slot.status === 'BOOKED' ||
+          slot.status === 'CLOSED' ||
+          (slot.booked_spots && slot.booked_spots > 0) ||
+          (slot.players_names && slot.players_names.length > 0) ||
+          (slot.participants && slot.participants.length > 0)
+        );
         const isFull = !isBlocked && !isClass && (slot.status === 'FULLY_BOOKED' || (slot.booked_spots + slot.held_spots) >= slotCap);
         const isOpenMatch = !isBlocked && !isClass && slot.mode === 'SPLIT_MATCH' && slot.booked_spots > 0 && !isFull;
         const isAvailable = !isTournament && !isClass && !isBlocked && !isFull && !isOpenMatch;
+
+        // Evaluación de Turno Pasado / Finalizado en hora Bogotá ('America/Bogota')
+        const slotDate = slot.date || selectedDate;
+        let slotEndStr = (slot.end_time || '').substring(0, 5);
+        if (slotEndStr === '00:00' && (slot.start_time || '').substring(0, 5) >= '23:00') {
+          slotEndStr = '24:00';
+        }
+        const isPastSlot = (slotDate < todayStr) || (slotDate === todayStr && slotEndStr <= currentTimeStr);
+
+        // 1. CASO: Turno Pasado No Reservado (Turno Perdido)
+        if (isPastSlot && (slot.status === 'AVAILABLE' || (!hasBookings && !isBlocked))) {
+          const lostThemeClass = 'bg-slate-100 border border-slate-200 text-slate-400 opacity-60 cursor-not-allowed select-none card-past-unreserved';
+          const priceFormatted = formatCOP(slot.total_price);
+          html += `
+            <div class="matrix-slot-card ${lostThemeClass}"
+                 style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum}; pointer-events: none;">
+              <div>
+                <div class="card-top">
+                  <span class="card-time text-slate-400">${slot.start_time} - ${slot.end_time}</span>
+                  <span class="card-dur-badge text-slate-400 bg-slate-200 border-slate-300">${durationMin}m</span>
+                </div>
+                
+                <div class="my-auto py-3 text-center flex flex-col items-center justify-center">
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">⌛ Finalizado / No disponible</span>
+                </div>
+              </div>
+
+              <div class="card-footer">
+                <div>
+                  <div class="card-price text-slate-400">${priceFormatted}</div>
+                </div>
+                <div></div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        const isPastBooked = isPastSlot && (hasBookings || slot.status === 'BOOKED' || slot.status === 'CLOSED' || slot.status === 'FULLY_BOOKED');
 
         let themeClass = 'card-theme-gray';
         let statusBadge = `<span class="card-badge-status badge-status-free">⚪ LIBRE</span>`;
@@ -4761,7 +4868,10 @@ ${data.message}`);
         }
 
         let actionBtnHtml = '';
-        if (isAvailable) {
+        if (isPastBooked) {
+          statusBadge = `<span class="text-[11px] font-bold text-slate-600">✓ Partido Finalizado</span>`;
+          actionBtnHtml = `<div class="flex items-center gap-1.5"><span class="text-[11px] font-bold text-slate-600">✓ Partido Finalizado</span><button onclick="openReserveOrBlockModal(${slot.id})" class="px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:text-slate-900 bg-slate-100 border border-slate-300 rounded" title="Ver detalle o registrar resultado">🏅 Resultado</button></div>`;
+        } else if (isAvailable) {
           actionBtnHtml = `<button onclick="openReserveOrBlockModal(${slot.id})" class="btn-card-reserve">Reservar Pista</button>`;
         } else if (isOpenMatch) {
           actionBtnHtml = `<button onclick="openHoldModal(${slot.id})" class="btn-card-action">+ Apartar Cupo</button>`;
@@ -4775,19 +4885,27 @@ ${data.message}`);
 
         // Detección de Turno Crítico (< 3 horas) para Animación 'On Fire' y Remate Flash
         let isCriticalFlash = false;
-        if (isToday && (isAvailable || isOpenMatch)) {
+        if (isToday && !isPastSlot && (isAvailable || isOpenMatch)) {
           const diffMinutes = slotStartMin - currentNowMin;
           if (diffMinutes > 0 && diffMinutes <= 180) {
             isCriticalFlash = true;
           }
         }
 
+        if (isPastSlot) {
+          isUrgentAlert = false;
+          isCriticalFlash = false;
+        }
+
         let criticalBadgeHtml = isCriticalFlash ? '<span class="badge-critical-fire">🔥 CRÍTICO (&lt;3H)</span>' : '';
         let remateBtnHtml = isCriticalFlash ? `<button onclick="triggerFlashPromoForSlot(${slot.id})" class="btn-card-remate-flash" title="Rematar con Promo Flash -25% por WhatsApp">⚡ Rematar Ahora</button>` : '';
 
+        const pastBookedClass = isPastBooked ? 'opacity-50 card-past-booked' : '';
+        const pastBookedStyle = isPastBooked ? 'opacity: 0.5;' : '';
+
         html += `
-          <div class="matrix-slot-card ${themeClass} ${isUrgentAlert ? 'urgent-alert-box' : ''} ${isCriticalFlash ? 'slot-on-fire' : ''}"
-               style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum};">
+          <div class="matrix-slot-card ${themeClass} ${pastBookedClass} ${isUrgentAlert ? 'urgent-alert-box' : ''} ${isCriticalFlash ? 'slot-on-fire' : ''}"
+               style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum}; ${pastBookedStyle}">
             <div>
               <div class="card-top">
                 <span class="card-time">${slot.start_time} - ${slot.end_time}</span>
@@ -5214,6 +5332,19 @@ ${data.message}`);
     function openReserveOrBlockModal(slotId) {
       const slot = allSlots.find(s => s.id === slotId);
       if (!slot) return;
+
+      const { dateStr, timeStr } = getColombiaDateTime();
+      const slotDate = slot.date || selectedDate;
+      let slotEnd = (slot.end_time || '').substring(0, 5);
+      if (slotEnd === '00:00' && (slot.start_time || '').substring(0, 5) >= '23:00') {
+        slotEnd = '24:00';
+      }
+      const isPast = (slotDate < dateStr) || (slotDate === dateStr && slotEnd <= timeStr);
+      if (isPast && slot.status === 'AVAILABLE') {
+        showToast('Este turno ya ha finalizado y no está disponible para reserva.', 'error');
+        return;
+      }
+
       selectedSlot = slot;
 
       document.getElementById('rb-slot-id').value = slot.id;
@@ -5410,6 +5541,19 @@ ${data.message}`);
     function openHoldModal(slotId) {
       const slot = allSlots.find(s => s.id === slotId);
       if (!slot) return;
+
+      const { dateStr, timeStr } = getColombiaDateTime();
+      const slotDate = slot.date || selectedDate;
+      let slotEnd = (slot.end_time || '').substring(0, 5);
+      if (slotEnd === '00:00' && (slot.start_time || '').substring(0, 5) >= '23:00') {
+        slotEnd = '24:00';
+      }
+      const isPast = (slotDate < dateStr) || (slotDate === dateStr && slotEnd <= timeStr);
+      if (isPast) {
+        showToast('No se pueden crear apartados ni reservas en turnos pasados.', 'error');
+        return;
+      }
+
       selectedSlot = slot;
 
       document.getElementById('hold-slot-id').value = slot.id;

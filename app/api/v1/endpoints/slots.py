@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.timezone import get_bogota_now, get_bogota_today
+from app.core.timezone import get_bogota_now, get_bogota_today, validate_slot_not_past
 from app.services import calculate_recommended_price, get_club_config, update_club_config
 from app.services.whatsapp import detect_sport_from_text, get_sport_emoji, get_sport_default_capacity, format_whatsapp_reply
 import uuid
@@ -18,6 +18,7 @@ from app.models.court import Court
 from app.models.customer import Customer
 from app.models.booking import Booking
 from app.models.slot import HoldStatus, SlotMode, SlotStatus, TimeSlot, SlotHold, ClientTier, PaymentStatus
+from app.schemas.hold import SlotHoldCreate, SlotHoldResponse
 from app.schemas.slot import (
     CourtResponse,
     DropPlayerRequest,
@@ -560,6 +561,8 @@ async def reserve_or_block_slot(
     slot = res.scalars().first()
     if not slot:
         raise HTTPException(status_code=404, detail=f"Turno #{slot_id} no encontrado")
+
+    validate_slot_not_past(slot)
 
     stype = (payload.slot_type or "MATCH").upper()
     slot.slot_type = stype
@@ -1445,6 +1448,8 @@ async def assign_spot(
             detail="El slot especificado no existe.",
         )
 
+    validate_slot_not_past(slot)
+
     if slot.status == SlotStatus.BLOCKED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1678,4 +1683,68 @@ async def record_slot_match_result(
         ],
         "slot_id": target_slot_id,
     }
+
+
+@router.post("/hold", response_model=SlotHoldResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{slot_id}/hold", response_model=SlotHoldResponse, status_code=status.HTTP_201_CREATED)
+async def create_slot_hold_alias(
+    payload: SlotHoldCreate,
+    slot_id: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Crea un hold temporal para un slot verificando estrictamente que no sea del pasado.
+    """
+    target_id = slot_id or payload.slot_id
+    payload.slot_id = target_id
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.holds))
+        .where(TimeSlot.id == target_id)
+        .with_for_update()
+    )
+    result = await db.execute(stmt)
+    slot = result.scalar_one_or_none()
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El slot especificado no existe",
+        )
+    validate_slot_not_past(slot)
+
+    from app.api.v1.endpoints.holds import create_hold
+    return await create_hold(payload=payload, db=db)
+
+
+@router.post("/book", status_code=status.HTTP_200_OK)
+@router.post("/{slot_id}/book", status_code=status.HTTP_200_OK)
+async def book_slot_alias(
+    payload: AssignSpotRequest,
+    slot_id: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Reserva un slot verificando estrictamente que no sea del pasado.
+    """
+    target_id = slot_id or payload.slot_id
+    payload.slot_id = target_id
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.holds))
+        .where(TimeSlot.id == target_id)
+        .with_for_update()
+    )
+    result = await db.execute(stmt)
+    slot = result.scalar_one_or_none()
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El slot especificado no existe.",
+        )
+    validate_slot_not_past(slot)
+
+    return await assign_spot(payload=payload, db=db)
+
 
