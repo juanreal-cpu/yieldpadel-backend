@@ -351,6 +351,10 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       background: #F59E0B;
       box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
     }
+    .legend-box.cyan {
+      background: #06B6D4;
+      box-shadow: 0 0 6px rgba(6, 182, 212, 0.6);
+    }
     .legend-box.purple {
       background: #A855F7;
       box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
@@ -439,7 +443,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       color: #94A3B8;
     }
 
-    /* Vertical Time Labels (Col 1, Rows 2-35) */
+    /* Vertical Time Labels (Col 1, Rows 2-N) */
     .time-slot-label {
       position: sticky;
       left: 0;
@@ -521,14 +525,32 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
     }
 
-    /* 4. Soft Gray: Available / Free */
+    /* 4. Cyan / Petroleum: Clase / Academia */
+    .card-theme-academy {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.22) 0%, rgba(14, 116, 144, 0.45) 100%);
+      border: 1px solid #06B6D4;
+      box-shadow: 0 2px 10px rgba(6, 182, 212, 0.25);
+    }
+    .card-theme-academy:hover {
+      border-color: #22D3EE;
+      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.4);
+    }
+
+    /* 5. Soft Gray: Available / Free */
     .card-theme-gray {
       background: rgba(30, 41, 59, 0.55);
       border: 1px dashed rgba(148, 163, 184, 0.35);
+      cursor: pointer;
     }
     .card-theme-gray:hover {
       border-color: #38BDF8;
       background: rgba(30, 41, 59, 0.85);
+    }
+
+    /* 6. Dark Red: Blocked / Maintenance */
+    .card-theme-blocked {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px dashed rgba(239, 68, 68, 0.45);
     }
 
     /* Pulsing Alert Animation for < 30 min */
@@ -562,6 +584,45 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       align-items: center;
       gap: 0.25rem;
       letter-spacing: 0.02em;
+    }
+
+    /* Dynamic Yield Badges */
+    .badge-yield-promo {
+      background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%);
+      color: #FFFFFF;
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0.12rem 0.4rem;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      box-shadow: 0 0 8px rgba(225, 29, 72, 0.5);
+      animation: pulse-promo 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-promo {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.03); }
+    }
+
+    .badge-yield-tier {
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .tier-pico {
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #F87171;
+    }
+    .tier-valle {
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34D399;
     }
 
     /* Inside Card Elements */
@@ -618,6 +679,11 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       color: #FCD34D;
       border: 1px solid rgba(245, 158, 11, 0.5);
     }
+    .badge-status-academy {
+      background: rgba(6, 182, 212, 0.25);
+      color: #67E8F9;
+      border: 1px solid rgba(6, 182, 212, 0.6);
+    }
     .badge-status-tournament {
       background: rgba(168, 85, 247, 0.3);
       color: #E9D5FF;
@@ -627,6 +693,11 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       background: rgba(148, 163, 184, 0.2);
       color: #CBD5E1;
       border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    .badge-status-blocked {
+      background: rgba(239, 68, 68, 0.2);
+      color: #FCA5A5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
     }
 
     .card-category {
@@ -709,6 +780,21 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     }
     .btn-card-action:hover {
       background: linear-gradient(135deg, #0369A1 0%, #075985 100%);
+    }
+
+    .btn-card-reserve {
+      background: linear-gradient(135deg, #059669 0%, #0D9488 100%);
+      color: white;
+      border: none;
+      padding: 0.22rem 0.55rem;
+      border-radius: 5px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-card-reserve:hover {
+      background: linear-gradient(135deg, #047857 0%, #0F766E 100%);
     }
 
     .card-full-badge {
@@ -872,7 +958,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       flex-shrink: 0;
     }
 
-    /* Modal */
+    /* Modal Backdrop and Box */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -893,7 +979,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       border: 1px solid #1E293B;
       border-radius: 12px;
       width: 90%;
-      max-width: 440px;
+      max-width: 480px;
       padding: 1.5rem;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
@@ -958,6 +1044,15 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       cursor: pointer;
       margin-top: 0.5rem;
     }
+
+    /* Yield Info Callout inside Modal */
+    .yield-callout {
+      background: #0B0F19;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 0.85rem;
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -994,7 +1089,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       <!-- Toolbar Multi-Día, Zoom y Filtros -->
       <div class="toolbar-container">
         
-        <!-- Fila 1: Selector de Fecha -->
+        <!-- Fila 1: Selector de Fecha y Botón Sembrar 7 Días -->
         <div class="toolbar-row">
           <div class="date-nav-group">
             <span class="filter-label">Fecha:</span>
@@ -1007,15 +1102,26 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
             <span id="current-date-label" class="current-date-badge">📅 Hoy</span>
           </div>
 
-          <!-- Botón de Sembrar Turnos 5 Canchas -->
-          <button onclick="seedFiveCourts()" id="btn-seed-courts" class="btn-seed" title="Poblar turnos de 1h, 1.5h y 2h para las 5 canchas">
-            🌱 + Sembrar Turnos 5 Canchas
+          <!-- Botón de Sembrar Turnos 5 Canchas (7 Días) -->
+          <button onclick="seedFiveCourts()" id="btn-seed-courts" class="btn-seed" title="Poblar los próximos 7 días para las 5 canchas en bloques de 90 min">
+            🌱 + Sembrar Turnos (7 Días / 5 Canchas)
           </button>
         </div>
 
-        <!-- Fila 2: Zoom de Cancha y Filtros de Estado -->
+        <!-- Fila 2: Franjas Horarias, Zoom Cancha y Filtros de Estado -->
         <div class="toolbar-row">
           
+          <!-- Filtro Franjas Horarias -->
+          <div class="filter-group">
+            <span class="filter-label">Franja Horaria:</span>
+            <div class="pill-group">
+              <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="filter-pill active" title="Ver toda la jornada (06:00 a 24:00)">Todas las horas</button>
+              <button onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="filter-pill" title="Ver jornada de la mañana">Mañana (&lt;12pm)</button>
+              <button onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="filter-pill" title="Ver jornada de la tarde">Tarde (12pm-6pm)</button>
+              <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="filter-pill" title="Ver jornada nocturna y pico">Noche / Pico (&gt;6pm)</button>
+            </div>
+          </div>
+
           <div class="filter-group">
             <span class="filter-label">Zoom Cancha:</span>
             <select id="court-zoom-select" onchange="setCourtZoom(this.value)" class="select-control">
@@ -1024,10 +1130,10 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
           </div>
 
           <div class="filter-group">
-            <span class="filter-label">Filtro Estado:</span>
+            <span class="filter-label">Estado:</span>
             <div class="pill-group">
               <button onclick="setStatusFilter('ALL')" id="btn-status-all" class="filter-pill active">Todos</button>
-              <button onclick="setStatusFilter('OPEN')" id="btn-status-open" class="filter-pill">Por Completar (Abiertos)</button>
+              <button onclick="setStatusFilter('OPEN')" id="btn-status-open" class="filter-pill">Abiertos (1-3)</button>
               <button onclick="setStatusFilter('PAID')" id="btn-status-paid" class="filter-pill">Pagados</button>
             </div>
           </div>
@@ -1039,19 +1145,20 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       <!-- Título de Sección y Leyenda Visual -->
       <div class="section-title">
         <div style="display: flex; align-items: center; gap: 0.6rem;">
-          <span>📅 Matriz Calendario Operativo</span>
+          <span>📅 Matriz Calendario Operativo (Bloques 90 min)</span>
           <span id="slots-count" style="font-size: 0.75rem; color: #38BDF8; font-weight: 600; background: rgba(56,189,248,0.1); padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid rgba(56,189,248,0.25);">Cargando...</span>
         </div>
         
         <div class="calendar-legend">
           <span class="legend-item"><span class="legend-box emerald"></span> Pagado / Cerrado (4/4)</span>
           <span class="legend-item"><span class="legend-box amber"></span> Abierto (1-3)</span>
+          <span class="legend-item"><span class="legend-box cyan"></span> 🎾 Clase / Academia</span>
           <span class="legend-item"><span class="legend-box purple"></span> Americano / Torneo</span>
-          <span class="legend-item"><span class="legend-box gray"></span> Disponible</span>
+          <span class="legend-item"><span class="legend-box gray"></span> Disponible (Click para Reservar)</span>
         </div>
       </div>
 
-      <!-- Contenedor Matriz Calendario con Franjas Horarias (06:00 a 23:00) -->
+      <!-- Contenedor Matriz Calendario con Franjas Horarias -->
       <div class="calendar-wrapper" id="calendar-wrapper">
         <div id="calendar-matrix" class="calendar-matrix">
           <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: #64748B;">
@@ -1075,11 +1182,11 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
           Pega el texto de WhatsApp para parsear jugadores con 🎾 e identidad canónica:
         </p>
 
-        <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 06 SEPTIEMBRE
+        <textarea id="wa-input" class="wa-textarea" placeholder="Pega el mensaje aquí...">HOY 07 SEPTIEMBRE
 Categoría: 4ta
-⌚2:00pm - 3:30pm
+⌚6:00pm - 7:30pm
 📍Bogotá Pádel Center
-💰15.000
+💰30.000
 🎾Juanda
 🎾Edinson
 🎾Charlie
@@ -1161,7 +1268,80 @@ PARTIDO CERRADO</textarea>
 
   </main>
 
-  <!-- Modal Interactivo para Apartar Turno -->
+  <!-- Modal Interactivo para Crear Reserva / Bloqueo con Yield Management -->
+  <div id="reserve-block-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">⚡ Reserva & Yield Management</div>
+          <div id="rb-modal-slot-desc" style="font-size: 0.75rem; color: #94A3B8; margin-top: 0.2rem;">Cargando detalles del turno...</div>
+        </div>
+        <button onclick="closeReserveOrBlockModal()" class="btn-close">✕</button>
+      </div>
+
+      <form id="reserve-block-form" onsubmit="handleReserveOrBlockSubmit(event)">
+        <input type="hidden" id="rb-slot-id">
+
+        <!-- Callout de Recomendación Yield -->
+        <div class="yield-callout" id="rb-yield-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <span style="font-size: 0.72rem; color: #94A3B8; text-transform: uppercase; font-weight: 700;">Recomendación Yield</span>
+            <span id="rb-yield-badge" class="badge-yield-tier tier-valle">🌿 VALLE</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <div id="rb-yield-price-display" style="font-size: 1.25rem; font-weight: 800; color: #38BDF8;">$80.000 COP</div>
+            <div id="rb-yield-promo-tag" style="display: none;" class="badge-yield-promo">⚡ LAST-MINUTE PROMO (-25%)</div>
+          </div>
+          <div id="rb-yield-explanation" style="font-size: 0.68rem; color: #94A3B8; margin-top: 0.35rem; line-height: 1.3;">
+            Tarifa dinámica sugerida según ocupación y proximidad horaria.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tipo de Turno / Operación</label>
+          <select id="rb-slot-type-select" onchange="onSlotTypeChange(this.value)" class="form-control" style="background: #111827; border-color: #38BDF8; font-weight: 700;">
+            <option value="MATCH">🎾 Cancha Completa (Reserva Particular)</option>
+            <option value="SPLIT_MATCH">👥 Partido Abierto (4 Cupos por Separado)</option>
+            <option value="CLASS">🎓 Clase / Academia (Con Profesor)</option>
+            <option value="MAINTENANCE">🔧 Bloqueo por Mantenimiento</option>
+          </select>
+        </div>
+
+        <!-- Campo Dinámico: Profesor de Academia -->
+        <div class="form-group" id="rb-instructor-group" style="display: none;">
+          <label class="form-label">👨‍🏫 Profesor / Entrenador Asignado</label>
+          <input type="text" id="rb-instructor-name" placeholder="Ej: Prof. Marcos Rivas / Valentina Gómez" class="form-control">
+          <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.25rem;">
+            * Los slots de clase bloquean registros no autorizados por WhatsApp con aviso automático.
+          </p>
+        </div>
+
+        <div class="form-group" id="rb-client-name-group">
+          <label class="form-label">Nombre del Cliente / Titular / Alumno</label>
+          <input type="text" id="rb-client-name" placeholder="Ej: Camilo Torres" class="form-control">
+        </div>
+
+        <div class="form-group" id="rb-client-phone-group">
+          <label class="form-label">Teléfono (WhatsApp)</label>
+          <input type="tel" id="rb-client-phone" placeholder="+57 300 123 4567" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Precio Cancha ($ COP)</label>
+          <input type="number" id="rb-custom-price" step="1000" min="0" class="form-control" style="font-weight: 700; color: #38BDF8;">
+          <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.25rem;">
+            Pre-cargado con la sugerencia de Yield. Modificable si aplica cortesía o convenio especial.
+          </p>
+        </div>
+
+        <button type="submit" id="btn-submit-rb" class="btn-submit">
+          Confirmar Reserva / Bloqueo
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Interactivo para Apartar Turno por Cupos (Hold) -->
   <div id="hold-modal" class="modal-backdrop">
     <div class="modal-box">
       <div class="modal-header">
@@ -1252,8 +1432,9 @@ PARTIDO CERRADO</textarea>
     let allCourts = [];
     let activeHoldsMap = {};
     let selectedSlot = null;
-    let currentStatusFilter = 'ALL'; // ALL, OPEN, PAID
-    let selectedCourtZoom = 'ALL';   // ALL or court UUID/ID
+    let currentStatusFilter = 'ALL';  // ALL, OPEN, PAID
+    let currentTimeFilter = 'ALL';    // ALL, MORNING, AFTERNOON, NIGHT
+    let selectedCourtZoom = 'ALL';    // ALL or court UUID/ID
 
     function getLocalDateString(d) {
       const year = d.getFullYear();
@@ -1335,7 +1516,7 @@ PARTIDO CERRADO</textarea>
       const div = document.createElement('div');
       div.className = 'event-item';
       div.innerHTML = `
-        <div class="event-dot" style="${type === 'green' ? 'background: #10B981;' : (type === 'amber' ? 'background: #FBBF24;' : (type === 'red' ? 'background: #EF4444;' : ''))}"></div>
+        <div class="event-dot" style="${type === 'green' ? 'background: #10B981;' : (type === 'amber' ? 'background: #FBBF24;' : (type === 'red' ? 'background: #EF4444;' : (type === 'cyan' ? 'background: #06B6D4;' : '')))}"></div>
         <div style="flex: 1;">
           <div style="font-weight: 600; color: #F1F5F9;">${title}</div>
           <div style="color: #64748B; font-size: 0.68rem;">${subtitle} • ${timeStr}</div>
@@ -1350,6 +1531,15 @@ PARTIDO CERRADO</textarea>
       document.getElementById('btn-status-all').className = 'filter-pill' + (status === 'ALL' ? ' active' : '');
       document.getElementById('btn-status-open').className = 'filter-pill' + (status === 'OPEN' ? ' active' : '');
       document.getElementById('btn-status-paid').className = 'filter-pill' + (status === 'PAID' ? ' active' : '');
+      renderCalendarMatrix();
+    }
+
+    function setTimeFilter(timeFilter) {
+      currentTimeFilter = timeFilter;
+      document.getElementById('btn-time-all').className = 'filter-pill' + (timeFilter === 'ALL' ? ' active' : '');
+      document.getElementById('btn-time-morning').className = 'filter-pill' + (timeFilter === 'MORNING' ? ' active' : '');
+      document.getElementById('btn-time-afternoon').className = 'filter-pill' + (timeFilter === 'AFTERNOON' ? ' active' : '');
+      document.getElementById('btn-time-night').className = 'filter-pill' + (timeFilter === 'NIGHT' ? ' active' : '');
       renderCalendarMatrix();
     }
 
@@ -1430,14 +1620,37 @@ PARTIDO CERRADO</textarea>
         filteredSlots = allSlots.filter(s => s.status === 'FULLY_BOOKED' || (s.booked_spots + s.held_spots) >= s.capacity);
       }
 
-      if (countEl) {
-        countEl.textContent = `${filteredSlots.length} turno${filteredSlots.length === 1 ? '' : 's'} (${formatDateDisplay(selectedDate)})`;
+      // Determine operational time range based on Time Filter
+      // ALL: 06:00 to 24:00 (360 to 1440 min, 36 half-hours)
+      // MORNING: 06:00 to 12:00 (360 to 720 min, 12 half-hours)
+      // AFTERNOON: 12:00 to 18:00 (720 to 1080 min, 12 half-hours)
+      // NIGHT: 18:00 to 24:00 (1080 to 1440 min, 12 half-hours)
+      let START_MINUTES = 360;
+      let END_MINUTES = 1440;
+
+      if (currentTimeFilter === 'MORNING') {
+        START_MINUTES = 360;
+        END_MINUTES = 720;
+      } else if (currentTimeFilter === 'AFTERNOON') {
+        START_MINUTES = 720;
+        END_MINUTES = 1080;
+      } else if (currentTimeFilter === 'NIGHT') {
+        START_MINUTES = 1080;
+        END_MINUTES = 1440;
       }
 
-      // Operational range: 06:00 to 23:00 (34 slots of 30 mins)
-      const START_MINUTES = 360; // 06:00
-      const END_MINUTES = 1380;  // 23:00
-      const TOTAL_SLOTS = (END_MINUTES - START_MINUTES) / 30; // 34 intervals
+      const TOTAL_SLOTS = Math.round((END_MINUTES - START_MINUTES) / 30);
+
+      // Filter slots by current time window
+      const visibleSlots = filteredSlots.filter(s => {
+        const [sh, sm] = s.start_time.split(':').map(Number);
+        const slotStartMin = sh * 60 + sm;
+        return slotStartMin >= START_MINUTES && slotStartMin < END_MINUTES;
+      });
+
+      if (countEl) {
+        countEl.textContent = `${visibleSlots.length} turno${visibleSlots.length === 1 ? '' : 's'} (${formatDateDisplay(selectedDate)})`;
+      }
 
       let html = '';
 
@@ -1457,7 +1670,7 @@ PARTIDO CERRADO</textarea>
 
       // 2. Background Grid: Time labels (Col 1) and Empty Court cells (Col 2..N)
       for (let i = 0; i < TOTAL_SLOTS; i++) {
-        const rowNum = i + 2; // Rows 2 to 35
+        const rowNum = i + 2;
         const curMin = START_MINUTES + i * 30;
         const hh = String(Math.floor(curMin / 60)).padStart(2, '0');
         const mm = String(curMin % 60).padStart(2, '0');
@@ -1471,41 +1684,48 @@ PARTIDO CERRADO</textarea>
       }
 
       // 3. Render Slot Cards as Grid Blocks
-      // For urgency calculation: check if match is today and starts within 30 min
       const todayStr = getLocalDateString(new Date());
       const isToday = (selectedDate === todayStr);
       const now = new Date();
       const currentNowMin = now.getHours() * 60 + now.getMinutes();
 
-      filteredSlots.forEach(slot => {
+      visibleSlots.forEach(slot => {
         // Find court column
         const courtIdx = displayedCourts.findIndex(c => String(c.id) === String(slot.court_id));
-        if (courtIdx === -1) return; // slot is in a court filtered out by zoom
+        if (courtIdx === -1) return;
         const colNum = courtIdx + 2;
 
         // Parse times
         const [sh, sm] = slot.start_time.split(':').map(Number);
         const [eh, em] = slot.end_time.split(':').map(Number);
         const slotStartMin = sh * 60 + sm;
-        const slotEndMin = eh * 60 + em;
+        const slotEndMin = (eh === 0 && em === 0) ? 1440 : (eh * 60 + em);
 
         // Determine grid row and span
         if (slotStartMin < START_MINUTES || slotStartMin >= END_MINUTES) return;
         const rowStart = Math.floor((slotStartMin - START_MINUTES) / 30) + 2;
-        const durationMin = slotEndMin - slotStartMin;
+        const durationMin = Math.max(30, slotEndMin - slotStartMin);
         const rowSpan = Math.max(1, Math.round(durationMin / 30));
 
         // Color coding & Categories
         const catLower = (slot.category || '').toLowerCase();
         const isTournament = catLower.includes('americano') || catLower.includes('torneo');
-        const isFull = slot.status === 'FULLY_BOOKED' || (slot.booked_spots + slot.held_spots) >= slot.capacity;
-        const isOpenMatch = slot.mode === 'SPLIT_MATCH' && slot.booked_spots > 0 && !isFull;
-        const isAvailable = !isTournament && !isFull && !isOpenMatch;
+        const isClass = (slot.slot_type === 'CLASS' || slot.slot_type === 'ACADEMY');
+        const isBlocked = slot.status === 'BLOCKED' || slot.slot_type === 'MAINTENANCE';
+        const isFull = !isBlocked && !isClass && (slot.status === 'FULLY_BOOKED' || (slot.booked_spots + slot.held_spots) >= slot.capacity);
+        const isOpenMatch = !isBlocked && !isClass && slot.mode === 'SPLIT_MATCH' && slot.booked_spots > 0 && !isFull;
+        const isAvailable = !isTournament && !isClass && !isBlocked && !isFull && !isOpenMatch;
 
         let themeClass = 'card-theme-gray';
         let statusBadge = `<span class="card-badge-status badge-status-free">⚪ LIBRE</span>`;
 
-        if (isTournament) {
+        if (isBlocked) {
+          themeClass = 'card-theme-blocked';
+          statusBadge = `<span class="card-badge-status badge-status-blocked">🔧 BLOQUEO</span>`;
+        } else if (isClass) {
+          themeClass = 'card-theme-academy';
+          statusBadge = `<span class="card-badge-status badge-status-academy">🎾 CLASE / ACADEMIA</span>`;
+        } else if (isTournament) {
           themeClass = 'card-theme-purple';
           statusBadge = `<span class="card-badge-status badge-status-tournament">🏆 ${slot.category}</span>`;
         } else if (isFull) {
@@ -1516,25 +1736,50 @@ PARTIDO CERRADO</textarea>
           statusBadge = `<span class="card-badge-status badge-status-open">⚡ ABIERTO (${slot.booked_spots}/${slot.capacity})</span>`;
         }
 
-        // Urgency check (< 30 min)
+        // Urgency check (< 30 min) for open matches
         const minutesUntilStart = slotStartMin - currentNowMin;
         const isUrgent = isToday && isOpenMatch && (minutesUntilStart > 0 && minutesUntilStart <= 30);
         if (isUrgent) {
           themeClass += ' urgent-alert-box';
         }
 
+        // Yield promo and pricing tier tags
+        let yieldBadgesHtml = '';
+        if (slot.is_promo) {
+          yieldBadgesHtml += `<span class="badge-yield-promo" title="Descuento Yield Last-Minute">⚡ PROMO -25%</span>`;
+        }
+        if (slot.pricing_tier === 'PICO') {
+          yieldBadgesHtml += `<span class="badge-yield-tier tier-pico">🔥 PICO</span>`;
+        } else if (slot.pricing_tier === 'VALLE') {
+          yieldBadgesHtml += `<span class="badge-yield-tier tier-valle">🌿 VALLE</span>`;
+        }
+
         const durLabel = durationMin === 60 ? '1h' : (durationMin === 90 ? '1.5h' : (durationMin === 120 ? '2h' : (durationMin / 60).toFixed(1) + 'h'));
         const priceStr = formatCOP(slot.mode === 'SPLIT_MATCH' ? slot.price_per_spot : slot.total_price);
         const priceSub = slot.mode === 'SPLIT_MATCH' ? 'por cupo' : 'cancha total';
 
+        // Class Coach & Instructor Display
+        let classInfoHtml = '';
+        if (isClass) {
+          const profName = slot.instructor_name || 'Prof. Asignado';
+          classInfoHtml = `
+            <div style="font-size: 0.7rem; color: #67E8F9; font-weight: 700; margin: 0.2rem 0; display: flex; align-items: center; gap: 0.25rem;">
+              <span>👨‍🏫 Prof: ${profName}</span>
+            </div>
+            <div style="font-size: 0.62rem; color: #94A3B8; margin-bottom: 0.25rem;">
+              <span style="background: rgba(15,23,42,0.7); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08);">🚫 WhatsApp Inhabilitado</span>
+            </div>
+          `;
+        }
+
         // Participants list
         const participants = slot.participants || [];
         let playersHtml = '';
-        if (participants.length > 0 && rowSpan >= 3) {
+        if (participants.length > 0 && rowSpan >= 3 && !isClass && !isBlocked) {
           const pRows = participants.map(p => `
             <div class="card-player-item">
               <span title="Tel: ${p.phone || ''} • ${p.client_tier}">🎾 ${p.display_name}</span>
-              <button onclick="openDropModal(${slot.id}, '${p.display_name}', '${p.phone}')" class="btn-card-drop" title="Solicitar baja">✕</button>
+              <button onclick="event.stopPropagation(); openDropModal(${slot.id}, '${p.display_name}', '${p.phone}')" class="btn-card-drop" title="Solicitar baja">✕</button>
             </div>
           `).join('');
           playersHtml = `<div class="card-players">${pRows}</div>`;
@@ -1542,14 +1787,23 @@ PARTIDO CERRADO</textarea>
 
         // Action Button
         let actionBtn = '';
-        if (isFull) {
+        if (isBlocked) {
+          actionBtn = `<span style="font-size: 0.65rem; color: #FCA5A5; font-weight: 700;">🔧 En Mantenimiento</span>`;
+        } else if (isClass) {
+          actionBtn = `<span style="font-size: 0.65rem; color: #38BDF8; font-weight: 700;">✓ Academia</span>`;
+        } else if (isFull) {
           actionBtn = `<span class="card-full-badge">✓ Completo</span>`;
+        } else if (isOpenMatch) {
+          actionBtn = `<button onclick="event.stopPropagation(); openHoldModal(${slot.id})" class="btn-card-action">Apartar</button>`;
         } else {
-          actionBtn = `<button onclick="openHoldModal(${slot.id})" class="btn-card-action">Apartar</button>`;
+          // Available slot
+          actionBtn = `<button onclick="event.stopPropagation(); openReserveOrBlockModal(${slot.id})" class="btn-card-reserve">⚡ Reservar</button>`;
         }
 
+        const cardOnClick = isAvailable ? `onclick="openReserveOrBlockModal(${slot.id})"` : '';
+
         html += `
-          <div class="matrix-slot-card ${themeClass}" style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum};">
+          <div class="matrix-slot-card ${themeClass}" style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum};" ${cardOnClick}>
             <div>
               <div class="card-top">
                 <span class="card-time">${slot.start_time.slice(0, 5)} - ${slot.end_time.slice(0, 5)}</span>
@@ -1558,10 +1812,12 @@ PARTIDO CERRADO</textarea>
 
               <div class="card-badges">
                 ${statusBadge}
+                ${yieldBadgesHtml}
                 ${isUrgent ? '<span class="badge-urgent">⚠️ &lt; 30 min</span>' : ''}
-                ${slot.category && !isTournament ? `<span class="card-category">Cat. ${slot.category}</span>` : ''}
+                ${slot.category && !isTournament && !isClass ? `<span class="card-category">Cat. ${slot.category}</span>` : ''}
               </div>
 
+              ${classInfoHtml}
               ${playersHtml}
             </div>
 
@@ -1583,14 +1839,14 @@ PARTIDO CERRADO</textarea>
       const btn = document.getElementById('btn-seed-courts');
       if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Sembrando...';
+        btn.textContent = 'Sembrando 7 días...';
       }
       try {
         const query = selectedDate ? `?date=${selectedDate}` : '';
         const res = await fetch(`${API_BASE}/api/v1/slots/seed${query}`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
-          addEvent('Turnos Sembrados en 5 Canchas', `${data.slots_created || 0} slots • ${formatDateDisplay(selectedDate)}`, 'green');
+          addEvent('Turnos Sembrados (7 Días)', `${data.slots_created || 0} slots creados para 5 canchas`, 'green');
           await refreshData();
         } else {
           alert(data.detail || 'Error al sembrar turnos');
@@ -1600,11 +1856,135 @@ PARTIDO CERRADO</textarea>
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '🌱 + Sembrar Turnos 5 Canchas';
+          btn.textContent = '🌱 + Sembrar Turnos (7 Días / 5 Canchas)';
         }
       }
     }
 
+    // Modal de Reserva / Bloqueo con Yield Management
+    async function openReserveOrBlockModal(slotId) {
+      const slot = allSlots.find(s => s.id === slotId);
+      if (!slot) return;
+
+      document.getElementById('rb-slot-id').value = slot.id;
+      document.getElementById('rb-modal-slot-desc').textContent = `${slot.court_name || 'Cancha'} • ${slot.date} • ${slot.start_time.slice(0,5)} - ${slot.end_time.slice(0,5)}`;
+      document.getElementById('rb-client-name').value = '';
+      document.getElementById('rb-client-phone').value = '+57 ';
+      document.getElementById('rb-instructor-name').value = '';
+      document.getElementById('rb-slot-type-select').value = 'MATCH';
+      onSlotTypeChange('MATCH');
+
+      // Pre-cargar precio recomendado de Yield
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/yield-recommendation`);
+        if (res.ok) {
+          const yd = await res.json();
+          document.getElementById('rb-custom-price').value = yd.recommended_price || slot.total_price;
+          document.getElementById('rb-yield-price-display').textContent = formatCOP(yd.recommended_price);
+          
+          const tierBadge = document.getElementById('rb-yield-badge');
+          if (yd.pricing_tier === 'PICO') {
+            tierBadge.className = 'badge-yield-tier tier-pico';
+            tierBadge.textContent = '🔥 HORARIO PICO';
+          } else {
+            tierBadge.className = 'badge-yield-tier tier-valle';
+            tierBadge.textContent = '🌿 HORARIO VALLE';
+          }
+
+          const promoTag = document.getElementById('rb-yield-promo-tag');
+          if (yd.is_promo) {
+            promoTag.style.display = 'inline-flex';
+            promoTag.textContent = `⚡ PROMO -${yd.promo_discount_percent}% (Ahorro ${formatCOP(yd.savings)})`;
+          } else {
+            promoTag.style.display = 'none';
+          }
+
+          document.getElementById('rb-yield-explanation').textContent = yd.explanation || 'Tarifa calculada por motor dinámico de ocupación.';
+        } else {
+          document.getElementById('rb-custom-price').value = slot.total_price;
+        }
+      } catch (e) {
+        document.getElementById('rb-custom-price').value = slot.total_price;
+      }
+
+      document.getElementById('reserve-block-modal').classList.add('open');
+    }
+
+    function closeReserveOrBlockModal() {
+      document.getElementById('reserve-block-modal').classList.remove('open');
+    }
+
+    function onSlotTypeChange(stype) {
+      const instructorGroup = document.getElementById('rb-instructor-group');
+      const clientNameGroup = document.getElementById('rb-client-name-group');
+      const clientPhoneGroup = document.getElementById('rb-client-phone-group');
+
+      if (stype === 'CLASS') {
+        instructorGroup.style.display = 'block';
+        clientNameGroup.style.display = 'block';
+        clientPhoneGroup.style.display = 'block';
+      } else if (stype === 'MAINTENANCE') {
+        instructorGroup.style.display = 'none';
+        clientNameGroup.style.display = 'none';
+        clientPhoneGroup.style.display = 'none';
+      } else {
+        instructorGroup.style.display = 'none';
+        clientNameGroup.style.display = 'block';
+        clientPhoneGroup.style.display = 'block';
+      }
+    }
+
+    async function handleReserveOrBlockSubmit(e) {
+      e.preventDefault();
+      const slotId = Number(document.getElementById('rb-slot-id').value);
+      const stype = document.getElementById('rb-slot-type-select').value;
+      const instructor = document.getElementById('rb-instructor-name').value.trim();
+      const clientName = document.getElementById('rb-client-name').value.trim();
+      const clientPhone = document.getElementById('rb-client-phone').value.trim();
+      const customPrice = parseFloat(document.getElementById('rb-custom-price').value) || null;
+
+      const btn = document.getElementById('btn-submit-rb');
+      btn.disabled = true;
+      btn.textContent = 'Procesando...';
+
+      try {
+        const payload = {
+          slot_type: stype === 'SPLIT_MATCH' ? 'MATCH' : stype,
+          mode: stype === 'SPLIT_MATCH' ? 'SPLIT_MATCH' : 'FULL_COURT',
+          instructor_name: stype === 'CLASS' ? instructor : null,
+          client_name: clientName || null,
+          client_phone: clientPhone || null,
+          custom_price: customPrice
+        };
+
+        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/reserve-or-block`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al procesar reserva');
+
+        if (stype === 'CLASS') {
+          addEvent(`Clase Agendada: ${instructor || 'Profesor'}`, `Alumno: ${clientName || 'Asignado'} • ${formatCOP(data.total_price)}`, 'cyan');
+        } else if (stype === 'MAINTENANCE') {
+          addEvent(`Pista Bloqueada`, `Mantenimiento preventivo en turno #${slotId}`, 'red');
+        } else {
+          addEvent(`Reserva Confirmada`, `${clientName || 'Cancha Completa'} • ${formatCOP(data.total_price)}`, 'green');
+        }
+
+        closeReserveOrBlockModal();
+        await refreshData();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar Reserva / Bloqueo';
+      }
+    }
+
+    // Modal de Hold
     function openHoldModal(slotId) {
       const slot = allSlots.find(s => s.id === slotId);
       if (!slot) return;

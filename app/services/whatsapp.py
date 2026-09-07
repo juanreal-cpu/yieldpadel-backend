@@ -601,9 +601,18 @@ async def find_target_slot(
                 .where(TimeSlot.date == target_d, TimeSlot.start_time == q_start)
             )
             res = await db.execute(stmt)
-            slot = res.scalars().first()
-            if slot:
-                return slot
+            matching_slots = res.scalars().all()
+            if matching_slots:
+                if len(matching_slots) > 1:
+                    clean_quoted = quoted_text.lower()
+                    for s in matching_slots:
+                        c_name = (s.court.name.lower() if s.court else "")
+                        c_num = str(getattr(s.court, "court_number", "")) if s.court else ""
+                        if c_name and c_name in clean_quoted:
+                            return s
+                        if c_num and (f"cancha {c_num}" in clean_quoted or f"pista {c_num}" in clean_quoted):
+                            return s
+                return matching_slots[0]
 
         logger.warning(f"Quoted context provided but no matching slot found in DB: date={target_d}, start={q_start}")
         return None
@@ -679,6 +688,8 @@ async def find_target_slot(
     res = await db.execute(stmt)
     all_slots = res.scalars().all()
     for s in all_slots:
+        if getattr(s, "slot_type", "MATCH") in ("CLASS", "ACADEMY", "MAINTENANCE"):
+            continue
         mode_val = s.mode.value if hasattr(s.mode, "value") else str(s.mode)
         status_val = s.status.value if hasattr(s.status, "value") else str(s.status)
         if mode_val == "SPLIT_MATCH" and status_val in ("AVAILABLE", "PARTIALLY_BOOKED"):
@@ -824,6 +835,17 @@ async def process_join_intent(
             "⚠️ *NO HAY TURNOS ABIERTOS DISPONIBLES* ⚠️\n"
             "En este momento no se encontró una convocatoria abierta para sumarte.\n"
             "Por favor consulta en recepción o en el Dashboard los turnos oficiales disponibles."
+        )
+
+    if getattr(slot, "slot_type", "MATCH") in ("CLASS", "ACADEMY"):
+        date_str = slot.date.strftime("%d/%m/%Y")
+        start_str = slot.start_time.strftime("%I:%M%p").lower()
+        end_str = slot.end_time.strftime("%I:%M%p").lower()
+        prof_txt = f" con el profesor {slot.instructor_name}" if slot.instructor_name else ""
+        return (
+            "⚠️ *TURNO RESERVADO PARA CLASE / ACADEMIA* ⚠️\n"
+            f"El bloque de las {start_str} - {end_str} ({date_str}){prof_txt} corresponde a una sesión de entrenamiento.\n"
+            "Las inscripciones abiertas por WhatsApp están deshabilitadas para este horario. Comunícate directamente con recepción."
         )
 
     participants = to_participants_list(slot.players_names)

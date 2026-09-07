@@ -4,6 +4,7 @@ from datetime import date, time, datetime
 from typing import TYPE_CHECKING, List, Optional
 from decimal import Decimal
 from sqlalchemy import (
+    Boolean,
     Date,
     DateTime,
     Enum,
@@ -84,6 +85,11 @@ class TimeSlot(Base):
     players_names: Mapped[List[str]] = mapped_column(JSON, default=list, nullable=False)
     category: Mapped[str] = mapped_column(String(50), default="4ta", nullable=False)
     closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Campos para academia, yield y promociones
+    slot_type: Mapped[str] = mapped_column(String(50), default="MATCH", nullable=False)
+    instructor_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    is_promo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     court: Mapped["Court"] = relationship("Court", back_populates="slots", lazy="selectin")
     holds: Mapped[List["SlotHold"]] = relationship(

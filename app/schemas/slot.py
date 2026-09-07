@@ -63,8 +63,23 @@ class TimeSlotResponse(BaseModel):
     players_names: List[str] = Field(default_factory=list)
     participants: List[SlotParticipant] = Field(default_factory=list)
     category: str = "4ta"
+    slot_type: str = "MATCH"
+    instructor_name: Optional[str] = None
+    is_promo: bool = False
+    recommended_price: Optional[Decimal] = None
+    pricing_tier: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReserveOrBlockRequest(BaseModel):
+    slot_type: str = "MATCH"  # MATCH, CLASS, ACADEMY, MAINTENANCE
+    instructor_name: Optional[str] = None
+    custom_price: Optional[Decimal] = None
+    client_name: Optional[str] = None
+    client_phone: Optional[str] = None
+    mode: Optional[SlotMode] = None
+    notes: Optional[str] = None
 
 
 class WhatsAppConvocatoriaRequest(BaseModel):

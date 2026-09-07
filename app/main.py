@@ -17,8 +17,14 @@ async def lifespan(app: FastAPI):
             from sqlalchemy import text
             if "sqlite" in str(engine.url):
                 await conn.execute(text("ALTER TABLE time_slots ADD COLUMN closed_at TIMESTAMP"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN slot_type VARCHAR(50) DEFAULT 'MATCH'"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN instructor_name VARCHAR(100)"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN is_promo BOOLEAN DEFAULT FALSE"))
             else:
                 await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP WITH TIME ZONE"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS slot_type VARCHAR(50) DEFAULT 'MATCH'"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS instructor_name VARCHAR(100)"))
+                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_promo BOOLEAN DEFAULT FALSE"))
         except Exception:
             pass
     yield

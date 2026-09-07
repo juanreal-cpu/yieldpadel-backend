@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.timezone import get_bogota_now, get_bogota_today
+from app.services import calculate_recommended_price
 from app.models.court import Court
 from app.models.slot import HoldStatus, SlotMode, SlotStatus, TimeSlot, SlotHold
 from app.schemas.slot import (
@@ -19,6 +20,7 @@ from app.schemas.slot import (
     TimeSlotResponse,
     WhatsAppConvocatoriaRequest,
     WhatsAppConvocatoriaResponse,
+    ReserveOrBlockRequest,
 )
 
 router = APIRouter()
@@ -96,6 +98,8 @@ def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse
     participants_objs = [SlotParticipant(**p) for p in participants_raw]
     display_names = [p.display_name for p in participants_objs]
 
+    yield_info = calculate_recommended_price(slot)
+
     return TimeSlotResponse(
         id=slot.id,
         court_id=slot.court_id,
@@ -114,6 +118,11 @@ def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse
         players_names=display_names,
         participants=participants_objs,
         category=slot.category or "4ta",
+        slot_type=getattr(slot, "slot_type", "MATCH") or "MATCH",
+        instructor_name=getattr(slot, "instructor_name", None),
+        is_promo=bool(yield_info.get("is_promo", False) or getattr(slot, "is_promo", False)),
+        recommended_price=yield_info.get("recommended_price"),
+        pricing_tier=yield_info.get("pricing_tier"),
     )
 
 
@@ -215,127 +224,43 @@ async def get_courts(db: AsyncSession = Depends(get_db)):
 
 @router.post("/seed", status_code=status.HTTP_201_CREATED)
 async def seed_demo_data(
-    target_date: Optional[date] = Query(None, alias="date", description="Fecha específica para sembrar turnos demo"),
+    target_date: Optional[date] = Query(None, alias="date", description="Fecha inicial para sembrar 7 días"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Siembra turnos de demostración para las 5 canchas con duraciones de 1h, 1.5h y 2h,
-    cubriendo franjas de 06:00 a 23:00 con estados variados:
-    - Azul / Esmeralda: Pagado / Cerrado (4/4)
-    - Amarillo / Ámbar: Partido Abierto (1/4 a 3/4)
-    - Morado: Americano / Torneo
-    - Gris suave: Disponible / Libre
+    Generación Automática a 7 Días (Intervalos de 1:30):
+    Puebla los próximos 7 días calendario para las 5 canchas en la franja operativa
+    de 06:00 a 24:00 en 12 bloques consecutivos de 90 minutos:
+    (06:00-07:30, 07:30-09:00, ..., 22:30-24:00).
+    Estado inicial: AVAILABLE con precios de Yield Management (Valle $80.000 / Pico $120.000).
     """
     courts = await ensure_five_courts(db)
     today = get_bogota_today()
-    dates_to_seed = [target_date] if target_date else [today - timedelta(days=1), today, today + timedelta(days=1)]
+    start_d = target_date or today
+    dates_to_seed = [start_d + timedelta(days=i) for i in range(7)]
 
-    # Plantillas de turnos por número de cancha con duraciones de 1h, 1.5h y 2h
-    court_templates = {
-        1: [  # Cancha Central 1
-            {"start": time(6, 0), "end": time(7, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("80000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(7, 0), "end": time(8, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("120000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(8, 30), "end": time(10, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("100000.00"), "booked": 3, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573001112233", "display_name": "Juan Perez", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573002223344", "display_name": "Carlos Gomez", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 3, "phone": "+573003334455", "display_name": "Mateo Silva", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None},
-            ]},
-            {"start": time(10, 0), "end": time(12, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("160000.00"), "booked": 4, "cat": "Americano", "status": SlotStatus.FULLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573101111111", "display_name": "Felipe R", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573102222222", "display_name": "David M", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 3, "phone": "+573103333333", "display_name": "Santiago T", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 4, "phone": "+573104444444", "display_name": "Lucas B", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(12, 0), "end": time(13, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("70000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(14, 0), "end": time(15, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("112000.00"), "booked": 2, "cat": "3ra", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573151112233", "display_name": "Andres B", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573152223344", "display_name": "Diego V", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(16, 0), "end": time(18, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("160000.00"), "booked": 4, "cat": "Open", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(18, 0), "end": time(19, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("140000.00"), "booked": 4, "cat": "2da", "status": SlotStatus.FULLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573161111111", "display_name": "Camila S", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573162222222", "display_name": "Paula G", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 3, "phone": "+573163333333", "display_name": "Mariana O", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 4, "phone": "+573164444444", "display_name": "Valentina C", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(20, 0), "end": time(22, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("180000.00"), "booked": 4, "cat": "Torneo Nocturno", "status": SlotStatus.FULLY_BOOKED, "players": []},
-        ],
-        2: [  # Cancha 2
-            {"start": time(6, 30), "end": time(8, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("90000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(8, 0), "end": time(9, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("80000.00"), "booked": 1, "cat": "5ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573181112233", "display_name": "Esteban R", "client_tier": "STANDARD", "host_phone": None}
-            ]},
-            {"start": time(9, 30), "end": time(11, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("150000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(11, 30), "end": time(12, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("70000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(14, 0), "end": time(16, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("140000.00"), "booked": 3, "cat": "Americano Express", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573171112233", "display_name": "Pablo M", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573172223344", "display_name": "Tomas K", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 3, "phone": "+573173334455", "display_name": "Nicolas D", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(16, 30), "end": time(18, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("110000.00"), "booked": 2, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573121112233", "display_name": "German L", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573122223344", "display_name": "Oscar P", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(18, 30), "end": time(20, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("140000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(20, 0), "end": time(21, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("100000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-        ],
-        3: [  # Cancha 3
-            {"start": time(7, 0), "end": time(8, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("75000.00"), "booked": 0, "cat": "5ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(8, 0), "end": time(10, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("150000.00"), "booked": 4, "cat": "Americano Femenino", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(10, 30), "end": time(12, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("112000.00"), "booked": 3, "cat": "3ra", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573111112233", "display_name": "Alvaro H", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573112223344", "display_name": "Jorge E", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 3, "phone": "+573113334455", "display_name": "Mauricio C", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(13, 0), "end": time(14, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("60000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(14, 30), "end": time(16, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("120000.00"), "booked": 4, "cat": "4ta", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(16, 30), "end": time(18, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("130000.00"), "booked": 2, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573191112233", "display_name": "Cristian V", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573192223344", "display_name": "Hernan T", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(19, 0), "end": time(20, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("140000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(21, 0), "end": time(22, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("80000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-        ],
-        4: [  # Cancha 4
-            {"start": time(6, 0), "end": time(7, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("80000.00"), "booked": 0, "cat": "5ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(8, 0), "end": time(9, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("100000.00"), "booked": 2, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573211112233", "display_name": "Sergio N", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573212223344", "display_name": "Daniel J", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(10, 0), "end": time(11, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("70000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(11, 30), "end": time(13, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("150000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(14, 0), "end": time(15, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("112000.00"), "booked": 1, "cat": "3ra", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573221112233", "display_name": "Jaime B", "client_tier": "STANDARD", "host_phone": None}
-            ]},
-            {"start": time(16, 0), "end": time(17, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("80000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(17, 30), "end": time(19, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("160000.00"), "booked": 4, "cat": "Torneo Mixto", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(20, 0), "end": time(21, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("130000.00"), "booked": 4, "cat": "2da", "status": SlotStatus.FULLY_BOOKED, "players": []},
-        ],
-        5: [  # Cancha 5
-            {"start": time(7, 0), "end": time(8, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("110000.00"), "booked": 4, "cat": "4ta", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(9, 0), "end": time(10, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("70000.00"), "booked": 0, "cat": "5ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(10, 30), "end": time(12, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("130000.00"), "booked": 3, "cat": "Americano Iniciación", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573231112233", "display_name": "Luis F", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573232223344", "display_name": "Mario Z", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 3, "phone": "+573233334455", "display_name": "Guillermo R", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(13, 0), "end": time(14, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("60000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-            {"start": time(14, 30), "end": time(16, 0), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("110000.00"), "booked": 2, "cat": "4ta", "status": SlotStatus.PARTIALLY_BOOKED, "players": [
-                {"spot_index": 1, "phone": "+573241112233", "display_name": "Rodrigo A", "client_tier": "STANDARD", "host_phone": None},
-                {"spot_index": 2, "phone": "+573242223344", "display_name": "Samuel Q", "client_tier": "STANDARD", "host_phone": None},
-            ]},
-            {"start": time(16, 30), "end": time(18, 0), "mode": SlotMode.FULL_COURT, "price": Decimal("120000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(18, 30), "end": time(20, 30), "mode": SlotMode.SPLIT_MATCH, "price": Decimal("150000.00"), "booked": 4, "cat": "3ra", "status": SlotStatus.FULLY_BOOKED, "players": []},
-            {"start": time(21, 0), "end": time(22, 30), "mode": SlotMode.FULL_COURT, "price": Decimal("90000.00"), "booked": 0, "cat": "4ta", "status": SlotStatus.AVAILABLE, "players": []},
-        ],
-    }
+    # 12 bloques consecutivos de 90 minutos (1:30) de 06:00 a 24:00
+    BLOCKS_90_MIN = [
+        (time(6, 0), time(7, 30)),
+        (time(7, 30), time(9, 0)),
+        (time(9, 0), time(10, 30)),
+        (time(10, 30), time(12, 0)),
+        (time(12, 0), time(13, 30)),
+        (time(13, 30), time(15, 0)),
+        (time(15, 0), time(16, 30)),
+        (time(16, 30), time(18, 0)),
+        (time(18, 0), time(19, 30)),
+        (time(19, 30), time(21, 0)),
+        (time(21, 0), time(22, 30)),
+        (time(22, 30), time(23, 59)),
+    ]
 
     total_created = 0
-    for d in dates_to_seed:
-        is_past = d < today
-        for idx, court in enumerate(courts, start=1):
-            court_num = getattr(court, "court_number", None) or idx
-            templates = court_templates.get(court_num, court_templates[1])
+    for day_idx, d in enumerate(dates_to_seed):
+        is_weekend = d.weekday() in (5, 6)
+
+        for court_idx, court in enumerate(courts, start=1):
+            court_num = getattr(court, "court_number", None) or court_idx
 
             existing_res = await db.execute(
                 select(TimeSlot.start_time).where(TimeSlot.court_id == court.id, TimeSlot.date == d)
@@ -343,28 +268,76 @@ async def seed_demo_data(
             existing_times = set(existing_res.scalars().all())
 
             to_add = []
-            for tpl in templates:
-                if tpl["start"] in existing_times:
+            for b_idx, (start_t, end_t) in enumerate(BLOCKS_90_MIN):
+                if start_t in existing_times:
                     continue
-                slot_booked = 4 if is_past else tpl["booked"]
-                slot_status = SlotStatus.FULLY_BOOKED if (is_past or slot_booked >= 4) else (
-                    SlotStatus.PARTIALLY_BOOKED if slot_booked > 0 else SlotStatus.AVAILABLE
-                )
-                players = [] if is_past else tpl["players"]
+
+                # Precio base dinámico según Yield Management
+                is_pico = is_weekend or (start_t.hour >= 18)
+                base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+
+                slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and court_num <= 3) else SlotMode.FULL_COURT
+                slot_type = "MATCH"
+                instructor_name = None
+                category = "4ta"
+                booked_spots = 0
+                status_val = SlotStatus.AVAILABLE
+                players = []
+
+                # Muestras operativas para verificar academia y clases
+                if court_num == 3 and start_t == time(16, 30) and day_idx in (0, 2, 4):
+                    slot_type = "CLASS"
+                    instructor_name = "Prof. Marcos Rivas"
+                    category = "Academia Avanzada"
+                    status_val = SlotStatus.FULLY_BOOKED
+                    booked_spots = 4
+                    players = [{
+                        "spot_index": 1,
+                        "phone": "+57-ACADEMY",
+                        "display_name": "Clase con Marcos Rivas",
+                        "client_tier": "MEMBER",
+                        "host_phone": None
+                    }]
+                elif court_num == 5 and start_t == time(9, 0) and day_idx in (0, 1, 3):
+                    slot_type = "ACADEMY"
+                    instructor_name = "Prof. Valentina Gómez"
+                    category = "Clase Infantil"
+                    status_val = SlotStatus.FULLY_BOOKED
+                    booked_spots = 4
+                    players = [{
+                        "spot_index": 1,
+                        "phone": "+57-ACADEMY",
+                        "display_name": "Academia Infantil",
+                        "client_tier": "MEMBER",
+                        "host_phone": None
+                    }]
+                elif court_num == 1 and start_t == time(18, 0) and day_idx == 0:
+                    # Partido abierto en curso para pruebas de hoy
+                    slot_mode = SlotMode.SPLIT_MATCH
+                    status_val = SlotStatus.PARTIALLY_BOOKED
+                    booked_spots = 3
+                    players = [
+                        {"spot_index": 1, "phone": "+573001112233", "display_name": "Juan Perez", "client_tier": "STANDARD", "host_phone": None},
+                        {"spot_index": 2, "phone": "+573002223344", "display_name": "Carlos Gomez", "client_tier": "STANDARD", "host_phone": None},
+                        {"spot_index": 3, "phone": "+573003334455", "display_name": "Mateo Silva", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None},
+                    ]
 
                 to_add.append(
                     TimeSlot(
                         court_id=court.id,
                         date=d,
-                        start_time=tpl["start"],
-                        end_time=tpl["end"],
-                        total_price=tpl["price"],
-                        mode=tpl["mode"],
+                        start_time=start_t,
+                        end_time=end_t,
+                        total_price=base_price,
+                        mode=slot_mode,
                         capacity=4,
-                        booked_spots=slot_booked,
-                        category=tpl["cat"],
+                        booked_spots=booked_spots,
+                        category=category,
                         players_names=players,
-                        status=slot_status,
+                        status=status_val,
+                        slot_type=slot_type,
+                        instructor_name=instructor_name,
+                        is_promo=False,
                     )
                 )
 
@@ -375,12 +348,118 @@ async def seed_demo_data(
     if total_created > 0:
         await db.commit()
         return {
-            "message": f"Se sembraron {total_created} turnos demo exitosamente en las 5 canchas",
+            "message": f"Se sembraron {total_created} turnos de 90 min exitosamente para los próximos 7 días en las 5 canchas",
             "courts_count": len(courts),
+            "days_count": len(dates_to_seed),
             "slots_created": total_created,
         }
 
-    return {"message": "Los datos de demostración ya se encontraban presentes para todas las canchas", "courts_count": len(courts), "slots_created": 0}
+    return {
+        "message": "Los 7 días de turnos de 90 minutos ya se encontraban presentes para todas las canchas",
+        "courts_count": len(courts),
+        "days_count": len(dates_to_seed),
+        "slots_created": 0,
+    }
+
+
+@router.get("/{slot_id}/yield-recommendation")
+async def get_yield_recommendation(
+    slot_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Consulta en tiempo real la recomendación de precio del motor de Yield Management."""
+    stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id)
+    res = await db.execute(stmt)
+    slot = res.scalars().first()
+    if not slot:
+        raise HTTPException(status_code=404, detail=f"Turno #{slot_id} no encontrado")
+
+    yield_data = calculate_recommended_price(slot)
+    return {
+        "slot_id": slot.id,
+        "court_id": str(slot.court_id),
+        "court_name": slot.court.name if slot.court else "Cancha",
+        "date": slot.date.isoformat(),
+        "start_time": slot.start_time.strftime("%H:%M"),
+        "end_time": slot.end_time.strftime("%H:%M"),
+        "current_price": slot.total_price,
+        "status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
+        "slot_type": getattr(slot, "slot_type", "MATCH") or "MATCH",
+        "instructor_name": getattr(slot, "instructor_name", None),
+        **yield_data,
+    }
+
+
+@router.post("/{slot_id}/reserve-or-block", response_model=TimeSlotResponse)
+async def reserve_or_block_slot(
+    slot_id: int,
+    payload: ReserveOrBlockRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Permite a recepción crear una reserva manual, bloquear la cancha por mantenimiento,
+    o programar una clase/academia con profesor asignado y precio recomendado o personalizado.
+    """
+    stmt = select(TimeSlot).options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds)).where(TimeSlot.id == slot_id)
+    res = await db.execute(stmt)
+    slot = res.scalars().first()
+    if not slot:
+        raise HTTPException(status_code=404, detail=f"Turno #{slot_id} no encontrado")
+
+    stype = (payload.slot_type or "MATCH").upper()
+    slot.slot_type = stype
+
+    if payload.instructor_name:
+        slot.instructor_name = payload.instructor_name
+
+    if payload.mode:
+        slot.mode = payload.mode
+
+    # Asignar precio personalizado o recomendado por Yield
+    if payload.custom_price is not None and payload.custom_price > 0:
+        slot.total_price = payload.custom_price
+    else:
+        yield_data = calculate_recommended_price(slot)
+        slot.total_price = yield_data["recommended_price"]
+
+    # Procesar según tipo de turno
+    if stype == "MAINTENANCE":
+        slot.status = SlotStatus.BLOCKED
+        slot.booked_spots = slot.capacity
+        slot.players_names = [{"spot_index": 1, "phone": "+57-MANT", "display_name": "Mantenimiento", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None}]
+    elif stype in ("CLASS", "ACADEMY"):
+        slot.status = SlotStatus.FULLY_BOOKED
+        slot.booked_spots = slot.capacity
+        prof_title = payload.instructor_name or "Profesor Asignado"
+        student_label = payload.client_name or f"Clase con {prof_title}"
+        slot.players_names = [{
+            "spot_index": 1,
+            "phone": payload.client_phone or "+57-ACADEMY",
+            "display_name": student_label,
+            "client_tier": "MEMBER",
+            "host_phone": None
+        }]
+    elif payload.client_name:
+        slot.status = SlotStatus.FULLY_BOOKED
+        slot.booked_spots = slot.capacity
+        slot.players_names = [{
+            "spot_index": 1,
+            "phone": payload.client_phone or "+57-RECEPCION",
+            "display_name": payload.client_name,
+            "client_tier": "VIP_PAY_ON_SITE",
+            "host_phone": None
+        }]
+    else:
+        # Solo actualización de tarifa recomendada
+        slot.status = SlotStatus.AVAILABLE
+        slot.booked_spots = 0
+        slot.players_names = []
+
+    await db.commit()
+    await db.refresh(slot)
+
+    now_utc = datetime.now(timezone.utc)
+    return compute_slot_response(slot, now_utc)
 
 
 def parse_time_token(t_str: str) -> time:
