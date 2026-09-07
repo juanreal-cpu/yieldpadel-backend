@@ -22,6 +22,10 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       flex-direction: column;
     }
 
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     /* Header */
     header {
       background-color: #111827;
@@ -190,39 +194,46 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       }
     }
 
-    /* Toolbar Container */
+    /* ======================================================== */
+    /* REDISEÑO: Barra de Herramientas Ergonómica (2 Filas)     */
+    /* ======================================================== */
     .toolbar-container {
       background-color: #111827;
-      border: 1px solid #1E293B;
+      border: 1px solid #1F2937;
       border-radius: 12px;
       padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      margin-bottom: 1.25rem;
     }
 
-    .toolbar-row {
+    .toolbar-top-row {
       display: flex;
-      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
       gap: 0.75rem;
     }
 
-    .filter-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+    .toolbar-divider {
+      border-top: 1px solid #1F2937;
+      margin: 0.75rem 0;
     }
 
-    .filter-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #94A3B8;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .toolbar-bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .date-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
     }
 
     .pill-group {
@@ -234,41 +245,11 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       gap: 0.2rem;
     }
 
-    .filter-pill {
-      border: none;
-      background: transparent;
-      color: #94A3B8;
-      padding: 0.32rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .filter-pill.active {
-      background: #0284C7;
-      color: #FFFFFF;
-      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
-    }
-
-    .filter-pill:hover:not(.active) {
-      color: #FFFFFF;
-      background: #1E293B;
-    }
-
-    .date-nav-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-
     .date-pill {
       border: none;
       background: transparent;
       color: #94A3B8;
-      padding: 0.32rem 0.65rem;
+      padding: 0.35rem 0.75rem;
       border-radius: 6px;
       font-size: 0.75rem;
       font-weight: 700;
@@ -294,28 +275,27 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       color: #F1F5F9;
       font-size: 0.78rem;
       font-weight: 600;
-      padding: 0.32rem 0.55rem;
+      padding: 0.35rem 0.65rem;
       outline: none;
       cursor: pointer;
+      transition: border-color 0.2s;
     }
     .date-picker-input:focus {
       border-color: #38BDF8;
     }
 
-    .current-date-badge {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #38BDF8;
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      padding: 0.28rem 0.65rem;
-      border-radius: 6px;
+    /* Action Buttons (Fila Superior Derecha) */
+    .toolbar-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
-    .btn-seed {
-      background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
-      color: #FFFFFF;
-      border: none;
+    .btn-action-primary-purple {
+      background: rgba(147, 51, 234, 0.18);
+      border: 1px solid rgba(168, 85, 247, 0.45);
+      color: #D8B4FE;
       padding: 0.45rem 0.85rem;
       border-radius: 8px;
       font-size: 0.75rem;
@@ -323,27 +303,147 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+      gap: 0.4rem;
       transition: all 0.2s;
     }
-    .btn-seed:hover {
-      filter: brightness(1.15);
+    .btn-action-primary-purple:hover {
+      background: #7C3AED;
+      color: #FFFFFF;
+      border-color: #A855F7;
+      box-shadow: 0 2px 10px rgba(124, 58, 237, 0.35);
       transform: translateY(-1px);
     }
 
-    .select-control {
+    .btn-action-emerald {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6EE7B7;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+    .btn-action-emerald:hover {
+      background: #059669;
+      color: #FFFFFF;
+      border-color: #10B981;
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-action-flash {
+      background: rgba(225, 29, 72, 0.16);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #FDA4AF;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+    .btn-action-flash:hover {
+      background: #E11D48;
+      color: #FFFFFF;
+      border-color: #F43F5E;
+      box-shadow: 0 2px 10px rgba(225, 29, 72, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-action-cyan {
+      background: rgba(6, 182, 212, 0.14);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      color: #7DD3FC;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+    .btn-action-cyan:hover {
+      background: #0284C7;
+      color: #FFFFFF;
+      border-color: #38BDF8;
+      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .badge-urgency-dot {
+      background: #EF4444;
+      color: #FFFFFF;
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 0.08rem 0.35rem;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Filters (Fila Inferior) */
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .filter-pill {
+      border: none;
+      background: transparent;
+      color: #94A3B8;
+      padding: 0.32rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-pill.active {
+      background: #0284C7;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+
+    .filter-pill:hover:not(.active) {
+      color: #FFFFFF;
+      background: #1E293B;
+    }
+
+    /* Minimalist Dark Select for Zoom Cancha */
+    .select-zoom {
+      width: 210px;
       background-color: #0B0F19;
       border: 1px solid #1E293B;
       border-radius: 8px;
       color: #F1F5F9;
       font-size: 0.75rem;
       font-weight: 600;
-      padding: 0.32rem 0.65rem;
+      padding: 0.35rem 0.65rem;
       outline: none;
       cursor: pointer;
+      transition: border-color 0.2s;
     }
-    .select-control:focus {
+    .select-zoom:focus {
       border-color: #38BDF8;
     }
 
@@ -395,6 +495,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       overflow-x: auto;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
       position: relative;
+      min-height: 400px;
     }
 
     .calendar-matrix {
@@ -1081,7 +1182,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
         <div class="pulse-dot"></div>
         API Live
       </div>
-      <button onclick="refreshData()" class="btn-icon" title="Refrescar">
+      <button onclick="fetchSlots()" class="btn-icon" title="Refrescar">
         ↻ Refrescar
       </button>
     </div>
@@ -1118,73 +1219,86 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       <!-- Columna Izquierda: Calendario Tipo Matriz de 5 Canchas -->
       <section>
         
-        <!-- Toolbar Multi-Día, Zoom y Filtros -->
+        <!-- ======================================================== -->
+        <!-- REDISEÑO ERGONÓMICO: Barra de Herramientas (2 Filas)    -->
+        <!-- ======================================================== -->
         <div class="toolbar-container">
           
-          <!-- Fila 1: Selector de Fecha, Torneo Americano, Difusión y Sembrado -->
-          <div class="toolbar-row">
+          <!-- FILA 1: Navegación Temporal y Acciones Principales -->
+          <div class="toolbar-top-row">
+            
+            <!-- Izquierda: Navegación de Fecha Compacta -->
             <div class="date-nav-group">
               <span class="filter-label">Fecha:</span>
               <div class="pill-group">
                 <button onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="date-pill" title="Ver ayer">◀ Ayer</button>
-                <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">● Hoy</button>
+                <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">Hoy</button>
                 <button onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="date-pill" title="Ver mañana">Mañana ▶</button>
               </div>
-              <input type="date" id="date-picker" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha libre" />
-              <span id="current-date-label" class="current-date-badge">📅 Hoy</span>
+              <input type="date" id="selected-date" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha" />
             </div>
 
-            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-              <!-- Botón Crear Torneo Americano -->
-              <button onclick="openCreateAmericanoModal()" id="btn-create-americano" class="btn-seed" style="background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%); box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);" title="Crear Torneo Americano multi-pista (2h, 2.5h, 3h)">
-                🏆 + Crear Americano
+            <!-- Derecha: Botones de Acción Agrupados con gap-3 -->
+            <div class="toolbar-actions-group">
+              <!-- Botón Americano (Violeta sutil) -->
+              <button onclick="openCreateAmericanoModal()" id="btn-create-americano" class="btn-action-primary-purple" title="Crear Torneo Americano multi-pista (2h, 2.5h, 3h)">
+                <span>🏆</span> + Americano
               </button>
 
-              <!-- Botón Difundir Disponibilidad en WhatsApp -->
-              <button onclick="broadcastAvailability()" id="btn-broadcast-avail" class="btn-seed" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);" title="Enviar resumen de turnos libres del día al grupo de WhatsApp">
-                📢 Difundir Disponibilidad
+              <!-- Botón Difundir WhatsApp (Esmeralda) -->
+              <button onclick="broadcastAvailability()" id="btn-broadcast-avail" class="btn-action-emerald" title="Enviar resumen de disponibilidad al grupo de WhatsApp">
+                <span>📢</span> Difundir WhatsApp
               </button>
 
-              <!-- Botón Remate Canchas Críticas -->
-              <button onclick="broadcastPromoUrgent()" id="btn-broadcast-promo" class="btn-seed" style="background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%); box-shadow: 0 2px 8px rgba(225, 29, 72, 0.4);" title="Remate Flash de turnos críticos vacíos (< 3h) con -25% de descuento">
-                ⚡ Remate Flash
+              <!-- Botón Remate Flash (Ámbar/Rojo con badge de urgencia) -->
+              <button onclick="broadcastPromoUrgent()" id="btn-broadcast-promo" class="btn-action-flash" title="Remate Flash de turnos críticos vacíos (< 3h) con -25%">
+                <span>⚡</span> Remate Flash
+                <span class="badge-urgency-dot">-25%</span>
               </button>
 
-              <!-- Botón de Sembrar Turnos 5 Canchas (7 Días) -->
-              <button onclick="seedFiveCourts()" id="btn-seed-courts" class="btn-seed" title="Poblar los próximos 7 días para las 5 canchas en bloques de 90 min">
-                🌱 + Sembrar Turnos (7 Días)
+              <!-- Botón Sembrar 7 Días (Cian secundario) -->
+              <button onclick="seedFiveCourts()" id="btn-seed-courts" class="btn-action-cyan" title="Poblar los próximos 7 días para las 5 canchas en bloques de 90 min">
+                <span>🌱</span> Sembrar 7 Días
               </button>
             </div>
+
           </div>
 
-          <!-- Fila 2: Franjas Horarias, Zoom Cancha y Filtros de Estado -->
-          <div class="toolbar-row">
+          <!-- Separador Horizontal Fino (border-t border-slate-800 my-3) -->
+          <div class="toolbar-divider"></div>
+
+          <!-- FILA 2: Filtros Segmentados y Zoom Cancha -->
+          <div class="toolbar-bottom-row">
             
-            <!-- Filtro Franjas Horarias -->
-            <div class="filter-group">
-              <span class="filter-label">Franja Horaria:</span>
-              <div class="pill-group">
-                <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="filter-pill active" title="Ver toda la jornada (06:00 a 24:00)">Todas</button>
-                <button onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="filter-pill" title="Ver jornada de la mañana">Mañana (&lt;12pm)</button>
-                <button onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="filter-pill" title="Ver jornada de la tarde">Tarde (12pm-6pm)</button>
-                <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="filter-pill" title="Ver jornada nocturna">Noche (&gt;6pm)</button>
+            <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+              <!-- Chips Segmented Control: Franja Horaria -->
+              <div class="filter-group">
+                <span class="filter-label">Franja:</span>
+                <div class="pill-group">
+                  <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="filter-pill active">Todas</button>
+                  <button onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="filter-pill">Mañana (&lt;12pm)</button>
+                  <button onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="filter-pill">Tarde (12-6pm)</button>
+                  <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="filter-pill">Noche (&gt;6pm)</button>
+                </div>
+              </div>
+
+              <!-- Chips Segmented Control: Estado -->
+              <div class="filter-group">
+                <span class="filter-label">Estado:</span>
+                <div class="pill-group">
+                  <button onclick="setStatusFilter('ALL')" id="btn-status-all" class="filter-pill active">Todos</button>
+                  <button onclick="setStatusFilter('OPEN')" id="btn-status-open" class="filter-pill">Abiertos (1-3)</button>
+                  <button onclick="setStatusFilter('PAID')" id="btn-status-paid" class="filter-pill">Pagados / Cerrados</button>
+                </div>
               </div>
             </div>
 
-            <div class="filter-group">
-              <span class="filter-label">Zoom Cancha:</span>
-              <select id="court-zoom-select" onchange="setCourtZoom(this.value)" class="select-control">
+            <!-- Selector Zoom Cancha Minimalista Dark -->
+            <div class="filter-group" style="margin-left: auto;">
+              <span class="filter-label">Cancha:</span>
+              <select id="court-zoom-select" onchange="setCourtZoom(this.value)" class="select-zoom">
                 <option value="ALL">🏟️ Todas las Canchas (1-5)</option>
               </select>
-            </div>
-
-            <div class="filter-group">
-              <span class="filter-label">Estado:</span>
-              <div class="pill-group">
-                <button onclick="setStatusFilter('ALL')" id="btn-status-all" class="filter-pill active">Todos</button>
-                <button onclick="setStatusFilter('OPEN')" id="btn-status-open" class="filter-pill">Abiertos (1-3)</button>
-                <button onclick="setStatusFilter('PAID')" id="btn-status-paid" class="filter-pill">Pagados</button>
-              </div>
             </div>
 
           </div>
@@ -1210,8 +1324,10 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
         <!-- Contenedor Matriz Calendario con Franjas Horarias -->
         <div class="calendar-wrapper" id="calendar-wrapper">
           <div id="calendar-matrix" class="calendar-matrix">
-            <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: #64748B;">
-              Cargando matriz de 5 canchas desde FastAPI...
+            <div id="grid-loader" style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; text-align: center; color: #94A3B8;">
+              <div style="display: inline-block; width: 36px; height: 36px; border: 3px solid rgba(56, 189, 248, 0.2); border-radius: 50%; border-top-color: #38BDF8; animation: spin 0.8s linear infinite; margin-bottom: 0.75rem;"></div>
+              <div style="font-size: 0.85rem; font-weight: 600; color: #F1F5F9;">Cargando turnos de la jornada...</div>
+              <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Consultando disponibilidad y precios dinámicos</div>
             </div>
           </div>
         </div>
@@ -1607,7 +1723,7 @@ PARTIDO CERRADO</textarea>
             Histórico de eventos creados, bolsas económicas premiadas y reglas de yield automatizadas.
           </p>
         </div>
-        <button onclick="openCreateAmericanoModal()" class="btn-seed" style="background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);">
+        <button onclick="openCreateAmericanoModal()" class="btn-action-primary-purple">
           🏆 + Nuevo Torneo Americano
         </button>
       </div>
@@ -1856,14 +1972,27 @@ PARTIDO CERRADO</textarea>
     let currentTimeFilter = 'ALL';    // ALL, MORNING, AFTERNOON, NIGHT
     let selectedCourtZoom = 'ALL';    // ALL or court UUID/ID
 
-    function getLocalDateString(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+    // Obtener la fecha local de Colombia en formato YYYY-MM-DD
+    function getColombiaTodayString() {
+      try {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Bogota',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        return formatter.format(now);
+      } catch (e) {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
     }
 
-    let selectedDate = getLocalDateString(new Date());
+    let selectedDate = getColombiaTodayString();
 
     // Switch Modular Views
     function switchMainView(viewId) {
@@ -1885,10 +2014,10 @@ PARTIDO CERRADO</textarea>
     function setDate(dateStr) {
       if (!dateStr) return;
       selectedDate = dateStr;
-      const picker = document.getElementById('date-picker');
+      const picker = document.getElementById('selected-date') || document.getElementById('date-picker');
       if (picker) picker.value = dateStr;
       updateDateUI();
-      refreshData();
+      fetchSlots();
     }
 
     function onDateInputChange(val) {
@@ -1896,9 +2025,16 @@ PARTIDO CERRADO</textarea>
     }
 
     function setRelativeDate(offsetDays) {
-      const d = new Date();
-      d.setDate(d.getDate() + offsetDays);
-      setDate(getLocalDateString(d));
+      if (offsetDays === 0) {
+        setDate(getColombiaTodayString());
+        return;
+      }
+      const base = selectedDate ? selectedDate.split('-').map(Number) : getColombiaTodayString().split('-').map(Number);
+      const d = new Date(base[0], base[1] - 1, base[2] + offsetDays);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      setDate(`${year}-${month}-${day}`);
     }
 
     function formatDateDisplay(dateStr) {
@@ -1911,21 +2047,20 @@ PARTIDO CERRADO</textarea>
     }
 
     function updateDateUI() {
-      const todayStr = getLocalDateString(new Date());
-      const tom = new Date(); tom.setDate(tom.getDate() + 1);
-      const tomorrowStr = getLocalDateString(tom);
-      const yest = new Date(); yest.setDate(yest.getDate() - 1);
-      const yesterdayStr = getLocalDateString(yest);
+      const todayStr = getColombiaTodayString();
+      const [y, m, d] = todayStr.split('-').map(Number);
+      const tomD = new Date(y, m - 1, d + 1);
+      const tomorrowStr = `${tomD.getFullYear()}-${String(tomD.getMonth() + 1).padStart(2, '0')}-${String(tomD.getDate()).padStart(2, '0')}`;
+      const yestD = new Date(y, m - 1, d - 1);
+      const yesterdayStr = `${yestD.getFullYear()}-${String(yestD.getMonth() + 1).padStart(2, '0')}-${String(yestD.getDate()).padStart(2, '0')}`;
 
       const btnYest = document.getElementById('btn-date-yesterday');
       const btnToday = document.getElementById('btn-date-today');
       const btnTomorrow = document.getElementById('btn-date-tomorrow');
-      const label = document.getElementById('current-date-label');
 
       if (btnYest) btnYest.className = 'date-pill' + (selectedDate === yesterdayStr ? ' active' : '');
       if (btnToday) btnToday.className = 'date-pill' + (selectedDate === todayStr ? ' active' : '');
       if (btnTomorrow) btnTomorrow.className = 'date-pill' + (selectedDate === tomorrowStr ? ' active' : '');
-      if (label) label.textContent = '📅 ' + formatDateDisplay(selectedDate);
     }
 
     function formatCOP(num) {
@@ -1998,22 +2133,98 @@ PARTIDO CERRADO</textarea>
       }
     }
 
-    async function refreshData() {
+    // ========================================================
+    // CORRECCIÓN ROBUSTA: fetchSlots() sin Loader Congelado
+    // ========================================================
+    async function fetchSlots() {
+      const container = document.getElementById('calendar-matrix');
+      const countEl = document.getElementById('slots-count');
+      const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
+
+      // 1. Si el input está vacío, autocompletar con la fecha actual antes del fetch
+      if (!selectedDate || (dateInput && !dateInput.value)) {
+        selectedDate = getColombiaTodayString();
+        if (dateInput) dateInput.value = selectedDate;
+        updateDateUI();
+      }
+
+      // 2. Mostrar indicador de carga activo
+      if (container) {
+        container.innerHTML = `
+          <div id="grid-loader" style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; text-align: center; color: #94A3B8;">
+            <div style="display: inline-block; width: 36px; height: 36px; border: 3px solid rgba(56, 189, 248, 0.2); border-radius: 50%; border-top-color: #38BDF8; animation: spin 0.8s linear infinite; margin-bottom: 0.75rem;"></div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #F1F5F9;">Cargando turnos de la jornada...</div>
+            <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Consultando disponibilidad y tarifas dinámicas</div>
+          </div>
+        `;
+      }
+
       try {
         await fetch(`${API_BASE}/api/v1/holds/check-expirations`, { method: 'POST' }).catch(() => {});
         if (allCourts.length === 0) {
           await fetchCourts();
         }
+
         const dateQuery = selectedDate ? `&date=${selectedDate}` : '';
         const res = await fetch(`${API_BASE}/api/v1/slots/?only_available=false${dateQuery}`);
-        if (!res.ok) throw new Error('Error al conectar con la API');
-        allSlots = await res.json();
-        renderCalendarMatrix();
+        if (!res.ok) throw new Error(`Error al conectar con la API (${res.status})`);
+
+        const data = await res.json();
+        // 3. Normalizar la respuesta defensivamente
+        const slotList = Array.isArray(data) ? data : (data.slots || []);
+        allSlots = slotList;
+
+        // 4. Si slotList está vacío, ocultar el spinner y renderizar contenedor amigable
+        if (slotList.length === 0) {
+          if (container) {
+            container.innerHTML = `
+              <div class="p-8 text-center text-slate-400" style="grid-column: 1/-1; padding: 4rem 2rem; text-align: center; color: #94A3B8;">
+                <div style="font-size: 2.2rem; margin-bottom: 0.6rem;">🎾</div>
+                <div style="font-size: 1rem; font-weight: 700; color: #F1F5F9; margin-bottom: 0.35rem;">No hay turnos creados para esta fecha.</div>
+                <p style="font-size: 0.8rem; color: #64748B;">Usa el botón '+ Sembrar Turnos' para generarlos automáticamente.</p>
+              </div>
+            `;
+          }
+          if (countEl) {
+            countEl.textContent = `0 turnos (${formatDateDisplay(selectedDate)})`;
+          }
+          updateMetrics();
+          return;
+        }
+
+        // 5. Envolver el renderizado en try...catch para que ningún fallo de parseo deje el loader infinito
+        try {
+          renderCalendarMatrix();
+        } catch (renderErr) {
+          console.error("Error en renderCalendarMatrix:", renderErr);
+          if (container) {
+            container.innerHTML = `
+              <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #F87171;">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⚠️</div>
+                <div style="font-weight: 700;">Error al procesar los turnos</div>
+                <div style="font-size: 0.75rem; color: #94A3B8; margin-top: 0.25rem;">${renderErr.message || renderErr}</div>
+              </div>
+            `;
+          }
+        }
+
         updateMetrics();
       } catch (err) {
         console.error('Error fetching data:', err);
+        if (container) {
+          container.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #F87171;">
+              <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⚠️</div>
+              <div style="font-weight: 700;">Fallo de conexión con el servidor</div>
+              <div style="font-size: 0.75rem; color: #94A3B8; margin-top: 0.25rem;">No fue posible obtener los turnos (${err.message}).</div>
+              <button onclick="fetchSlots()" class="btn-action-cyan" style="margin-top: 1rem;">Reintentar</button>
+            </div>
+          `;
+        }
       }
     }
+
+    const refreshData = fetchSlots;
 
     function renderCalendarMatrix() {
       const container = document.getElementById('calendar-matrix');
@@ -2103,7 +2314,7 @@ PARTIDO CERRADO</textarea>
       }
 
       // 3. Render Slot Cards as Grid Blocks
-      const todayStr = getLocalDateString(new Date());
+      const todayStr = getColombiaTodayString();
       const isToday = (selectedDate === todayStr);
       const now = new Date();
       const currentNowMin = now.getHours() * 60 + now.getMinutes();
@@ -2276,7 +2487,7 @@ PARTIDO CERRADO</textarea>
       const btn = document.getElementById('btn-seed-courts');
       if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Sembrando 7 días...';
+        btn.textContent = 'Sembrando...';
       }
       try {
         const query = selectedDate ? `?date=${selectedDate}` : '';
@@ -2284,7 +2495,7 @@ PARTIDO CERRADO</textarea>
         const data = await res.json();
         if (res.ok) {
           addEvent('Turnos Sembrados (7 Días)', `${data.slots_created || 0} slots creados para 5 canchas`, 'green');
-          await refreshData();
+          await fetchSlots();
         } else {
           alert(data.detail || 'Error al sembrar turnos');
         }
@@ -2293,7 +2504,7 @@ PARTIDO CERRADO</textarea>
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '🌱 + Sembrar Turnos (7 Días)';
+          btn.innerHTML = '<span>🌱</span> Sembrar 7 Días';
         }
       }
     }
@@ -2372,7 +2583,7 @@ PARTIDO CERRADO</textarea>
           alert(`🏆 ¡Torneo Americano '${payload.tournament_name}' creado con éxito!
 
 Se bloquearon ${selectedCourtIds.length} pistas en color púrpura durante ${payload.duration_minutes / 60} horas.`);
-          await refreshData();
+          await fetchSlots();
         } else {
           alert(data.detail || 'Error al crear Torneo Americano');
         }
@@ -2413,7 +2624,7 @@ Destinatario: ${data.recipient}`);
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '📢 Difundir Disponibilidad';
+          btn.innerHTML = '<span>📢</span> Difundir WhatsApp';
         }
       }
     }
@@ -2442,7 +2653,7 @@ Se enviaron alertas de descuento (-25%) para ${data.total_critical_slots} turnos
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '⚡ Remate Flash';
+          btn.innerHTML = '<span>⚡</span> Remate Flash <span class="badge-urgency-dot">-25%</span>';
         }
       }
     }
@@ -2520,7 +2731,7 @@ Se enviaron alertas de descuento (-25%) para ${data.total_critical_slots} turnos
           alert('✅ ¡Configuración del club guardada exitosamente!
 
 Los nuevos precios base y reglas de cancelación están activos.');
-          await refreshData();
+          await fetchSlots();
         } else {
           alert(data.detail || 'Error al guardar configuración');
         }
@@ -2604,7 +2815,7 @@ Los nuevos precios base y reglas de cancelación están activos.');
         if (res.ok) {
           addEvent('Pista Modificada', `Slot #${slotId} asignado a ${slotType}`, 'green');
           closeReserveOrBlockModal();
-          await refreshData();
+          await fetchSlots();
         } else {
           alert(data.detail || 'Error al registrar acción');
         }
@@ -2681,7 +2892,7 @@ Los nuevos precios base y reglas de cancelación están activos.');
         if (res.ok) {
           addEvent('Hold Creado', `${payload.client_name} apartó ${payload.spots_count} cupo(s)`, 'green');
           closeModal();
-          await refreshData();
+          await fetchSlots();
         } else {
           alert(data.detail || 'Error al apartar cupo');
         }
@@ -2718,7 +2929,7 @@ Los nuevos precios base y reglas de cancelación están activos.');
           addEvent('Baja Confirmada', `Cupo liberado en Slot #${slotId}`, 'red');
           closeDropModal();
           alert(data.message || 'Baja confirmada exitosamente');
-          await refreshData();
+          await fetchSlots();
         } else {
           alert(data.detail || 'No fue posible dar de baja al jugador');
         }
@@ -2752,7 +2963,7 @@ Los nuevos precios base y reglas de cancelación están activos.');
         if (res.ok) {
           resultBox.textContent = data.reply || 'Mensaje procesado exitosamente.';
           addEvent('WhatsApp Sincronizado', 'Convocatoria procesada desde recepción', 'green');
-          await refreshData();
+          await fetchSlots();
         } else {
           resultBox.textContent = `Error: ${data.detail || 'Fallo al procesar'}`;
         }
@@ -2774,14 +2985,27 @@ Los nuevos precios base y reglas de cancelación están activos.');
       if (revEl) revEl.textContent = formatCOP(revenue);
     }
 
-    // Initial setup
-    const picker = document.getElementById('date-picker');
-    if (picker) picker.value = selectedDate;
-    updateDateUI();
-    fetchCourts().then(() => {
-      refreshData();
-    });
-    setInterval(refreshData, 6000);
+    // ========================================================
+    // INICIALIZACIÓN ESTRICTA EN DOMContentLoaded
+    // ========================================================
+    function initDashboard() {
+      selectedDate = getColombiaTodayString();
+      const picker = document.getElementById('selected-date') || document.getElementById('date-picker');
+      if (picker) {
+        picker.value = selectedDate;
+      }
+      updateDateUI();
+      fetchCourts().then(() => {
+        fetchSlots();
+      });
+      setInterval(fetchSlots, 6000);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initDashboard);
+    } else {
+      initDashboard();
+    }
   </script>
 </body>
 </html>
