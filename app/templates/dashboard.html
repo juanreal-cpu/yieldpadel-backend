@@ -2127,18 +2127,10 @@
 
               <!-- Derecha: Botones de Acción SaaS Agrupados -->
               <div class="flex items-center gap-2 flex-wrap">
-                <button type="button" onclick="openCreateAmericanoModal()" id="btn-create-americano" class="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 transition">
-                  🏆 + Torneo Americano
-                </button>
-                <button type="button" onclick="broadcastAvailability()" id="btn-broadcast-avail" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 transition">
-                  📢 Difundir WhatsApp
-                </button>
-                <button type="button" onclick="broadcastPromoUrgent()" id="btn-broadcast-promo" class="border border-rose-300 bg-rose-50 text-rose-700 text-xs font-semibold px-3.5 py-2 rounded-lg hover:bg-rose-100 transition shadow-xs flex items-center gap-1.5">
-                  ⚡ Remate Flash
-                </button>
-                <button type="button" onclick="seedFiveCourts()" id="btn-seed-courts" class="border border-slate-200 bg-white text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-lg hover:bg-slate-50 transition shadow-xs flex items-center gap-1.5">
-                  🌱 Sembrar 7 Días
-                </button>
+                <button id="btn-create-americano" onclick="openCreateAmericanoModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">🏆 + Torneo Americano</button>
+                <button id="btn-broadcast-whatsapp" onclick="broadcastAvailability()" class="px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">📢 Difundir WhatsApp</button>
+                <button id="btn-flash-sale" onclick="broadcastPromoUrgent()" class="px-3.5 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">⚡ Remate Flash -25%</button>
+                <button id="btn-seed-week" onclick="seedWeeklySlots()" class="px-3.5 py-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">🌱 Sembrar 7 Días</button>
                 <div id="active-user-badge" class="ml-2 flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-xs" title="Sesión activa">
                   <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span id="active-user-display">👤 Camilo Real (Recepción)</span>
@@ -2151,16 +2143,16 @@
               <!-- Segmented Control de Deportes (Tabs tipo pastilla) -->
               <div class="flex items-center gap-1.5" id="sport-selector-container">
                 <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="bg-slate-900 text-white rounded-lg px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm transition active">
-                  🎾 Pádel
+                  🎾 Pádel (5 Pistas)
                 </button>
                 <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
-                  🏓 Pickleball
+                  🏓 Pickleball (2)
                 </button>
                 <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
-                  🏐 Vóley
+                  🏐 Vóley (1)
                 </button>
                 <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
-                  🧘 Pilates
+                  🧘 Pilates (1)
                 </button>
               </div>
 
@@ -3142,27 +3134,30 @@
   <!-- JAVASCRIPT: LÓGICA DE CONTROL, WEBSOCKETS & API FETCH    -->
   <!-- ======================================================== -->
   <script>
-    // Función global de navegación modular al inicio del script
-    window.switchMainView = function(viewName) {
+    // ========================================================
+    // DEFINICIÓN GLOBAL DE FUNCIONES DE NAVEGACIÓN (Window Scope)
+    // ========================================================
+    window.switchMainView = function(viewId) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-      let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
+      let cleanName = (viewId || 'calendar').toString().trim().replace(/^view-/, '');
       if (cleanName === 'matrix') cleanName = 'calendar';
       if (cleanName === 'indicators') cleanName = 'yield';
 
       const target = document.getElementById('view-' + cleanName);
       if (target) target.classList.remove('hidden');
 
-      document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
-        btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
-        btn.classList.add('text-slate-600');
+      document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
+        link.classList.add('text-slate-600');
       });
 
-      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('tab-' + cleanName);
-      if (activeBtn) {
-        activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
-        activeBtn.classList.remove('text-slate-600');
+      const active = document.getElementById('btn-nav-' + cleanName);
+      if (active) {
+        active.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
+        active.classList.remove('text-slate-600');
       }
 
+      // Cargas bajo demanda por vista
       if (cleanName === 'config' && typeof loadClubConfig === 'function') loadClubConfig();
       else if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
       else if (cleanName === 'tournaments' && typeof loadTournamentsList === 'function') loadTournamentsList();
@@ -3172,7 +3167,46 @@
       else if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
     };
 
-    // Protección global contra excepciones que puedan congelar los clics de la interfaz que puedan congelar los clics de la interfaz
+    window.setSportFilter = function(sport) {
+      let sUpper = (sport || 'PADEL').toUpperCase();
+      if (sUpper === 'VOLEY') sUpper = 'VOLLEYBALL';
+      window.currentSport = sUpper;
+      currentSportFilter = sUpper;
+
+      // Actualizar clases activas en los botones de deportes
+      const sports = {
+        PADEL: 'btn-sport-padel',
+        PICKLEBALL: 'btn-sport-pickleball',
+        VOLLEYBALL: 'btn-sport-volleyball',
+        PILATES: 'btn-sport-pilates'
+      };
+
+      Object.entries(sports).forEach(([key, btnId]) => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          if (key === currentSportFilter) {
+            btn.className = 'bg-slate-900 text-white rounded-lg px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm transition active';
+          } else {
+            btn.className = 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition';
+          }
+        }
+      });
+
+      if (typeof updateSportHeaders === 'function') updateSportHeaders();
+      if (typeof updateCourtZoomOptions === 'function') updateCourtZoomOptions();
+      selectedCourtZoom = 'ALL';
+      if (typeof fetchSlots === 'function') fetchSlots();
+    };
+
+    // Aliases globales
+    function switchMainView(v) { window.switchMainView(v); }
+    function setSportFilter(s) { window.setSportFilter(s); }
+    window.selectSportFilter = window.setSportFilter;
+
+    function seedWeeklySlots() {
+      if (typeof seedFiveCourts === 'function') return seedFiveCourts();
+    }
+
     window.addEventListener('error', function(e) {
       console.warn('Protección global de script en interfaz:', e.error || e.message);
     });
@@ -4047,10 +4081,12 @@ ${data.message}`);
       const countEl = document.getElementById('slots-count');
       const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
 
-      if (!selectedDate || (dateInput && !dateInput.value)) {
-        selectedDate = getColombiaTodayString() || '2026-09-07';
-        if (dateInput) dateInput.value = selectedDate;
-        updateDateUI();
+      // Inicializa el input #selected-date con '2026-09-07' si se encuentra vacío
+      if (dateInput && !dateInput.value) {
+        dateInput.value = '2026-09-07';
+      }
+      if (typeof selectedDate === 'undefined' || !selectedDate) {
+        selectedDate = (dateInput && dateInput.value) ? dateInput.value : '2026-09-07';
       }
 
       if (container) {
@@ -4058,7 +4094,7 @@ ${data.message}`);
           <div id="loading-spinner" style="grid-column: 1/-1;" class="py-16 flex flex-col items-center justify-center text-center">
             <div class="inline-block w-9 h-9 border-3 border-slate-200 border-t-emerald-600 rounded-full animate-spin mb-3"></div>
             <div class="text-sm font-bold text-slate-800">Cargando turnos de la jornada...</div>
-            <div class="text-xs text-slate-500 mt-1">Consultando disponibilidad y tarifas de ${currentSportFilter}</div>
+            <div class="text-xs text-slate-500 mt-1">Consultando disponibilidad y tarifas de ${currentSportFilter || window.currentSport || 'PADEL'}</div>
           </div>
         `;
       }
@@ -4087,8 +4123,8 @@ ${data.message}`);
                   📅
                 </div>
                 <h3 class="text-base font-bold text-slate-800 mb-1">No hay turnos para este deporte en la fecha seleccionada</h3>
-                <p class="text-xs text-slate-500 mb-4 max-w-md mx-auto">No se encontraron franjas horarias programadas para ${currentSportFilter} el ${selectedDate}. Puedes generar la grilla automáticamente con un clic.</p>
-                <button type="button" onclick="seedFiveCourts()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                <p class="text-xs text-slate-500 mb-4 max-w-md mx-auto">No se encontraron franjas horarias programadas para ${currentSportFilter || 'PADEL'} el ${selectedDate}. Puedes generar la grilla automáticamente con un clic.</p>
+                <button type="button" onclick="seedWeeklySlots()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
                   <span>🌱</span> Sembrar Turnos para los Próximos 7 Días
                 </button>
               </div>
@@ -4109,7 +4145,7 @@ ${data.message}`);
             container.innerHTML = `
               <div class="col-span-full py-16 text-center bg-white border border-slate-200 rounded-xl p-8 my-4 shadow-sm" style="grid-column: 1/-1;">
                 <h3 class="text-sm font-semibold text-slate-700">No hay turnos para este deporte en la fecha seleccionada.</h3>
-                <button type="button" onclick="seedFiveCourts()" class="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm">
+                <button type="button" onclick="seedWeeklySlots()" class="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm">
                   🌱 Sembrar Turnos
                 </button>
               </div>
@@ -4137,6 +4173,7 @@ ${data.message}`);
           `;
         }
       } finally {
+        // Al finalizar fetchSlots(), ejecuta de forma incondicional:
         const spinner = document.getElementById('loading-spinner');
         if (spinner) spinner.classList.add('hidden');
         const gridLoader = document.getElementById('grid-loader');
@@ -4650,7 +4687,52 @@ ${data.message}`);
     }
 
     // Cargar y Guardar Parámetros de Configuración del Club
-     catch (err) {
+    async function loadClubConfig() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/admin/club-settings`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data) {
+          if (document.getElementById('cfg-base-valle') && data.base_valle) document.getElementById('cfg-base-valle').value = data.base_valle;
+          if (document.getElementById('cfg-base-pico') && data.base_pico) document.getElementById('cfg-base-pico').value = data.base_pico;
+          if (document.getElementById('cfg-floor-price') && data.floor_price) document.getElementById('cfg-floor-price').value = data.floor_price;
+          if (document.getElementById('cfg-discount-pct') && data.discount_pct) document.getElementById('cfg-discount-pct').value = data.discount_pct;
+          if (document.getElementById('cfg-cancel-grace') && data.cancel_grace) document.getElementById('cfg-cancel-grace').value = data.cancel_grace;
+          if (document.getElementById('cfg-confirm-grace') && data.confirm_grace) document.getElementById('cfg-confirm-grace').value = data.confirm_grace;
+          if (document.getElementById('cfg-whatsapp-group') && data.whatsapp_group) document.getElementById('cfg-whatsapp-group').value = data.whatsapp_group;
+        }
+      } catch (err) {
+        console.warn('Error al cargar configuración del club:', err);
+      }
+    }
+
+    async function saveClubConfig() {
+      const btn = document.getElementById('btn-save-club-config');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+      }
+      try {
+        const payload = {
+          base_valle: parseFloat(document.getElementById('cfg-base-valle')?.value || '80000'),
+          base_pico: parseFloat(document.getElementById('cfg-base-pico')?.value || '140000'),
+          floor_price: parseFloat(document.getElementById('cfg-floor-price')?.value || '60000'),
+          discount_pct: parseFloat(document.getElementById('cfg-discount-pct')?.value || '25'),
+          cancel_grace: parseInt(document.getElementById('cfg-cancel-grace')?.value || '60'),
+          confirm_grace: parseInt(document.getElementById('cfg-confirm-grace')?.value || '30'),
+          whatsapp_group: document.getElementById('cfg-whatsapp-group')?.value || ''
+        };
+        const res = await fetch(`${API_BASE}/api/v1/admin/club-settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('Configuración guardada exitosamente');
+        } else {
+          alert('Error al guardar la configuración');
+        }
+      } catch (err) {
         alert('Error al contactar con la API');
       } finally {
         if (btn) {
