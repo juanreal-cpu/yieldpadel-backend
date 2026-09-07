@@ -87,26 +87,19 @@ from pathlib import Path
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from app.templates.dashboard_html import DASHBOARD_HTML, RECEPTION_DASHBOARD_HTML
 
 logger = logging.getLogger("yieldpadel.dashboard")
 
-BASE_DIR = Path(__file__).resolve().parent
-TEMPLATES_DIR = BASE_DIR / "templates"
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+class SafeJinja2Templates(Jinja2Templates):
+    def TemplateResponse(self, *args, **kwargs):
+        if args and isinstance(args[0], str):
+            name = args[0]
+            context = args[1] if len(args) > 1 else kwargs.pop("context", {})
+            req = context.get("request") if isinstance(context, dict) else kwargs.pop("request", None)
+            return super().TemplateResponse(request=req, name=name, context=context, **kwargs)
+        return super().TemplateResponse(*args, **kwargs)
 
-
-def load_dashboard_html() -> str:
-    """
-    Resolve and return dashboard HTML directly from template file with fallback.
-    """
-    dashboard_path = TEMPLATES_DIR / "dashboard.html"
-    if dashboard_path.is_file():
-        try:
-            return dashboard_path.read_text(encoding="utf-8")
-        except Exception as e:
-            logger.warning(f"Failed to read dashboard template from {dashboard_path}: {e}")
-    return RECEPTION_DASHBOARD_HTML
+templates = SafeJinja2Templates(directory="app/templates")
 
 
 @app.get("/health", tags=["system"])
@@ -114,18 +107,10 @@ async def health():
     return {"status": "ok", "service": "YieldPadel Core"}
 
 
-@app.get("/dashboard", response_class=HTMLResponse, tags=["frontend"])
-@app.get("/", response_class=HTMLResponse, tags=["frontend"])
-async def serve_dashboard(request: Request):
-    try:
-        try:
-            response = templates.TemplateResponse(request=request, name="dashboard.html")
-        except TypeError:
-            response = templates.TemplateResponse("dashboard.html", {"request": request})
-    except Exception as e:
-        logger.warning(f"Jinja template error, fallback to direct file read: {e}")
-        response = HTMLResponse(content=load_dashboard_html(), status_code=200, media_type="text/html")
-
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
+async def dashboard_view(request: Request):
+    response = templates.TemplateResponse("dashboard.html", {"request": request})
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
@@ -156,4 +141,4 @@ async def admin_update_club_settings(
 async def admin_get_club_settings(
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_club_configuration(db)
+    return await get_club_configuration(db)

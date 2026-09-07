@@ -5,25 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Afluenc.IA | YieldPadel - Panel Operativo SaaS</title>
   
-  <!-- Tailwind CSS CDN Oficial & Configuración Segura -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { 50: '#f0fdf4', 500: '#10b981', 600: '#059669', 900: '#064e3b' }
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Tailwind CSS CDN & Font Awesome desde CDNJS (Estable) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Leaflet CSS & JS for Geospatial Radar Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <style>
+    body { background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+    .view-section.hidden { display: none !important; }
+
     /* Leaflet Custom Pins */
     .radar-pin-target {
       display: flex;
@@ -1980,31 +1973,31 @@
 
         <!-- Menú Vertical de Navegación -->
         <nav class="space-y-1" id="main-sidebar-nav">
-          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-900 transition active" id="tab-calendar" onclick="switchMainView('view-calendar')">
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-900 transition active" id="btn-nav-calendar" onclick="switchMainView('calendar')">
             <span class="text-base">📅</span>
             <span>Matriz Calendario</span>
           </button>
-          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-tournaments" onclick="switchMainView('view-tournaments')">
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-tournaments" onclick="switchMainView('tournaments')">
             <span class="text-base">🏆</span>
             <span>Torneos Americanos</span>
           </button>
-          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-crm" onclick="switchMainView('view-crm')">
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-crm" onclick="switchMainView('crm')">
             <span class="text-base">👥</span>
             <span>CRM Jugadores</span>
           </button>
-          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-radar" onclick="switchMainView('view-radar')">
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-radar" onclick="switchMainView('radar')">
             <span class="text-base">📈</span>
             <span>Radar de Precios</span>
           </button>
-          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-yield" onclick="switchMainView('view-yield')">
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-yield" onclick="switchMainView('yield')">
             <span class="text-base">💡</span>
             <span>Motor de Yield</span>
           </button>
-          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-config" onclick="switchMainView('view-config')">
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-config" onclick="switchMainView('config')">
             <span class="text-base">⚙️</span>
             <span>Configuración del Club</span>
           </button>
-          <button class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="tab-audit" onclick="switchMainView('view-audit')">
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-audit" onclick="switchMainView('audit')">
             <span class="text-base">🛡️</span>
             <span>Auditoría & Usuarios</span>
           </button>
@@ -2112,7 +2105,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 1: 📅 MATRIZ CALENDARIO (OPERACIÓN EN TIEMPO REAL) -->
         <!-- ======================================================== -->
-        <div id="view-calendar" class="modular-view">
+        <div id="view-calendar" class="modular-view view-section">
           
           <!-- BARRA DE HERRAMIENTAS OPERATIVA (Card Blanca 2 Filas) -->
 <!-- ======================================================== -->
@@ -2274,7 +2267,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 2: 🏆 TORNEOS AMERICANOS (GESTIÓN Y HISTÓRICO)    -->
         <!-- ======================================================== -->
-        <div id="view-tournaments" class="modular-view hidden" style="display: none;">
+        <div id="view-tournaments" class="modular-view view-section hidden" style="display: none;">
           <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2336,7 +2329,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 3: 👥 CRM JUGADORES                                -->
         <!-- ======================================================== -->
-        <div id="view-crm" class="modular-view hidden" style="display: none;">
+        <div id="view-crm" class="modular-view view-section hidden" style="display: none;">
           <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2424,7 +2417,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 4: 📈 RADAR DE PRECIOS                            -->
         <!-- ======================================================== -->
-        <div id="view-radar" class="modular-view hidden" style="display: none;">
+        <div id="view-radar" class="modular-view view-section hidden" style="display: none;">
           <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
             
             <!-- Header con Controles de Franja y Ciudad -->
@@ -2595,7 +2588,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 5: 💡 MOTOR DE YIELD & INDICADORES                -->
         <!-- ======================================================== -->
-        <div id="view-yield" class="modular-view hidden" style="display: none;">
+        <div id="view-yield" class="modular-view view-section hidden" style="display: none;">
           <div style="max-width: 1050px; margin: 0 auto;">
             <div style="margin-bottom: 1.5rem;">
               <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
@@ -2638,7 +2631,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 6: ⚙️ CONFIGURACIÓN DEL CLUB                      -->
         <!-- ======================================================== -->
-        <div id="view-config" class="modular-view hidden" style="display: none;">
+        <div id="view-config" class="modular-view view-section hidden" style="display: none;">
           <div style="max-width: 1050px; margin: 0 auto;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2750,7 +2743,7 @@
         <!-- ======================================================== -->
         <!-- VISTA MODULAR: 🛡️ AUDITORÍA & GESTIÓN DE USUARIOS RBAC    -->
         <!-- ======================================================== -->
-        <div id="view-audit" class="modular-view hidden" style="display: none;">
+        <div id="view-audit" class="modular-view view-section hidden" style="display: none;">
           <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
             
             <!-- Encabezado de la Vista de Auditoría -->
@@ -3149,7 +3142,37 @@
   <!-- JAVASCRIPT: LÓGICA DE CONTROL, WEBSOCKETS & API FETCH    -->
   <!-- ======================================================== -->
   <script>
-    // Protección global contra excepciones que puedan congelar los clics de la interfaz
+    // Función global de navegación modular al inicio del script
+    window.switchMainView = function(viewName) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
+      if (cleanName === 'matrix') cleanName = 'calendar';
+      if (cleanName === 'indicators') cleanName = 'yield';
+
+      const target = document.getElementById('view-' + cleanName);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
+        btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
+        btn.classList.add('text-slate-600');
+      });
+
+      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('tab-' + cleanName);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
+        activeBtn.classList.remove('text-slate-600');
+      }
+
+      if (cleanName === 'config' && typeof loadClubConfig === 'function') loadClubConfig();
+      else if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
+      else if (cleanName === 'tournaments' && typeof loadTournamentsList === 'function') loadTournamentsList();
+      else if (cleanName === 'yield' && typeof loadYieldEngineStats === 'function') loadYieldEngineStats();
+      else if (cleanName === 'radar' && typeof initRadarMap === 'function') initRadarMap();
+      else if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
+      else if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
+    };
+
+    // Protección global contra excepciones que puedan congelar los clics de la interfaz que puedan congelar los clics de la interfaz
     window.addEventListener('error', function(e) {
       console.warn('Protección global de script en interfaz:', e.error || e.message);
     });
@@ -3251,83 +3274,7 @@
 
     let selectedDate = getColombiaTodayString();
 
-    // Switch Modular Views en Sidebar Vertical (Infallible implementation)
-    window.switchMainView = function(viewId) {
-      try {
-        let cleanId = (viewId || 'view-calendar').toString().trim();
-        if (!cleanId.startsWith('view-')) {
-          cleanId = 'view-' + cleanId;
-        }
-
-        // Aliases de compatibilidad
-        if (cleanId === 'view-matrix') cleanId = 'view-calendar';
-        if (cleanId === 'view-indicators') cleanId = 'view-yield';
-
-        const allViews = [
-          'view-calendar',
-          'view-tournaments',
-          'view-crm',
-          'view-radar',
-          'view-yield',
-          'view-config',
-          'view-audit'
-        ];
-
-        allViews.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) {
-            if (id === cleanId) {
-              el.classList.remove('hidden');
-              el.style.display = 'block';
-            } else {
-              el.classList.add('hidden');
-              el.style.display = 'none';
-            }
-          }
-        });
-
-        // Actualizar clases activas en botones de sidebar (bg-slate-100 text-slate-900 font-semibold vs text-slate-600 hover:bg-slate-50)
-        const navMapping = {
-          'view-calendar': 'tab-calendar',
-          'view-tournaments': 'tab-tournaments',
-          'view-crm': 'tab-crm',
-          'view-radar': 'tab-radar',
-          'view-yield': 'tab-yield',
-          'view-config': 'tab-config',
-          'view-audit': 'tab-audit'
-        };
-
-        Object.entries(navMapping).forEach(([vId, tId]) => {
-          const btn = document.getElementById(tId);
-          if (btn) {
-            if (vId === cleanId) {
-              btn.className = 'sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-900 transition active';
-            } else {
-              btn.className = 'sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition';
-            }
-          }
-        });
-
-        // Cargas específicas por módulo
-        if (cleanId === 'view-config' && typeof loadClubConfig === 'function') {
-          loadClubConfig();
-        } else if (cleanId === 'view-crm' && typeof loadCRMDirectory === 'function') {
-          loadCRMDirectory();
-        } else if (cleanId === 'view-tournaments' && typeof loadTournamentsList === 'function') {
-          loadTournamentsList();
-        } else if (cleanId === 'view-yield' && typeof loadYieldEngineStats === 'function') {
-          loadYieldEngineStats();
-        } else if (cleanId === 'view-radar' && typeof initRadarMap === 'function') {
-          initRadarMap();
-        } else if (cleanId === 'view-audit' && typeof loadAuditData === 'function') {
-          loadAuditData();
-        } else if (cleanId === 'view-calendar' && typeof fetchSlots === 'function') {
-          fetchSlots();
-        }
-      } catch (err) {
-        console.error('Error al cambiar de vista:', err);
-      }
-    };
+    // Switch Modular Views en Sidebar Vertical (delegates to window.switchMainView)
     function switchMainView(v) { window.switchMainView(v); }
 
     // Helpers de navegación temporal
@@ -3634,36 +3581,6 @@ ${data.message}`);
         }
       } catch (err) {
         alert('Error de conexión al procesar el ascenso');
-      }
-    }/api/v1/customers/`);
-        if (!res.ok) return;
-        const customers = await res.json();
-        if (customers && customers.length > 0) {
-          let h = '';
-          customers.forEach(c => {
-            const isVip = (c.client_type || '').toLowerCase().includes('vip') || (c.client_type || '').toLowerCase().includes('socio');
-            const badgeStyle = isVip ? 'background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A;' : 'background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD;';
-            h += `
-              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
-                    <div style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">${c.name}</div>
-                    <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; ${badgeStyle}">${c.client_type}</span>
-                  </div>
-                  <div style="font-size: 0.75rem; color: #64748B; font-family: monospace;">📞 ${c.phone}</div>
-                  <div style="font-size: 0.75rem; color: #475569; margin-top: 0.25rem;">🏆 Categoría: <strong>${c.category}</strong></div>
-                  ${c.notes ? `<div style="font-size: 0.7rem; color: #94A3B8; margin-top: 0.35rem; font-style: italic;">📝 ${c.notes}</div>` : ''}
-                </div>
-                <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid #F1F5F9; font-size: 0.72rem; color: #059669; font-weight: 600;">
-                  ✓ Cliente verificado en sistema
-                </div>
-              </div>
-            `;
-          });
-          grid.innerHTML = h;
-        }
-      } catch (e) {
-        console.error('Error loading CRM directory:', e);
       }
     }
 
@@ -4130,14 +4047,12 @@ ${data.message}`);
       const countEl = document.getElementById('slots-count');
       const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
 
-      // 1. Asignar inmediatamente la fecha de hoy en formato YYYY-MM-DD (2026-09-07) si viene vacío
       if (!selectedDate || (dateInput && !dateInput.value)) {
         selectedDate = getColombiaTodayString() || '2026-09-07';
         if (dateInput) dateInput.value = selectedDate;
         updateDateUI();
       }
 
-      // 2. Mostrar indicador de carga activo
       if (container) {
         container.innerHTML = `
           <div id="loading-spinner" style="grid-column: 1/-1;" class="py-16 flex flex-col items-center justify-center text-center">
@@ -4162,11 +4077,6 @@ ${data.message}`);
         const slotList = Array.isArray(data) ? data : (data.slots || []);
         allSlots = slotList;
 
-        // Ocultar siempre el spinner
-        const spinner = document.getElementById('loading-spinner') || document.getElementById('grid-loader');
-        if (spinner) spinner.style.display = 'none';
-
-        // Si slotList viene vacío, renderizar contenedor con mensaje claro y botón para sembrar turnos
         if (slotList.length === 0) {
           if (container) {
             container.style.gridTemplateColumns = '1fr';
@@ -4210,8 +4120,6 @@ ${data.message}`);
         updateMetrics();
       } catch (err) {
         console.error('Error fetching data:', err);
-        const spinner = document.getElementById('loading-spinner') || document.getElementById('grid-loader');
-        if (spinner) spinner.style.display = 'none';
         if (container) {
           container.style.gridTemplateColumns = '1fr';
           container.style.minWidth = '100%';
@@ -4228,8 +4136,14 @@ ${data.message}`);
             </div>
           `;
         }
+      } finally {
+        const spinner = document.getElementById('loading-spinner');
+        if (spinner) spinner.classList.add('hidden');
+        const gridLoader = document.getElementById('grid-loader');
+        if (gridLoader) gridLoader.classList.add('hidden');
       }
     }
+
     const refreshData = fetchSlots;
 
     function renderCalendarMatrix() {
@@ -5329,632 +5243,68 @@ ${data.message}`);
       }
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initDashboard);
-    } else {
-      initDashboard();
-    }
-
-    // ========================================================
-    // GESTIÓN DE TORNEOS AMERICANOS & PREMIACIÓN
-    // ========================================================
-    let currentTournSportFilter = 'ALL';
-
-    function filterTournamentsSport(sport) {
-      currentTournSportFilter = sport;
-      ['all', 'padel', 'pickle'].forEach(s => {
-        const btn = document.getElementById('btn-tourn-sport-' + s);
-        if (btn) {
-          const match = (sport === 'ALL' && s === 'all') || (sport === 'PADEL' && s === 'padel') || (sport === 'PICKLEBALL' && s === 'pickle');
-          btn.className = 'filter-pill' + (match ? ' active' : '');
-        }
-      });
-      loadTournamentsList();
-    }
-
-    async function loadTournamentsList() {
-      const upGrid = document.getElementById('tournaments-upcoming-grid');
-      const pastGrid = document.getElementById('tournaments-past-grid');
-      const upCount = document.getElementById('tourn-upcoming-count');
-      const pastCount = document.getElementById('tourn-past-count');
-      if (!upGrid) return;
-
-      upGrid.innerHTML = '<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 2rem; text-align: center; color: #64748B; grid-column: 1/-1;">Cargando torneos...</div>';
-
-      try {
-        const query = currentTournSportFilter ? `?sport=${currentTournSportFilter}` : '';
-        const res = await fetch(`${API_BASE}/api/v1/tournaments/${query}`);
-        if (!res.ok) return;
-        const data = await res.json();
-
-        const upcoming = data.upcoming || [];
-        const past = data.past || [];
-
-        if (upCount) upCount.textContent = `${upcoming.length} torneo${upcoming.length === 1 ? '' : 's'}`;
-        if (pastCount) pastCount.textContent = `${past.length} torneo${past.length === 1 ? '' : 's'}`;
-
-        // Render Próximos
-        if (upcoming.length === 0) {
-          upGrid.innerHTML = `
-            <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 10px; padding: 2.5rem; text-align: center; color: #64748B; grid-column: 1/-1;">
-              <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏆</div>
-              <div style="font-weight: 700; color: #0F172A; margin-bottom: 0.25rem;">Sin torneos programados para ${currentTournSportFilter}</div>
-              <p style="font-size: 0.75rem; color: #64748B; margin-bottom: 1rem;">Crea un Americano para ocupar las canchas en bloque.</p>
-              <button onclick="openCreateAmericanoModal()" class="btn-action-primary-purple">
-                + Crear Americano Ahora
-              </button>
-            </div>
-          `;
-        } else {
-          upGrid.innerHTML = upcoming.map(t => {
-            const courtsLabel = (t.court_names && t.court_names.length > 0) ? t.court_names.join(', ') : `${t.courts_count} Pistas`;
-            const sportEmoji = t.sport_type === 'PICKLEBALL' ? '🏓' : '🎾';
-            const jsonStr = encodeURIComponent(JSON.stringify(t));
-            return `
-              <div class="tourn-card tourn-card-active">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                    <div>
-                      <span style="font-size: 0.65rem; font-weight: 800; background: #F3E8FF; color: #7C3AED; border: 1px solid #DDD6FE; padding: 0.15rem 0.45rem; border-radius: 4px;">
-                        ${sportEmoji} ${t.sport_type} • ${t.modality}
-                      </span>
-                      <h4 style="font-size: 1rem; font-weight: 800; color: #0F172A; margin-top: 0.35rem;">${t.tournament_name}</h4>
-                    </div>
-                    <span style="font-size: 0.72rem; font-weight: 700; color: #059669; background: #DCFCE7; border: 1px solid #BBF7D0; padding: 0.15rem 0.45rem; border-radius: 4px;">
-                      💰 $${Math.round(t.prize_pool || 0).toLocaleString('es-CO')}
-                    </span>
-                  </div>
-
-                  <div style="font-size: 0.78rem; color: #475569; margin-bottom: 0.35rem;">
-                    📅 <strong>${formatDateDisplay(t.date)}</strong> • ⌚ <strong>${t.start_time.slice(0,5)} - ${t.end_time.slice(0,5)}</strong>
-                  </div>
-
-                  <div style="font-size: 0.75rem; color: #64748B; margin-bottom: 0.75rem; background: #F8FAFC; padding: 0.45rem 0.65rem; border-radius: 6px; border: 1px solid #E2E8F0;">
-                    🏟️ <strong>Pistas (${t.courts_count}):</strong> ${courtsLabel}
-                    <div style="margin-top: 0.2rem;">👥 <strong>Capacidad:</strong> ${t.booked_spots} / ${t.total_capacity} Jugadores</div>
-                  </div>
-                </div>
-
-                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; pt-2; border-top: 1px solid #F1F5F9;">
-                  <button onclick="openRecordWinnersModal('${jsonStr}')" class="btn-action-primary-purple" style="font-size: 0.72rem; padding: 0.35rem 0.7rem; flex: 1; justify-content: center;" title="Registrar campeones y subcampeones">
-                    🏆 Registrar Ganadores
-                  </button>
-                  <button onclick="addCourtToTournament('${jsonStr}')" class="timeline-step" style="font-size: 0.72rem; padding: 0.35rem 0.6rem; background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD;" title="Agregar una pista adicional">
-                    ➕ Pista
-                  </button>
-                  <button onclick="removeCourtFromTournament('${jsonStr}')" class="timeline-step" style="font-size: 0.72rem; padding: 0.35rem 0.6rem; background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A;" title="Quitar una pista">
-                    ➖ Pista
-                  </button>
-                  <button onclick="cancelTournament('${jsonStr}')" class="timeline-step" style="font-size: 0.72rem; padding: 0.35rem 0.6rem; background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA;" title="Cancelar torneo y liberar pistas">
-                    ❌
-                  </button>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-
-        // Render Pasados
-        if (past.length === 0) {
-          pastGrid.innerHTML = `
-            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.5rem; text-align: center; color: #64748B; grid-column: 1/-1;">
-              No hay torneos finalizados aún.
-            </div>
-          `;
-        } else {
-          pastGrid.innerHTML = past.map(t => {
-            const sportEmoji = t.sport_type === 'PICKLEBALL' ? '🏓' : '🎾';
-            return `
-              <div class="tourn-card tourn-card-finished">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
-                    <div>
-                      <span style="font-size: 0.65rem; font-weight: 800; background: #E2E8F0; color: #475569; padding: 0.12rem 0.4rem; border-radius: 4px;">
-                        ${sportEmoji} ${t.sport_type} • Finalizado
-                      </span>
-                      <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin-top: 0.25rem;">${t.tournament_name}</h4>
-                    </div>
-                    <span style="font-size: 0.7rem; font-weight: 700; color: #64748B;">
-                      📅 ${formatDateDisplay(t.date)}
-                    </span>
-                  </div>
-
-                  <div style="margin: 0.65rem 0; padding: 0.6rem 0.8rem; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px;">
-                    <div style="font-size: 0.82rem; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 0.35rem;">
-                      <span>👑 Campeones:</span>
-                      <span>${t.winners_names || 'Por confirmar'}</span>
-                    </div>
-                    ${t.runner_up_names ? `
-                      <div style="font-size: 0.75rem; color: #15803D; margin-top: 0.25rem;">
-                        🥈 Subcampeones: ${t.runner_up_names}
-                      </div>
-                    ` : ''}
-                  </div>
-
-                  <div style="font-size: 0.72rem; color: #64748B;">
-                    Bolsa entregada: <strong>$${Math.round(t.prize_pool || 0).toLocaleString('es-CO')} COP</strong> • ${t.courts_count} Pistas
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-
-      } catch (err) {
-        console.error('Error loading tournaments:', err);
+    document.addEventListener('DOMContentLoaded', () => {
+      // Inicializar fecha defensiva hoy si está vacío
+      const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
+      if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
       }
-    }
-
-    function openRecordWinnersModal(tJsonStr) {
-      try {
-        const t = JSON.parse(decodeURIComponent(tJsonStr));
-        document.getElementById('rw-tournament-name').value = t.tournament_name;
-        document.getElementById('rw-date').value = t.date;
-        document.getElementById('rw-start-time').value = t.start_time;
-        document.getElementById('rw-slot-ids').value = (t.slot_ids || []).join(',');
-
-        document.getElementById('rw-summary-name').textContent = t.tournament_name;
-        document.getElementById('rw-summary-details').textContent = `${formatDateDisplay(t.date)} • ${t.start_time.slice(0,5)} - ${t.end_time.slice(0,5)} • Pistas: ${(t.court_names || []).join(', ')}`;
-        document.getElementById('rw-winner-names').value = t.winners_names || '';
-        document.getElementById('rw-runner-up-names').value = t.runner_up_names || '';
-
-        const modal = document.getElementById('record-winners-modal');
-        if (modal) modal.classList.add('active');
-      } catch (e) {
-        console.error('Error opening winners modal:', e);
+      if (typeof selectedDate === 'undefined' || !selectedDate) {
+        selectedDate = (dateInput && dateInput.value) ? dateInput.value : '2026-09-07';
       }
-    }
+      if (typeof updateDateUI === 'function') updateDateUI();
 
-    function closeRecordWinnersModal() {
-      const modal = document.getElementById('record-winners-modal');
-      if (modal) modal.classList.remove('active');
-    }
+      // Exponer globalmente switchMainView para los botones del sidebar
+      window.switchMainView = function(viewName) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+        let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
+        if (cleanName === 'matrix') cleanName = 'calendar';
+        if (cleanName === 'indicators') cleanName = 'yield';
 
-    async function handleRecordWinnersSubmit(e) {
-      e.preventDefault();
-      const tName = document.getElementById('rw-tournament-name').value;
-      const date = document.getElementById('rw-date').value;
-      const startTime = document.getElementById('rw-start-time').value;
-      const slotIdsStr = document.getElementById('rw-slot-ids').value;
-      const winners = document.getElementById('rw-winner-names').value.trim();
-      const runners = document.getElementById('rw-runner-up-names').value.trim();
+        const target = document.getElementById('view-' + cleanName);
+        if (target) target.classList.remove('hidden');
 
-      const payload = {
-        tournament_name: tName,
-        date: date,
-        start_time: startTime,
-        slot_ids: slotIdsStr ? slotIdsStr.split(',').map(Number) : [],
-        winner_names: winners.split(',').map(s => s.trim()).filter(Boolean),
-        runner_up_names: runners.split(',').map(s => s.trim()).filter(Boolean)
+        document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
+          btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
+          btn.classList.add('text-slate-600');
+        });
+        const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('tab-' + cleanName);
+        if (activeBtn) {
+          activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
+          activeBtn.classList.remove('text-slate-600');
+        }
+
+        if (cleanName === 'config' && typeof loadClubConfig === 'function') loadClubConfig();
+        else if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
+        else if (cleanName === 'tournaments' && typeof loadTournamentsList === 'function') loadTournamentsList();
+        else if (cleanName === 'yield' && typeof loadYieldEngineStats === 'function') loadYieldEngineStats();
+        else if (cleanName === 'radar' && typeof initRadarMap === 'function') initRadarMap();
+        else if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
+        else if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
       };
 
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/tournaments/record-winners`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+      // Cargar usuario y cortes
+      if (typeof fetchCurrentUser === 'function') fetchCurrentUser();
+      if (typeof fetchCourts === 'function') {
+        fetchCourts().catch(e => console.warn('fetchCourts error:', e));
+      }
+
+      // Ocultar spinner pase lo que pase al terminar fetchSlots
+      if (typeof fetchSlots === 'function') {
+        fetchSlots().catch(err => {
+          console.error('Error al cargar turnos:', err);
+          const spinner = document.getElementById('loading-spinner');
+          if (spinner) spinner.classList.add('hidden');
         });
-        const data = await res.json();
-        if (res.ok) {
-          closeRecordWinnersModal();
-          alert(`🏆 ¡Ganadores registrados con éxito!
+      }
 
-${data.message}`);
-          loadTournamentsList();
-          loadCRMDirectory();
-          fetchSlots();
-        } else {
-          alert(data.detail || 'Error al registrar ganadores');
+      // Refresco pasivo cada 30 segundos
+      setInterval(() => {
+        if (typeof isAnyModalOrDrawerOpen === 'function' && !isAnyModalOrDrawerOpen()) {
+          if (typeof fetchSlots === 'function') fetchSlots();
         }
-      } catch (err) {
-        alert('Error de conexión al registrar ganadores');
-      }
-    }
-
-    async function cancelTournament(tJsonStr) {
-      const t = JSON.parse(decodeURIComponent(tJsonStr));
-      if (!confirm(`¿Estás seguro de cancelar el torneo '${t.tournament_name}'? Se liberarán ${t.courts_count} pistas a DISPONIBLE.`)) {
-        return;
-      }
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/tournaments/cancel`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tournament_name: t.tournament_name,
-            date: t.date,
-            start_time: t.start_time
-          })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert(data.message || 'Torneo cancelado exitosamente');
-          loadTournamentsList();
-          fetchSlots();
-        } else {
-          alert(data.detail || 'Error al cancelar el torneo');
-        }
-      } catch (err) {
-        alert('Error de conexión al cancelar el torneo');
-      }
-    }
-
-    async function addCourtToTournament(tJsonStr) {
-      const t = JSON.parse(decodeURIComponent(tJsonStr));
-      const availableCourts = allCourts.filter(c => !t.court_ids.includes(String(c.id)));
-      if (availableCourts.length === 0) {
-        alert('Todas las canchas del club ya están asignadas a este torneo.');
-        return;
-      }
-      const courtOptions = availableCourts.map(c => `${c.court_number || c.id}: ${c.name}`).join('\n');
-      const chosen = prompt(`Elige el número o ID de la cancha a agregar:\n${courtOptions}`);
-      if (!chosen) return;
-
-      const matchedCourt = availableCourts.find(c => String(c.court_number) === chosen.trim() || String(c.id) === chosen.trim() || c.name.toLowerCase().includes(chosen.toLowerCase().trim()));
-      if (!matchedCourt) {
-        alert('Cancha no encontrada.');
-        return;
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/tournaments/add-court`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tournament_name: t.tournament_name,
-            date: t.date,
-            start_time: t.start_time,
-            court_id: String(matchedCourt.id)
-          })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert(data.message || 'Pista agregada exitosamente');
-          loadTournamentsList();
-          fetchSlots();
-        } else {
-          alert(data.detail || 'Colisión o error al agregar pista');
-        }
-      } catch (err) {
-        alert('Error de comunicación al agregar pista');
-      }
-    }
-
-    async function removeCourtFromTournament(tJsonStr) {
-      const t = JSON.parse(decodeURIComponent(tJsonStr));
-      if (t.courts_count <= 2) {
-        alert('Un torneo americano requiere un mínimo de 2 canchas operativas.');
-        return;
-      }
-      const courtOptions = t.court_names.map((name, i) => `${i+1}: ${name}`).join('\n');
-      const chosen = prompt(`Elige el número de la cancha a retirar del torneo:\n${courtOptions}`);
-      if (!chosen) return;
-
-      const idx = parseInt(chosen.trim(), 10) - 1;
-      if (idx < 0 || idx >= t.court_names.length) {
-        alert('Opción inválida.');
-        return;
-      }
-
-      const courtId = t.court_ids[idx];
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/tournaments/remove-court`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tournament_name: t.tournament_name,
-            date: t.date,
-            start_time: t.start_time,
-            court_id: courtId
-          })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert(data.message || 'Pista removida exitosamente');
-          loadTournamentsList();
-          fetchSlots();
-        } else {
-          alert(data.detail || 'Error al remover pista');
-        }
-      } catch (err) {
-        alert('Error de conexión al remover pista');
-      }
-    }
-
-
-    // ========================================================
-    // ASISTENTE BOT FLOTANTE & SIMULADOR INTERACTIVO
-    // ========================================================
-    function toggleBotDrawer(forceState) {
-      const drawer = document.getElementById('bot-drawer');
-      const backdrop = document.getElementById('bot-drawer-backdrop');
-      if (!drawer || !backdrop) return;
-      const isCurrentlyActive = drawer.classList.contains('active');
-      const makeActive = (forceState !== undefined) ? forceState : !isCurrentlyActive;
-      if (makeActive) {
-        drawer.classList.add('active');
-        backdrop.classList.add('active');
-      } else {
-        drawer.classList.remove('active');
-        backdrop.classList.remove('active');
-      }
-    }
-
-    function setSimText(text) {
-      const input = document.getElementById('sim-text');
-      if (input) input.value = text;
-      simulateBotMessage();
-    }
-
-    async function simulateBotMessage() {
-      const text = (document.getElementById('sim-text')?.value || '').trim();
-      const phone = document.getElementById('sim-phone')?.value || '+573132058547';
-      const name = document.getElementById('sim-name')?.value || 'Juan Real';
-      const quoted = document.getElementById('sim-quoted')?.value || '';
-      const replyBox = document.getElementById('sim-reply-box');
-      if (!replyBox) return;
-
-      replyBox.style.display = 'block';
-      replyBox.textContent = '⏳ Procesando mensaje con motor conversacional Afluenc.IA...';
-
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/whatsapp/webhook`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: text,
-            sender_phone: phone,
-            sender_name: name,
-            context: quoted,
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          replyBox.textContent = data.reply || data.response || (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
-        } else {
-          // Fallback contextual inteligente para demostración interactiva
-          if (text.toLowerCase().includes('cancha') || text.toLowerCase().includes('libre')) {
-            replyBox.textContent = `🤖 [Afluenc.IA Bot]:\n¡Hola ${name}! 👋 Hoy tenemos turnos libres:\n• 🎾 Pista 1: 14:00 - 15:30 ($80k)\n• 🎾 Pista Central: 19:30 - 21:00 ($120k)\n• 🏐 Cancha Vóley: 18:00 ($120k split)\n¿Cuál te aparto?`;
-          } else if (text.toLowerCase().includes('voy')) {
-            replyBox.textContent = `🤖 [Afluenc.IA Bot]:\n¡Anotado ${name}! 🎾 Te sumé al partido de las 6pm. Tu cuota individual es de $30.000 COP.`;
-          } else if (text.toLowerCase().includes('bajo')) {
-            replyBox.textContent = `🤖 [Afluenc.IA Bot]:\nEntendido ${name}. 👍 Has sido dado de baja del turno y el cupo quedó DISPONIBLE en la matriz.`;
-          } else {
-            replyBox.textContent = `🤖 [Afluenc.IA Bot]: Mensaje recibido de ${name} (${phone}): "${text}".\nTurno sincronizado en vivo.`;
-          }
-        }
-      } catch (err) {
-        if (text.toLowerCase().includes('cancha') || text.toLowerCase().includes('libre')) {
-          replyBox.textContent = `🤖 [Afluenc.IA Bot]:\n¡Hola ${name}! 👋 Hoy tenemos turnos libres:\n• 🎾 Pista 1: 14:00 - 15:30 ($80k)\n• 🎾 Pista Central: 19:30 - 21:00 ($120k)\n• 🏐 Cancha Vóley: 18:00 ($120k split)\n¿Cuál te aparto?`;
-        } else if (text.toLowerCase().includes('voy')) {
-          replyBox.textContent = `🤖 [Afluenc.IA Bot]:\n¡Anotado ${name}! 🎾 Te sumé al partido de las 6pm. Tu cuota individual es de $30.000 COP.`;
-        } else if (text.toLowerCase().includes('bajo')) {
-          replyBox.textContent = `🤖 [Afluenc.IA Bot]:\nEntendido ${name}. 👍 Has sido dado de baja del turno y el cupo quedó DISPONIBLE en la matriz.`;
-        } else {
-          replyBox.textContent = `🤖 [Afluenc.IA Bot]: Procesado: "${text}" para ${name}.`;
-        }
-      }
-    }
-
-    // ========================================================
-    // AUTOCOMPLETADO DE CLIENTES EN MODAL 'GESTIÓN DE TURNO'
-    // ========================================================
-    async function searchCustomersForModal(query) {
-      const dropdown = document.getElementById('rb-customer-dropdown');
-      if (!dropdown) return;
-
-      if (!query || query.trim().length < 1) {
-        dropdown.style.display = 'none';
-        dropdown.innerHTML = '';
-        return;
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/customers/search?q=${encodeURIComponent(query.trim())}`);
-        if (!res.ok) return;
-        const customers = await res.json();
-
-        if (!customers || customers.length === 0) {
-          dropdown.style.display = 'block';
-          dropdown.innerHTML = '<div style="padding: 0.6rem 0.85rem; font-size: 0.75rem; color: #94A3B8;">No se encontraron clientes</div>';
-          return;
-        }
-
-        dropdown.style.display = 'block';
-        dropdown.innerHTML = customers.map(c => {
-          const cStr = encodeURIComponent(JSON.stringify(c));
-          return `
-            <div class="customer-dropdown-item" onclick="selectCustomerForModal('${cStr}')">
-              <div>
-                <div class="customer-item-name">${c.name}</div>
-                <div class="customer-item-phone">${c.phone}</div>
-              </div>
-              <div style="display: flex; gap: 0.35rem; align-items: center;">
-                <span class="customer-item-badge">Cat. ${c.category || '4ta'}</span>
-                <span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>
-              </div>
-            </div>
-          `;
-        }).join('');
-      } catch (e) {
-        console.error('Error searching customers:', e);
-      }
-    }
-
-    function selectCustomerForModal(custJson) {
-      try {
-        const c = JSON.parse(decodeURIComponent(custJson));
-        const nameInput = document.getElementById('rb-client-name');
-        const phoneInput = document.getElementById('rb-client-phone');
-        const catSelect = document.getElementById('rb-client-category');
-        const typeSelect = document.getElementById('rb-client-type');
-        const searchInput = document.getElementById('rb-customer-search');
-        const dropdown = document.getElementById('rb-customer-dropdown');
-
-        if (nameInput) nameInput.value = c.name;
-        if (phoneInput) phoneInput.value = c.phone;
-        if (catSelect) catSelect.value = c.category || '4ta';
-        if (typeSelect) typeSelect.value = c.client_type || 'Estándar';
-        if (searchInput) searchInput.value = `${c.name} (${c.phone})`;
-        if (dropdown) dropdown.style.display = 'none';
-      } catch (e) {
-        console.error('Error selecting customer:', e);
-      }
-    }
-
-    // ========================================================
-    // CONFIGURACIÓN MULTIDEPORTE DEL CLUB
-    // ========================================================
-    async function loadClubConfig() {
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/admin/club-settings`);
-        if (res.ok) {
-          const resData = await res.json();
-          const cfg = resData.config || resData;
-
-          // Parámetros Pádel
-          if (document.getElementById('cfg-padel-valle')) document.getElementById('cfg-padel-valle').value = cfg.padel_valle || cfg.base_valle || 80000;
-          if (document.getElementById('cfg-padel-pico')) document.getElementById('cfg-padel-pico').value = cfg.padel_pico || cfg.base_pico || 120000;
-          if (document.getElementById('cfg-padel-floor')) document.getElementById('cfg-padel-floor').value = cfg.padel_floor || cfg.safety_floor || 50000;
-
-          // Parámetros Pickleball
-          if (document.getElementById('cfg-pickle-valle')) document.getElementById('cfg-pickle-valle').value = cfg.pickleball_valle || 60000;
-          if (document.getElementById('cfg-pickle-pico')) document.getElementById('cfg-pickle-pico').value = cfg.pickleball_pico || 90000;
-
-          // Parámetros Vóley
-          if (document.getElementById('cfg-volley-base')) document.getElementById('cfg-volley-base').value = cfg.volleyball_base || 120000;
-
-          // Parámetros Pilates
-          if (document.getElementById('cfg-pilates-mat')) document.getElementById('cfg-pilates-mat').value = cfg.pilates_per_mat || 35000;
-
-          if (resData.courts && resData.courts.length > 0) {
-            allCourts = resData.courts;
-          }
-        }
-
-        // Render courts grouped by sport
-        const courtListEl = document.getElementById('config-courts-list');
-        if (courtListEl && allCourts.length > 0) {
-          const sportsGroup = {
-            'PADEL': { name: '🎾 Pádel', courts: [] },
-            'PICKLEBALL': { name: '🏓 Pickleball', courts: [] },
-            'VOLLEYBALL': { name: '🏐 Vóley Playa', courts: [] },
-            'PILATES': { name: '🧘 Pilates Reformer', courts: [] }
-          };
-
-          allCourts.forEach(c => {
-            const sp = (c.sport_type || 'PADEL').toUpperCase();
-            if (sportsGroup[sp]) {
-              sportsGroup[sp].courts.push(c);
-            } else {
-              sportsGroup['PADEL'].courts.push(c);
-            }
-          });
-
-          let cHtml = '';
-          Object.keys(sportsGroup).forEach(spKey => {
-            const group = sportsGroup[spKey];
-            if (group.courts.length > 0) {
-              cHtml += `
-                <div style="margin-bottom: 0.75rem;">
-                  <div style="font-size: 0.75rem; font-weight: 800; color: #475569; margin-bottom: 0.35rem;">
-                    ${group.name} (${group.courts.length} canchas)
-                  </div>
-                  <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-              `;
-              group.courts.forEach((c, idx) => {
-                const num = c.court_number || (idx + 1);
-                const isAct = c.is_active !== false;
-                cHtml += `
-                  <div style="display: flex; align-items: center; gap: 0.75rem; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 0.5rem 0.75rem; border-radius: 8px;">
-                    <span style="font-weight: 800; color: #475569; font-size: 0.78rem; width: 28px;">#${num}</span>
-                    <input type="text" class="form-control cfg-court-name" data-court-id="${c.id}" value="${c.name}" style="flex: 1; font-weight: 700; padding: 0.3rem 0.6rem; font-size: 0.8rem;" title="Nombre de la pista" />
-                    <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; color: ${isAct ? '#059669' : '#64748B'}; cursor: pointer; white-space: nowrap;">
-                      <input type="checkbox" class="cfg-court-active" data-court-id="${c.id}" ${isAct ? 'checked' : ''} style="cursor: pointer;" />
-                      Activa
-                    </label>
-                  </div>
-                `;
-              });
-              cHtml += `</div></div>`;
-            }
-          });
-          courtListEl.innerHTML = cHtml;
-        }
-      } catch (err) {
-        console.error('Error loading club config:', err);
-      }
-    }
-
-    async function saveClubConfig() {
-      const btn = document.getElementById('btn-save-club-config');
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Guardando...';
-      }
-
-      try {
-        const pValle = parseFloat(document.getElementById('cfg-padel-valle')?.value) || 80000;
-        const pPico = parseFloat(document.getElementById('cfg-padel-pico')?.value) || 120000;
-        const pFloor = parseFloat(document.getElementById('cfg-padel-floor')?.value) || 50000;
-        const pickValle = parseFloat(document.getElementById('cfg-pickle-valle')?.value) || 60000;
-        const pickPico = parseFloat(document.getElementById('cfg-pickle-pico')?.value) || 90000;
-        const vBase = parseFloat(document.getElementById('cfg-volley-base')?.value) || 120000;
-        const pilMat = parseFloat(document.getElementById('cfg-pilates-mat')?.value) || 35000;
-
-        const nameInputs = document.querySelectorAll('.cfg-court-name');
-        const activeInputs = document.querySelectorAll('.cfg-court-active');
-        const courtsData = [];
-
-        nameInputs.forEach((inp, idx) => {
-          const cid = inp.dataset.courtId;
-          const nameVal = inp.value.trim();
-          const isAct = activeInputs[idx] ? activeInputs[idx].checked : true;
-          courtsData.push({
-            id: cid,
-            name: nameVal,
-            is_active: isAct
-          });
-        });
-
-        const payload = {
-          padel_valle: pValle,
-          padel_pico: pPico,
-          padel_floor: pFloor,
-          base_valle: pValle,
-          base_pico: pPico,
-          safety_floor: pFloor,
-          pickleball_valle: pickValle,
-          pickleball_pico: pickPico,
-          volleyball_base: vBase,
-          pilates_per_mat: pilMat,
-          courts: courtsData
-        };
-
-        const res = await fetch(`${API_BASE}/api/v1/slots/club-config`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          alert('💾 ¡Configuración multideporte y pistas guardadas con éxito!');
-          await fetchCourts();
-          await fetchSlots();
-        } else {
-          const err = await res.json();
-          alert(err.detail || 'Error al guardar la configuración');
-        }
-      } catch (err) {
-        alert('Error de conexión al guardar configuración');
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = '💾 Guardar Configuración';
-        }
-      }
-    }
+      }, 30000);
+    });
 
   </script>
   <!-- BOTÓN FLOTANTE: ASISTENTE WHATSAPP BOT -->
