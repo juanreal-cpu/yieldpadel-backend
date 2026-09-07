@@ -130,3 +130,31 @@ async def promote_customer_category(db: AsyncSession, customer_id: int) -> Custo
     await db.commit()
     await db.refresh(customer)
     return customer
+
+
+async def award_match_points(
+    db: AsyncSession,
+    winner_names: List[str],
+    winner_phones: Optional[List[str]] = None,
+    points: int = 25,
+) -> List[Customer]:
+    """
+    Otorga puntos de ranking por victoria en un partido (default +25 puntos)
+    y actualiza estadísticas del jugador en el CRM.
+    """
+    winners: List[Customer] = []
+    for idx, name in enumerate(winner_names):
+        if not name or not name.strip():
+            continue
+        phone = winner_phones[idx] if winner_phones and idx < len(winner_phones) else None
+        player = await find_or_create_player_by_name_or_phone(db, name, phone)
+        player.ranking_points += points
+        player.consecutive_wins = (player.consecutive_wins or 0) + 1
+        winners.append(player)
+
+    await db.commit()
+    for p in winners:
+        await db.refresh(p)
+
+    return winners
+

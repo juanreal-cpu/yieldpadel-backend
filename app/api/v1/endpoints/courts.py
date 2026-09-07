@@ -43,6 +43,7 @@ async def get_courts(
 
 
 @router.put("/{court_id}", response_model=CourtResponse)
+@router.post("/{court_id}", response_model=CourtResponse)
 async def update_court(
     court_id: str,
     payload: CourtUpdateRequest,

@@ -1586,4 +1586,96 @@ async def assign_spot(
         "available_spots": max(0, slot.capacity - slot.booked_spots),
         "slot_status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
         "booking_reference": booking_ref,
-    }
+    }
+
+
+class MatchResultRequest(BaseModel):
+    slot_id: Optional[int] = None
+    winner_team: Optional[str] = None
+    winner_names: Optional[List[str]] = None
+    winner_phones: Optional[List[str]] = None
+    points: int = 25
+
+
+@router.post("/match-result", status_code=status.HTTP_200_OK)
+@router.post("/{slot_id}/match-result", status_code=status.HTTP_200_OK)
+async def record_slot_match_result(
+    payload: MatchResultRequest,
+    slot_id: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Registra el resultado de un partido y otorga +25 puntos de ranking a los ganadores.
+    """
+    from app.services.ranking_engine import award_match_points
+
+    target_slot_id = slot_id or payload.slot_id
+    slot = None
+    if target_slot_id:
+        stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == target_slot_id)
+        res = await db.execute(stmt)
+        slot = res.scalars().first()
+
+    names = list(payload.winner_names or [])
+    phones = list(payload.winner_phones or [])
+
+    if not names and slot and slot.players_names:
+        plist = to_participants_list(slot.players_names)
+        w_team = (payload.winner_team or "pair1").lower()
+        if "2" in w_team:
+            team_players = plist[2:4] if len(plist) >= 4 else plist[1:]
+        else:
+            team_players = plist[:2]
+
+        for p in team_players:
+            p_name = p.get("display_name") or p.get("name")
+            p_phone = p.get("phone")
+            if p_name:
+                names.append(p_name)
+                if p_phone:
+                    phones.append(p_phone)
+
+    if not names:
+        names = ["Pareja Ganadora"]
+
+    winners = await award_match_points(
+        db=db,
+        winner_names=names,
+        winner_phones=phones if phones else None,
+        points=payload.points or 25,
+    )
+
+    if slot:
+        slot.is_finished = True
+        slot.winners_names = ", ".join(names)
+        await db.commit()
+
+    try:
+        court_desc = slot.court.name if slot and slot.court else (f"Slot #{target_slot_id}" if target_slot_id else "Slot")
+        await log_activity(
+            db=db,
+            action="MATCH_RESULT",
+            entity_name="SLOT",
+            entity_id=str(target_slot_id or 0),
+            details=f"Victoria registrada en {court_desc}. Ganadores: {', '.join(names)} (+{payload.points or 25} Pts).",
+            username_snapshot="Camilo Real (Recepción)"
+        )
+    except Exception as e:
+        print(f"[AUDIT LOG WARNING] Error in record_slot_match_result: {e}")
+
+    return {
+        "status": "success",
+        "message": f"Victoria registrada exitosamente (+{payload.points or 25} Pts): {', '.join(names)}.",
+        "winners": [
+            {
+                "id": w.id,
+                "name": w.name,
+                "phone": w.phone,
+                "category": w.category,
+                "ranking_points": w.ranking_points,
+            }
+            for w in winners
+        ],
+        "slot_id": target_slot_id,
+    }
+

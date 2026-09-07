@@ -17,18 +17,19 @@ PICO_BASE_PRICE = Decimal("120000.00")   # $120.000 COP / cancha ($30.000 / cupo
 VALLE_PROMO_PRICE = Decimal("60000.00")  # Descuento -25% Last-Minute ($15.000 / cupo)
 PICO_PROMO_PRICE = Decimal("90000.00")   # Descuento -25% Last-Minute ($22.500 / cupo)
 
-DEFAULT_MIN_SAFETY_PRICE = Decimal("50000.00")  # Piso mínimo de seguridad
+DEFAULT_MIN_SAFETY_PRICE = Decimal("60000.00")  # Piso mínimo de seguridad
 
 # Estado de Configuración del Club en Caliente
 CLUB_SETTINGS: Dict[str, Any] = {
     "valle_price": Decimal("80000.00"),
     "pico_price": Decimal("120000.00"),
-    "min_safety_price": Decimal("50000.00"),
+    "min_safety_price": Decimal("60000.00"),
     "padel_valle": Decimal("80000.00"),
     "padel_pico": Decimal("120000.00"),
-    "padel_floor": Decimal("50000.00"),
-    "pickleball_valle": Decimal("60000.00"),
-    "pickleball_pico": Decimal("90000.00"),
+    "padel_floor": Decimal("60000.00"),
+    "pickleball_valle": Decimal("50000.00"),
+    "pickleball_pico": Decimal("80000.00"),
+    "volleyball_individual": Decimal("15000.00"),
     "volleyball_base": Decimal("120000.00"),
     "pilates_per_mat": Decimal("35000.00"),
     "promo_discount_percent": 25,
@@ -53,9 +54,10 @@ def get_club_config() -> Dict[str, Any]:
         "safety_floor": floor,
         "padel_valle": float(CLUB_SETTINGS.get("padel_valle", 80000.0)),
         "padel_pico": float(CLUB_SETTINGS.get("padel_pico", 120000.0)),
-        "padel_floor": float(CLUB_SETTINGS.get("padel_floor", 50000.0)),
-        "pickleball_valle": float(CLUB_SETTINGS.get("pickleball_valle", 60000.0)),
-        "pickleball_pico": float(CLUB_SETTINGS.get("pickleball_pico", 90000.0)),
+        "padel_floor": float(CLUB_SETTINGS.get("padel_floor", 60000.0)),
+        "pickleball_valle": float(CLUB_SETTINGS.get("pickleball_valle", 50000.0)),
+        "pickleball_pico": float(CLUB_SETTINGS.get("pickleball_pico", 80000.0)),
+        "volleyball_individual": float(CLUB_SETTINGS.get("volleyball_individual", 15000.0)),
         "volleyball_base": float(CLUB_SETTINGS.get("volleyball_base", 120000.0)),
         "pilates_per_mat": float(CLUB_SETTINGS.get("pilates_per_mat", 35000.0)),
         "promo_discount_percent": int(CLUB_SETTINGS["promo_discount_percent"]),
@@ -77,10 +79,16 @@ def update_club_config(updates: Dict[str, Any]) -> Dict[str, Any]:
         updates["min_safety_price"] = updates["safety_floor"]
     if "broadcast_group_id" in updates and "whatsapp_group_id" not in updates:
         updates["whatsapp_group_id"] = updates["broadcast_group_id"]
+    if "padel_valle" in updates and "valle_price" not in updates:
+        updates["valle_price"] = updates["padel_valle"]
+    if "padel_pico" in updates and "pico_price" not in updates:
+        updates["pico_price"] = updates["padel_pico"]
+    if "padel_floor" in updates and "min_safety_price" not in updates:
+        updates["min_safety_price"] = updates["padel_floor"]
 
     for k, v in updates.items():
         if v is not None and k in CLUB_SETTINGS:
-            if "price" in k or "valle" in k or "pico" in k or "floor" in k or "base" in k or "mat" in k:
+            if "price" in k or "valle" in k or "pico" in k or "floor" in k or "base" in k or "mat" in k or "indiv" in k or "volleyball" in k:
                 CLUB_SETTINGS[k] = Decimal(str(v))
             else:
                 CLUB_SETTINGS[k] = v

@@ -53,6 +53,7 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS sport_type VARCHAR(50) DEFAULT 'PADEL'",
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 4",
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS court_number INTEGER",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_tier VARCHAR(50) DEFAULT 'ESTANDAR'",
                 ]
                 for stmt in pg_statements:
                     try:
