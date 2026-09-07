@@ -3695,12 +3695,10 @@
     // ========================================================
     // DECLARACIONES GLOBALES EXPLÍCITAS & NAVEGACIÓN
     // ========================================================
-    window.selectedCourtZoom = 'ALL';
-    var selectedCourtZoom = 'ALL';
-    window.currentSport = window.currentSport || 'PADEL';
-    var currentSport = window.currentSport;
     window.currentSportFilter = window.currentSportFilter || 'PADEL';
-    var currentSportFilter = window.currentSportFilter;
+    window.selectedCourtZoom = window.selectedCourtZoom || 'ALL';
+    window.currentSport = window.currentSport || 'PADEL';
+
     window.openRegisterPlayerModal = function() {
       if (typeof openRegisterCustomerModal === 'function') openRegisterCustomerModal();
     };
@@ -3804,13 +3802,12 @@
     let allCourts = [];
     let allSlots = [];
     let selectedSlot = null;
-    let currentSportFilter = 'PADEL'; // PADEL, PICKLEBALL, VOLLEYBALL, PILATES, CONSOLE
 
     function setSportFilter(sport) {
       let sUpper = (sport || 'PADEL').toUpperCase();
       if (sUpper === 'VOLEY') sUpper = 'VOLLEYBALL';
       if (sUpper === 'GAMING' || sUpper === 'ESPORTS') sUpper = 'CONSOLE';
-      currentSportFilter = sUpper;
+      window.currentSportFilter = sUpper;
 
       const sportsConfig = {
         PADEL: { id: 'btn-sport-padel', html: '<span>🎾</span> <span>Pádel (5 Pistas)</span>' },
@@ -3824,7 +3821,7 @@
         const btn = document.getElementById(cfg.id);
         if (btn) {
           btn.innerHTML = cfg.html;
-          if (key === currentSportFilter) {
+          if (key === window.currentSportFilter) {
             btn.className = 'btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition bg-slate-900 text-white font-bold active';
             btn.querySelectorAll('span').forEach(sp => {
               sp.style.color = '#ffffff';
@@ -3840,7 +3837,6 @@
 
       updateSportHeaders();
       updateCourtZoomOptions();
-      selectedCourtZoom = 'ALL';
       window.selectedCourtZoom = 'ALL';
       if (typeof fetchSlots === 'function') fetchSlots();
       else if (typeof renderCalendarMatrix === 'function') renderCalendarMatrix();
@@ -4120,6 +4116,10 @@ window.filterCRMTable = function() {
   }
 };
 
+function filterCRMTable() {
+  if (typeof window.filterCRMTable === 'function') window.filterCRMTable();
+}
+window.filterCRMTable = window.filterCRMTable;
 window.handleCRMSearch = window.filterCRMTable;
 
 
@@ -6832,27 +6832,26 @@ ${data.message}`);
     }
     window.filterTournamentsSport = filterTournamentsSport;
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function initOperationalDashboard() {
       // Inicializar fecha defensiva hoy si está vacío
       const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
+      const todayStr = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
       if (dateInput && !dateInput.value) {
-        dateInput.value = new Date().toISOString().split('T')[0];
+        dateInput.value = todayStr;
       }
       if (typeof selectedDate === 'undefined' || !selectedDate) {
-        selectedDate = (dateInput && dateInput.value) ? dateInput.value : '2026-09-07';
+        selectedDate = (dateInput && dateInput.value) ? dateInput.value : todayStr;
       }
       if (typeof updateDateUI === 'function') updateDateUI();
 
-      // switchMainView ya está definida globalmente en window
-
-      // Cargar usuario y cortes
+      // Cargar usuario y configuración de pistas
       if (typeof fetchCurrentUser === 'function') fetchCurrentUser();
-        if (typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
+      if (typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
       if (typeof fetchCourts === 'function') {
         fetchCourts().catch(e => console.warn('fetchCourts error:', e));
       }
 
-      // Ocultar spinner pase lo que pase al terminar fetchSlots
+      // Carga inicial obligatoria de turnos con fetchSlots()
       if (typeof fetchSlots === 'function') {
         fetchSlots().catch(err => {
           console.error('Error al cargar turnos:', err);
@@ -6860,14 +6859,20 @@ ${data.message}`);
           if (spinner) spinner.classList.add('hidden');
         });
       }
+    }
 
-      // Refresco pasivo cada 30 segundos
-      setInterval(() => {
-        if (typeof isAnyModalOrDrawerOpen === 'function' && !isAnyModalOrDrawerOpen()) {
-          if (typeof fetchSlots === 'function') fetchSlots();
-        }
-      }, 30000);
-    });
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initOperationalDashboard);
+    } else {
+      initOperationalDashboard();
+    }
+
+    // Refresco pasivo cada 30 segundos
+    setInterval(() => {
+      if (typeof isAnyModalOrDrawerOpen === 'function' && !isAnyModalOrDrawerOpen()) {
+        if (typeof fetchSlots === 'function') fetchSlots();
+      }
+    }, 30000);
 
   </script>
   <!-- BOTÓN FLOTANTE: ASISTENTE WHATSAPP BOT -->
