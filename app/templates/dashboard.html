@@ -2373,32 +2373,27 @@
         <div id="view-crm" class="view-section hidden">
           <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
             
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-              <div>
-                <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
-                  <span>👥</span> CRM de Jugadores, Ranking & Ascensos
-                </h2>
-                <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.25rem;">
-                  Clasificación oficial por puntos (+100 por campeonato), títulos y sugerencias automáticas de ascenso por mérito deportivo.
-                </p>
-              </div>
-              <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                <div class="flex items-center gap-2 w-full md:w-80">
-                  <div class="relative w-full">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
-                      🔍
-                    </span>
-                    <input type="text" id="crm-search-input" onkeyup="filterCRMTable()" oninput="filterCRMTable()" placeholder="Buscar por nombre, teléfono o categoría..." class="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 text-slate-800 bg-white">
-                  </div>
-                  <button type="button" onclick="filterCRMTable()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-sm transition flex-shrink-0">
-                    Buscar
-                  </button>
-                </div>
+            <div class="mb-4">
+              <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
+                <span>👥</span> CRM de Jugadores, Ranking & Ascensos
+              </h2>
+              <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.25rem;">
+                Clasificación oficial por puntos (+100 por campeonato), títulos y sugerencias automáticas de ascenso por mérito deportivo.
+              </p>
+            </div>
 
-                <button type="button" onclick="openRegisterCustomerModal()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition flex-shrink-0">
-                  <span>➕</span> <span>+ Registrar Jugador</span>
-                </button>
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
+              <div class="flex items-center gap-3 w-full md:w-96">
+                <div class="relative w-full">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">🔍</span>
+                  <input type="text" id="crm-search-input" onkeyup="window.filterCRMTable()" oninput="window.filterCRMTable()" placeholder="Buscar por nombre, teléfono o categoría..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 text-slate-800 bg-white">
+                </div>
+                <button type="button" onclick="window.filterCRMTable()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-lg shadow-sm">Buscar</button>
               </div>
+              <button type="button" onclick="window.openRegisterPlayerModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2">
+                <span>+</span> <span>Registrar Jugador</span>
+              </button>
+            </div>
 
               <!-- Filtros de Categoría y Segmento -->
               <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
@@ -3698,8 +3693,18 @@
   <script>
 
     // ========================================================
-    // DEFINICIÓN GLOBAL DE FUNCIONES DE NAVEGACIÓN (Window Scope)
+    // DECLARACIONES GLOBALES EXPLÍCITAS & NAVEGACIÓN
     // ========================================================
+    window.selectedCourtZoom = 'ALL';
+    var selectedCourtZoom = 'ALL';
+    window.currentSport = window.currentSport || 'PADEL';
+    var currentSport = window.currentSport;
+    window.currentSportFilter = window.currentSportFilter || 'PADEL';
+    var currentSportFilter = window.currentSportFilter;
+    window.openRegisterPlayerModal = function() {
+      if (typeof openRegisterCustomerModal === 'function') openRegisterCustomerModal();
+    };
+
     window.toggleBotDrawer = function(force) {
       const drawer = document.getElementById('bot-drawer');
       const backdrop = document.getElementById('bot-drawer-backdrop');
@@ -3749,29 +3754,25 @@
         activeBtn.classList.remove('text-slate-600');
       }
 
-      // Disparar carga de datos protegida con try/catch para evitar bloqueos
-      try {
-        if (cleanName === 'tournaments') {
-          if (typeof loadTournaments === 'function') loadTournaments();
-          if (typeof loadTournamentsList === 'function') loadTournamentsList();
-        } else if (cleanName === 'crm') {
-          if (typeof loadCRMPlayers === 'function') loadCRMPlayers();
-          if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
-        } else if (cleanName === 'radar') {
-          if (typeof initRadarMap === 'function') setTimeout(initRadarMap, 150);
-        } else if (cleanName === 'yield') {
-          if (typeof loadYieldEngineStats === 'function') loadYieldEngineStats();
-        } else if (cleanName === 'config') {
-          if (typeof loadClubConfig === 'function') loadClubConfig();
-          if (typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
-        } else if (cleanName === 'audit') {
-          if (typeof loadAuditLogs === 'function') loadAuditLogs();
-          if (typeof loadStaffUsers === 'function') loadStaffUsers();
-        } else if (cleanName === 'calendar') {
-          if (typeof fetchSlots === 'function') fetchSlots();
-        }
-      } catch (err) {
-        console.error('Error al inicializar la vista ' + cleanName + ':', err);
+      // Disparar carga de datos protegida con try/catch individual por subvista para evitar bloqueos
+      if (cleanName === 'tournaments') {
+        try { if (typeof loadTournaments === 'function') loadTournaments(); } catch(e) { console.error(e); }
+        try { if (typeof loadTournamentsList === 'function') loadTournamentsList(); } catch(e) { console.error(e); }
+      } else if (cleanName === 'crm') {
+        try { if (typeof loadCRMPlayers === 'function') loadCRMPlayers(); } catch(e) { console.error(e); }
+        try { if (typeof loadCRMDirectory === 'function') loadCRMDirectory(); } catch(e) { console.error(e); }
+      } else if (cleanName === 'radar') {
+        try { if (typeof initRadarMap === 'function') setTimeout(initRadarMap, 150); } catch(e) { console.error(e); }
+      } else if (cleanName === 'yield') {
+        try { if (typeof loadYieldEngineStats === 'function') loadYieldEngineStats(); } catch(e) { console.error(e); }
+      } else if (cleanName === 'config') {
+        try { if (typeof loadClubConfig === 'function') loadClubConfig(); } catch(e) { console.error(e); }
+        try { if (typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig(); } catch(e) { console.error(e); }
+      } else if (cleanName === 'audit') {
+        try { if (typeof loadAuditLogs === 'function') loadAuditLogs(); } catch(e) { console.error(e); }
+        try { if (typeof loadStaffUsers === 'function') loadStaffUsers(); } catch(e) { console.error(e); }
+      } else if (cleanName === 'calendar') {
+        try { if (typeof fetchSlots === 'function') fetchSlots(); } catch(e) { console.error(e); }
       }
     };
 
@@ -3840,6 +3841,7 @@
       updateSportHeaders();
       updateCourtZoomOptions();
       selectedCourtZoom = 'ALL';
+      window.selectedCourtZoom = 'ALL';
       if (typeof fetchSlots === 'function') fetchSlots();
       else if (typeof renderCalendarMatrix === 'function') renderCalendarMatrix();
     }
@@ -4373,7 +4375,7 @@ ${data.message}`);
 
     function initRadarMap() {
       if (typeof L === 'undefined') {
-        console.warn("Leaflet no disponible.");
+        console.warn("Leaflet no cargado aún.");
         return;
       }
       const container = document.getElementById('radar-map');
@@ -4816,6 +4818,7 @@ ${data.message}`);
 
     function setCourtZoom(courtVal) {
       selectedCourtZoom = courtVal;
+      window.selectedCourtZoom = courtVal;
       renderCalendarMatrix();
     }
 
@@ -4931,8 +4934,9 @@ ${data.message}`);
 
       // 2. Filtrar canchas según zoom
       let displayedCourts = sportCourts;
-      if (selectedCourtZoom !== 'ALL') {
-        displayedCourts = sportCourts.filter(c => String(c.id) === String(selectedCourtZoom));
+      const zoom = (typeof selectedCourtZoom !== 'undefined') ? selectedCourtZoom : (window.selectedCourtZoom || 'ALL');
+      if (zoom !== 'ALL') {
+        displayedCourts = sportCourts.filter(c => String(c.id) === String(zoom));
         if (displayedCourts.length === 0) displayedCourts = sportCourts;
       }
 
