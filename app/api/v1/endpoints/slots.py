@@ -12,6 +12,7 @@ from app.core.timezone import get_bogota_now, get_bogota_today
 from app.services import calculate_recommended_price, get_club_config, update_club_config
 from app.services.whatsapp import detect_sport_from_text, get_sport_emoji, get_sport_default_capacity, format_whatsapp_reply
 from app.models.court import Court
+from app.models.customer import Customer
 from app.models.slot import HoldStatus, SlotMode, SlotStatus, TimeSlot, SlotHold
 from app.schemas.slot import (
     CourtResponse,
@@ -62,6 +63,9 @@ def to_participants_list(raw_players: any) -> List[dict]:
                 "display_name": item.get("display_name", f"Jugador {i}"),
                 "client_tier": item.get("client_tier", "STANDARD"),
                 "host_phone": item.get("host_phone"),
+                "is_first_visit": bool(item.get("is_first_visit", False)),
+                "onboarding_status": item.get("onboarding_status", "PENDING"),
+                "customer_id": item.get("customer_id"),
             }
         else:
             name = str(item).strip()
@@ -71,9 +75,74 @@ def to_participants_list(raw_players: any) -> List[dict]:
                 "display_name": name,
                 "client_tier": "STANDARD",
                 "host_phone": None,
+                "is_first_visit": False,
+                "onboarding_status": "PENDING",
+                "customer_id": None,
             }
         result.append(p)
     return result
+
+
+async def get_or_create_booking_customer(
+    db: AsyncSession,
+    name: Optional[str],
+    phone: Optional[str],
+    category: Optional[str] = "4ta",
+    client_type: Optional[str] = "Estándar",
+) -> dict:
+    """Busca o registra un cliente evaluando automáticamente si es su primera visita."""
+    norm_phone = normalize_phone(phone)
+    if not norm_phone or norm_phone.startswith("+57-WA-") or norm_phone.startswith("+57-unknown-") or norm_phone.startswith("+57-MANT"):
+        if name and not name.startswith("Mantenimiento"):
+            stmt = select(Customer).where(Customer.name.ilike(f"%{name.strip()}%")).limit(1)
+            res = await db.execute(stmt)
+            cust = res.scalars().first()
+            if cust:
+                is_first = bool(cust.is_first_visit or cust.total_bookings_completed == 0)
+                return {
+                    "is_first_visit": is_first,
+                    "onboarding_status": cust.onboarding_status or "PENDING",
+                    "customer_id": cust.id,
+                }
+        return {
+            "is_first_visit": False,
+            "onboarding_status": "PENDING",
+            "customer_id": None,
+        }
+
+    stmt = select(Customer).where(Customer.phone == norm_phone)
+    res = await db.execute(stmt)
+    cust = res.scalars().first()
+    if cust:
+        is_first = bool(cust.is_first_visit or cust.total_bookings_completed == 0)
+        return {
+            "is_first_visit": is_first,
+            "onboarding_status": cust.onboarding_status or "PENDING",
+            "customer_id": cust.id,
+        }
+
+    # Nuevo cliente registrado automáticamente en su primera visita
+    new_cust = Customer(
+        name=name or "Nuevo Cliente",
+        phone=norm_phone,
+        category=category or "4ta",
+        client_type=client_type or "Estándar",
+        total_bookings_completed=0,
+        is_first_visit=True,
+        onboarding_status="PENDING",
+        notes="Cliente nuevo registrado automáticamente (1ra Visita)",
+        ranking_points=0,
+        titles_count=0,
+        category_wins=0,
+        consecutive_wins=0,
+    )
+    db.add(new_cust)
+    await db.flush()
+    return {
+        "is_first_visit": True,
+        "onboarding_status": "PENDING",
+        "customer_id": new_cust.id,
+    }
 
 
 def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse:
@@ -494,11 +563,21 @@ async def reserve_or_block_slot(
         slot.mode = payload.mode
 
     # Asignar precio personalizado o recomendado por Yield
+    # Asignar precio personalizado o recomendado por Yield
     if payload.custom_price is not None and payload.custom_price >= 0:
         slot.total_price = payload.custom_price
     else:
         yield_data = calculate_recommended_price(slot)
         slot.total_price = yield_data["recommended_price"]
+
+    # Detección automática de Primera Visita en Customer
+    c_info = await get_or_create_booking_customer(
+        db=db,
+        name=payload.client_name,
+        phone=payload.client_phone,
+        category=payload.client_category,
+        client_type=payload.client_type,
+    )
 
     # Procesar según tipo de turno (6 opciones operativas completas)
     if stype == "MAINTENANCE":
@@ -510,7 +589,10 @@ async def reserve_or_block_slot(
             "phone": "+57-MANT",
             "display_name": payload.client_name or "Mantenimiento / Lluvia",
             "client_tier": "BLOCKED",
-            "host_phone": None
+            "host_phone": None,
+            "is_first_visit": False,
+            "onboarding_status": "PENDING",
+            "customer_id": None,
         }]
     elif stype in ("CLASS", "ACADEMY"):
         slot.mode = SlotMode.FULL_COURT
@@ -523,7 +605,10 @@ async def reserve_or_block_slot(
             "phone": payload.client_phone or "+57-ACADEMY",
             "display_name": student_label,
             "client_tier": payload.client_type or "MEMBER",
-            "host_phone": None
+            "host_phone": None,
+            "is_first_visit": c_info["is_first_visit"],
+            "onboarding_status": c_info["onboarding_status"],
+            "customer_id": c_info["customer_id"],
         }]
     elif stype == "MEMBER":
         # Socio / Membresía (Exento de pasarela / Hold $0)
@@ -538,7 +623,10 @@ async def reserve_or_block_slot(
             "phone": payload.client_phone or "+57-SOCIO",
             "display_name": f"💎 {client_name}",
             "client_tier": "VIP_PAY_ON_SITE",
-            "host_phone": None
+            "host_phone": None,
+            "is_first_visit": c_info["is_first_visit"],
+            "onboarding_status": c_info["onboarding_status"],
+            "customer_id": c_info["customer_id"],
         }]
     elif stype == "PAY_AT_VENUE":
         # Pago en Sede (Pay-at-venue / Datáfono)
@@ -551,7 +639,10 @@ async def reserve_or_block_slot(
             "phone": payload.client_phone or "+57-SEDE",
             "display_name": f"💳 {client_name}",
             "client_tier": "VIP_PAY_ON_SITE",
-            "host_phone": None
+            "host_phone": None,
+            "is_first_visit": c_info["is_first_visit"],
+            "onboarding_status": c_info["onboarding_status"],
+            "customer_id": c_info["customer_id"],
         }]
     elif stype == "SPLIT_MATCH":
         # Partido Abierto (Split 1/4 - Cuota por jugador)
@@ -566,7 +657,10 @@ async def reserve_or_block_slot(
                 "phone": payload.client_phone or "+57-RECEPCION",
                 "display_name": payload.client_name,
                 "client_tier": payload.client_type or "STANDARD",
-                "host_phone": None
+                "host_phone": None,
+                "is_first_visit": c_info["is_first_visit"],
+                "onboarding_status": c_info["onboarding_status"],
+                "customer_id": c_info["customer_id"],
             }]
         else:
             slot.status = SlotStatus.AVAILABLE
@@ -582,7 +676,10 @@ async def reserve_or_block_slot(
             "phone": payload.client_phone or "+57-RECEPCION",
             "display_name": payload.client_name or "Reserva Completa",
             "client_tier": payload.client_type or "STANDARD",
-            "host_phone": None
+            "host_phone": None,
+            "is_first_visit": c_info["is_first_visit"],
+            "onboarding_status": c_info["onboarding_status"],
+            "customer_id": c_info["customer_id"],
         }]
     elif payload.client_name:
         slot.status = SlotStatus.FULLY_BOOKED
@@ -592,7 +689,10 @@ async def reserve_or_block_slot(
             "phone": payload.client_phone or "+57-RECEPCION",
             "display_name": payload.client_name,
             "client_tier": payload.client_type or "VIP_PAY_ON_SITE",
-            "host_phone": None
+            "host_phone": None,
+            "is_first_visit": c_info["is_first_visit"],
+            "onboarding_status": c_info["onboarding_status"],
+            "customer_id": c_info["customer_id"],
         }]
     else:
         # Revertir a disponible si se pasa AVAILABLE o vacío
@@ -1086,12 +1186,24 @@ async def parse_open_match(
             tier = "STANDARD"
             h_phone = None
 
+        # Detección de Cliente y Primera Visita por teléfono o nombre
+        cust_info = await get_or_create_booking_customer(
+            db=db,
+            name=p_name,
+            phone=phone if not str(phone).startswith("+57-WA-") else None,
+            category=category,
+            client_type=tier,
+        )
+
         participants.append({
             "spot_index": i,
             "phone": phone,
             "display_name": p_name,
             "client_tier": tier,
             "host_phone": h_phone,
+            "is_first_visit": cust_info["is_first_visit"],
+            "onboarding_status": cust_info["onboarding_status"],
+            "customer_id": cust_info["customer_id"],
         })
 
     slot_status = SlotStatus.FULLY_BOOKED if is_closed else (

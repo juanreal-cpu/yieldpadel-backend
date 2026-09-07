@@ -17,6 +17,9 @@ class CustomerResponse(BaseModel):
     category: str
     client_type: str
     notes: Optional[str] = None
+    total_bookings_completed: int = 0
+    is_first_visit: bool = True
+    onboarding_status: str = "PENDING"
     ranking_points: int = 0
     titles_count: int = 0
     category_wins: int = 0
@@ -25,6 +28,11 @@ class CustomerResponse(BaseModel):
     recommended_category: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CustomerOnboardingRequest(BaseModel):
+    onboarding_status: str = "WELCOMED"  # PENDING, WELCOMED, MEMBER_OFFERED
+    notes: Optional[str] = None
 
 
 INITIAL_CUSTOMERS_SEED = [
@@ -117,16 +125,61 @@ async def search_customers(
 @router.get("/", response_model=List[CustomerResponse])
 async def list_all_customers(
     category: Optional[str] = Query(None, description="Filtrar por categoría (ej: '4ta', '3ra')"),
+    segment: Optional[str] = Query(None, description="Filtrar por segmento ('ALL', 'FIRST_VISIT', 'HABITUAL', 'VIP')"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Retorna el listado completo de clientes del club, con soporte de filtro por categoría."""
+    """Retorna el listado completo de clientes del club, con soporte de filtro por categoría y segmento."""
     await ensure_initial_customers(db)
     stmt = select(Customer)
     if category and category.upper() not in ["TODAS", "ALL", ""]:
         stmt = stmt.where(Customer.category.ilike(f"%{category.strip()}%"))
+
+    if segment:
+        seg_upper = segment.upper()
+        if seg_upper in ["FIRST_VISIT", "NEW"]:
+            stmt = stmt.where(Customer.is_first_visit == True)
+        elif seg_upper == "HABITUAL":
+            stmt = stmt.where(Customer.total_bookings_completed > 0, Customer.is_first_visit == False)
+        elif seg_upper in ["VIP", "MEMBER"]:
+            stmt = stmt.where(
+                or_(
+                    Customer.client_type.ilike("%vip%"),
+                    Customer.client_type.ilike("%socio%"),
+                )
+            )
+
     stmt = stmt.order_by(Customer.ranking_points.desc(), Customer.name.asc())
     res = await db.execute(stmt)
     return res.scalars().all()
+
+
+@router.post("/{customer_id}/onboarding", response_model=CustomerResponse)
+async def update_customer_onboarding(
+    customer_id: int,
+    payload: CustomerOnboardingRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Actualiza el estado de onboarding y bienvenida de un cliente en recepción.
+    Opciones: 'WELCOMED', 'MEMBER_OFFERED', 'PENDING'.
+    """
+    stmt = select(Customer).where(Customer.id == customer_id)
+    res = await db.execute(stmt)
+    customer = res.scalar_one_or_none()
+    if not customer:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Cliente no encontrado.")
+
+    customer.onboarding_status = payload.onboarding_status.upper()
+    if payload.notes:
+        if customer.notes:
+            customer.notes = f"{customer.notes} | {payload.notes.strip()}"
+        else:
+            customer.notes = payload.notes.strip()
+
+    await db.commit()
+    await db.refresh(customer)
+    return customer
 
 
 @router.post("/{customer_id}/promote", response_model=CustomerResponse)

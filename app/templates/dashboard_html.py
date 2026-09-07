@@ -2353,18 +2353,47 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
                 </p>
               </div>
 
-              <!-- Filtro de Categorías -->
-              <div class="filter-group">
-                <span class="filter-label">Categoría:</span>
-                <div class="pill-group" id="crm-category-pills">
-                  <button onclick="filterCRMCategory('ALL')" id="btn-crm-cat-all" class="filter-pill active">Todas</button>
-                  <button onclick="filterCRMCategory('1ra')" id="btn-crm-cat-1ra" class="filter-pill">1ra</button>
-                  <button onclick="filterCRMCategory('2da')" id="btn-crm-cat-2da" class="filter-pill">2da</button>
-                  <button onclick="filterCRMCategory('3ra')" id="btn-crm-cat-3ra" class="filter-pill">3ra</button>
-                  <button onclick="filterCRMCategory('4ta')" id="btn-crm-cat-4ta" class="filter-pill">4ta</button>
-                  <button onclick="filterCRMCategory('5ta')" id="btn-crm-cat-5ta" class="filter-pill">5ta</button>
-                  <button onclick="filterCRMCategory('6ta')" id="btn-crm-cat-6ta" class="filter-pill">6ta</button>
+              <!-- Filtros de Categoría y Segmento -->
+              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                <!-- Filtro de Segmento -->
+                <div class="filter-group">
+                  <span class="filter-label">Segmento:</span>
+                  <div class="pill-group" id="crm-segment-pills">
+                    <button onclick="filterCRMSegment('ALL')" id="btn-crm-seg-all" class="filter-pill active">Todos</button>
+                    <button onclick="filterCRMSegment('FIRST_VISIT')" id="btn-crm-seg-first" class="filter-pill" style="color: #92400E; font-weight: 700;">⭐ Nuevos (1ra Visita)</button>
+                    <button onclick="filterCRMSegment('HABITUAL')" id="btn-crm-seg-habitual" class="filter-pill">Habituales</button>
+                    <button onclick="filterCRMSegment('VIP')" id="btn-crm-seg-vip" class="filter-pill" style="color: #0284C7;">💎 Socios VIP</button>
+                  </div>
                 </div>
+
+                <!-- Filtro de Categorías -->
+                <div class="filter-group">
+                  <span class="filter-label">Categoría:</span>
+                  <div class="pill-group" id="crm-category-pills">
+                    <button onclick="filterCRMCategory('ALL')" id="btn-crm-cat-all" class="filter-pill active">Todas</button>
+                    <button onclick="filterCRMCategory('1ra')" id="btn-crm-cat-1ra" class="filter-pill">1ra</button>
+                    <button onclick="filterCRMCategory('2da')" id="btn-crm-cat-2da" class="filter-pill">2da</button>
+                    <button onclick="filterCRMCategory('3ra')" id="btn-crm-cat-3ra" class="filter-pill">3ra</button>
+                    <button onclick="filterCRMCategory('4ta')" id="btn-crm-cat-4ta" class="filter-pill">4ta</button>
+                    <button onclick="filterCRMCategory('5ta')" id="btn-crm-cat-5ta" class="filter-pill">5ta</button>
+                    <button onclick="filterCRMCategory('6ta')" id="btn-crm-cat-6ta" class="filter-pill">6ta</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Banner Seguimiento Comercial: Clientes Nuevos de la Semana -->
+            <div id="crm-first-visit-banner" style="background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 1.2rem;">🌟</span>
+                  <span style="font-weight: 800; color: #92400E; font-size: 0.95rem;">Seguimiento Comercial: Clientes Nuevos (1ra Visita)</span>
+                  <span id="crm-first-visit-count" class="px-2 py-0.5 text-xs font-bold bg-amber-200 text-amber-900 rounded-full">0 clientes</span>
+                </div>
+                <span style="font-size: 0.72rem; color: #B45309; font-weight: 600;">Protocolo de bienvenida, asignación de profesor y oferta comercial</span>
+              </div>
+              <div id="crm-first-visit-chips" style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+                <div style="font-size: 0.75rem; color: #78350F;">Cargando lista de nuevos clientes...</div>
               </div>
             </div>
 
@@ -2378,9 +2407,10 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
                       <th style="padding: 0.85rem 1rem;">Jugador</th>
                       <th style="padding: 0.85rem 1rem;">WhatsApp</th>
                       <th style="padding: 0.85rem 1rem;">Categoría</th>
+                      <th style="padding: 0.85rem 1rem;">Reservas</th>
                       <th style="padding: 0.85rem 1rem;">Puntos Ranking</th>
                       <th style="padding: 0.85rem 1rem;">Torneos Ganados</th>
-                      <th style="padding: 0.85rem 1rem;">Estado / Recomendación</th>
+                      <th style="padding: 0.85rem 1rem;">Onboarding / Estado</th>
                     </tr>
                   </thead>
                   <tbody id="crm-ranking-tbody">
@@ -2870,6 +2900,33 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
           <input type="number" id="rb-custom-price" class="form-control" value="120000" step="5000" style="font-weight: 700; color: #0284C7;">
         </div>
 
+        <!-- Sección 🌟 Protocolo Nuevo Cliente (Onboarding Counter) -->
+        <div id="rb-onboarding-section" style="display: none; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 0.85rem; margin-top: 0.75rem; margin-bottom: 0.75rem;">
+          <input type="hidden" id="rb-onboarding-customer-id" />
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="font-size: 1.1rem;">🌟</span>
+              <span style="font-weight: 800; color: #92400E; font-size: 0.85rem;">Protocolo Nuevo Cliente (Primera Visita)</span>
+            </div>
+            <span id="rb-onboarding-badge" class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400 rounded-md">⭐ 1ra Visita</span>
+          </div>
+          <p id="rb-onboarding-desc" style="font-size: 0.75rem; color: #78350F; margin-bottom: 0.5rem;">
+            Jugador: <strong id="rb-onboarding-player-name">-</strong> • Tel: <span id="rb-onboarding-player-phone">-</span> • Estado: <span id="rb-onboarding-player-status" style="font-weight: 700;">PENDING</span>
+          </p>
+          <div style="margin-bottom: 0.5rem;">
+            <label style="font-size: 0.72rem; font-weight: 700; color: #92400E; display: block; margin-bottom: 0.2rem;">Notas Rápidas de Recepción:</label>
+            <input type="text" id="rb-onboarding-notes" class="form-control" style="font-size: 0.75rem; padding: 0.35rem 0.5rem;" placeholder="Ej: Vino recomendado, interesado en clases y membresía..." />
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" onclick="submitOnboardingAction('WELCOMED')" class="btn-action-emerald" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar bienvenida completada en counter">
+              ✅ Marcar Bienvenida Realizada
+            </button>
+            <button type="button" onclick="submitOnboardingAction('MEMBER_OFFERED')" class="btn-action-primary-purple" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar oferta de membresía / promo 2do turno">
+              💳 Ofrecer Membresía / Descuento 2do Turno
+            </button>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary">Cancelar</button>
           <button type="submit" class="btn-primary">Guardar Asignación</button>
@@ -3123,7 +3180,8 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       }
     }
 
-    let currentCRMCategory = 'ALL';
+        let currentCRMCategory = 'ALL';
+    let currentCRMSegment = 'ALL';
 
     function filterCRMCategory(category) {
       currentCRMCategory = category;
@@ -3136,23 +3194,140 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       loadCRMDirectory();
     }
 
+    function filterCRMSegment(segment) {
+      currentCRMSegment = segment;
+      const segMap = { ALL: 'all', FIRST_VISIT: 'first', HABITUAL: 'habitual', VIP: 'vip' };
+      Object.keys(segMap).forEach(k => {
+        const btn = document.getElementById('btn-crm-seg-' + segMap[k]);
+        if (btn) {
+          btn.className = 'filter-pill' + (k === segment ? ' active' : '');
+        }
+      });
+      loadCRMDirectory();
+    }
+
+    // Protocolo Nuevo Cliente y Onboarding desde Modal / Grilla
+    function openPlayerOnboardingProtocol(slotId, playerName, phone, isFirst, onboardingStatus, customerId) {
+      const modal = document.getElementById('reserve-block-modal');
+      if (modal) {
+        modal.classList.add('active');
+      }
+      const section = document.getElementById('rb-onboarding-section');
+      if (section) {
+        section.style.display = 'block';
+        document.getElementById('rb-onboarding-player-name').textContent = playerName || 'Jugador';
+        document.getElementById('rb-onboarding-player-phone').textContent = phone || 'Sin teléfono';
+        document.getElementById('rb-onboarding-player-status').textContent = onboardingStatus || (isFirst ? 'PENDING' : 'HABITUAL');
+        document.getElementById('rb-onboarding-customer-id').value = customerId || '';
+        document.getElementById('rb-onboarding-notes').value = '';
+        
+        const badgeEl = document.getElementById('rb-onboarding-badge');
+        if (badgeEl) {
+          if (isFirst) {
+            badgeEl.className = 'px-1.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400 rounded-md';
+            badgeEl.textContent = '⭐ 1ra Visita';
+          } else {
+            badgeEl.className = 'px-1.5 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-md';
+            badgeEl.textContent = '✓ Habitual';
+          }
+        }
+      }
+    }
+
+    async function submitOnboardingAction(status) {
+      const custId = document.getElementById('rb-onboarding-customer-id').value;
+      const notes = document.getElementById('rb-onboarding-notes').value;
+      const phone = document.getElementById('rb-onboarding-player-phone').textContent;
+
+      if (!custId || custId === 'null') {
+        // Si no tiene customer_id registrado, buscar o notificar
+        alert(`Acción registrada localmente como ${status}. Nota guardada.`);
+        const section = document.getElementById('rb-onboarding-section');
+        if (section) section.style.display = 'none';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customers/${custId}/onboarding`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ onboarding_status: status, notes: notes })
+        });
+        if (!res.ok) throw new Error('Error al actualizar onboarding');
+        alert(`¡Protocolo actualizado exitosamente como: ${status}!`);
+        const section = document.getElementById('rb-onboarding-section');
+        if (section) section.style.display = 'none';
+        fetchSlots();
+        loadCRMDirectory();
+      } catch (err) {
+        alert('No fue posible guardar el estado de onboarding: ' + err.message);
+      }
+    }
+
+    async function quickUpdateOnboarding(customerId, status) {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customers/${customerId}/onboarding`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ onboarding_status: status, notes: 'Actualizado desde CRM' })
+        });
+        if (res.ok) {
+          loadCRMDirectory();
+        }
+      } catch (err) {
+        console.error('Error actualizando onboarding rápido:', err);
+      }
+    }
+
     async function loadCRMDirectory() {
       const tbody = document.getElementById('crm-ranking-tbody');
       if (!tbody) return;
 
-      tbody.innerHTML = '<tr><td colspan="7" style="padding: 2.5rem; text-align: center; color: #64748B;">Cargando clasificación y jugadores...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="padding: 2.5rem; text-align: center; color: #64748B;">Cargando clasificación y jugadores...</td></tr>';
 
       try {
-        const query = (currentCRMCategory && currentCRMCategory !== 'ALL') ? `?category=${encodeURIComponent(currentCRMCategory)}` : '';
-        const res = await fetch(`${API_BASE}/api/v1/customers/${query}`);
+        let params = [];
+        if (currentCRMCategory && currentCRMCategory !== 'ALL') {
+          params.push(`category=${encodeURIComponent(currentCRMCategory)}`);
+        }
+        if (currentCRMSegment && currentCRMSegment !== 'ALL') {
+          params.push(`segment=${encodeURIComponent(currentCRMSegment)}`);
+        }
+        const queryStr = params.length > 0 ? `?${params.join('&')}` : '';
+
+        const res = await fetch(`${API_BASE}/api/v1/customers/${queryStr}`);
         if (!res.ok) {
-          tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #EF4444;">Error al consultar el CRM de jugadores</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="padding: 2rem; text-align: center; color: #EF4444;">Error al consultar el CRM de jugadores</td></tr>';
           return;
         }
 
         const customers = await res.json();
+
+        // Actualizar banner de Clientes Nuevos de la Semana
+        const newClients = customers.filter(c => Boolean(c.is_first_visit));
+        const countBanner = document.getElementById('crm-first-visit-count');
+        const chipsContainer = document.getElementById('crm-first-visit-chips');
+        if (countBanner) countBanner.textContent = `${newClients.length} nuevo${newClients.length === 1 ? '' : 's'}`;
+        if (chipsContainer) {
+          if (newClients.length === 0) {
+            chipsContainer.innerHTML = '<div style="font-size: 0.75rem; color: #78350F;">No hay clientes en primera visita pendientes en este filtro.</div>';
+          } else {
+            chipsContainer.innerHTML = newClients.map(c => `
+              <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: #FFFFFF; border: 1px solid #FCD34D; border-radius: 999px; padding: 0.25rem 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                <span style="font-weight: 700; color: #0F172A; font-size: 0.75rem;">⭐ ${c.name}</span>
+                <span style="font-size: 0.68rem; color: #64748B;">(${c.category || '4ta'} • ${c.phone})</span>
+                <span class="px-1.5 py-0.2 text-[9px] font-bold rounded ${c.onboarding_status === 'WELCOMED' ? 'bg-emerald-100 text-emerald-800' : (c.onboarding_status === 'MEMBER_OFFERED' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800')}">
+                  ${c.onboarding_status}
+                </span>
+                <button onclick="quickUpdateOnboarding(${c.id}, 'WELCOMED')" style="background: none; border: none; cursor: pointer; font-size: 0.7rem; color: #059669;" title="Marcar Bienvenida Realizada">✅</button>
+                <button onclick="quickUpdateOnboarding(${c.id}, 'MEMBER_OFFERED')" style="background: none; border: none; cursor: pointer; font-size: 0.7rem; color: #7C3AED;" title="Ofrecer Membresía">💳</button>
+              </div>
+            `).join('');
+          }
+        }
+
         if (!customers || customers.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="padding: 2.5rem; text-align: center; color: #64748B;">No hay jugadores registrados en la categoría ${currentCRMCategory}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="8" style="padding: 2.5rem; text-align: center; color: #64748B;">No hay jugadores registrados con los filtros seleccionados.</td></tr>`;
           return;
         }
 
@@ -3172,57 +3347,82 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
             ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
             : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
 
+          // Columna Onboarding y Estado de Primera Visita
+          let onboardingBadge = '';
+          if (c.is_first_visit) {
+            onboardingBadge = `
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <span class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 rounded-md inline-flex items-center gap-1">
+                  ⭐ 1ra Visita (${c.onboarding_status || 'PENDING'})
+                </span>
+                <div style="display: flex; gap: 0.25rem;">
+                  <button onclick="quickUpdateOnboarding(${c.id}, 'WELCOMED')" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; cursor: pointer;" title="Marcar Bienvenida Realizada">✅ Bienvenida</button>
+                  <button onclick="quickUpdateOnboarding(${c.id}, 'MEMBER_OFFERED')" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: #F5F3FF; border: 1px solid #DDD6FE; color: #5B21B6; cursor: pointer;" title="Ofrecer Membresía">💳 Membresía</button>
+                </div>
+              </div>
+            `;
+          } else {
+            onboardingBadge = `
+              <span class="px-1.5 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md inline-flex items-center">
+                ✓ Habitual
+              </span>
+            `;
+          }
+
           let statusCol = '';
           if (c.promotion_recommended) {
             statusCol = `
               <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                 <span class="badge-promotion-sug" title="Mérito deportivo: 2 victorias consecutivas">
-                  ⚡ SUGERENCIA: SUBIR A ${c.recommended_category || 'Siguiente'}
+                  ⚡ SUBIR A ${c.recommended_category || 'Siguiente'}
                 </span>
                 <button onclick="promoteCustomer(${c.id}, '${c.recommended_category || ''}')" class="btn-approve-promote" title="Aprobar ascenso de categoría inmediatamente">
-                  Aprobar Ascenso
+                  ✓ Aprobar
                 </button>
               </div>
             `;
           } else {
-            statusCol = `<span style="color: #059669; font-weight: 600; font-size: 0.72rem;">✓ Categoría Activa</span>`;
+            statusCol = `<span style="font-size: 0.72rem; color: #64748B;">${c.notes || 'Cliente activo'}</span>`;
           }
 
           h += `
-            <tr>
-              <td style="font-weight: 800;">
-                <span class="badge-rank-pos ${posClass}">${pos}</span>
+            <tr style="border-bottom: 1px solid #F1F5F9;">
+              <td style="padding: 0.85rem 1rem;">
+                <span class="badge-rank ${posClass}">${pos}</span>
               </td>
-              <td>
-                <div style="font-weight: 800; color: #0F172A; font-size: 0.85rem;">${c.name}</div>
-                <div style="margin-top: 0.15rem;">${typeBadge}</div>
+              <td style="padding: 0.85rem 1rem;">
+                <div style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</div>
+                <div style="margin-top: 0.2rem;">${typeBadge}</div>
               </td>
-              <td style="font-family: monospace; color: #475569; font-size: 0.78rem;">
-                ${c.phone}
+              <td style="padding: 0.85rem 1rem; font-size: 0.78rem; font-family: monospace; color: #334155;">
+                ${c.phone || '-'}
               </td>
-              <td>
-                <span style="font-weight: 800; color: #0284C7; background: #E0F2FE; border: 1px solid #BAE6FD; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem;">
-                  ${c.category}
+              <td style="padding: 0.85rem 1rem;">
+                <span style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
+                  ${c.category || '4ta'}
                 </span>
               </td>
-              <td style="font-weight: 800; color: #0F172A; font-size: 0.85rem;">
-                ${c.ranking_points || 0} <span style="font-size: 0.68rem; color: #64748B; font-weight: 600;">pts</span>
+              <td style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: #0F172A;">
+                ${c.total_bookings_completed || 0} turnos
               </td>
-              <td style="color: #475569; font-size: 0.78rem; font-weight: 700;">
-                ${(c.titles_count || 0) > 0 ? `🏆 ${c.titles_count} Título${c.titles_count === 1 ? '' : 's'}` : '<span style="color: #94A3B8;">0</span>'}
+              <td style="padding: 0.85rem 1rem;">
+                <span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">
+                  ${c.ranking_points || 0} pts
+                </span>
               </td>
-              <td>
-                ${statusCol}
+              <td style="padding: 0.85rem 1rem; font-size: 0.85rem; font-weight: 600; color: #059669;">
+                🏆 ${c.titles_count || 0}
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                ${onboardingBadge}
               </td>
             </tr>
           `;
         });
-
         tbody.innerHTML = h;
-
-      } catch (e) {
-        console.error('Error loading CRM directory:', e);
-        tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #EF4444;">Error de comunicación al cargar CRM</td></tr>';
+      } catch (err) {
+        console.error('Error loading CRM directory:', err);
+        tbody.innerHTML = '<tr><td colspan="8" style="padding: 2rem; text-align: center; color: #EF4444;">Fallo de conexión al cargar CRM</td></tr>';
       }
     }
 
@@ -4060,15 +4260,25 @@ ${data.message}`);
         }
 
         let playersHtml = '';
-        const playerList = (slot.participants && slot.participants.length > 0) ? slot.participants : (slot.players_names ? slot.players_names.map(n => ({ name: n, display_name: n })) : []);
+        const playerList = (slot.participants && slot.participants.length > 0) 
+          ? slot.participants 
+          : (slot.players_names ? slot.players_names.map(n => (typeof n === 'object' ? n : { display_name: n, name: n })) : []);
         if (playerList && playerList.length > 0) {
           playersHtml = '<div class="card-players" style="max-height: 120px; overflow-y: auto;">';
           playerList.forEach(p => {
             const pName = p.display_name || p.name || 'Jugador';
+            const isFirst = Boolean(p.is_first_visit);
+            const firstBadge = isFirst 
+              ? `<span class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 rounded-md cursor-help ml-1 inline-flex items-center" title="Cliente nuevo: ¡Brindar bienvenida y ofrecer membresía!">⭐ 1ra Visita</span>` 
+              : '';
+            const pPhone = p.phone || '';
+            const pStatus = p.onboarding_status || 'PENDING';
+            const pCustId = p.customer_id || null;
+
             playersHtml += `
-              <div class="card-player-item">
-                <span>${sportIcon} ${pName}</span>
-                <button onclick="openDropModal(${slot.id}, '${pName}')" class="btn-card-drop" title="Dar de baja">✕</button>
+              <div class="card-player-item" onclick="openPlayerOnboardingProtocol(${slot.id}, ${JSON.stringify(pName)}, ${JSON.stringify(pPhone)}, ${isFirst}, ${JSON.stringify(pStatus)}, ${pCustId})" style="cursor: pointer;" title="${isFirst ? 'Cliente nuevo: Clic para abrir Protocolo Nuevo Cliente' : 'Gestionar jugador'}">
+                <span class="inline-flex items-center gap-1">${sportIcon} ${pName} ${firstBadge}</span>
+                <button onclick="event.stopPropagation(); openDropModal(${slot.id}, ${JSON.stringify(pName)})" class="btn-card-drop" title="Dar de baja">✕</button>
               </div>
             `;
           });

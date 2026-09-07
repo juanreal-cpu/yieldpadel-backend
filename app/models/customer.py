@@ -14,7 +14,12 @@ class Customer(Base):
     phone: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     category: Mapped[str] = mapped_column(String(50), default="4ta", nullable=False)
     client_type: Mapped[str] = mapped_column(String(50), default="Estándar", nullable=False)
-    notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Módulo de Primera Visita y Onboarding
+    total_bookings_completed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_first_visit: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    onboarding_status: Mapped[str] = mapped_column(String(50), default="PENDING", nullable=False)  # PENDING, WELCOMED, MEMBER_OFFERED
 
     # Sistema de Ranking, Títulos y Ascensos Automáticos
     ranking_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

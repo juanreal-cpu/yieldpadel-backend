@@ -47,6 +47,9 @@ class SlotParticipant(BaseModel):
     display_name: str
     client_tier: str = "STANDARD"
     host_phone: Optional[str] = None
+    is_first_visit: bool = False
+    onboarding_status: str = "PENDING"
+    customer_id: Optional[int] = None
 
 
 class TimeSlotResponse(BaseModel):
