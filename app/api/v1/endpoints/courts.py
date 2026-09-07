@@ -23,7 +23,7 @@ class CourtUpdateRequest(BaseModel):
 @router.get("", response_model=List[CourtResponse], status_code=status.HTTP_200_OK)
 @router.get("/", response_model=List[CourtResponse], status_code=status.HTTP_200_OK)
 async def get_courts(
-    sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES)"),
+    sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES, CONSOLE)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -32,6 +32,7 @@ async def get_courts(
     - Pickleball 1 y 2
     - Arena Vóley
     - Estudio Pilates
+    - Sala Gaming / Consola
     """
     courts = await ensure_five_courts(db)
     if sport and sport.upper() not in ["ALL", "TODAS", ""]:
@@ -73,3 +74,57 @@ async def update_court(
     await db.commit()
     await db.refresh(court)
     return court
+
+
+class CourtStatusUpdateRequest(BaseModel):
+    court_id: Optional[str] = None
+    id: Optional[str] = None
+    name: Optional[str] = None
+    is_active: Optional[bool] = None
+    status: Optional[str] = None
+
+
+@router.post("/update-status", response_model=CourtResponse)
+@router.put("/update-status", response_model=CourtResponse)
+async def update_court_status(
+    payload: CourtStatusUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Actualiza el estado (Activa / Mantenimiento) y nombre de una pista."""
+    target_id = payload.court_id or payload.id
+    if not target_id and not payload.name:
+        raise HTTPException(status_code=400, detail="Debe especificar court_id o name.")
+
+    court = None
+    if target_id:
+        try:
+            c_uuid = uuid.UUID(str(target_id))
+            res = await db.execute(select(Court).where(Court.id == c_uuid))
+            court = res.scalar_one_or_none()
+        except ValueError:
+            res = await db.execute(select(Court).where(Court.name.ilike(f"%{target_id}%")))
+            court = res.scalars().first()
+
+    if not court and payload.name:
+        res = await db.execute(select(Court).where(Court.name.ilike(f"%{payload.name.strip()}%")))
+        court = res.scalars().first()
+
+    if not court:
+        raise HTTPException(status_code=404, detail="Pista no encontrada.")
+
+    if payload.name is not None and payload.name.strip():
+        court.name = payload.name.strip()
+
+    if payload.is_active is not None:
+        court.is_active = payload.is_active
+    elif payload.status is not None:
+        s_clean = payload.status.lower().strip()
+        if s_clean in ["active", "activa", "habilitada", "true", "1"]:
+            court.is_active = True
+        elif s_clean in ["maintenance", "mantenimiento", "inactiva", "disabled", "false", "0"]:
+            court.is_active = False
+
+    await db.commit()
+    await db.refresh(court)
+    return court
+

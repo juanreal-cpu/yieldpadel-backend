@@ -633,3 +633,18 @@ async def register_player_to_tournament(
         "price_paid_per_player": final_price_per_player,
     }
 
+
+@router.post("/create", status_code=status.HTTP_201_CREATED)
+@router.post("/create-americano", status_code=status.HTTP_201_CREATED)
+async def create_tournament_endpoint(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """Crea un Torneo Americano delegando en la lógica de creación multicancha."""
+    from app.schemas.slot import CreateAmericanoRequest
+    from app.api.v1.endpoints.slots import create_americano
+
+    parsed = CreateAmericanoRequest(**payload)
+    return await create_americano(payload=parsed, db=db)
+
+

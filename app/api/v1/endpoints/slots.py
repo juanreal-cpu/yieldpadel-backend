@@ -221,7 +221,7 @@ def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse
 async def list_slots(
     slot_date: Optional[date] = Query(None, alias="date", description="Filtrar por fecha"),
     mode: Optional[SlotMode] = Query(None, description="Filtrar por modo FULL_COURT o SPLIT_MATCH"),
-    sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES)"),
+    sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES, CONSOLE)"),
     only_available: bool = Query(False, description="Mostrar únicamente slots con cupos disponibles"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -285,6 +285,7 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
         (7, "Pista Pickleball 2", "PICKLEBALL", 4),
         (8, "Cancha Arena Vóley", "VOLLEYBALL", 12),
         (9, "Estudio Pilates", "PILATES", 10),
+        (10, "Sala Gaming / Consola", "CONSOLE", 4),
     ]
 
     changed = False
@@ -329,7 +330,7 @@ ensure_multisport_courts = ensure_five_courts
 
 @router.get("/courts", response_model=List[CourtResponse])
 async def get_courts(
-    sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES)"),
+    sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES, CONSOLE)"),
     db: AsyncSession = Depends(get_db),
 ):
     """Obtiene el listado ordenado de las canchas activas del club, con filtro opcional de deporte."""
@@ -403,78 +404,23 @@ async def seed_demo_data(
                     base_price = Decimal("120000.00")
                     slot_mode = SlotMode.SPLIT_MATCH
                     category = "Vóley Arena Mixto"
-                    # Demo slot de vóley con 6 inscritos para mostrar prorrateo dinámico ($20.000 / jug)
-                    if start_t == time(18, 0) and day_idx == 0:
-                        status_val = SlotStatus.PARTIALLY_BOOKED
-                        booked_spots = 6
-                        players = [
-                            {"spot_index": 1, "phone": "+573101112233", "display_name": "Laura Restrepo", "client_tier": "STANDARD", "host_phone": None},
-                            {"spot_index": 2, "phone": "+573102223344", "display_name": "Andres Mejia", "client_tier": "STANDARD", "host_phone": None},
-                            {"spot_index": 3, "phone": "+573103334455", "display_name": "Sebastian Castro", "client_tier": "STANDARD", "host_phone": None},
-                            {"spot_index": 4, "phone": "+573104445566", "display_name": "Camila Osorio", "client_tier": "STANDARD", "host_phone": None},
-                            {"spot_index": 5, "phone": "+573105556677", "display_name": "David Zuluaga", "client_tier": "STANDARD", "host_phone": None},
-                            {"spot_index": 6, "phone": "+573106667788", "display_name": "Valeria Duque", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None},
-                        ]
                 elif c_sport == "PILATES":
                     base_price = Decimal("180000.00")
                     slot_mode = SlotMode.SPLIT_MATCH
                     category = "Pilates Mat & Reformer"
-                    # Demo clase de pilates con 8 cupos
-                    if start_t == time(9, 0) and day_idx == 0:
-                        slot_type = "CLASS"
-                        instructor_name = "Prof. Carolina Velez"
-                        status_val = SlotStatus.PARTIALLY_BOOKED
-                        booked_spots = 8
-                        players = [
-                            {"spot_index": i, "phone": f"+57320000000{i}", "display_name": f"Alumna {i}", "client_tier": "MEMBER", "host_phone": None}
-                            for i in range(1, 9)
-                        ]
                 elif c_sport == "PICKLEBALL":
                     base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
                     slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20)) else SlotMode.FULL_COURT
                     category = "Pickleball Abierto"
+                elif c_sport in ("CONSOLE", "GAMING"):
+                    base_price = Decimal("20000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH
+                    category = "Gaming / Consola"
                 else:
                     # PADEL
                     base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
                     slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and court_num <= 3) else SlotMode.FULL_COURT
                     category = "4ta"
-
-                    # Muestras operativas para verificar academia y clases
-                    if court_num == 3 and start_t == time(16, 30) and day_idx in (0, 2, 4):
-                        slot_type = "CLASS"
-                        instructor_name = "Prof. Marcos Rivas"
-                        category = "Academia Avanzada"
-                        status_val = SlotStatus.FULLY_BOOKED
-                        booked_spots = 4
-                        players = [{
-                            "spot_index": 1,
-                            "phone": "+57-ACADEMY",
-                            "display_name": "Clase con Marcos Rivas",
-                            "client_tier": "MEMBER",
-                            "host_phone": None
-                        }]
-                    elif court_num == 5 and start_t == time(9, 0) and day_idx in (0, 1, 3):
-                        slot_type = "ACADEMY"
-                        instructor_name = "Prof. Valentina Gómez"
-                        category = "Clase Infantil"
-                        status_val = SlotStatus.FULLY_BOOKED
-                        booked_spots = 4
-                        players = [{
-                            "spot_index": 1,
-                            "phone": "+57-ACADEMY",
-                            "display_name": "Academia Infantil",
-                            "client_tier": "MEMBER",
-                            "host_phone": None
-                        }]
-                    elif court_num == 1 and start_t == time(18, 0) and day_idx == 0:
-                        slot_mode = SlotMode.SPLIT_MATCH
-                        status_val = SlotStatus.PARTIALLY_BOOKED
-                        booked_spots = 3
-                        players = [
-                            {"spot_index": 1, "phone": "+573001112233", "display_name": "Juan Perez", "client_tier": "STANDARD", "host_phone": None},
-                            {"spot_index": 2, "phone": "+573002223344", "display_name": "Carlos Gomez", "client_tier": "STANDARD", "host_phone": None},
-                            {"spot_index": 3, "phone": "+573003334455", "display_name": "Mateo Silva", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None},
-                        ]
 
                 to_add.append(
                     TimeSlot(
@@ -485,12 +431,12 @@ async def seed_demo_data(
                         total_price=base_price,
                         mode=slot_mode,
                         capacity=slot_cap,
-                        booked_spots=booked_spots,
+                        booked_spots=0,
                         category=category,
-                        players_names=players,
-                        status=status_val,
-                        slot_type=slot_type,
-                        instructor_name=instructor_name,
+                        players_names=[],
+                        status=SlotStatus.AVAILABLE,
+                        slot_type="MATCH",
+                        instructor_name=None,
                         is_promo=False,
                         sport_type=c_sport,
                     )
@@ -503,14 +449,14 @@ async def seed_demo_data(
     if total_created > 0:
         await db.commit()
         return {
-            "message": f"Se sembraron {total_created} turnos de 90 min exitosamente para los próximos 7 días en las 5 canchas",
+            "message": f"Se sembraron {total_created} turnos de 90 min exitosamente para los próximos 7 días en las {len(courts)} canchas",
             "courts_count": len(courts),
             "days_count": len(dates_to_seed),
             "slots_created": total_created,
         }
 
     return {
-        "message": "Los 7 días de turnos de 90 minutos ya se encontraban presentes para todas las canchas",
+        "message": f"Los 7 días de turnos de 90 minutos ya se encontraban presentes para todas las {len(courts)} canchas",
         "courts_count": len(courts),
         "days_count": len(dates_to_seed),
         "slots_created": 0,

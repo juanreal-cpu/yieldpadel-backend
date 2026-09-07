@@ -1,10 +1,14 @@
 from typing import Any, Dict, Optional
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import importlib
 from app.core.database import get_db
+from app.models.court import Court
+from app.schemas.slot import CourtResponse
 from app.services.audit import log_activity
 
 _yield_service = importlib.import_module("app.services.yield")
@@ -13,6 +17,15 @@ update_club_config = _yield_service.update_club_config
 
 
 router = APIRouter()
+
+
+class CourtStatusUpdateRequest(BaseModel):
+    court_id: Optional[str] = None
+    id: Optional[str] = None
+    name: Optional[str] = None
+    is_active: Optional[bool] = None
+    status: Optional[str] = None
+
 
 
 class PricingRulesBySportRequest(BaseModel):
@@ -94,3 +107,62 @@ async def update_pricing_rules(
         "message": "Reglas de precios por deporte actualizadas exitosamente.",
         "config": updated_config,
     }
+
+
+@router.post("/courts/update-status", response_model=CourtResponse)
+@router.put("/courts/update-status", response_model=CourtResponse)
+async def update_court_status_admin(
+    payload: CourtStatusUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Actualiza el estado y nombre de una pista desde el panel de administración."""
+    target_id = payload.court_id or payload.id
+    if not target_id and not payload.name:
+        raise HTTPException(status_code=400, detail="Debe especificar court_id o name.")
+
+    court = None
+    if target_id:
+        try:
+            c_uuid = uuid.UUID(str(target_id))
+            res = await db.execute(select(Court).where(Court.id == c_uuid))
+            court = res.scalar_one_or_none()
+        except ValueError:
+            res = await db.execute(select(Court).where(Court.name.ilike(f"%{target_id}%")))
+            court = res.scalars().first()
+
+    if not court and payload.name:
+        res = await db.execute(select(Court).where(Court.name.ilike(f"%{payload.name.strip()}%")))
+        court = res.scalars().first()
+
+    if not court:
+        raise HTTPException(status_code=404, detail="Pista no encontrada.")
+
+    if payload.name is not None and payload.name.strip():
+        court.name = payload.name.strip()
+
+    if payload.is_active is not None:
+        court.is_active = payload.is_active
+    elif payload.status is not None:
+        s_clean = payload.status.lower().strip()
+        if s_clean in ["active", "activa", "habilitada", "true", "1"]:
+            court.is_active = True
+        elif s_clean in ["maintenance", "mantenimiento", "inactiva", "disabled", "false", "0"]:
+            court.is_active = False
+
+    await db.commit()
+    await db.refresh(court)
+
+    try:
+        status_label = "Activa" if court.is_active else "En Mantenimiento"
+        await log_activity(
+            db=db,
+            action="UPDATE_COURT_STATUS",
+            entity_name="COURTS",
+            details=f"Pista '{court.name}' actualizada a {status_label}.",
+            username_snapshot="Camilo Real (Recepción)"
+        )
+    except Exception as e:
+        print(f"[AUDIT LOG WARNING] Error logging court status update: {e}")
+
+    return court
+

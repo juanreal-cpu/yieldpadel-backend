@@ -230,6 +230,7 @@ def parse_time_token(token: str) -> time:
 def detect_sport_from_text(text: str) -> str:
     """
     Detecta el deporte a partir del texto:
+    - CONSOLE: si contiene 🎮 o 'consola'/'videojuegos'/'gaming'/'fifa'/'esports'.
     - VOLLEYBALL: si contiene 🏐 o 'volleyball'/'voley'/'voleibol'.
     - PICKLEBALL: si contiene 🏓 o 'pickleball'.
     - PILATES: si contiene 🧘 o 'pilates'.
@@ -238,6 +239,8 @@ def detect_sport_from_text(text: str) -> str:
     if not text:
         return "PADEL"
     clean = text.lower()
+    if "🎮" in text or re.search(r"\b(?:consola|videojuego[s]?|gaming|esports?|fifa)\b", clean):
+        return "CONSOLE"
     if "🏐" in text or re.search(r"\b(?:volleyball|v[oó]ley|voleibol)\b", clean):
         return "VOLLEYBALL"
     if "🏓" in text or re.search(r"\bpickleball\b", clean):
@@ -258,15 +261,18 @@ def get_sport_emoji(sport_type: Optional[str]) -> str:
         return "🏓"
     elif s == "PILATES":
         return "🧘"
+    elif s in ("CONSOLE", "GAMING"):
+        return "🎮"
     return "🎾"
 
 
 def get_sport_default_capacity(sport_type: Optional[str]) -> int:
-    """Retorna la capacidad estándar por deporte: Pádel/Pickleball=4, Vóley/Pilates=12."""
+    """Retorna la capacidad estándar por deporte: Pádel/Pickleball/Consola=4, Vóley/Pilates=12."""
     s = (sport_type or "PADEL").upper()
     if s in ("VOLLEYBALL", "PILATES"):
         return 12
     return 4
+
 
 
 def detect_intent(text: str) -> str:
