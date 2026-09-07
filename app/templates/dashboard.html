@@ -189,8 +189,14 @@
     }
 
     .sidebar-nav-item .nav-icon {
-      font-size: 1.1rem;
+      font-size: 0.95rem;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       line-height: 1;
+      flex-shrink: 0;
     }
 
     /* Pie del Sidebar */
@@ -1749,6 +1755,143 @@
       background: #E0F2FE;
       color: #0284C7;
     }
+
+    /* ======================================================== */
+    /* LINEA DE TIEMPO HORIZONTAL CONTINUA                     */
+    /* ======================================================== */
+    .timeline-continuous-bar {
+      display: inline-flex;
+      align-items: center;
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      border-radius: 999px;
+      padding: 2px;
+      position: relative;
+      gap: 2px;
+    }
+    .timeline-step {
+      border: none;
+      background: transparent;
+      padding: 0.28rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #64748B;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+    .timeline-step:hover {
+      color: #0F172A;
+      background: rgba(255, 255, 255, 0.7);
+    }
+    .timeline-step.active {
+      background: #0284C7;
+      color: #FFFFFF;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3);
+    }
+    .timeline-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #94A3B8;
+    }
+    .timeline-step.active .timeline-dot {
+      background: #FFFFFF;
+    }
+
+    /* ======================================================== */
+    /* TABLA RANKING CRM & SUGERENCIAS ASCENSO                  */
+    /* ======================================================== */
+    .table-ranking th {
+      font-weight: 700;
+      color: #475569;
+    }
+    .table-ranking td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid #F1F5F9;
+      font-size: 0.8rem;
+      color: #1E293B;
+      vertical-align: middle;
+    }
+    .table-ranking tr:hover td {
+      background-color: #F8FAFC;
+    }
+    .badge-rank-pos {
+      font-weight: 800;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+    }
+    .badge-rank-1 { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+    .badge-rank-2 { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+    .badge-rank-3 { background: #FFEDD5; color: #C2410C; border: 1px solid #FED7AA; }
+    .badge-rank-other { background: #F8FAFC; color: #64748B; border: 1px solid #E2E8F0; }
+
+    .badge-promotion-sug {
+      background: linear-gradient(135deg, #FEF3C7 0%, #DCFCE7 100%);
+      color: #166534;
+      border: 1px solid #86EFAC;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      animation: pulse 2s infinite;
+    }
+    .btn-approve-promote {
+      background: #059669;
+      color: #FFFFFF;
+      border: none;
+      padding: 0.25rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      cursor: pointer;
+      margin-left: 0.4rem;
+      transition: all 0.15s;
+    }
+    .btn-approve-promote:hover {
+      background: #047857;
+      transform: scale(1.04);
+    }
+
+    /* ======================================================== */
+    /* TARJETAS DE TORNEO AMERICANO                            */
+    /* ======================================================== */
+    .tourn-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 1.15rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+    .tourn-card:hover {
+      box-shadow: 0 6px 16px rgba(124, 58, 237, 0.1);
+      border-color: #DDD6FE;
+    }
+    .tourn-card-finished {
+      border-left: 4px solid #10B981;
+      background: #FAFBFD;
+    }
+    .tourn-card-active {
+      border-left: 4px solid #7C3AED;
+    }
+
   </style>
 </head>
 <body>
@@ -1967,14 +2110,26 @@
                   <input type="date" id="selected-date" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha" />
                 </div>
 
-                <!-- Franja Horaria -->
+                <!-- Línea de Tiempo Horaria Continua -->
                 <div class="filter-group">
-                  <span class="filter-label">Franja:</span>
-                  <div class="pill-group">
-                    <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="filter-pill active">Todas</button>
-                    <button onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="filter-pill">Mañana (&lt;12pm)</button>
-                    <button onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="filter-pill">Tarde (12-6pm)</button>
-                    <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="filter-pill">Noche (&gt;6pm)</button>
+                  <span class="filter-label">Horarios:</span>
+                  <div class="timeline-continuous-bar">
+                    <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="timeline-step active" title="Toda la jornada (06:00 a 23:30)">
+                      <span class="timeline-dot"></span>
+                      <span class="timeline-text">Todo el Día</span>
+                    </button>
+                    <button onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="timeline-step" title="Mañana (06:00 a 12:00)">
+                      <span class="timeline-dot"></span>
+                      <span class="timeline-text">🌅 Mañana (6-12)</span>
+                    </button>
+                    <button onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="timeline-step" title="Tarde (12:00 a 18:00)">
+                      <span class="timeline-dot"></span>
+                      <span class="timeline-text">☀️ Tarde (12-18)</span>
+                    </button>
+                    <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="timeline-step" title="Noche (18:00 a 23:30)">
+                      <span class="timeline-dot"></span>
+                      <span class="timeline-text">🌙 Noche (18-24)</span>
+                    </button>
                   </div>
                 </div>
 
@@ -2086,38 +2241,61 @@
         <!-- VISTA 2: 🏆 TORNEOS AMERICANOS (GESTIÓN Y HISTÓRICO)    -->
         <!-- ======================================================== -->
         <div id="view-yield" class="modular-view" style="display: none;">
-          <div style="max-width: 1050px; margin: 0 auto;">
+          <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
+            
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
               <div>
                 <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
-                  <span>🏆</span> Torneos Americanos & Yield Automatizado
+                  <span>🏆</span> Centro de Gestión de Torneos Americanos
                 </h2>
                 <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.25rem;">
-                  Crea eventos especiales de 2 a 5 pistas con bolsa económica o remates flash de última hora.
+                  Programación multi-cancha (2 a 5 pistas), bolsa de premios, control de choques y premiación oficial.
                 </p>
               </div>
-              <button onclick="openCreateAmericanoModal()" class="btn-action-primary-purple">
-                🏆 + Nuevo Torneo Americano
-              </button>
-            </div>
 
-            <div class="sidebar-card" style="margin-bottom: 1.5rem;">
-              <div class="sidebar-title">
-                <span>🏆 Torneos Activos y Programados</span>
-                <span style="color: #7C3AED; font-weight: 700; font-size: 0.75rem;">Multi-Cancha</span>
-              </div>
-              <p style="font-size: 0.78rem; color: #64748B; margin-bottom: 1rem;">
-                Los torneos bloquean de 2 a 5 pistas simultáneas en color púrpura y gestionan la cuota de inscripción y el premio.
-              </p>
-              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1.5rem; text-align: center;">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎾</div>
-                <div style="font-weight: 700; color: #0F172A; margin-bottom: 0.25rem;">Sin torneos programados para la fecha seleccionada</div>
-                <p style="font-size: 0.75rem; color: #64748B; margin-bottom: 1rem;">Puedes crear un Torneo Americano para ocupar franjas de baja demanda.</p>
-                <button onclick="openCreateAmericanoModal()" class="btn-action-primary-purple">
-                  + Programar Americano
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="pill-group">
+                  <button onclick="filterTournamentsSport('ALL')" id="btn-tourn-sport-all" class="filter-pill active">Todos</button>
+                  <button onclick="filterTournamentsSport('PADEL')" id="btn-tourn-sport-padel" class="filter-pill">🎾 Pádel</button>
+                  <button onclick="filterTournamentsSport('PICKLEBALL')" id="btn-tourn-sport-pickle" class="filter-pill">🏓 Pickleball</button>
+                </div>
+
+                <button onclick="openCreateAmericanoModal()" class="btn-action-primary-purple" style="box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">
+                  🏆 + Crear Americano
                 </button>
               </div>
             </div>
+
+            <!-- Sección: Torneos Activos y Próximos -->
+            <div style="margin-bottom: 2rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                <h3 style="font-size: 1rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>⚡</span> Torneos Activos y Próximos
+                </h3>
+                <span id="tourn-upcoming-count" style="font-size: 0.75rem; color: #7C3AED; font-weight: 700; background: #F3E8FF; padding: 0.15rem 0.55rem; border-radius: 999px;">0 torneos</span>
+              </div>
+              <div id="tournaments-upcoming-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+                <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 2rem; text-align: center; color: #64748B; grid-column: 1/-1;">
+                  Cargando torneos activos...
+                </div>
+              </div>
+            </div>
+
+            <!-- Sección: Histórico de Torneos Finalizados -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                <h3 style="font-size: 1rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>📜</span> Histórico de Torneos Finalizados
+                </h3>
+                <span id="tourn-past-count" style="font-size: 0.75rem; color: #64748B; font-weight: 700; background: #F1F5F9; padding: 0.15rem 0.55rem; border-radius: 999px;">0 torneos</span>
+              </div>
+              <div id="tournaments-past-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+                <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.5rem; text-align: center; color: #64748B; grid-column: 1/-1;">
+                  Sin torneos finalizados aún.
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -2125,41 +2303,57 @@
         <!-- VISTA 3: 👥 CRM JUGADORES                                -->
         <!-- ======================================================== -->
         <div id="view-crm" class="modular-view" style="display: none;">
-          <div style="max-width: 1050px; margin: 0 auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
               <div>
                 <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
-                  <span>👥</span> CRM de Jugadores & Fidelización
+                  <span>👥</span> CRM de Jugadores, Ranking & Ascensos
                 </h2>
                 <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.25rem;">
-                  Directorio de clientes activos (134 registrados), niveles de juego e historial de partidos.
+                  Clasificación oficial por puntos (+100 por campeonato), títulos y sugerencias automáticas de ascenso por mérito deportivo.
                 </p>
+              </div>
+
+              <!-- Filtro de Categorías -->
+              <div class="filter-group">
+                <span class="filter-label">Categoría:</span>
+                <div class="pill-group" id="crm-category-pills">
+                  <button onclick="filterCRMCategory('ALL')" id="btn-crm-cat-all" class="filter-pill active">Todas</button>
+                  <button onclick="filterCRMCategory('1ra')" id="btn-crm-cat-1ra" class="filter-pill">1ra</button>
+                  <button onclick="filterCRMCategory('2da')" id="btn-crm-cat-2da" class="filter-pill">2da</button>
+                  <button onclick="filterCRMCategory('3ra')" id="btn-crm-cat-3ra" class="filter-pill">3ra</button>
+                  <button onclick="filterCRMCategory('4ta')" id="btn-crm-cat-4ta" class="filter-pill">4ta</button>
+                  <button onclick="filterCRMCategory('5ta')" id="btn-crm-cat-5ta" class="filter-pill">5ta</button>
+                  <button onclick="filterCRMCategory('6ta')" id="btn-crm-cat-6ta" class="filter-pill">6ta</button>
+                </div>
               </div>
             </div>
 
-            <div class="sidebar-card">
-              <div class="sidebar-title">
-                <span>Directorio de Jugadores</span>
-                <span class="pro-badge">CRM Club</span>
-              </div>
-              <div id="crm-customers-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
-                  <div style="font-weight: 700; color: #0F172A;">Juan Real Florez</div>
-                  <div style="font-size: 0.72rem; color: #64748B;">+57 313 2058547 • 4ta Categoría</div>
-                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #059669; font-weight: 600;">Socio VIP • Cliente Fundador</div>
-                </div>
-                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
-                  <div style="font-weight: 700; color: #0F172A;">Camilo Real</div>
-                  <div style="font-size: 0.72rem; color: #64748B;">+57 300 1234567 • 4ta Categoría</div>
-                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #0284C7; font-weight: 600;">Estándar • Jugador Semanal</div>
-                </div>
-                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
-                  <div style="font-weight: 700; color: #0F172A;">David P</div>
-                  <div style="font-size: 0.72rem; color: #64748B;">+57 310 9876543 • 3ra Categoría</div>
-                  <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #7C3AED; font-weight: 600;">3ra Avanzada • Torneos</div>
-                </div>
+            <!-- Tabla de Ranking y Gestión CRM -->
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow: hidden;">
+              <div style="overflow-x: auto;">
+                <table class="table-ranking" style="width: 100%; border-collapse: collapse; text-align: left;">
+                  <thead>
+                    <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0; font-size: 0.75rem; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">
+                      <th style="padding: 0.85rem 1rem;"># Pos</th>
+                      <th style="padding: 0.85rem 1rem;">Jugador</th>
+                      <th style="padding: 0.85rem 1rem;">WhatsApp</th>
+                      <th style="padding: 0.85rem 1rem;">Categoría</th>
+                      <th style="padding: 0.85rem 1rem;">Puntos Ranking</th>
+                      <th style="padding: 0.85rem 1rem;">Torneos Ganados</th>
+                      <th style="padding: 0.85rem 1rem;">Estado / Recomendación</th>
+                    </tr>
+                  </thead>
+                  <tbody id="crm-ranking-tbody">
+                    <tr>
+                      <td colspan="7" style="padding: 2.5rem; text-align: center; color: #64748B;">Cargando jugadores y ranking...</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -2612,11 +2806,24 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;" id="rb-client-details-row">
           <div class="form-group">
             <label class="form-label">Categoría</label>
-            <input type="text" id="rb-client-category" class="form-control" placeholder="4ta" value="4ta">
+            <select id="rb-client-category" class="form-control" style="font-weight: 600;">
+              <option value="1ra">1ra Categoría (Avanzado)</option>
+              <option value="2da">2da Categoría</option>
+              <option value="3ra">3ra Categoría</option>
+              <option value="4ta" selected>4ta Categoría (Intermedio)</option>
+              <option value="5ta">5ta Categoría</option>
+              <option value="6ta">6ta Categoría (Iniciación)</option>
+              <option value="Abierta / Recreativa">Abierta / Recreativa</option>
+            </select>
           </div>
           <div class="form-group">
             <label class="form-label">Tipo de Cliente / Socio</label>
-            <input type="text" id="rb-client-type" class="form-control" placeholder="Estándar" value="Estándar">
+            <select id="rb-client-type" class="form-control" style="font-weight: 600;">
+              <option value="Estándar" selected>Estándar</option>
+              <option value="Socio VIP">Socio VIP (Exento Hold)</option>
+              <option value="Alumno Academia">Alumno Academia</option>
+              <option value="Corporativo">Corporativo</option>
+            </select>
           </div>
         </div>
 
@@ -2684,6 +2891,50 @@
         <button type="button" onclick="closeDropModal()" class="btn-secondary">Cancelar</button>
         <button type="button" id="btn-confirm-drop" class="btn-primary" style="background: #EF4444;">Confirmar Baja</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR GANADORES DE TORNEO AMERICANO -->
+  <div id="record-winners-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-title">
+        <span style="display: flex; align-items: center; gap: 0.4rem;">
+          <span>🏆</span> Registrar Ganadores & Puntos
+        </span>
+        <button onclick="closeRecordWinnersModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+      <form id="record-winners-form" onsubmit="handleRecordWinnersSubmit(event)">
+        <input type="hidden" id="rw-tournament-name" />
+        <input type="hidden" id="rw-date" />
+        <input type="hidden" id="rw-start-time" />
+        <input type="hidden" id="rw-slot-ids" />
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
+          <div id="rw-summary-name" style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">Torneo Americano</div>
+          <div id="rw-summary-details" style="font-size: 0.75rem; color: #64748B; margin-top: 0.2rem;">Pistas seleccionadas • Horario</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">👑 Campeones (Pareja o Nombres)</label>
+          <input type="text" id="rw-winner-names" class="form-control" required placeholder="Ej: Juan Real, Camilo Real" style="font-weight: 700; color: #0F172A;" />
+          <p style="font-size: 0.7rem; color: #059669; margin-top: 0.25rem;">+100 Puntos para el Ranking oficial de cada jugador.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🥈 Subcampeones (Pareja o Nombres)</label>
+          <input type="text" id="rw-runner-up-names" class="form-control" placeholder="Ej: David P, Carlos M" style="font-weight: 600;" />
+          <p style="font-size: 0.7rem; color: #0284C7; margin-top: 0.25rem;">+50 Puntos para el Ranking oficial.</p>
+        </div>
+
+        <div style="background: #FEF3C7; border: 1px solid #FDE68A; border-radius: 6px; padding: 0.65rem; margin-bottom: 1rem; font-size: 0.72rem; color: #92400E; line-height: 1.4;">
+          ⚡ <strong>Motor de Ascenso:</strong> Los jugadores que sumen 2 victorias consecutivas en torneos recibirán sugerencia de ascenso a la siguiente categoría en el CRM.
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" onclick="closeRecordWinnersModal()" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-action-primary-purple" style="padding: 0.55rem 1.2rem;">🏆 Guardar Ganadores</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -2789,16 +3040,139 @@
         loadClubConfig();
       } else if (viewId === 'view-crm') {
         loadCRMDirectory();
+      } else if (viewId === 'view-yield') {
+        loadTournamentsList();
       } else if (viewId === 'view-radar') {
         initRadarMap();
       }
     }
 
+    let currentCRMCategory = 'ALL';
+
+    function filterCRMCategory(category) {
+      currentCRMCategory = category;
+      ['all', '1ra', '2da', '3ra', '4ta', '5ta', '6ta'].forEach(c => {
+        const btn = document.getElementById('btn-crm-cat-' + c);
+        if (btn) {
+          btn.className = 'filter-pill' + (category.toLowerCase() === c ? ' active' : '');
+        }
+      });
+      loadCRMDirectory();
+    }
+
     async function loadCRMDirectory() {
-      const grid = document.getElementById('crm-customers-grid');
-      if (!grid) return;
+      const tbody = document.getElementById('crm-ranking-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '<tr><td colspan="7" style="padding: 2.5rem; text-align: center; color: #64748B;">Cargando clasificación y jugadores...</td></tr>';
+
       try {
-        const res = await fetch(`${API_BASE}/api/v1/customers/`);
+        const query = (currentCRMCategory && currentCRMCategory !== 'ALL') ? `?category=${encodeURIComponent(currentCRMCategory)}` : '';
+        const res = await fetch(`${API_BASE}/api/v1/customers/${query}`);
+        if (!res.ok) {
+          tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #EF4444;">Error al consultar el CRM de jugadores</td></tr>';
+          return;
+        }
+
+        const customers = await res.json();
+        if (!customers || customers.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="padding: 2.5rem; text-align: center; color: #64748B;">No hay jugadores registrados en la categoría ${currentCRMCategory}</td></tr>`;
+          return;
+        }
+
+        // Ordenar por puntos ranking descendente
+        customers.sort((a, b) => (b.ranking_points || 0) - (a.ranking_points || 0));
+
+        let h = '';
+        customers.forEach((c, idx) => {
+          const pos = idx + 1;
+          let posClass = 'badge-rank-other';
+          if (pos === 1) posClass = 'badge-rank-1';
+          else if (pos === 2) posClass = 'badge-rank-2';
+          else if (pos === 3) posClass = 'badge-rank-3';
+
+          const isVip = (c.client_type || '').toLowerCase().includes('vip') || (c.client_type || '').toLowerCase().includes('socio');
+          const typeBadge = isVip
+            ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
+            : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
+
+          let statusCol = '';
+          if (c.promotion_recommended) {
+            statusCol = `
+              <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                <span class="badge-promotion-sug" title="Mérito deportivo: 2 victorias consecutivas">
+                  ⚡ SUGERENCIA: SUBIR A ${c.recommended_category || 'Siguiente'}
+                </span>
+                <button onclick="promoteCustomer(${c.id}, '${c.recommended_category || ''}')" class="btn-approve-promote" title="Aprobar ascenso de categoría inmediatamente">
+                  Aprobar Ascenso
+                </button>
+              </div>
+            `;
+          } else {
+            statusCol = `<span style="color: #059669; font-weight: 600; font-size: 0.72rem;">✓ Categoría Activa</span>`;
+          }
+
+          h += `
+            <tr>
+              <td style="font-weight: 800;">
+                <span class="badge-rank-pos ${posClass}">${pos}</span>
+              </td>
+              <td>
+                <div style="font-weight: 800; color: #0F172A; font-size: 0.85rem;">${c.name}</div>
+                <div style="margin-top: 0.15rem;">${typeBadge}</div>
+              </td>
+              <td style="font-family: monospace; color: #475569; font-size: 0.78rem;">
+                ${c.phone}
+              </td>
+              <td>
+                <span style="font-weight: 800; color: #0284C7; background: #E0F2FE; border: 1px solid #BAE6FD; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem;">
+                  ${c.category}
+                </span>
+              </td>
+              <td style="font-weight: 800; color: #0F172A; font-size: 0.85rem;">
+                ${c.ranking_points || 0} <span style="font-size: 0.68rem; color: #64748B; font-weight: 600;">pts</span>
+              </td>
+              <td style="color: #475569; font-size: 0.78rem; font-weight: 700;">
+                ${(c.titles_count || 0) > 0 ? `🏆 ${c.titles_count} Título${c.titles_count === 1 ? '' : 's'}` : '<span style="color: #94A3B8;">0</span>'}
+              </td>
+              <td>
+                ${statusCol}
+              </td>
+            </tr>
+          `;
+        });
+
+        tbody.innerHTML = h;
+
+      } catch (e) {
+        console.error('Error loading CRM directory:', e);
+        tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #EF4444;">Error de comunicación al cargar CRM</td></tr>';
+      }
+    }
+
+    async function promoteCustomer(customerId, targetCategory) {
+      if (!confirm(`¿Confirmas el ascenso de categoría para este jugador a ${targetCategory || 'la siguiente categoría'}?`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customers/${customerId}/promote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target_category: targetCategory || null })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`⚡ ¡Ascenso completado con éxito!
+
+${data.message}`);
+          loadCRMDirectory();
+        } else {
+          alert(data.detail || 'Error al procesar el ascenso del jugador');
+        }
+      } catch (err) {
+        alert('Error de conexión al procesar el ascenso');
+      }
+    }/api/v1/customers/`);
         if (!res.ok) return;
         const customers = await res.json();
         if (customers && customers.length > 0) {
@@ -3222,13 +3596,16 @@
     }
 
     function setTimeFilter(timeFilter) {
-      currentTimeFilter = timeFilter;
-      document.getElementById('btn-time-all').className = 'filter-pill' + (timeFilter === 'ALL' ? ' active' : '');
-      document.getElementById('btn-time-morning').className = 'filter-pill' + (timeFilter === 'MORNING' ? ' active' : '');
-      document.getElementById('btn-time-afternoon').className = 'filter-pill' + (timeFilter === 'AFTERNOON' ? ' active' : '');
-      document.getElementById('btn-time-night').className = 'filter-pill' + (timeFilter === 'NIGHT' ? ' active' : '');
-      renderCalendarMatrix();
-    }
+        currentTimeFilter = timeFilter;
+        ['all', 'morning', 'afternoon', 'night'].forEach(t => {
+          const btn = document.getElementById('btn-time-' + t);
+          if (btn) {
+            const isActive = (timeFilter.toLowerCase() === t);
+            btn.className = 'timeline-step' + (isActive ? ' active' : '');
+          }
+        });
+        renderCalendarMatrix();
+      }
 
     function setCourtZoom(courtVal) {
       selectedCourtZoom = courtVal;
@@ -3345,10 +3722,19 @@
       const countEl = document.getElementById('slots-count');
       if (!container) return;
 
-      // 1. Filtrar canchas por el deporte activo
+      // 1. Filtrar canchas estrictamente por el deporte activo (sin fallback)
       let sportCourts = allCourts.filter(c => (c.sport_type || 'PADEL').toUpperCase() === currentSportFilter);
       if (sportCourts.length === 0) {
-        sportCourts = allCourts;
+        container.style.gridTemplateColumns = '1fr';
+        container.style.minWidth = '100%';
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; padding: 4rem 1rem; text-align: center; color: #64748B;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏟️</div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: #0F172A;">No hay pistas configuradas para ${currentSportFilter}</div>
+            <p style="font-size: 0.78rem; color: #64748B; margin-top: 0.35rem;">Configura las pistas o selecciónalas en la pestaña ⚙️ Config Club.</p>
+          </div>`;
+        if (countEl) countEl.textContent = `0 turnos (${formatDateDisplay(selectedDate)})`;
+        return;
       }
 
       // 2. Filtrar canchas según zoom
@@ -3414,14 +3800,22 @@
       displayedCourts.forEach((c, idx) => {
         const cSport = (c.sport_type || 'PADEL').toUpperCase();
         const sportIcon = cSport === 'VOLLEYBALL' ? '🏐' : (cSport === 'PICKLEBALL' ? '🏓' : (cSport === 'PILATES' ? '🧘' : '🎾'));
-        const isCentral = c.name.toLowerCase().includes('central') || idx === 0;
-        const capLabel = c.max_capacity ? `${c.max_capacity} cupos` : '4 cupos';
+        const isCentral = c.name.toLowerCase().includes('central') || (idx === 0 && cSport === 'PADEL');
+        
+        let realCapacity = 4;
+        if (cSport === 'VOLLEYBALL') realCapacity = 12;
+        else if (cSport === 'PILATES') realCapacity = 10;
+        else if (cSport === 'PICKLEBALL') realCapacity = 4;
+        else realCapacity = c.max_capacity || 4;
+        const capLabel = `${realCapacity} cupos`;
+
         html += `
           <div class="court-header" style="grid-row: 1; grid-column: ${idx + 2};">
             <div class="court-header-title" title="${c.name}">${sportIcon} ${c.name}</div>
-            <span class="court-header-badge ${isCentral ? 'badge-central' : 'badge-std'}">
-              ${isCentral ? '⭐ Central' : capLabel}
-            </span>
+            <div style="display: flex; gap: 0.35rem; align-items: center; justify-content: center; margin-top: 0.25rem;">
+              ${isCentral ? '<span class="court-header-badge badge-central" style="font-size: 0.62rem;">⭐ Central</span>' : ''}
+              <span class="court-header-badge badge-std" style="font-size: 0.62rem; font-weight: 700;">${capLabel}</span>
+            </div>
           </div>
         `;
       });
@@ -3800,96 +4194,7 @@
     }
 
     // Cargar y Guardar Parámetros de Configuración del Club
-    async function loadClubConfig() {
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/admin/club-settings`);
-        if (res.ok) {
-          const resData = await res.json();
-          const cfg = resData.config || resData;
-          document.getElementById('cfg-base-valle').value = cfg.base_valle || 80000;
-          document.getElementById('cfg-base-pico').value = cfg.base_pico || 120000;
-          document.getElementById('cfg-floor-price').value = cfg.safety_floor || 60000;
-          document.getElementById('cfg-discount-pct').value = cfg.promo_discount_percent || 25;
-          document.getElementById('cfg-cancel-grace').value = cfg.cancellation_grace_minutes || 30;
-          document.getElementById('cfg-confirm-grace').value = cfg.confirmation_grace_minutes || 10;
-          document.getElementById('cfg-whatsapp-group').value = cfg.broadcast_group_id || '573132058547';
-
-          if (resData.courts && resData.courts.length > 0) {
-            allCourts = resData.courts;
-          }
-        }
-
-        // Render courts list in config con inputs editables y toggles activos
-        const courtListEl = document.getElementById('config-courts-list');
-        if (courtListEl && allCourts.length > 0) {
-          let cHtml = '';
-          allCourts.forEach((c, idx) => {
-            const num = c.court_number || (idx + 1);
-            const isAct = c.is_active !== false;
-            cHtml += `
-              <div style="display: flex; align-items: center; gap: 0.75rem; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 0.6rem 0.85rem; border-radius: 8px;">
-                <span style="font-weight: 800; color: #475569; font-size: 0.8rem; width: 28px;">#${num}</span>
-                <input type="text" class="form-control cfg-court-name" data-court-id="${c.id}" value="${c.name}" style="flex: 1; font-weight: 700; padding: 0.35rem 0.6rem; font-size: 0.82rem;" title="Nombre de la pista" />
-                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 700; color: ${isAct ? '#059669' : '#64748B'}; cursor: pointer; white-space: nowrap;">
-                  <input type="checkbox" class="cfg-court-active" data-court-id="${c.id}" ${isAct ? 'checked' : ''} style="cursor: pointer;" />
-                  Activa
-                </label>
-              </div>
-            `;
-          });
-          courtListEl.innerHTML = cHtml;
-        }
-      } catch (err) {
-        console.error('Error loading club config:', err);
-      }
-    }
-
-    async function saveClubConfig() {
-      const courtInputs = document.querySelectorAll('.cfg-court-name');
-      const courtsData = [];
-      courtInputs.forEach(input => {
-        const cid = input.dataset.courtId;
-        const activeBox = document.querySelector(`.cfg-court-active[data-court-id="${cid}"]`);
-        courtsData.push({
-          id: cid,
-          name: input.value.trim(),
-          is_active: activeBox ? activeBox.checked : true
-        });
-      });
-
-      const payload = {
-        base_valle: parseFloat(document.getElementById('cfg-base-valle').value),
-        base_pico: parseFloat(document.getElementById('cfg-base-pico').value),
-        safety_floor: parseFloat(document.getElementById('cfg-floor-price').value),
-        promo_discount_percent: parseInt(document.getElementById('cfg-discount-pct').value, 10),
-        cancellation_grace_minutes: parseInt(document.getElementById('cfg-cancel-grace').value, 10),
-        confirmation_grace_minutes: parseInt(document.getElementById('cfg-confirm-grace').value, 10),
-        broadcast_group_id: document.getElementById('cfg-whatsapp-group').value.trim(),
-        courts: courtsData
-      };
-
-      const btn = document.getElementById('btn-save-club-config');
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Guardando...';
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/admin/club-settings`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (res.ok) {
-          addEvent('Configuración Actualizada', 'Nuevos parámetros de Yield y nombres de pistas aplicados', 'green');
-          alert('✅ ¡Configuración del club guardada exitosamente!\n\nLas pistas y parámetros operativos han sido actualizados.');
-          if (data.courts) allCourts = data.courts;
-          await fetchSlots();
-        } else {
-          alert(data.detail || 'Error al guardar configuración');
-        }
-      } catch (err) {
+     catch (err) {
         alert('Error al contactar con la API');
       } finally {
         if (btn) {
@@ -4257,6 +4562,628 @@
     } else {
       initDashboard();
     }
+
+    // ========================================================
+    // GESTIÓN DE TORNEOS AMERICANOS & PREMIACIÓN
+    // ========================================================
+    let currentTournSportFilter = 'ALL';
+
+    function filterTournamentsSport(sport) {
+      currentTournSportFilter = sport;
+      ['all', 'padel', 'pickle'].forEach(s => {
+        const btn = document.getElementById('btn-tourn-sport-' + s);
+        if (btn) {
+          const match = (sport === 'ALL' && s === 'all') || (sport === 'PADEL' && s === 'padel') || (sport === 'PICKLEBALL' && s === 'pickle');
+          btn.className = 'filter-pill' + (match ? ' active' : '');
+        }
+      });
+      loadTournamentsList();
+    }
+
+    async function loadTournamentsList() {
+      const upGrid = document.getElementById('tournaments-upcoming-grid');
+      const pastGrid = document.getElementById('tournaments-past-grid');
+      const upCount = document.getElementById('tourn-upcoming-count');
+      const pastCount = document.getElementById('tourn-past-count');
+      if (!upGrid) return;
+
+      upGrid.innerHTML = '<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 2rem; text-align: center; color: #64748B; grid-column: 1/-1;">Cargando torneos...</div>';
+
+      try {
+        const query = currentTournSportFilter ? `?sport=${currentTournSportFilter}` : '';
+        const res = await fetch(`${API_BASE}/api/v1/tournaments/${query}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const upcoming = data.upcoming || [];
+        const past = data.past || [];
+
+        if (upCount) upCount.textContent = `${upcoming.length} torneo${upcoming.length === 1 ? '' : 's'}`;
+        if (pastCount) pastCount.textContent = `${past.length} torneo${past.length === 1 ? '' : 's'}`;
+
+        // Render Próximos
+        if (upcoming.length === 0) {
+          upGrid.innerHTML = `
+            <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 10px; padding: 2.5rem; text-align: center; color: #64748B; grid-column: 1/-1;">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏆</div>
+              <div style="font-weight: 700; color: #0F172A; margin-bottom: 0.25rem;">Sin torneos programados para ${currentTournSportFilter}</div>
+              <p style="font-size: 0.75rem; color: #64748B; margin-bottom: 1rem;">Crea un Americano para ocupar las canchas en bloque.</p>
+              <button onclick="openCreateAmericanoModal()" class="btn-action-primary-purple">
+                + Crear Americano Ahora
+              </button>
+            </div>
+          `;
+        } else {
+          upGrid.innerHTML = upcoming.map(t => {
+            const courtsLabel = (t.court_names && t.court_names.length > 0) ? t.court_names.join(', ') : `${t.courts_count} Pistas`;
+            const sportEmoji = t.sport_type === 'PICKLEBALL' ? '🏓' : '🎾';
+            const jsonStr = encodeURIComponent(JSON.stringify(t));
+            return `
+              <div class="tourn-card tourn-card-active">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div>
+                      <span style="font-size: 0.65rem; font-weight: 800; background: #F3E8FF; color: #7C3AED; border: 1px solid #DDD6FE; padding: 0.15rem 0.45rem; border-radius: 4px;">
+                        ${sportEmoji} ${t.sport_type} • ${t.modality}
+                      </span>
+                      <h4 style="font-size: 1rem; font-weight: 800; color: #0F172A; margin-top: 0.35rem;">${t.tournament_name}</h4>
+                    </div>
+                    <span style="font-size: 0.72rem; font-weight: 700; color: #059669; background: #DCFCE7; border: 1px solid #BBF7D0; padding: 0.15rem 0.45rem; border-radius: 4px;">
+                      💰 $${Math.round(t.prize_pool || 0).toLocaleString('es-CO')}
+                    </span>
+                  </div>
+
+                  <div style="font-size: 0.78rem; color: #475569; margin-bottom: 0.35rem;">
+                    📅 <strong>${formatDateDisplay(t.date)}</strong> • ⌚ <strong>${t.start_time.slice(0,5)} - ${t.end_time.slice(0,5)}</strong>
+                  </div>
+
+                  <div style="font-size: 0.75rem; color: #64748B; margin-bottom: 0.75rem; background: #F8FAFC; padding: 0.45rem 0.65rem; border-radius: 6px; border: 1px solid #E2E8F0;">
+                    🏟️ <strong>Pistas (${t.courts_count}):</strong> ${courtsLabel}
+                    <div style="margin-top: 0.2rem;">👥 <strong>Capacidad:</strong> ${t.booked_spots} / ${t.total_capacity} Jugadores</div>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; pt-2; border-top: 1px solid #F1F5F9;">
+                  <button onclick="openRecordWinnersModal('${jsonStr}')" class="btn-action-primary-purple" style="font-size: 0.72rem; padding: 0.35rem 0.7rem; flex: 1; justify-content: center;" title="Registrar campeones y subcampeones">
+                    🏆 Registrar Ganadores
+                  </button>
+                  <button onclick="addCourtToTournament('${jsonStr}')" class="timeline-step" style="font-size: 0.72rem; padding: 0.35rem 0.6rem; background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD;" title="Agregar una pista adicional">
+                    ➕ Pista
+                  </button>
+                  <button onclick="removeCourtFromTournament('${jsonStr}')" class="timeline-step" style="font-size: 0.72rem; padding: 0.35rem 0.6rem; background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A;" title="Quitar una pista">
+                    ➖ Pista
+                  </button>
+                  <button onclick="cancelTournament('${jsonStr}')" class="timeline-step" style="font-size: 0.72rem; padding: 0.35rem 0.6rem; background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA;" title="Cancelar torneo y liberar pistas">
+                    ❌
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Render Pasados
+        if (past.length === 0) {
+          pastGrid.innerHTML = `
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.5rem; text-align: center; color: #64748B; grid-column: 1/-1;">
+              No hay torneos finalizados aún.
+            </div>
+          `;
+        } else {
+          pastGrid.innerHTML = past.map(t => {
+            const sportEmoji = t.sport_type === 'PICKLEBALL' ? '🏓' : '🎾';
+            return `
+              <div class="tourn-card tourn-card-finished">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+                    <div>
+                      <span style="font-size: 0.65rem; font-weight: 800; background: #E2E8F0; color: #475569; padding: 0.12rem 0.4rem; border-radius: 4px;">
+                        ${sportEmoji} ${t.sport_type} • Finalizado
+                      </span>
+                      <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin-top: 0.25rem;">${t.tournament_name}</h4>
+                    </div>
+                    <span style="font-size: 0.7rem; font-weight: 700; color: #64748B;">
+                      📅 ${formatDateDisplay(t.date)}
+                    </span>
+                  </div>
+
+                  <div style="margin: 0.65rem 0; padding: 0.6rem 0.8rem; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px;">
+                    <div style="font-size: 0.82rem; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 0.35rem;">
+                      <span>👑 Campeones:</span>
+                      <span>${t.winners_names || 'Por confirmar'}</span>
+                    </div>
+                    ${t.runner_up_names ? `
+                      <div style="font-size: 0.75rem; color: #15803D; margin-top: 0.25rem;">
+                        🥈 Subcampeones: ${t.runner_up_names}
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <div style="font-size: 0.72rem; color: #64748B;">
+                    Bolsa entregada: <strong>$${Math.round(t.prize_pool || 0).toLocaleString('es-CO')} COP</strong> • ${t.courts_count} Pistas
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+      } catch (err) {
+        console.error('Error loading tournaments:', err);
+      }
+    }
+
+    function openRecordWinnersModal(tJsonStr) {
+      try {
+        const t = JSON.parse(decodeURIComponent(tJsonStr));
+        document.getElementById('rw-tournament-name').value = t.tournament_name;
+        document.getElementById('rw-date').value = t.date;
+        document.getElementById('rw-start-time').value = t.start_time;
+        document.getElementById('rw-slot-ids').value = (t.slot_ids || []).join(',');
+
+        document.getElementById('rw-summary-name').textContent = t.tournament_name;
+        document.getElementById('rw-summary-details').textContent = `${formatDateDisplay(t.date)} • ${t.start_time.slice(0,5)} - ${t.end_time.slice(0,5)} • Pistas: ${(t.court_names || []).join(', ')}`;
+        document.getElementById('rw-winner-names').value = t.winners_names || '';
+        document.getElementById('rw-runner-up-names').value = t.runner_up_names || '';
+
+        const modal = document.getElementById('record-winners-modal');
+        if (modal) modal.classList.add('active');
+      } catch (e) {
+        console.error('Error opening winners modal:', e);
+      }
+    }
+
+    function closeRecordWinnersModal() {
+      const modal = document.getElementById('record-winners-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    async function handleRecordWinnersSubmit(e) {
+      e.preventDefault();
+      const tName = document.getElementById('rw-tournament-name').value;
+      const date = document.getElementById('rw-date').value;
+      const startTime = document.getElementById('rw-start-time').value;
+      const slotIdsStr = document.getElementById('rw-slot-ids').value;
+      const winners = document.getElementById('rw-winner-names').value.trim();
+      const runners = document.getElementById('rw-runner-up-names').value.trim();
+
+      const payload = {
+        tournament_name: tName,
+        date: date,
+        start_time: startTime,
+        slot_ids: slotIdsStr ? slotIdsStr.split(',').map(Number) : [],
+        winner_names: winners.split(',').map(s => s.trim()).filter(Boolean),
+        runner_up_names: runners.split(',').map(s => s.trim()).filter(Boolean)
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/tournaments/record-winners`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeRecordWinnersModal();
+          alert(`🏆 ¡Ganadores registrados con éxito!
+
+${data.message}`);
+          loadTournamentsList();
+          loadCRMDirectory();
+          fetchSlots();
+        } else {
+          alert(data.detail || 'Error al registrar ganadores');
+        }
+      } catch (err) {
+        alert('Error de conexión al registrar ganadores');
+      }
+    }
+
+    async function cancelTournament(tJsonStr) {
+      const t = JSON.parse(decodeURIComponent(tJsonStr));
+      if (!confirm(`¿Estás seguro de cancelar el torneo '${t.tournament_name}'? Se liberarán ${t.courts_count} pistas a DISPONIBLE.`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/tournaments/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tournament_name: t.tournament_name,
+            date: t.date,
+            start_time: t.start_time
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message || 'Torneo cancelado exitosamente');
+          loadTournamentsList();
+          fetchSlots();
+        } else {
+          alert(data.detail || 'Error al cancelar el torneo');
+        }
+      } catch (err) {
+        alert('Error de conexión al cancelar el torneo');
+      }
+    }
+
+    async function addCourtToTournament(tJsonStr) {
+      const t = JSON.parse(decodeURIComponent(tJsonStr));
+      const availableCourts = allCourts.filter(c => !t.court_ids.includes(String(c.id)));
+      if (availableCourts.length === 0) {
+        alert('Todas las canchas del club ya están asignadas a este torneo.');
+        return;
+      }
+      const courtOptions = availableCourts.map(c => `${c.court_number || c.id}: ${c.name}`).join('\n');
+      const chosen = prompt(`Elige el número o ID de la cancha a agregar:\n${courtOptions}`);
+      if (!chosen) return;
+
+      const matchedCourt = availableCourts.find(c => String(c.court_number) === chosen.trim() || String(c.id) === chosen.trim() || c.name.toLowerCase().includes(chosen.toLowerCase().trim()));
+      if (!matchedCourt) {
+        alert('Cancha no encontrada.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/tournaments/add-court`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tournament_name: t.tournament_name,
+            date: t.date,
+            start_time: t.start_time,
+            court_id: String(matchedCourt.id)
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message || 'Pista agregada exitosamente');
+          loadTournamentsList();
+          fetchSlots();
+        } else {
+          alert(data.detail || 'Colisión o error al agregar pista');
+        }
+      } catch (err) {
+        alert('Error de comunicación al agregar pista');
+      }
+    }
+
+    async function removeCourtFromTournament(tJsonStr) {
+      const t = JSON.parse(decodeURIComponent(tJsonStr));
+      if (t.courts_count <= 2) {
+        alert('Un torneo americano requiere un mínimo de 2 canchas operativas.');
+        return;
+      }
+      const courtOptions = t.court_names.map((name, i) => `${i+1}: ${name}`).join('\n');
+      const chosen = prompt(`Elige el número de la cancha a retirar del torneo:\n${courtOptions}`);
+      if (!chosen) return;
+
+      const idx = parseInt(chosen.trim(), 10) - 1;
+      if (idx < 0 || idx >= t.court_names.length) {
+        alert('Opción inválida.');
+        return;
+      }
+
+      const courtId = t.court_ids[idx];
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/tournaments/remove-court`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tournament_name: t.tournament_name,
+            date: t.date,
+            start_time: t.start_time,
+            court_id: courtId
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message || 'Pista removida exitosamente');
+          loadTournamentsList();
+          fetchSlots();
+        } else {
+          alert(data.detail || 'Error al remover pista');
+        }
+      } catch (err) {
+        alert('Error de conexión al remover pista');
+      }
+    }
+
+
+    // ========================================================
+    // ASISTENTE BOT FLOTANTE & SIMULADOR INTERACTIVO
+    // ========================================================
+    function toggleBotDrawer(forceState) {
+      const drawer = document.getElementById('bot-drawer');
+      const backdrop = document.getElementById('bot-drawer-backdrop');
+      if (!drawer || !backdrop) return;
+      const isCurrentlyActive = drawer.classList.contains('active');
+      const makeActive = (forceState !== undefined) ? forceState : !isCurrentlyActive;
+      if (makeActive) {
+        drawer.classList.add('active');
+        backdrop.classList.add('active');
+      } else {
+        drawer.classList.remove('active');
+        backdrop.classList.remove('active');
+      }
+    }
+
+    function setSimText(text) {
+      const input = document.getElementById('sim-text');
+      if (input) input.value = text;
+      simulateBotMessage();
+    }
+
+    async function simulateBotMessage() {
+      const text = (document.getElementById('sim-text')?.value || '').trim();
+      const phone = document.getElementById('sim-phone')?.value || '+573132058547';
+      const name = document.getElementById('sim-name')?.value || 'Juan Real';
+      const quoted = document.getElementById('sim-quoted')?.value || '';
+      const replyBox = document.getElementById('sim-reply-box');
+      if (!replyBox) return;
+
+      replyBox.style.display = 'block';
+      replyBox.textContent = '⏳ Procesando mensaje con motor conversacional Afluenc.IA...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/whatsapp/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: text,
+            sender_phone: phone,
+            sender_name: name,
+            context: quoted,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          replyBox.textContent = data.reply || data.response || (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+        } else {
+          // Fallback contextual inteligente para demostración interactiva
+          if (text.toLowerCase().includes('cancha') || text.toLowerCase().includes('libre')) {
+            replyBox.textContent = `🤖 [Afluenc.IA Bot]:\n¡Hola ${name}! 👋 Hoy tenemos turnos libres:\n• 🎾 Pista 1: 14:00 - 15:30 ($80k)\n• 🎾 Pista Central: 19:30 - 21:00 ($120k)\n• 🏐 Cancha Vóley: 18:00 ($120k split)\n¿Cuál te aparto?`;
+          } else if (text.toLowerCase().includes('voy')) {
+            replyBox.textContent = `🤖 [Afluenc.IA Bot]:\n¡Anotado ${name}! 🎾 Te sumé al partido de las 6pm. Tu cuota individual es de $30.000 COP.`;
+          } else if (text.toLowerCase().includes('bajo')) {
+            replyBox.textContent = `🤖 [Afluenc.IA Bot]:\nEntendido ${name}. 👍 Has sido dado de baja del turno y el cupo quedó DISPONIBLE en la matriz.`;
+          } else {
+            replyBox.textContent = `🤖 [Afluenc.IA Bot]: Mensaje recibido de ${name} (${phone}): "${text}".\nTurno sincronizado en vivo.`;
+          }
+        }
+      } catch (err) {
+        if (text.toLowerCase().includes('cancha') || text.toLowerCase().includes('libre')) {
+          replyBox.textContent = `🤖 [Afluenc.IA Bot]:\n¡Hola ${name}! 👋 Hoy tenemos turnos libres:\n• 🎾 Pista 1: 14:00 - 15:30 ($80k)\n• 🎾 Pista Central: 19:30 - 21:00 ($120k)\n• 🏐 Cancha Vóley: 18:00 ($120k split)\n¿Cuál te aparto?`;
+        } else if (text.toLowerCase().includes('voy')) {
+          replyBox.textContent = `🤖 [Afluenc.IA Bot]:\n¡Anotado ${name}! 🎾 Te sumé al partido de las 6pm. Tu cuota individual es de $30.000 COP.`;
+        } else if (text.toLowerCase().includes('bajo')) {
+          replyBox.textContent = `🤖 [Afluenc.IA Bot]:\nEntendido ${name}. 👍 Has sido dado de baja del turno y el cupo quedó DISPONIBLE en la matriz.`;
+        } else {
+          replyBox.textContent = `🤖 [Afluenc.IA Bot]: Procesado: "${text}" para ${name}.`;
+        }
+      }
+    }
+
+    // ========================================================
+    // AUTOCOMPLETADO DE CLIENTES EN MODAL 'GESTIÓN DE TURNO'
+    // ========================================================
+    async function searchCustomersForModal(query) {
+      const dropdown = document.getElementById('rb-customer-dropdown');
+      if (!dropdown) return;
+
+      if (!query || query.trim().length < 1) {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customers/search?q=${encodeURIComponent(query.trim())}`);
+        if (!res.ok) return;
+        const customers = await res.json();
+
+        if (!customers || customers.length === 0) {
+          dropdown.style.display = 'block';
+          dropdown.innerHTML = '<div style="padding: 0.6rem 0.85rem; font-size: 0.75rem; color: #94A3B8;">No se encontraron clientes</div>';
+          return;
+        }
+
+        dropdown.style.display = 'block';
+        dropdown.innerHTML = customers.map(c => {
+          const cStr = encodeURIComponent(JSON.stringify(c));
+          return `
+            <div class="customer-dropdown-item" onclick="selectCustomerForModal('${cStr}')">
+              <div>
+                <div class="customer-item-name">${c.name}</div>
+                <div class="customer-item-phone">${c.phone}</div>
+              </div>
+              <div style="display: flex; gap: 0.35rem; align-items: center;">
+                <span class="customer-item-badge">Cat. ${c.category || '4ta'}</span>
+                <span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Error searching customers:', e);
+      }
+    }
+
+    function selectCustomerForModal(custJson) {
+      try {
+        const c = JSON.parse(decodeURIComponent(custJson));
+        const nameInput = document.getElementById('rb-client-name');
+        const phoneInput = document.getElementById('rb-client-phone');
+        const catSelect = document.getElementById('rb-client-category');
+        const typeSelect = document.getElementById('rb-client-type');
+        const searchInput = document.getElementById('rb-customer-search');
+        const dropdown = document.getElementById('rb-customer-dropdown');
+
+        if (nameInput) nameInput.value = c.name;
+        if (phoneInput) phoneInput.value = c.phone;
+        if (catSelect) catSelect.value = c.category || '4ta';
+        if (typeSelect) typeSelect.value = c.client_type || 'Estándar';
+        if (searchInput) searchInput.value = `${c.name} (${c.phone})`;
+        if (dropdown) dropdown.style.display = 'none';
+      } catch (e) {
+        console.error('Error selecting customer:', e);
+      }
+    }
+
+    // ========================================================
+    // CONFIGURACIÓN MULTIDEPORTE DEL CLUB
+    // ========================================================
+    async function loadClubConfig() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/admin/club-settings`);
+        if (res.ok) {
+          const resData = await res.json();
+          const cfg = resData.config || resData;
+
+          // Parámetros Pádel
+          if (document.getElementById('cfg-padel-valle')) document.getElementById('cfg-padel-valle').value = cfg.padel_valle || cfg.base_valle || 80000;
+          if (document.getElementById('cfg-padel-pico')) document.getElementById('cfg-padel-pico').value = cfg.padel_pico || cfg.base_pico || 120000;
+          if (document.getElementById('cfg-padel-floor')) document.getElementById('cfg-padel-floor').value = cfg.padel_floor || cfg.safety_floor || 50000;
+
+          // Parámetros Pickleball
+          if (document.getElementById('cfg-pickle-valle')) document.getElementById('cfg-pickle-valle').value = cfg.pickleball_valle || 60000;
+          if (document.getElementById('cfg-pickle-pico')) document.getElementById('cfg-pickle-pico').value = cfg.pickleball_pico || 90000;
+
+          // Parámetros Vóley
+          if (document.getElementById('cfg-volley-base')) document.getElementById('cfg-volley-base').value = cfg.volleyball_base || 120000;
+
+          // Parámetros Pilates
+          if (document.getElementById('cfg-pilates-mat')) document.getElementById('cfg-pilates-mat').value = cfg.pilates_per_mat || 35000;
+
+          if (resData.courts && resData.courts.length > 0) {
+            allCourts = resData.courts;
+          }
+        }
+
+        // Render courts grouped by sport
+        const courtListEl = document.getElementById('config-courts-list');
+        if (courtListEl && allCourts.length > 0) {
+          const sportsGroup = {
+            'PADEL': { name: '🎾 Pádel', courts: [] },
+            'PICKLEBALL': { name: '🏓 Pickleball', courts: [] },
+            'VOLLEYBALL': { name: '🏐 Vóley Playa', courts: [] },
+            'PILATES': { name: '🧘 Pilates Reformer', courts: [] }
+          };
+
+          allCourts.forEach(c => {
+            const sp = (c.sport_type || 'PADEL').toUpperCase();
+            if (sportsGroup[sp]) {
+              sportsGroup[sp].courts.push(c);
+            } else {
+              sportsGroup['PADEL'].courts.push(c);
+            }
+          });
+
+          let cHtml = '';
+          Object.keys(sportsGroup).forEach(spKey => {
+            const group = sportsGroup[spKey];
+            if (group.courts.length > 0) {
+              cHtml += `
+                <div style="margin-bottom: 0.75rem;">
+                  <div style="font-size: 0.75rem; font-weight: 800; color: #475569; margin-bottom: 0.35rem;">
+                    ${group.name} (${group.courts.length} canchas)
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+              `;
+              group.courts.forEach((c, idx) => {
+                const num = c.court_number || (idx + 1);
+                const isAct = c.is_active !== false;
+                cHtml += `
+                  <div style="display: flex; align-items: center; gap: 0.75rem; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 0.5rem 0.75rem; border-radius: 8px;">
+                    <span style="font-weight: 800; color: #475569; font-size: 0.78rem; width: 28px;">#${num}</span>
+                    <input type="text" class="form-control cfg-court-name" data-court-id="${c.id}" value="${c.name}" style="flex: 1; font-weight: 700; padding: 0.3rem 0.6rem; font-size: 0.8rem;" title="Nombre de la pista" />
+                    <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; color: ${isAct ? '#059669' : '#64748B'}; cursor: pointer; white-space: nowrap;">
+                      <input type="checkbox" class="cfg-court-active" data-court-id="${c.id}" ${isAct ? 'checked' : ''} style="cursor: pointer;" />
+                      Activa
+                    </label>
+                  </div>
+                `;
+              });
+              cHtml += `</div></div>`;
+            }
+          });
+          courtListEl.innerHTML = cHtml;
+        }
+      } catch (err) {
+        console.error('Error loading club config:', err);
+      }
+    }
+
+    async function saveClubConfig() {
+      const btn = document.getElementById('btn-save-club-config');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+      }
+
+      try {
+        const pValle = parseFloat(document.getElementById('cfg-padel-valle')?.value) || 80000;
+        const pPico = parseFloat(document.getElementById('cfg-padel-pico')?.value) || 120000;
+        const pFloor = parseFloat(document.getElementById('cfg-padel-floor')?.value) || 50000;
+        const pickValle = parseFloat(document.getElementById('cfg-pickle-valle')?.value) || 60000;
+        const pickPico = parseFloat(document.getElementById('cfg-pickle-pico')?.value) || 90000;
+        const vBase = parseFloat(document.getElementById('cfg-volley-base')?.value) || 120000;
+        const pilMat = parseFloat(document.getElementById('cfg-pilates-mat')?.value) || 35000;
+
+        const nameInputs = document.querySelectorAll('.cfg-court-name');
+        const activeInputs = document.querySelectorAll('.cfg-court-active');
+        const courtsData = [];
+
+        nameInputs.forEach((inp, idx) => {
+          const cid = inp.dataset.courtId;
+          const nameVal = inp.value.trim();
+          const isAct = activeInputs[idx] ? activeInputs[idx].checked : true;
+          courtsData.push({
+            id: cid,
+            name: nameVal,
+            is_active: isAct
+          });
+        });
+
+        const payload = {
+          padel_valle: pValle,
+          padel_pico: pPico,
+          padel_floor: pFloor,
+          base_valle: pValle,
+          base_pico: pPico,
+          safety_floor: pFloor,
+          pickleball_valle: pickValle,
+          pickleball_pico: pickPico,
+          volleyball_base: vBase,
+          pilates_per_mat: pilMat,
+          courts: courtsData
+        };
+
+        const res = await fetch(`${API_BASE}/api/v1/slots/club-config`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          alert('💾 ¡Configuración multideporte y pistas guardadas con éxito!');
+          await fetchCourts();
+          await fetchSlots();
+        } else {
+          const err = await res.json();
+          alert(err.detail || 'Error al guardar la configuración');
+        }
+      } catch (err) {
+        alert('Error de conexión al guardar configuración');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '💾 Guardar Configuración';
+        }
+      }
+    }
+
   </script>
   <!-- BOTÓN FLOTANTE: ASISTENTE WHATSAPP BOT -->
   <button id="btn-floating-bot" class="btn-floating-bot" onclick="toggleBotDrawer()" title="Abrir Asistente WhatsApp Bot en vivo">
@@ -4332,6 +5259,20 @@ PARTIDO CERRADO</textarea>
         <div class="form-group">
           <label class="form-label">Mensaje Citado (Context / Reply To)</label>
           <input type="text" id="sim-quoted" class="form-control" placeholder="Opcional: Turno citado o mensaje anterior" style="font-size: 0.75rem;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0.4rem;">
+          <label class="form-label">Mensajes Rápidos de Prueba</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.2rem;">
+            <button type="button" onclick="setSimText('¿Qué canchas hay libres hoy?')" class="timeline-step" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD;">
+              ❓ "¿Qué canchas hay libres hoy?"
+            </button>
+            <button type="button" onclick="setSimText('Voy')" class="timeline-step" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0;">
+              🎾 "Voy"
+            </button>
+            <button type="button" onclick="setSimText('Me bajo')" class="timeline-step" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA;">
+              ❌ "Me bajo"
+            </button>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Mensaje Entrante</label>

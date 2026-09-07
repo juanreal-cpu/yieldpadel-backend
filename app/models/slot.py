@@ -95,9 +95,13 @@ class TimeSlot(Base):
     tournament_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     prize_pool: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     tournament_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    winners_names: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    runner_up_names: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    is_finished: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Soporte Multideporte
     sport_type: Mapped[str] = mapped_column(String(50), default="PADEL", nullable=False)
+
 
     court: Mapped["Court"] = relationship("Court", back_populates="slots", lazy="selectin")
     holds: Mapped[List["SlotHold"]] = relationship(

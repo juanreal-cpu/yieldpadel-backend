@@ -17,6 +17,12 @@ class CustomerResponse(BaseModel):
     category: str
     client_type: str
     notes: Optional[str] = None
+    ranking_points: int = 0
+    titles_count: int = 0
+    category_wins: int = 0
+    consecutive_wins: int = 0
+    promotion_recommended: bool = False
+    recommended_category: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -110,10 +116,33 @@ async def search_customers(
 
 @router.get("/", response_model=List[CustomerResponse])
 async def list_all_customers(
+    category: Optional[str] = Query(None, description="Filtrar por categoría (ej: '4ta', '3ra')"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Retorna el listado completo de clientes del club."""
+    """Retorna el listado completo de clientes del club, con soporte de filtro por categoría."""
     await ensure_initial_customers(db)
-    stmt = select(Customer).order_by(Customer.name.asc())
+    stmt = select(Customer)
+    if category and category.upper() not in ["TODAS", "ALL", ""]:
+        stmt = stmt.where(Customer.category.ilike(f"%{category.strip()}%"))
+    stmt = stmt.order_by(Customer.ranking_points.desc(), Customer.name.asc())
     res = await db.execute(stmt)
     return res.scalars().all()
+
+
+@router.post("/{customer_id}/promote", response_model=CustomerResponse)
+async def promote_customer(
+    customer_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Aprueba la recomendación de ascenso de un jugador a la siguiente categoría.
+    Actualiza la categoría formal y resetea las victorias consecutivas.
+    """
+    from app.services.ranking_engine import promote_customer_category
+    try:
+        updated = await promote_customer_category(db, customer_id)
+        return updated
+    except ValueError as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=str(e))
+
