@@ -1115,10 +1115,10 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
           <div class="filter-group">
             <span class="filter-label">Franja Horaria:</span>
             <div class="pill-group">
-              <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="filter-pill active" title="Ver toda la jornada (06:00 a 24:00)">Todas las horas</button>
+              <button onclick="setTimeFilter('ALL')" id="btn-time-all" class="filter-pill active" title="Ver toda la jornada (06:00 a 24:00)">Todas</button>
               <button onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="filter-pill" title="Ver jornada de la mañana">Mañana (&lt;12pm)</button>
               <button onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="filter-pill" title="Ver jornada de la tarde">Tarde (12pm-6pm)</button>
-              <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="filter-pill" title="Ver jornada nocturna y pico">Noche / Pico (&gt;6pm)</button>
+              <button onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="filter-pill" title="Ver jornada nocturna">Noche (&gt;6pm)</button>
             </div>
           </div>
 
@@ -1273,7 +1273,7 @@ PARTIDO CERRADO</textarea>
     <div class="modal-box">
       <div class="modal-header">
         <div>
-          <div class="modal-title">⚡ Reserva & Yield Management</div>
+          <div class="modal-title">⚡ Modal de Reserva Counter & Yield</div>
           <div id="rb-modal-slot-desc" style="font-size: 0.75rem; color: #94A3B8; margin-top: 0.2rem;">Cargando detalles del turno...</div>
         </div>
         <button onclick="closeReserveOrBlockModal()" class="btn-close">✕</button>

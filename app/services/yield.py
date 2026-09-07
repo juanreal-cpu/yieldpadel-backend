@@ -36,6 +36,7 @@ def calculate_recommended_price(
     slot: Any,
     current_time: Optional[datetime] = None,
     min_safety_price: Optional[Decimal] = None,
+    promo_discount_percent: Optional[Decimal] = None,
 ) -> Dict[str, Any]:
     """
     Calcula el precio recomendado por el motor de Yield Management:
@@ -43,7 +44,7 @@ def calculate_recommended_price(
     2. Horario Pico (semana >= 18:00 o fines de semana): $120.000 COP / cancha ($30.000 COP / cupo).
     3. Regla Last-Minute Promo:
        Si slot.status == 'AVAILABLE' (sin cupos tomados) y faltan menos de 3 horas
-       para el inicio hoy en hora Bogotá, aplica descuento yield (-25%):
+       para el inicio hoy en hora Bogotá, aplica descuento yield parametrizable (default -25%):
        - Valle: $60.000 COP / cancha ($15.000 COP / cupo).
        - Pico: $90.000 COP / cancha ($22.500 COP / cupo).
        y marca is_promo = True.
@@ -82,15 +83,11 @@ def calculate_recommended_price(
 
         if 0 < mins_until_start <= 180:  # Menos de 3 horas
             is_promo = True
-            discount_percent = 25
-            if pico:
-                recommended_price = PICO_PROMO_PRICE
-                discount_applied = PICO_BASE_PRICE - PICO_PROMO_PRICE
-                tier = "LAST_MINUTE_PROMO_PICO"
-            else:
-                recommended_price = VALLE_PROMO_PRICE
-                discount_applied = VALLE_BASE_PRICE - VALLE_PROMO_PRICE
-                tier = "LAST_MINUTE_PROMO_VALLE"
+            discount_percent = int(promo_discount_percent) if promo_discount_percent is not None else 25
+            pct = Decimal(str(discount_percent))
+            discount_applied = (base_price * pct / Decimal("100")).quantize(Decimal("1.00"))
+            recommended_price = base_price - discount_applied
+            tier = "LAST_MINUTE_PROMO_PICO" if pico else "LAST_MINUTE_PROMO_VALLE"
         else:
             recommended_price = base_price
     else:
