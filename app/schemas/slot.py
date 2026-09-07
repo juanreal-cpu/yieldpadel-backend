@@ -10,6 +10,9 @@ from app.models.slot import SlotMode, SlotStatus
 class CourtBase(BaseModel):
     name: str
     is_active: bool = True
+    sport_type: str = "PADEL"
+    max_capacity: int = 4
+    court_number: Optional[int] = None
 
 
 class CourtCreate(CourtBase):
@@ -31,6 +34,7 @@ class TimeSlotBase(BaseModel):
     mode: SlotMode = SlotMode.FULL_COURT
     capacity: int = 4
     category: str = "4ta"
+    sport_type: str = "PADEL"
 
 
 class TimeSlotCreate(TimeSlotBase):
@@ -71,6 +75,7 @@ class TimeSlotResponse(BaseModel):
     tournament_type: Optional[str] = None
     prize_pool: Optional[Decimal] = None
     tournament_name: Optional[str] = None
+    sport_type: str = "PADEL"
 
     model_config = ConfigDict(from_attributes=True)
 

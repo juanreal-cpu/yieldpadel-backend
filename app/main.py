@@ -24,19 +24,42 @@ async def lifespan(app: FastAPI):
                     "tournament_type VARCHAR(50)",
                     "prize_pool NUMERIC(10, 2)",
                     "tournament_name VARCHAR(150)",
+                    "sport_type VARCHAR(50) DEFAULT 'PADEL'",
                 ]:
                     try:
                         await conn.execute(text(f"ALTER TABLE time_slots ADD COLUMN {col_def}"))
                     except Exception:
                         pass
+                for court_col in [
+                    "sport_type VARCHAR(50) DEFAULT 'PADEL'",
+                    "max_capacity INTEGER DEFAULT 4",
+                    "court_number INTEGER",
+                    "club_id VARCHAR(36)",
+                ]:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE courts ADD COLUMN {court_col}"))
+                    except Exception:
+                        pass
             else:
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP WITH TIME ZONE"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS slot_type VARCHAR(50) DEFAULT 'MATCH'"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS instructor_name VARCHAR(100)"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_promo BOOLEAN DEFAULT FALSE"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_type VARCHAR(50)"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS prize_pool NUMERIC(10, 2)"))
-                await conn.execute(text("ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_name VARCHAR(150)"))
+                pg_statements = [
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP WITH TIME ZONE",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS slot_type VARCHAR(50) DEFAULT 'MATCH'",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS instructor_name VARCHAR(100)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_promo BOOLEAN DEFAULT FALSE",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_type VARCHAR(50)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS prize_pool NUMERIC(10, 2)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_name VARCHAR(150)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS sport_type VARCHAR(50) DEFAULT 'PADEL'",
+                    "ALTER TABLE courts ADD COLUMN IF NOT EXISTS sport_type VARCHAR(50) DEFAULT 'PADEL'",
+                    "ALTER TABLE courts ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 4",
+                    "ALTER TABLE courts ADD COLUMN IF NOT EXISTS court_number INTEGER",
+                ]
+                for stmt in pg_statements:
+                    try:
+                        await conn.execute(text(stmt))
+                        await conn.commit()
+                    except Exception:
+                        await conn.rollback()
         except Exception:
             pass
     yield

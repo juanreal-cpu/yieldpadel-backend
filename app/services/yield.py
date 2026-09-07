@@ -118,9 +118,14 @@ def calculate_recommended_price(
 
     # 1. Determinar Pico vs Valle
     pico = is_pico_hour(slot_date, start_t)
-    base_valle = CLUB_SETTINGS.get("valle_price", VALLE_BASE_PRICE)
-    base_pico = CLUB_SETTINGS.get("pico_price", PICO_BASE_PRICE)
-    base_price = base_pico if pico else base_valle
+    sport = getattr(slot, "sport_type", None) or (getattr(getattr(slot, "court", None), "sport_type", None) or "PADEL")
+
+    if sport == "VOLLEYBALL":
+        base_price = Decimal("120000.00")
+    else:
+        base_valle = CLUB_SETTINGS.get("valle_price", VALLE_BASE_PRICE)
+        base_pico = CLUB_SETTINGS.get("pico_price", PICO_BASE_PRICE)
+        base_price = base_pico if pico else base_valle
 
     # 2. Evaluar Last-Minute Promo (< 3 horas hoy para turnos sin vender)
     is_promo = False
@@ -154,9 +159,17 @@ def calculate_recommended_price(
     if recommended_price < floor_price:
         recommended_price = floor_price
 
-    # 4. Calcular precio por cupo (cancha estándar de 4 jugadores)
+    # 4. Calcular precio por cupo (cancha estándar de 4 jugadores o tarifa prorrateada dinámica para Vóley)
     capacity = getattr(slot, "capacity", 4) or 4
-    price_per_spot = (recommended_price / Decimal(capacity)).quantize(Decimal("1.00"))
+    if sport == "VOLLEYBALL":
+        players_list = getattr(slot, "players_names", None) or []
+        count_p = len(players_list) if isinstance(players_list, list) else 0
+        if count_p > 0:
+            price_per_spot = (recommended_price / Decimal(count_p)).quantize(Decimal("1.00"))
+        else:
+            price_per_spot = (recommended_price / Decimal(capacity)).quantize(Decimal("1.00"))
+    else:
+        price_per_spot = (recommended_price / Decimal(capacity)).quantize(Decimal("1.00"))
 
     # Explicación para recepción y logs
     if is_promo:

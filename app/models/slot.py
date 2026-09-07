@@ -96,6 +96,9 @@ class TimeSlot(Base):
     prize_pool: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     tournament_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
 
+    # Soporte Multideporte
+    sport_type: Mapped[str] = mapped_column(String(50), default="PADEL", nullable=False)
+
     court: Mapped["Court"] = relationship("Court", back_populates="slots", lazy="selectin")
     holds: Mapped[List["SlotHold"]] = relationship(
         "SlotHold", back_populates="slot", cascade="all, delete-orphan"

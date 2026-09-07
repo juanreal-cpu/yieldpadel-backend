@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.timezone import get_bogota_now, get_bogota_today
 from app.services import calculate_recommended_price, get_club_config, update_club_config
+from app.services.whatsapp import detect_sport_from_text, get_sport_emoji, get_sport_default_capacity, format_whatsapp_reply
 from app.models.court import Court
 from app.models.slot import HoldStatus, SlotMode, SlotStatus, TimeSlot, SlotHold
 from app.schemas.slot import (
@@ -94,11 +95,21 @@ def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse
     else:
         dyn_status = SlotStatus.AVAILABLE
 
-    price_per_spot = (slot.total_price / Decimal(slot.capacity)).quantize(Decimal("0.01"))
-
     participants_raw = to_participants_list(slot.players_names)
     participants_objs = [SlotParticipant(**p) for p in participants_raw]
     display_names = [p.display_name for p in participants_objs]
+
+    sport = getattr(slot, "sport_type", None) or (slot.court.sport_type if getattr(slot, "court", None) and getattr(slot.court, "sport_type", None) else "PADEL")
+
+    if sport == "VOLLEYBALL":
+        total_court_price = slot.total_price if slot.total_price > 0 else Decimal("120000.00")
+        count_p = len(participants_objs)
+        if count_p > 0:
+            price_per_spot = (total_court_price / Decimal(count_p)).quantize(Decimal("0.01"))
+        else:
+            price_per_spot = (total_court_price / Decimal(slot.capacity or 12)).quantize(Decimal("0.01"))
+    else:
+        price_per_spot = (slot.total_price / Decimal(slot.capacity or 4)).quantize(Decimal("0.01"))
 
     yield_info = calculate_recommended_price(slot)
 
@@ -128,6 +139,7 @@ def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse
         tournament_type=getattr(slot, "tournament_type", None),
         prize_pool=getattr(slot, "prize_pool", None),
         tournament_name=getattr(slot, "tournament_name", None),
+        sport_type=sport,
     )
 
 
@@ -135,6 +147,7 @@ def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse
 async def list_slots(
     slot_date: Optional[date] = Query(None, alias="date", description="Filtrar por fecha"),
     mode: Optional[SlotMode] = Query(None, description="Filtrar por modo FULL_COURT o SPLIT_MATCH"),
+    sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES)"),
     only_available: bool = Query(True, description="Mostrar únicamente slots con cupos disponibles"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -147,6 +160,8 @@ async def list_slots(
         stmt = stmt.where(TimeSlot.date == slot_date)
     if mode:
         stmt = stmt.where(TimeSlot.mode == mode)
+    if sport:
+        stmt = stmt.where(TimeSlot.sport_type == sport.upper())
 
     result = await db.execute(stmt)
     slots = result.scalars().all()
@@ -166,7 +181,7 @@ async def list_slots(
 
 
 async def ensure_five_courts(db: AsyncSession) -> List[Court]:
-    """Garantiza la existencia y numeración de las 5 canchas estándar del club."""
+    """Garantiza la existencia y numeración de todas las canchas multideporte del club (Pádel, Pickleball, Vóley y Pilates)."""
     import uuid
     res = await db.execute(select(Court).where(Court.is_active == True))
     courts = list(res.scalars().all())
@@ -183,15 +198,19 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
         sample_club_id = uuid.uuid4()
 
     court_definitions = [
-        (1, "Cancha Central 1"),
-        (2, "Cancha 2"),
-        (3, "Cancha 3"),
-        (4, "Cancha 4"),
-        (5, "Cancha 5"),
+        (1, "Cancha Central 1", "PADEL", 4),
+        (2, "Cancha 2", "PADEL", 4),
+        (3, "Cancha 3", "PADEL", 4),
+        (4, "Cancha 4", "PADEL", 4),
+        (5, "Cancha 5", "PADEL", 4),
+        (6, "Pista Pickleball 1", "PICKLEBALL", 4),
+        (7, "Pista Pickleball 2", "PICKLEBALL", 4),
+        (8, "Cancha Arena Vóley", "VOLLEYBALL", 12),
+        (9, "Estudio Pilates", "PILATES", 12),
     ]
 
     changed = False
-    for num, name in court_definitions:
+    for num, name, s_type, max_cap in court_definitions:
         existing = num_map.get(num) or court_map.get(name)
         if existing:
             if existing.name != name:
@@ -200,12 +219,20 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
             if getattr(existing, "court_number", None) != num:
                 existing.court_number = num
                 changed = True
+            if getattr(existing, "sport_type", None) != s_type:
+                existing.sport_type = s_type
+                changed = True
+            if getattr(existing, "max_capacity", None) != max_cap:
+                existing.max_capacity = max_cap
+                changed = True
         else:
             new_court = Court(
                 id=uuid.uuid4(),
                 club_id=sample_club_id,
                 court_number=num,
                 name=name,
+                sport_type=s_type,
+                max_capacity=max_cap,
                 is_active=True,
             )
             db.add(new_court)
@@ -219,11 +246,18 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
     courts.sort(key=lambda c: (getattr(c, "court_number", None) or 99, c.name))
     return courts
 
+ensure_multisport_courts = ensure_five_courts
+
 
 @router.get("/courts", response_model=List[CourtResponse])
-async def get_courts(db: AsyncSession = Depends(get_db)):
-    """Obtiene el listado ordenado de las 5 canchas activas del club."""
+async def get_courts(
+    sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES)"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Obtiene el listado ordenado de las canchas activas del club, con filtro opcional de deporte."""
     courts = await ensure_five_courts(db)
+    if sport:
+        courts = [c for c in courts if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == sport.upper()]
     return courts
 
 
@@ -266,6 +300,8 @@ async def seed_demo_data(
 
         for court_idx, court in enumerate(courts, start=1):
             court_num = getattr(court, "court_number", None) or court_idx
+            c_sport = getattr(court, "sport_type", "PADEL") or "PADEL"
+            c_cap = getattr(court, "max_capacity", 4) or 4
 
             existing_res = await db.execute(
                 select(TimeSlot.start_time).where(TimeSlot.court_id == court.id, TimeSlot.date == d)
@@ -277,55 +313,90 @@ async def seed_demo_data(
                 if start_t in existing_times:
                     continue
 
-                # Precio base dinámico según Yield Management
                 is_pico = is_weekend or (start_t.hour >= 18)
-                base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
-
-                slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and court_num <= 3) else SlotMode.FULL_COURT
+                slot_cap = c_cap
                 slot_type = "MATCH"
                 instructor_name = None
-                category = "4ta"
                 booked_spots = 0
                 status_val = SlotStatus.AVAILABLE
                 players = []
 
-                # Muestras operativas para verificar academia y clases
-                if court_num == 3 and start_t == time(16, 30) and day_idx in (0, 2, 4):
-                    slot_type = "CLASS"
-                    instructor_name = "Prof. Marcos Rivas"
-                    category = "Academia Avanzada"
-                    status_val = SlotStatus.FULLY_BOOKED
-                    booked_spots = 4
-                    players = [{
-                        "spot_index": 1,
-                        "phone": "+57-ACADEMY",
-                        "display_name": "Clase con Marcos Rivas",
-                        "client_tier": "MEMBER",
-                        "host_phone": None
-                    }]
-                elif court_num == 5 and start_t == time(9, 0) and day_idx in (0, 1, 3):
-                    slot_type = "ACADEMY"
-                    instructor_name = "Prof. Valentina Gómez"
-                    category = "Clase Infantil"
-                    status_val = SlotStatus.FULLY_BOOKED
-                    booked_spots = 4
-                    players = [{
-                        "spot_index": 1,
-                        "phone": "+57-ACADEMY",
-                        "display_name": "Academia Infantil",
-                        "client_tier": "MEMBER",
-                        "host_phone": None
-                    }]
-                elif court_num == 1 and start_t == time(18, 0) and day_idx == 0:
-                    # Partido abierto en curso para pruebas de hoy
+                if c_sport == "VOLLEYBALL":
+                    base_price = Decimal("120000.00")
                     slot_mode = SlotMode.SPLIT_MATCH
-                    status_val = SlotStatus.PARTIALLY_BOOKED
-                    booked_spots = 3
-                    players = [
-                        {"spot_index": 1, "phone": "+573001112233", "display_name": "Juan Perez", "client_tier": "STANDARD", "host_phone": None},
-                        {"spot_index": 2, "phone": "+573002223344", "display_name": "Carlos Gomez", "client_tier": "STANDARD", "host_phone": None},
-                        {"spot_index": 3, "phone": "+573003334455", "display_name": "Mateo Silva", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None},
-                    ]
+                    category = "Vóley Arena Mixto"
+                    # Demo slot de vóley con 6 inscritos para mostrar prorrateo dinámico ($20.000 / jug)
+                    if start_t == time(18, 0) and day_idx == 0:
+                        status_val = SlotStatus.PARTIALLY_BOOKED
+                        booked_spots = 6
+                        players = [
+                            {"spot_index": 1, "phone": "+573101112233", "display_name": "Laura Restrepo", "client_tier": "STANDARD", "host_phone": None},
+                            {"spot_index": 2, "phone": "+573102223344", "display_name": "Andres Mejia", "client_tier": "STANDARD", "host_phone": None},
+                            {"spot_index": 3, "phone": "+573103334455", "display_name": "Sebastian Castro", "client_tier": "STANDARD", "host_phone": None},
+                            {"spot_index": 4, "phone": "+573104445566", "display_name": "Camila Osorio", "client_tier": "STANDARD", "host_phone": None},
+                            {"spot_index": 5, "phone": "+573105556677", "display_name": "David Zuluaga", "client_tier": "STANDARD", "host_phone": None},
+                            {"spot_index": 6, "phone": "+573106667788", "display_name": "Valeria Duque", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None},
+                        ]
+                elif c_sport == "PILATES":
+                    base_price = Decimal("180000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH
+                    category = "Pilates Mat & Reformer"
+                    # Demo clase de pilates con 8 cupos
+                    if start_t == time(9, 0) and day_idx == 0:
+                        slot_type = "CLASS"
+                        instructor_name = "Prof. Carolina Velez"
+                        status_val = SlotStatus.PARTIALLY_BOOKED
+                        booked_spots = 8
+                        players = [
+                            {"spot_index": i, "phone": f"+57320000000{i}", "display_name": f"Alumna {i}", "client_tier": "MEMBER", "host_phone": None}
+                            for i in range(1, 9)
+                        ]
+                elif c_sport == "PICKLEBALL":
+                    base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20)) else SlotMode.FULL_COURT
+                    category = "Pickleball Abierto"
+                else:
+                    # PADEL
+                    base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and court_num <= 3) else SlotMode.FULL_COURT
+                    category = "4ta"
+
+                    # Muestras operativas para verificar academia y clases
+                    if court_num == 3 and start_t == time(16, 30) and day_idx in (0, 2, 4):
+                        slot_type = "CLASS"
+                        instructor_name = "Prof. Marcos Rivas"
+                        category = "Academia Avanzada"
+                        status_val = SlotStatus.FULLY_BOOKED
+                        booked_spots = 4
+                        players = [{
+                            "spot_index": 1,
+                            "phone": "+57-ACADEMY",
+                            "display_name": "Clase con Marcos Rivas",
+                            "client_tier": "MEMBER",
+                            "host_phone": None
+                        }]
+                    elif court_num == 5 and start_t == time(9, 0) and day_idx in (0, 1, 3):
+                        slot_type = "ACADEMY"
+                        instructor_name = "Prof. Valentina Gómez"
+                        category = "Clase Infantil"
+                        status_val = SlotStatus.FULLY_BOOKED
+                        booked_spots = 4
+                        players = [{
+                            "spot_index": 1,
+                            "phone": "+57-ACADEMY",
+                            "display_name": "Academia Infantil",
+                            "client_tier": "MEMBER",
+                            "host_phone": None
+                        }]
+                    elif court_num == 1 and start_t == time(18, 0) and day_idx == 0:
+                        slot_mode = SlotMode.SPLIT_MATCH
+                        status_val = SlotStatus.PARTIALLY_BOOKED
+                        booked_spots = 3
+                        players = [
+                            {"spot_index": 1, "phone": "+573001112233", "display_name": "Juan Perez", "client_tier": "STANDARD", "host_phone": None},
+                            {"spot_index": 2, "phone": "+573002223344", "display_name": "Carlos Gomez", "client_tier": "STANDARD", "host_phone": None},
+                            {"spot_index": 3, "phone": "+573003334455", "display_name": "Mateo Silva", "client_tier": "VIP_PAY_ON_SITE", "host_phone": None},
+                        ]
 
                 to_add.append(
                     TimeSlot(
@@ -335,7 +406,7 @@ async def seed_demo_data(
                         end_time=end_t,
                         total_price=base_price,
                         mode=slot_mode,
-                        capacity=4,
+                        capacity=slot_cap,
                         booked_spots=booked_spots,
                         category=category,
                         players_names=players,
@@ -343,6 +414,7 @@ async def seed_demo_data(
                         slot_type=slot_type,
                         instructor_name=instructor_name,
                         is_promo=False,
+                        sport_type=c_sport,
                     )
                 )
 
@@ -682,10 +754,15 @@ async def parse_open_match(
     payload: WhatsAppConvocatoriaRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Parsea una convocatoria de WhatsApp, sincroniza el TimeSlot y devuelve el mensaje de confirmación."""
+    """Parsea una convocatoria multideporte de WhatsApp, sincroniza el TimeSlot y devuelve el mensaje de confirmación."""
     raw = payload.raw_text
 
-    # 1. Parsear fecha
+    # 1. Detectar Deporte
+    detected_sport = detect_sport_from_text(raw)
+    sport_emoji = get_sport_emoji(detected_sport)
+    sport_cap = get_sport_default_capacity(detected_sport)
+
+    # 2. Parsear fecha
     target_date = get_bogota_today()
     months = {
         "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
@@ -697,7 +774,7 @@ async def parse_open_match(
         month = months[date_match.group(2).lower()]
         target_date = date(target_date.year, month, day)
 
-    # 2. Parsear horario
+    # 3. Parsear horario
     time_match = re.search(
         r"(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*-\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)",
         raw,
@@ -710,11 +787,11 @@ async def parse_open_match(
         start_t = time(14, 0)
         end_t = time(15, 30)
 
-    # 3. Parsear categoría
+    # 4. Parsear categoría
     cat_match = re.search(r"(?:Categor[íi]a|Cat\.?):\s*([^\n\r]+)", raw, re.IGNORECASE)
-    category = cat_match.group(1).strip() if cat_match else "4ta"
+    category = cat_match.group(1).strip() if cat_match else ("Vóley Playa" if detected_sport == "VOLLEYBALL" else ("Pilates Reformer" if detected_sport == "PILATES" else "4ta"))
 
-    # 4. Parsear precio (buscar indicador de dinero 💰, $, COP, precio o valor)
+    # 5. Parsear precio sugerido en texto
     price_match = re.search(
         r"(?:💰|\$|COP|valor|precio)\s*:?\s*(\d{1,3}(?:\.\d{3})*(?:,\d+)?|\d+)",
         raw,
@@ -724,22 +801,14 @@ async def parse_open_match(
         price_clean = price_match.group(1).replace(".", "").replace(",", ".")
         price_per_spot = Decimal(price_clean)
     else:
-        price_per_spot = Decimal("15000.00")
+        price_per_spot = Decimal("20000.00") if detected_sport == "VOLLEYBALL" else Decimal("15000.00")
 
-    # 5. Parsear jugadores (flexible: 🎾, otros emojis, números, guiones o texto)
+    # 6. Parsear jugadores con filtrado estricto multideporte y capacidad dinámica
     from app.services.whatsapp import parse_flexible_player_list
-    raw_players = parse_flexible_player_list(raw)
+    raw_players = parse_flexible_player_list(raw, max_capacity=sport_cap)
     spots_count = len(raw_players)
-    free_spots = max(0, 4 - spots_count)
-    is_closed = (spots_count == 4)
 
-    # 6. Validación estricta de inventario en WhatsApp (Anti-overbooking)
-    start_str = start_t.strftime("%I:%M%p").lower()
-    end_str = end_t.strftime("%I:%M%p").lower()
-    date_formatted = target_date.strftime("%d/%m/%Y")
-    price_formatted = f"{int(price_per_spot):,}".replace(",", ".")
-
-    # Buscar slots existentes para esta fecha y franja horaria
+    # 7. Buscar turnos existentes para esta fecha y franja horaria
     slot_stmt = (
         select(TimeSlot)
         .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
@@ -751,13 +820,25 @@ async def parse_open_match(
     existing_slots_res = await db.execute(slot_stmt)
     matching_slots = existing_slots_res.scalars().all()
 
-    # a) Si no existe ningún turno programado para la fecha y hora:
+    # Priorizar coincidencia exacta de deporte si hay múltiples pistas en el mismo horario
+    if matching_slots:
+        sport_matched = [
+            s for s in matching_slots
+            if (getattr(s, "sport_type", None) or (s.court.sport_type if s.court else "PADEL")) == detected_sport
+        ]
+        if sport_matched:
+            matching_slots = sport_matched
+
+    start_str = start_t.strftime("%I:%M%p").lower()
+    end_str = end_t.strftime("%I:%M%p").lower()
+    date_formatted = target_date.strftime("%d/%m/%Y")
+
     if not matching_slots:
         warning_reply = (
             f"⚠️ *TURNO NO ENCONTRADO EN SISTEMA* ⚠️\n"
-            f"📍 Capital Pádel Club\n"
+            f"📍 Capital Sports Club\n"
             f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n\n"
-            f"No existe un turno habilitado en la programación del club para este horario.\n"
+            f"No existe un turno habilitado en la programación para este horario ({detected_sport}).\n"
             f"Por favor consulta en recepción o en el Dashboard los turnos oficiales antes de convocar."
         )
         return WhatsAppConvocatoriaResponse(
@@ -769,13 +850,13 @@ async def parse_open_match(
             players=raw_players,
             participants=[],
             spots_count=spots_count,
-            free_spots=free_spots,
+            free_spots=max(0, sport_cap - spots_count),
             is_closed=False,
             slot_id=None,
             whatsapp_reply=warning_reply,
         )
 
-    # b) Filtrar slots que admitan convocatoria (no bloqueados y en modo SPLIT_MATCH o status AVAILABLE)
+    # Filtrar slots elegibles
     eligible_slots = [
         s for s in matching_slots
         if s.status != SlotStatus.BLOCKED and (s.mode == SlotMode.SPLIT_MATCH or s.status == SlotStatus.AVAILABLE)
@@ -784,7 +865,7 @@ async def parse_open_match(
     if not eligible_slots:
         warning_reply = (
             f"⚠️ *TURNO NO DISPONIBLE PARA CONVOCATORIA* ⚠️\n"
-            f"📍 Capital Pádel Club\n"
+            f"📍 Capital Sports Club\n"
             f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n\n"
             f"Este horario no admite convocatoria abierta (cancha completa ya reservada o turno bloqueado).\n"
             f"Por favor consulta otros turnos disponibles en recepción."
@@ -798,32 +879,42 @@ async def parse_open_match(
             players=raw_players,
             participants=[],
             spots_count=spots_count,
-            free_spots=free_spots,
+            free_spots=max(0, sport_cap - spots_count),
             is_closed=False,
             slot_id=None,
             whatsapp_reply=warning_reply,
         )
 
-    # Seleccionar el slot preferente (el que ya es SPLIT_MATCH o el primero AVAILABLE)
     slot = next((s for s in eligible_slots if s.mode == SlotMode.SPLIT_MATCH), eligible_slots[0])
+    effective_cap = slot.capacity or sport_cap
+    free_spots = max(0, effective_cap - spots_count)
+    is_closed = (spots_count >= effective_cap)
 
     prev_participants = to_participants_list(slot.players_names) if slot else []
     prev_by_name = {p["display_name"].strip().lower(): p for p in prev_participants}
     prev_names_set = set(prev_by_name.keys())
     incoming_names_set = set(p.strip().lower() for p in raw_players)
 
-    # Inmutabilidad: Precio oficial por cupo y sede extraídos directamente del inventario en BD
-    official_price_per_spot = (slot.total_price / Decimal(slot.capacity)).quantize(Decimal("0.01"))
-    court_name = slot.court.name if slot.court else "Capital Pádel Club"
+    # Inmutabilidad: Precio y Cuota dinámica prorrateada para Vóley
+    if detected_sport == "VOLLEYBALL":
+        total_court_price = slot.total_price if slot.total_price > 0 else Decimal("120000.00")
+        if spots_count > 0:
+            official_price_per_spot = (total_court_price / Decimal(spots_count)).quantize(Decimal("0.01"))
+        else:
+            official_price_per_spot = (total_court_price / Decimal(effective_cap)).quantize(Decimal("0.01"))
+    else:
+        official_price_per_spot = (slot.total_price / Decimal(effective_cap)).quantize(Decimal("0.01"))
 
-    # c) Anti-overbooking: si el slot ya está lleno (4/4) y la convocatoria entrante intenta sobrecupar o registrar otro grupo
-    if slot.booked_spots >= 4 and slot.status == SlotStatus.FULLY_BOOKED:
-        if spots_count >= 4 and incoming_names_set != prev_names_set:
+    court_name = slot.court.name if slot.court else "Capital Sports Club"
+
+    # Anti-overbooking
+    if slot.booked_spots >= effective_cap and slot.status == SlotStatus.FULLY_BOOKED:
+        if spots_count >= effective_cap and incoming_names_set != prev_names_set:
             warning_reply = (
                 f"⚠️ *TURNO COMPLETO SIN CUPOS DISPONIBLES* ⚠️\n"
                 f"📍 {court_name}\n"
                 f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n\n"
-                f"Este turno ya completó sus 4 cupos y se encuentra cerrado.\n"
+                f"Este turno ya completó sus {effective_cap} cupos y se encuentra cerrado.\n"
                 f"No hay cupos disponibles para esta franja horaria."
             )
             return WhatsAppConvocatoriaResponse(
@@ -834,14 +925,13 @@ async def parse_open_match(
                 price_per_spot=official_price_per_spot,
                 players=raw_players,
                 participants=[SlotParticipant(**p) for p in prev_participants],
-                spots_count=4,
+                spots_count=effective_cap,
                 free_spots=0,
                 is_closed=True,
                 slot_id=slot.id,
                 whatsapp_reply=warning_reply,
             )
 
-    # Estructurar participantes canónicos
     norm_sender = normalize_phone(payload.sender_phone) if payload.sender_phone else None
     assigned_sender = False
 
@@ -882,9 +972,10 @@ async def parse_open_match(
     slot.mode = SlotMode.SPLIT_MATCH
     slot.players_names = participants
     slot.booked_spots = spots_count
+    slot.capacity = effective_cap
     slot.category = category
-    # Inmutabilidad: slot.total_price NO se sobreescribe con datos del usuario
     slot.status = slot_status
+    slot.sport_type = detected_sport
 
     if is_closed:
         if not slot.closed_at:
@@ -895,41 +986,9 @@ async def parse_open_match(
     await db.commit()
     await db.refresh(slot)
 
-    # 7. Generar mensaje de respuesta para el grupo de WhatsApp con atributos inmutables
-    start_str = slot.start_time.strftime("%I:%M%p").lower()
-    end_str = slot.end_time.strftime("%I:%M%p").lower()
-    date_formatted = slot.date.strftime("%d/%m/%Y")
-    price_formatted = f"{int(official_price_per_spot):,}".replace(",", ".")
-
-    if is_closed:
-        players_list = "\n".join([f"{i+1}. 🎾 {p}" for i, p in enumerate(raw_players)])
-        reply = (
-            f"✅ ¡PARTIDO CERRADO Y CONFIRMADO! (4/4) 🎾\n"
-            f"📍 {court_name}\n"
-            f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n"
-            f"🏆 Categoría: {category}\n"
-            f"💰 Cuota: ${price_formatted} COP / jugador\n\n"
-            f"👥 *Jugadores Confirmados (4/4):*\n{players_list}\n\n"
-            f"🔒 *Cancha asegurada en sistema. ¡Nos vemos en la pista!*"
-        )
-    else:
-        slot_lines = []
-        for i in range(1, 5):
-            if i <= spots_count:
-                slot_lines.append(f"{i}. 🎾 {raw_players[i - 1]}")
-            else:
-                slot_lines.append(f"{i}. ⚡ [CUPO DISPONIBLE]")
-        players_list = "\n".join(slot_lines)
-
-        reply = (
-            f"🎾 PARTIDO ABIERTO ({spots_count}/4)\n"
-            f"📍 {court_name}\n"
-            f"📅 {date_formatted} | ⌚ {start_str} - {end_str}\n"
-            f"🏆 Categoría: {category}\n"
-            f"💰 Cuota: ${price_formatted} COP / jugador\n\n"
-            f"👥 *Inscritos ({spots_count}/4):*\n{players_list}\n\n"
-            f"⚡ *¡Quedan {free_spots} cupo(s) disponible(s)! Aparta tu cupo directamente respondiendo a esta lista.*"
-        )
+    # Formatear respuesta WhatsApp oficial multideporte
+    from app.services.whatsapp import format_whatsapp_reply
+    reply = format_whatsapp_reply(slot)
 
     return WhatsAppConvocatoriaResponse(
         date=str(slot.date),
@@ -945,8 +1004,6 @@ async def parse_open_match(
         slot_id=slot.id,
         whatsapp_reply=reply,
     )
-
-
 @router.post("/drop-player", response_model=DropPlayerResponse, status_code=status.HTTP_200_OK)
 async def drop_player(
     payload: DropPlayerRequest,

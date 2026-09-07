@@ -1362,6 +1362,91 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
       border-radius: 4px;
       letter-spacing: 0.05em;
     }
+  
+    /* Multi-Sport Pills & Themes */
+    .sport-selector-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .sport-pill {
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+      color: #475569;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .sport-pill:hover:not(.active) {
+      color: #0F172A;
+      background: #F1F5F9;
+      border-color: #94A3B8;
+    }
+    .sport-pill.active {
+      background: #0284C7;
+      border-color: #0284C7;
+      color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    }
+    .sport-pill.active.active-pickleball {
+      background: #D97706 !important;
+      border-color: #D97706 !important;
+      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35) !important;
+    }
+    .sport-pill.active.active-volleyball {
+      background: #EA580C !important;
+      border-color: #EA580C !important;
+      box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35) !important;
+    }
+    .sport-pill.active.active-pilates {
+      background: #7C3AED !important;
+      border-color: #7C3AED !important;
+      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.35) !important;
+    }
+
+    /* Multi-Sport Card Themes */
+    .card-theme-volleyball {
+      background: #FFFBEB;
+      border: 1px solid #F59E0B;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
+    }
+    .card-theme-volleyball:hover {
+      border-color: #D97706;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+    }
+    .card-theme-volleyball .card-time { color: #92400E; }
+    .card-theme-volleyball .card-price { color: #B45309; }
+
+    .card-theme-pilates {
+      background: #FAF5FF;
+      border: 1px solid #C084FC;
+      box-shadow: 0 2px 6px rgba(192, 132, 252, 0.15);
+    }
+    .card-theme-pilates:hover {
+      border-color: #A855F7;
+      box-shadow: 0 4px 12px rgba(192, 132, 252, 0.25);
+    }
+    .card-theme-pilates .card-time { color: #6B21A8; }
+    .card-theme-pilates .card-price { color: #7E22CE; }
+
+    .badge-status-volleyball {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+    .badge-status-pilates {
+      background: #F3E8FF;
+      color: #7E22CE;
+      border: 1px solid #E9D5FF;
+    }
+
   </style>
 </head>
 <body>
@@ -1441,7 +1526,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
           </div>
           <div class="banner-venue-badge">
             <span class="badge-status-dot"></span>
-            <span>Sede Principal • 5 Pistas Panorámicas</span>
+            <span id="banner-venue-badge-text">Sede Principal • 5 Pistas Panorámicas</span>
           </div>
         </div>
 
@@ -1514,18 +1599,26 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
           <!-- BARRA DE HERRAMIENTAS OPERATIVA (Card Blanca 2 Filas) -->
           <div class="toolbar-container">
             
-            <!-- FILA 1: Navegación Temporal y Acciones Principales -->
+            <!-- FILA 1: Selector Multideporte & Acciones Principales -->
             <div class="toolbar-top-row">
               
-              <!-- Izquierda: Selector de Fecha Compacto -->
-              <div class="date-nav-group">
-                <span class="filter-label">Fecha:</span>
-                <div class="pill-group">
-                  <button onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="date-pill" title="Ver ayer">◀ Ayer</button>
-                  <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">Hoy</button>
-                  <button onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="date-pill" title="Ver mañana">Mañana ▶</button>
+              <!-- Izquierda: Selector de Deporte Primario -->
+              <div class="sport-selector-group">
+                <span class="filter-label" style="font-weight: 800; color: #0F172A;">Deporte:</span>
+                <div class="pill-group" style="background: #F8FAFC; border: 1px solid #CBD5E1; padding: 0.25rem; gap: 0.35rem;">
+                  <button onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="sport-pill active" title="5 Canchas de Pádel">
+                    <span>🎾</span> Pádel (5 Pistas)
+                  </button>
+                  <button onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="sport-pill" title="2 Pistas de Pickleball">
+                    <span>🏓</span> Pickleball (2)
+                  </button>
+                  <button onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="sport-pill" title="1 Cancha de Arena de Vóley (12 Jugadores)">
+                    <span>🏐</span> Vóley (1)
+                  </button>
+                  <button onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="sport-pill" title="1 Estudio de Pilates Reformer (12 Cupos)">
+                    <span>🧘</span> Pilates (1)
+                  </button>
                 </div>
-                <input type="date" id="selected-date" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha" />
               </div>
 
               <!-- Derecha: Botones de Acción Agrupados -->
@@ -1557,10 +1650,21 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
             <!-- Separador Fino Horizontal -->
             <div class="toolbar-divider"></div>
 
-            <!-- FILA 2: Filtros Segmentados y Zoom Canchas -->
+            <!-- FILA 2: Fecha, Filtros y Zoom Canchas -->
             <div class="toolbar-bottom-row">
               
               <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                <!-- Selector de Fecha Compacto -->
+                <div class="date-nav-group">
+                  <span class="filter-label">Fecha:</span>
+                  <div class="pill-group">
+                    <button onclick="setRelativeDate(-1)" id="btn-date-yesterday" class="date-pill" title="Ver ayer">◀ Ayer</button>
+                    <button onclick="setRelativeDate(0)" id="btn-date-today" class="date-pill active" title="Ver hoy">Hoy</button>
+                    <button onclick="setRelativeDate(1)" id="btn-date-tomorrow" class="date-pill" title="Ver mañana">Mañana ▶</button>
+                  </div>
+                  <input type="date" id="selected-date" onchange="onDateInputChange(this.value)" class="date-picker-input" title="Seleccionar fecha" />
+                </div>
+
                 <!-- Franja Horaria -->
                 <div class="filter-group">
                   <span class="filter-label">Franja:</span>
@@ -1604,7 +1708,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
               <!-- Título de Sección y Leyenda Visual -->
               <div class="section-title">
                 <div style="display: flex; align-items: center; gap: 0.6rem;">
-                  <span>📅 Matriz Calendario Operativo (5 Canchas)</span>
+                  <span id="matrix-title-text">📅 Matriz Calendario Operativo (🎾 Pádel - 5 Canchas)</span>
                   <span id="slots-count" style="font-size: 0.75rem; color: #0284C7; font-weight: 700; background: #E0F2FE; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid #BAE6FD;">Cargando...</span>
                 </div>
                 
@@ -2167,9 +2271,60 @@ PARTIDO CERRADO</textarea>
     let allCourts = [];
     let allSlots = [];
     let selectedSlot = null;
+    let currentSportFilter = 'PADEL'; // PADEL, PICKLEBALL, VOLLEYBALL, PILATES
     let currentStatusFilter = 'ALL';  // ALL, OPEN, PAID
     let currentTimeFilter = 'ALL';    // ALL, MORNING, AFTERNOON, NIGHT
     let selectedCourtZoom = 'ALL';    // ALL or court UUID/ID
+
+    function setSportFilter(sport) {
+      currentSportFilter = (sport || 'PADEL').toUpperCase();
+      
+      const sports = ['PADEL', 'PICKLEBALL', 'VOLLEYBALL', 'PILATES'];
+      sports.forEach(s => {
+        const btn = document.getElementById('btn-sport-' + s.toLowerCase());
+        if (btn) {
+          const isActive = (s === currentSportFilter);
+          btn.className = 'sport-pill' + (isActive ? ' active active-' + s.toLowerCase() : '');
+        }
+      });
+
+      updateSportHeaders();
+      updateCourtZoomOptions();
+      selectedCourtZoom = 'ALL';
+      renderCalendarMatrix();
+    }
+
+    function updateSportHeaders() {
+      const titleEl = document.getElementById('matrix-title-text');
+      const venueBadge = document.getElementById('banner-venue-badge-text');
+      if (currentSportFilter === 'PADEL') {
+        if (titleEl) titleEl.textContent = '📅 Matriz Calendario Operativo (🎾 Pádel - 5 Canchas)';
+        if (venueBadge) venueBadge.textContent = 'Sede Pádel • 5 Pistas Panorámicas';
+      } else if (currentSportFilter === 'PICKLEBALL') {
+        if (titleEl) titleEl.textContent = '📅 Matriz Calendario Operativo (🏓 Pickleball - 2 Pistas)';
+        if (venueBadge) venueBadge.textContent = 'Sede Pickleball • 2 Pistas Rápidas';
+      } else if (currentSportFilter === 'VOLLEYBALL') {
+        if (titleEl) titleEl.textContent = '📅 Matriz Calendario Operativo (🏐 Cancha Arena Vóley - 12 Cupos)';
+        if (venueBadge) venueBadge.textContent = 'Arena Vóley • Tarifa Prorrateada Dinámica';
+      } else if (currentSportFilter === 'PILATES') {
+        if (titleEl) titleEl.textContent = '📅 Matriz Calendario Operativo (🧘 Estudio Pilates - 12 Cupos)';
+        if (venueBadge) venueBadge.textContent = 'Estudio Reformer • Clases Grupales';
+      }
+    }
+
+    function updateCourtZoomOptions() {
+      const select = document.getElementById('court-zoom-select');
+      if (!select) return;
+      const filteredCourts = allCourts.filter(c => (c.sport_type || 'PADEL').toUpperCase() === currentSportFilter);
+      select.innerHTML = `<option value="ALL">🏟️ Todas (${filteredCourts.length} Pistas)</option>`;
+      filteredCourts.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `📍 ${c.name}`;
+        select.appendChild(opt);
+      });
+      select.value = 'ALL';
+    }
 
     // Obtener la fecha local de Colombia en formato YYYY-MM-DD
     function getColombiaTodayString() {
@@ -2313,21 +2468,7 @@ PARTIDO CERRADO</textarea>
         const res = await fetch(`${API_BASE}/api/v1/slots/courts`);
         if (res.ok) {
           allCourts = await res.json();
-          // Update Zoom Dropdown
-          const select = document.getElementById('court-zoom-select');
-          if (select) {
-            const currentVal = select.value;
-            select.innerHTML = '<option value="ALL">🏟️ Todas las Canchas (1-5)</option>';
-            allCourts.forEach((c, idx) => {
-              const opt = document.createElement('option');
-              opt.value = c.id;
-              opt.textContent = `📍 ${c.name}`;
-              select.appendChild(opt);
-            });
-            if (currentVal && (currentVal === 'ALL' || allCourts.some(c => String(c.id) === String(currentVal)))) {
-              select.value = currentVal;
-            }
-          }
+          updateCourtZoomOptions();
         }
       } catch (err) {
         console.error('Error fetching courts:', err);
@@ -2432,14 +2573,20 @@ PARTIDO CERRADO</textarea>
       const countEl = document.getElementById('slots-count');
       if (!container) return;
 
-      // Filter courts according to zoom
-      let displayedCourts = allCourts;
-      if (selectedCourtZoom !== 'ALL') {
-        displayedCourts = allCourts.filter(c => String(c.id) === String(selectedCourtZoom));
-        if (displayedCourts.length === 0) displayedCourts = allCourts;
+      // 1. Filtrar canchas por el deporte activo
+      let sportCourts = allCourts.filter(c => (c.sport_type || 'PADEL').toUpperCase() === currentSportFilter);
+      if (sportCourts.length === 0) {
+        sportCourts = allCourts;
       }
 
-      // Configure Grid Template Columns
+      // 2. Filtrar canchas según zoom
+      let displayedCourts = sportCourts;
+      if (selectedCourtZoom !== 'ALL') {
+        displayedCourts = sportCourts.filter(c => String(c.id) === String(selectedCourtZoom));
+        if (displayedCourts.length === 0) displayedCourts = sportCourts;
+      }
+
+      // 3. Configurar Grid Columns
       if (displayedCourts.length > 1) {
         container.style.gridTemplateColumns = `75px repeat(${displayedCourts.length}, minmax(190px, 1fr))`;
         container.style.minWidth = `${75 + displayedCourts.length * 190}px`;
@@ -2448,12 +2595,18 @@ PARTIDO CERRADO</textarea>
         container.style.minWidth = `100%`;
       }
 
-      // Filter slots according to Status
-      let filteredSlots = allSlots;
+      // 4. Filtrar slots por deporte
+      let sportSlots = allSlots.filter(s => {
+        const slotSport = (s.sport_type || (s.court ? s.court.sport_type : 'PADEL') || 'PADEL').toUpperCase();
+        return slotSport === currentSportFilter;
+      });
+
+      // 5. Filtrar slots según Estado
+      let filteredSlots = sportSlots;
       if (currentStatusFilter === 'OPEN') {
-        filteredSlots = allSlots.filter(s => s.mode === 'SPLIT_MATCH' && s.booked_spots > 0 && (s.booked_spots + s.held_spots) < s.capacity);
+        filteredSlots = sportSlots.filter(s => s.mode === 'SPLIT_MATCH' && s.booked_spots > 0 && (s.booked_spots + s.held_spots) < s.capacity);
       } else if (currentStatusFilter === 'PAID') {
-        filteredSlots = allSlots.filter(s => s.status === 'FULLY_BOOKED' || (s.booked_spots + s.held_spots) >= s.capacity);
+        filteredSlots = sportSlots.filter(s => s.status === 'FULLY_BOOKED' || (s.booked_spots + s.held_spots) >= s.capacity);
       }
 
       let START_MINUTES = 360;
@@ -2472,7 +2625,6 @@ PARTIDO CERRADO</textarea>
 
       const TOTAL_SLOTS = Math.round((END_MINUTES - START_MINUTES) / 30);
 
-      // Filter slots by current time window
       const visibleSlots = filteredSlots.filter(s => {
         const [sh, sm] = s.start_time.split(':').map(Number);
         const slotStartMin = sh * 60 + sm;
@@ -2485,21 +2637,24 @@ PARTIDO CERRADO</textarea>
 
       let html = '';
 
-      // 1. Sticky Header Row (Row 1)
+      // Sticky Header Row (Row 1)
       html += `<div class="time-col-header" style="grid-row: 1; grid-column: 1;">HORA</div>`;
       displayedCourts.forEach((c, idx) => {
+        const cSport = (c.sport_type || 'PADEL').toUpperCase();
+        const sportIcon = cSport === 'VOLLEYBALL' ? '🏐' : (cSport === 'PICKLEBALL' ? '🏓' : (cSport === 'PILATES' ? '🧘' : '🎾'));
         const isCentral = c.name.toLowerCase().includes('central') || idx === 0;
+        const capLabel = c.max_capacity ? `${c.max_capacity} cupos` : '4 cupos';
         html += `
           <div class="court-header" style="grid-row: 1; grid-column: ${idx + 2};">
-            <div class="court-header-title" title="${c.name}">${c.name}</div>
+            <div class="court-header-title" title="${c.name}">${sportIcon} ${c.name}</div>
             <span class="court-header-badge ${isCentral ? 'badge-central' : 'badge-std'}">
-              ${isCentral ? '⭐ Central' : 'Pista ' + (c.court_number || (idx + 1))}
+              ${isCentral ? '⭐ Central' : capLabel}
             </span>
           </div>
         `;
       });
 
-      // 2. Background Grid: Time labels (Col 1) and Empty Court cells (Col 2..N)
+      // Background Grid: Time labels & Empty Court cells
       for (let i = 0; i < TOTAL_SLOTS; i++) {
         const rowNum = i + 2;
         const curMin = START_MINUTES + i * 30;
@@ -2514,36 +2669,36 @@ PARTIDO CERRADO</textarea>
         });
       }
 
-      // 3. Render Slot Cards as Grid Blocks
+      // Slot Cards
       const todayStr = getColombiaTodayString();
       const isToday = (selectedDate === todayStr);
       const now = new Date();
       const currentNowMin = now.getHours() * 60 + now.getMinutes();
 
       visibleSlots.forEach(slot => {
-        // Find court column
         const courtIdx = displayedCourts.findIndex(c => String(c.id) === String(slot.court_id));
         if (courtIdx === -1) return;
         const colNum = courtIdx + 2;
 
-        // Parse times
         const [sh, sm] = slot.start_time.split(':').map(Number);
         const [eh, em] = slot.end_time.split(':').map(Number);
         const slotStartMin = sh * 60 + sm;
         const slotEndMin = (eh === 0 && em === 0) ? 1440 : (eh * 60 + em);
 
-        // Determine grid row and span
         if (slotStartMin < START_MINUTES || slotStartMin >= END_MINUTES) return;
         const rowStart = Math.floor((slotStartMin - START_MINUTES) / 30) + 2;
         const durationMin = Math.max(30, slotEndMin - slotStartMin);
         const rowSpan = Math.max(1, Math.round(durationMin / 30));
 
-        // Color coding & Categories
+        const slotSport = (slot.sport_type || currentSportFilter).toUpperCase();
+        const slotCap = slot.capacity || (slotSport === 'VOLLEYBALL' || slotSport === 'PILATES' ? 12 : 4);
+        const sportIcon = slotSport === 'VOLLEYBALL' ? '🏐' : (slotSport === 'PICKLEBALL' ? '🏓' : (slotSport === 'PILATES' ? '🧘' : '🎾'));
+
         const catLower = (slot.category || '').toLowerCase();
         const isTournament = slot.slot_type === 'AMERICANO' || catLower.includes('americano') || catLower.includes('torneo');
         const isClass = (slot.slot_type === 'CLASS' || slot.slot_type === 'ACADEMY');
         const isBlocked = slot.status === 'BLOCKED' || slot.slot_type === 'MAINTENANCE';
-        const isFull = !isBlocked && !isClass && (slot.status === 'FULLY_BOOKED' || (slot.booked_spots + slot.held_spots) >= slot.capacity);
+        const isFull = !isBlocked && !isClass && (slot.status === 'FULLY_BOOKED' || (slot.booked_spots + slot.held_spots) >= slotCap);
         const isOpenMatch = !isBlocked && !isClass && slot.mode === 'SPLIT_MATCH' && slot.booked_spots > 0 && !isFull;
         const isAvailable = !isTournament && !isClass && !isBlocked && !isFull && !isOpenMatch;
 
@@ -2556,18 +2711,33 @@ PARTIDO CERRADO</textarea>
         } else if (isTournament) {
           themeClass = 'card-theme-purple';
           statusBadge = `<span class="card-badge-status badge-status-tournament">🏆 AMERICANO</span>`;
+        } else if (slotSport === 'VOLLEYBALL') {
+          if (isFull) {
+            themeClass = 'card-theme-emerald';
+            statusBadge = `<span class="card-badge-status badge-status-closed">✅ CERRADO (${slotCap}/${slotCap}) 🏐</span>`;
+          } else if (isOpenMatch) {
+            themeClass = 'card-theme-volleyball';
+            statusBadge = `<span class="card-badge-status badge-status-volleyball">🏐 ABIERTO (${slot.booked_spots}/${slotCap})</span>`;
+          }
+        } else if (slotSport === 'PILATES') {
+          if (isFull) {
+            themeClass = 'card-theme-purple';
+            statusBadge = `<span class="card-badge-status badge-status-closed">✅ CLASE COMPLETA (${slotCap}/${slotCap}) 🧘</span>`;
+          } else {
+            themeClass = 'card-theme-pilates';
+            statusBadge = `<span class="card-badge-status badge-status-pilates">🧘 CLASE (${slot.booked_spots}/${slotCap})</span>`;
+          }
         } else if (isClass) {
           themeClass = 'card-theme-academy';
           statusBadge = `<span class="card-badge-status badge-status-academy">🎾 CLASE</span>`;
         } else if (isFull) {
           themeClass = 'card-theme-emerald';
-          statusBadge = `<span class="card-badge-status badge-status-closed">✅ CERRADO (4/4)</span>`;
+          statusBadge = `<span class="card-badge-status badge-status-closed">✅ CERRADO (${slotCap}/${slotCap})</span>`;
         } else if (isOpenMatch) {
           themeClass = 'card-theme-amber';
-          statusBadge = `<span class="card-badge-status badge-status-open">🟡 ABIERTO (${slot.booked_spots}/4)</span>`;
+          statusBadge = `<span class="card-badge-status badge-status-open">🟡 ABIERTO (${slot.booked_spots}/${slotCap})</span>`;
         }
 
-        // Urgency logic (< 30 min)
         let isUrgentAlert = false;
         if (isToday && (isOpenMatch || isAvailable)) {
           const diffMinutes = slotStartMin - currentNowMin;
@@ -2576,48 +2746,57 @@ PARTIDO CERRADO</textarea>
           }
         }
 
-        // Yield promo badge
         let promoBadge = '';
         if (slot.is_promo) {
           promoBadge = `<span class="badge-yield-promo">⚡ PROMO -25%</span>`;
         }
 
-        // Tier badge
         const tierBadge = slot.tier === 'PICO' ? `<span class="badge-yield-tier tier-pico">🔥 PICO</span>` : `<span class="badge-yield-tier tier-valle">🌿 VALLE</span>`;
-
-        // Price formatting
         const priceFormatted = formatCOP(slot.total_price);
-        const pricePerPlayer = formatCOP(slot.price_per_spot || (slot.total_price / 4));
 
-        // Category Tag
+        let priceSubHtml = '';
+        if (slotSport === 'VOLLEYBALL') {
+          const bookedCount = slot.booked_spots || 0;
+          if (bookedCount > 0) {
+            const prorated = formatCOP(slot.price_per_spot || Math.round(slot.total_price / bookedCount));
+            priceSubHtml = `<span class="card-price-sub" style="color: #D97706; font-weight: 700;">🏐 Prorrateado: ${prorated} / jug</span>`;
+          } else {
+            const basePerSpot = formatCOP(Math.round(slot.total_price / slotCap));
+            priceSubHtml = `<span class="card-price-sub">🏐 Base: ${basePerSpot} / jug</span>`;
+          }
+        } else {
+          const pricePerPlayer = formatCOP(slot.price_per_spot || (slot.total_price / slotCap));
+          priceSubHtml = `<span class="card-price-sub">${pricePerPlayer} / jug</span>`;
+        }
+
         let categoryBadge = '';
         if (slot.category) {
           categoryBadge = `<span class="card-category">${slot.category}</span>`;
         }
 
-        // Players List
         let playersHtml = '';
-        if (slot.players && slot.players.length > 0) {
-          playersHtml = '<div class="card-players">';
-          slot.players.forEach(p => {
+        const playerList = (slot.participants && slot.participants.length > 0) ? slot.participants : (slot.players_names ? slot.players_names.map(n => ({ name: n, display_name: n })) : []);
+        if (playerList && playerList.length > 0) {
+          playersHtml = '<div class="card-players" style="max-height: 120px; overflow-y: auto;">';
+          playerList.forEach(p => {
+            const pName = p.display_name || p.name || 'Jugador';
             playersHtml += `
               <div class="card-player-item">
-                <span>🎾 ${p.name || 'Jugador'}</span>
-                <button onclick="openDropModal(${slot.id}, '${p.name}')" class="btn-card-drop" title="Dar de baja">✕</button>
+                <span>${sportIcon} ${pName}</span>
+                <button onclick="openDropModal(${slot.id}, '${pName}')" class="btn-card-drop" title="Dar de baja">✕</button>
               </div>
             `;
           });
           playersHtml += '</div>';
         }
 
-        // Action Button inside Card
         let actionBtnHtml = '';
         if (isAvailable) {
           actionBtnHtml = `<button onclick="openReserveOrBlockModal(${slot.id})" class="btn-card-reserve">Reservar Pista</button>`;
         } else if (isOpenMatch) {
           actionBtnHtml = `<button onclick="openHoldModal(${slot.id})" class="btn-card-action">+ Apartar Cupo</button>`;
         } else if (isClass) {
-          actionBtnHtml = `<span style="font-size: 0.65rem; color: #0284C7; font-weight: 700;">🎾 ${slot.instructor_name || 'Academia'}</span>`;
+          actionBtnHtml = `<span style="font-size: 0.65rem; color: #0284C7; font-weight: 700;">${sportIcon} ${slot.instructor_name || 'Profesor'}</span>`;
         } else if (isTournament) {
           actionBtnHtml = `<span style="font-size: 0.65rem; color: #7C3AED; font-weight: 700;">🏆 Torneo Activo</span>`;
         } else if (isFull) {
@@ -2647,7 +2826,7 @@ PARTIDO CERRADO</textarea>
             <div class="card-footer">
               <div>
                 <div class="card-price">${priceFormatted}</div>
-                <span class="card-price-sub">${pricePerPlayer} / jug</span>
+                ${priceSubHtml}
               </div>
               <div>
                 ${actionBtnHtml}
@@ -2997,7 +3176,19 @@ PARTIDO CERRADO</textarea>
       document.getElementById('hold-slot-id').value = slot.id;
       document.getElementById('hold-client-name').value = '';
       document.getElementById('hold-client-phone').value = '';
-      document.getElementById('hold-spots-count').value = '1';
+      const spotsSelect = document.getElementById('hold-spots-count');
+      if (spotsSelect) {
+        spotsSelect.innerHTML = '';
+        const cap = slot.capacity || 4;
+        const maxOpts = Math.min(cap, 6);
+        for (let i = 1; i <= maxOpts; i++) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.textContent = `${i} Cupo${i > 1 ? 's' : ''}`;
+          spotsSelect.appendChild(opt);
+        }
+        spotsSelect.value = '1';
+      }
 
       const modal = document.getElementById('hold-modal');
       if (modal) modal.classList.add('active');

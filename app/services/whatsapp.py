@@ -227,6 +227,48 @@ def parse_time_token(token: str) -> time:
     return time(h, m)
 
 
+def detect_sport_from_text(text: str) -> str:
+    """
+    Detecta el deporte a partir del texto:
+    - VOLLEYBALL: si contiene 🏐 o 'volleyball'/'voley'/'voleibol'.
+    - PICKLEBALL: si contiene 🏓 o 'pickleball'.
+    - PILATES: si contiene 🧘 o 'pilates'.
+    - PADEL: si contiene 🎾 o 'padel'/'pádel' o por defecto.
+    """
+    if not text:
+        return "PADEL"
+    clean = text.lower()
+    if "🏐" in text or re.search(r"\b(?:volleyball|v[oó]ley|voleibol)\b", clean):
+        return "VOLLEYBALL"
+    if "🏓" in text or re.search(r"\bpickleball\b", clean):
+        return "PICKLEBALL"
+    if "🧘" in text or re.search(r"\bpilates\b", clean):
+        return "PILATES"
+    if "🎾" in text or re.search(r"\b(?:p[aá]del|padel)\b", clean):
+        return "PADEL"
+    return "PADEL"
+
+
+def get_sport_emoji(sport_type: Optional[str]) -> str:
+    """Retorna el emoji correspondiente al deporte."""
+    s = (sport_type or "PADEL").upper()
+    if s == "VOLLEYBALL":
+        return "🏐"
+    elif s == "PICKLEBALL":
+        return "🏓"
+    elif s == "PILATES":
+        return "🧘"
+    return "🎾"
+
+
+def get_sport_default_capacity(sport_type: Optional[str]) -> int:
+    """Retorna la capacidad estándar por deporte: Pádel/Pickleball=4, Vóley/Pilates=12."""
+    s = (sport_type or "PADEL").upper()
+    if s in ("VOLLEYBALL", "PILATES"):
+        return 12
+    return 4
+
+
 def detect_intent(text: str) -> str:
     """Clasifica el mensaje en 'DROP', 'JOIN', 'AVAILABILITY', 'LIST' o 'UNKNOWN'."""
     clean = text.strip()
@@ -236,7 +278,7 @@ def detect_intent(text: str) -> str:
         return "JOIN"
     if AVAILABILITY_REGEX.search(clean) or any(w in clean.lower() for w in ["que horas hay", "qué horas hay", "canchas libres", "cancha libre", "pistas libres", "hay turno", "disponibilidad"]):
         return "AVAILABILITY"
-    if "🎾" in clean or ("1." in clean and "2." in clean) or ("cancha" in clean.lower() and "4ta" in clean.lower()):
+    if any(em in clean for em in ["🎾", "🏐", "🏓", "🧘"]) or ("1." in clean and "2." in clean) or ("cancha" in clean.lower() and any(k in clean.lower() for k in ["4ta", "voley", "vóley", "pilates", "pickleball"])):
         return "LIST"
     return "UNKNOWN"
 
@@ -294,10 +336,10 @@ def clean_player_name(raw_name: str) -> Optional[str]:
     return cleaned
 
 
-def parse_flexible_player_list(raw_text: str) -> List[str]:
+def parse_flexible_player_list(raw_text: str, max_capacity: int = 12) -> List[str]:
     """
-    Detección flexible de nombres en listas:
-    Reconoce jugadores con 🎾 o cualquier viñeta, descartando exhaustivamente
+    Detección flexible de nombres en listas multideporte:
+    Reconoce jugadores con 🎾, 🏐, 🏓, 🧘 o cualquier viñeta, descartando exhaustivamente
     líneas de fechas (📅, 24 de Septiembre), relojes (⌚, 2:00pm), sedes (📍),
     categorías (🏆) o cuotas (💰).
     """
@@ -335,8 +377,12 @@ def parse_flexible_player_list(raw_text: str) -> List[str]:
         # Extraer texto de jugador tras emoji representativo si existe
         if "🎾" in stripped:
             candidate = stripped.split("🎾", 1)[1].strip()
+        elif "🏐" in stripped:
+            candidate = stripped.split("🏐", 1)[1].strip()
         elif "🏓" in stripped:
             candidate = stripped.split("🏓", 1)[1].strip()
+        elif "🧘" in stripped:
+            candidate = stripped.split("🧘", 1)[1].strip()
         elif "👤" in stripped:
             candidate = stripped.split("👤", 1)[1].strip()
         else:
@@ -345,7 +391,7 @@ def parse_flexible_player_list(raw_text: str) -> List[str]:
         valid_name = clean_player_name(candidate)
         if valid_name and valid_name not in players:
             players.append(valid_name)
-            if len(players) == 4:
+            if len(players) >= max_capacity:
                 break
 
     return players
@@ -600,6 +646,7 @@ async def find_target_slot(
        - Si es entrada ('voy'), busca el turno abierto más próximo.
     """
     today = get_bogota_today()
+    detected_sport = detect_sport_from_text(quoted_text or raw_text)
 
     # -------------------------------------------------------------------------
     # CASO 1: Extracción precisa desde MENSAJE CITADO
@@ -627,6 +674,11 @@ async def find_target_slot(
             if matching_slots:
                 if len(matching_slots) > 1:
                     clean_quoted = quoted_text.lower()
+                    # Priorizar coincidencia exacta de deporte
+                    for s in matching_slots:
+                        s_sport = getattr(s, "sport_type", None) or (s.court.sport_type if s.court else "PADEL")
+                        if s_sport == detected_sport:
+                            return s
                     for s in matching_slots:
                         c_name = (s.court.name.lower() if s.court else "")
                         c_num = str(getattr(s.court, "court_number", "")) if s.court else ""
@@ -696,11 +748,15 @@ async def find_target_slot(
             .where(TimeSlot.date == target_d, TimeSlot.start_time == raw_start)
         )
         res = await db.execute(stmt)
-        slot = res.scalars().first()
-        if slot:
-            return slot
+        matching_slots = res.scalars().all()
+        if matching_slots:
+            for s in matching_slots:
+                s_sport = getattr(s, "sport_type", None) or (s.court.sport_type if s.court else "PADEL")
+                if s_sport == detected_sport:
+                    return s
+            return matching_slots[0]
 
-    # d) Turno abierto más próximo
+    # d) Turno abierto más próximo (priorizando deporte detectado)
     stmt = (
         select(TimeSlot)
         .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
@@ -709,6 +765,8 @@ async def find_target_slot(
     )
     res = await db.execute(stmt)
     all_slots = res.scalars().all()
+    sport_candidate = None
+    fallback_candidate = None
     for s in all_slots:
         if getattr(s, "slot_type", "MATCH") in ("CLASS", "ACADEMY", "MAINTENANCE"):
             continue
@@ -716,16 +774,20 @@ async def find_target_slot(
         status_val = s.status.value if hasattr(s.status, "value") else str(s.status)
         if mode_val == "SPLIT_MATCH" and status_val in ("AVAILABLE", "PARTIALLY_BOOKED"):
             if s.booked_spots < s.capacity:
-                return s
+                s_sport = getattr(s, "sport_type", None) or (s.court.sport_type if s.court else "PADEL")
+                if s_sport == detected_sport and sport_candidate is None:
+                    sport_candidate = s
+                elif fallback_candidate is None:
+                    fallback_candidate = s
 
-    return None
+    return sport_candidate or fallback_candidate
 
 
 def format_whatsapp_reply(slot: TimeSlot) -> str:
     """
-    Genera el mensaje oficial de WhatsApp garantizando la inmutabilidad 100% de tarifa y sede:
-    - La cuota y el nombre de la cancha provienen exclusivamente del objeto slot en BD.
-    - Prohíbe cualquier sobreescritura externa de precios.
+    Genera el mensaje oficial de WhatsApp garantizando la inmutabilidad de tarifa y sede,
+    con soporte multideporte (Pádel 🎾, Pickleball 🏓, Vóley 🏐 y Pilates 🧘) y tarifa
+    prorrateada dinámica para Vóley ($120.000 COP / count(jugadores_inscritos)).
     """
     date_str = slot.date.strftime("%d/%m/%Y")
     start_str = slot.start_time.strftime("%I:%M%p").lower()
@@ -736,40 +798,62 @@ def format_whatsapp_reply(slot: TimeSlot) -> str:
     except Exception:
         court_name = "Capital Pádel Club"
     category = slot.category or "4ta"
-    price_per_spot = (slot.total_price / Decimal(slot.capacity)).quantize(Decimal("0.01"))
-    price_formatted = f"{int(price_per_spot):,}".replace(",", ".")
+
+    sport = getattr(slot, "sport_type", None) or (slot.court.sport_type if getattr(slot, "court", None) and getattr(slot.court, "sport_type", None) else "PADEL")
+    sport_emoji = get_sport_emoji(sport)
 
     participants = to_participants_list(slot.players_names)
     spots_count = len(participants)
     free_spots = max(0, slot.capacity - spots_count)
     is_closed = (spots_count >= slot.capacity)
 
+    # Tarifa y cuota
+    if sport == "VOLLEYBALL":
+        total_court_price = slot.total_price if slot.total_price > 0 else Decimal("120000.00")
+        if spots_count > 0:
+            price_per_spot = (total_court_price / Decimal(spots_count)).quantize(Decimal("0.01"))
+        else:
+            price_per_spot = (total_court_price / Decimal(slot.capacity)).quantize(Decimal("0.01"))
+        price_formatted = f"{int(price_per_spot):,}".replace(",", ".")
+        total_formatted = f"{int(total_court_price):,}".replace(",", ".")
+        price_line = f"💰 Cuota Prorrateada: ${price_formatted} COP / jugador ({spots_count} inscritos pagan ${total_formatted} COP total)"
+    else:
+        price_per_spot = (slot.total_price / Decimal(slot.capacity)).quantize(Decimal("0.01"))
+        price_formatted = f"{int(price_per_spot):,}".replace(",", ".")
+        price_line = f"💰 Cuota: ${price_formatted} COP / jugador"
+
     if is_closed:
-        players_lines = "\n".join([f"{i}. 🎾 {p['display_name']}" for i, p in enumerate(participants, start=1)])
+        players_lines = "\n".join([f"{i}. {sport_emoji} {p['display_name']}" for i, p in enumerate(participants, start=1)])
+        header_title = f"✅ ¡PARTIDO CERRADO Y CONFIRMADO! ({slot.capacity}/{slot.capacity}) {sport_emoji}"
+        if sport == "PILATES":
+            header_title = f"✅ ¡CLASE DE PILATES COMPLETA! ({slot.capacity}/{slot.capacity}) 🧘"
         return (
-            f"✅ ¡PARTIDO CERRADO Y CONFIRMADO! ({slot.capacity}/{slot.capacity}) 🎾\n"
+            f"{header_title}\n"
             f"📍 {court_name}\n"
             f"📅 {date_str} | ⌚ {start_str} - {end_str}\n"
             f"🏆 Categoría: {category}\n"
-            f"💰 Cuota: ${price_formatted} COP / jugador\n\n"
+            f"{price_line}\n\n"
             f"👥 *Jugadores Confirmados ({slot.capacity}/{slot.capacity}):*\n"
             f"{players_lines}\n\n"
-            f"🔒 *Cancha asegurada en sistema. ¡Nos vemos en la pista!*"
+            f"🔒 *Espacio asegurado en sistema. ¡Nos vemos en la pista!*"
         )
     else:
         player_entries = []
         for i, p in enumerate(participants, start=1):
-            player_entries.append(f"{i}. 🎾 {p['display_name']}")
+            player_entries.append(f"{i}. {sport_emoji} {p['display_name']}")
         for i in range(spots_count + 1, slot.capacity + 1):
             player_entries.append(f"{i}. ⚡ [CUPO DISPONIBLE]")
 
         players_lines = "\n".join(player_entries)
+        header_title = f"{sport_emoji} PARTIDO ABIERTO ({spots_count}/{slot.capacity})"
+        if sport == "PILATES":
+            header_title = f"🧘 CLASE DE PILATES ABIERTA ({spots_count}/{slot.capacity})"
         return (
-            f"🎾 PARTIDO ABIERTO ({spots_count}/{slot.capacity})\n"
+            f"{header_title}\n"
             f"📍 {court_name}\n"
             f"📅 {date_str} | ⌚ {start_str} - {end_str}\n"
             f"🏆 Categoría: {category}\n"
-            f"💰 Cuota: ${price_formatted} COP / jugador\n\n"
+            f"{price_line}\n\n"
             f"👥 *Inscritos ({spots_count}/{slot.capacity}):*\n"
             f"{players_lines}\n\n"
             f"⚡ *¡Quedan {free_spots} cupo(s) disponible(s)! Aparta tu cupo directamente respondiendo a esta lista.*"
