@@ -4,7 +4,8 @@ import logging
 from typing import List, Optional, Union
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+from app.services.audit import log_activity
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -291,6 +292,18 @@ async def cancel_tournament(
         slot.runner_up_names = None
 
     await db.commit()
+
+    # Operational Audit Trail
+    try:
+        await log_activity(
+            db=db,
+            action="CANCEL_TOURNAMENT",
+            entity_name="TOURNAMENT",
+            details=f"Cancelación del Torneo Americano '{payload.tournament_name}' del {payload.date} ({payload.start_time}). Se liberaron {len(slots)} pistas.",
+            username_snapshot="Camilo Real (Director Deportivo)"
+        )
+    except Exception as e:
+        print(f"[AUDIT LOG WARNING] Error in cancel_tournament: {e}")
 
     return {
         "status": "success",

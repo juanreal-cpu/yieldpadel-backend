@@ -2,7 +2,8 @@ from datetime import date, datetime, time, timezone, timedelta
 from decimal import Decimal
 import re
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+from app.services.audit import log_activity
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -704,6 +705,26 @@ async def reserve_or_block_slot(
     await db.commit()
     await db.refresh(slot)
 
+    # Operational Audit Trail
+    try:
+        audit_action = "BLOCK_SLOT" if slot.status == SlotStatus.MAINTENANCE else ("RESERVE_SLOT" if slot.status == SlotStatus.FULLY_BOOKED else "UPDATE_SLOT")
+        court_name = slot.court.name if slot.court else f"Cancha #{slot.court_id}"
+        details_msg = f"Asignación {assignment_type} en {court_name} ({slot.start_time.strftime('%H:%M')} - {slot.end_time.strftime('%H:%M')})"
+        if payload.client_name:
+            details_msg += f" | Cliente: {payload.client_name}"
+        if payload.notes:
+            details_msg += f" | Nota: {payload.notes}"
+        await log_activity(
+            db=db,
+            action=audit_action,
+            entity_name="SLOT",
+            entity_id=str(slot.id),
+            details=details_msg,
+            username_snapshot="Camilo Real (Recepción)"
+        )
+    except Exception as e:
+        print(f"[AUDIT LOG WARNING] Error in reserve_or_block_slot: {e}")
+
     now_utc = datetime.now(timezone.utc)
     return compute_slot_response(slot, now_utc)
 
@@ -865,6 +886,20 @@ async def create_americano(
     )
     loaded_slots = res_loaded.scalars().all()
 
+    # Operational Audit Trail
+    try:
+        court_names = [s.court.name for s in loaded_slots if s.court]
+        await log_activity(
+            db=db,
+            action="CREATE_AMERICANO",
+            entity_name="TOURNAMENT",
+            entity_id=str(loaded_slots[0].id) if loaded_slots else None,
+            details=f"Torneo Americano '{t_name}' ({t_type}) creado para {payload.date} ({payload.start_time}). Canchas: {court_names or payload.court_ids}. Valor: ${price_val:,.0f} COP",
+            username_snapshot="Camilo Real (Director Deportivo)"
+        )
+    except Exception as e:
+        print(f"[AUDIT LOG WARNING] Error in create_americano: {e}")
+
     return [compute_slot_response(s, now_utc) for s in loaded_slots]
 
 
@@ -914,6 +949,19 @@ async def update_club_configuration(
                 if "max_capacity" in c_data and c_data["max_capacity"] is not None:
                     court_map[cid].max_capacity = int(c_data["max_capacity"])
         await db.commit()
+
+    # Operational Audit Trail
+    try:
+        await log_activity(
+            db=db,
+            action="UPDATE_CONFIG",
+            entity_name="CONFIG",
+            entity_id="CLUB_SETTINGS",
+            details="Actualización de tarifas y configuración del club",
+            username_snapshot="Camilo Real (Director Deportivo)"
+        )
+    except Exception as e:
+        print(f"[AUDIT LOG WARNING] Error in update_club_config: {e}")
 
     courts = await ensure_five_courts(db)
     return {
@@ -1318,6 +1366,19 @@ async def drop_player(
 
     await db.commit()
     await db.refresh(slot)
+
+    # Operational Audit Trail
+    try:
+        await log_activity(
+            db=db,
+            action="CANCEL_SLOT_PLAYER",
+            entity_name="SLOT",
+            entity_id=str(payload.slot_id),
+            details=f"Baja de jugador '{payload.player_name}' en slot #{payload.slot_id}",
+            username_snapshot="Camilo Real (Recepción)"
+        )
+    except Exception as e:
+        print(f"[AUDIT LOG WARNING] Error in drop_player: {e}")
 
     now_utc = datetime.now(timezone.utc)
     slot_resp = compute_slot_response(slot, now_utc)

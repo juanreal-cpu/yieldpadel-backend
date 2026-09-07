@@ -1988,6 +1988,10 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
             <span class="nav-icon">⚙️</span>
             <span class="nav-text">Configuración del Club</span>
           </button>
+          <button class="sidebar-nav-item" id="tab-audit" onclick="switchMainView('view-audit')">
+            <span class="nav-icon">🛡️</span>
+            <span class="nav-text">Auditoría & Usuarios</span>
+          </button>
         </nav>
       </div>
 
@@ -2015,9 +2019,16 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
             <h1 class="banner-main-title">Panel Operativo Capital Pádel Club</h1>
             <div class="banner-date-badge" id="banner-date-display">📅 Hoy (07/09/2026)</div>
           </div>
-          <div class="banner-venue-badge">
-            <span class="badge-status-dot"></span>
-            <span id="banner-venue-badge-text">Sede Principal • 5 Pistas Panorámicas</span>
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <!-- Active Session User Badge -->
+            <div id="active-user-badge" style="display: flex; align-items: center; gap: 0.45rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #1E293B; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" title="Operador en sesión activa">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+              <span id="active-user-display">👤 Camilo Real (Recepción)</span>
+            </div>
+            <div class="banner-venue-badge">
+              <span class="badge-status-dot"></span>
+              <span id="banner-venue-badge-text">Sede Principal • 5 Pistas Panorámicas</span>
+            </div>
           </div>
         </div>
 
@@ -2751,6 +2762,122 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
   </div>
 
   <!-- ======================================================== -->
+        <!-- ======================================================== -->
+        <!-- VISTA MODULAR: 🛡️ AUDITORÍA & GESTIÓN DE USUARIOS RBAC    -->
+        <!-- ======================================================== -->
+        <div id="view-audit" class="modular-view" style="display: none;">
+          <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
+            
+            <!-- Encabezado de la Vista de Auditoría -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
+                  <span>🛡️</span> Control de Acceso RBAC & Auditoría Operativa
+                </h2>
+                <p style="font-size: 0.82rem; color: #64748B; margin-top: 0.25rem;">
+                  Trazabilidad inmutable de eventos, reservas manuales, torneos, ajustes de tarifas y control de operadores staff.
+                </p>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button onclick="loadAuditLogs(); loadStaffUsers();" class="btn-secondary" style="padding: 0.5rem 0.9rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>🔄</span> Actualizar Registros
+                </button>
+                <button onclick="openCreateUserModal()" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; background: #0F172A;">
+                  <span>➕</span> Nuevo Usuario Staff
+                </button>
+              </div>
+            </div>
+
+            <!-- Resumen Rápido -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase;">Operadores Activos</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: #0F172A; margin-top: 0.25rem;" id="audit-stat-users">3</div>
+                <div style="font-size: 0.72rem; color: #10B981; margin-top: 0.2rem; font-weight: 600;">Roles: Superadmin, Admin, Recepción</div>
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase;">Eventos de Auditoría</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: #3B82F6; margin-top: 0.25rem;" id="audit-stat-events">0</div>
+                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.2rem;">Registros de actividad persistidos</div>
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase;">Seguridad Criptográfica</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: #10B981; margin-top: 0.25rem;">HMAC / JWT</div>
+                <div style="font-size: 0.72rem; color: #10B981; margin-top: 0.2rem; font-weight: 600;">PBKDF2-SHA256 • Sesión activa</div>
+              </div>
+            </div>
+
+            <!-- Directorio de Usuarios Staff & Roles -->
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>👥</span> Personal y Operadores del Club
+                </h3>
+                <span style="font-size: 0.75rem; color: #64748B;">Roles: SUPERADMIN, ADMIN_CLUB, STAFF_RECEPCION</span>
+              </div>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                  <thead>
+                    <tr style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; color: #475569; font-weight: 700;">
+                      <th style="padding: 0.75rem 1rem;"># ID</th>
+                      <th style="padding: 0.75rem 1rem;">Nombre y Apellidos</th>
+                      <th style="padding: 0.75rem 1rem;">Usuario</th>
+                      <th style="padding: 0.75rem 1rem;">Rol Operativo</th>
+                      <th style="padding: 0.75rem 1rem;">Contacto</th>
+                      <th style="padding: 0.75rem 1rem;">Estado</th>
+                      <th style="padding: 0.75rem 1rem;">Fecha Alta</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-table-tbody">
+                    <tr><td colspan="7" style="padding: 2rem; text-align: center; color: #94A3B8;">Cargando lista de operadores...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Pista de Auditoría en Tiempo Real -->
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.4rem;">
+                    <span>📜</span> Pista de Auditoría Operativa (Audit Trail)
+                  </h3>
+                  <div style="font-size: 0.75rem; color: #64748B;">Registro inalterable de asignaciones, bajas, torneos y configuración del club.</div>
+                </div>
+
+                <!-- Filtros de Acción -->
+                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;" id="audit-filter-pills">
+                  <button onclick="filterAuditAction('ALL')" id="btn-audit-all" class="filter-pill active" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Todas</button>
+                  <button onclick="filterAuditAction('RESERVE_SLOT')" id="btn-audit-res" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Reservas</button>
+                  <button onclick="filterAuditAction('CREATE_AMERICANO')" id="btn-audit-tourn" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Torneos</button>
+                  <button onclick="filterAuditAction('UPDATE_CONFIG')" id="btn-audit-cfg" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Tarifas</button>
+                  <button onclick="filterAuditAction('LOGIN_SUCCESS')" id="btn-audit-auth" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Accesos</button>
+                  <button onclick="filterAuditAction('CANCEL_SLOT_PLAYER')" id="btn-audit-cancel" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Bajas</button>
+                </div>
+              </div>
+
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: left;">
+                  <thead>
+                    <tr style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; color: #475569; font-weight: 700;">
+                      <th style="padding: 0.75rem 1rem;">Fecha / Hora (Bogotá)</th>
+                      <th style="padding: 0.75rem 1rem;">Operador / Usuario</th>
+                      <th style="padding: 0.75rem 1rem;">Acción Realizada</th>
+                      <th style="padding: 0.75rem 1rem;">Entidad</th>
+                      <th style="padding: 0.75rem 1rem;">Detalles del Evento</th>
+                      <th style="padding: 0.75rem 1rem;">IP / Terminal</th>
+                    </tr>
+                  </thead>
+                  <tbody id="audit-table-tbody">
+                    <tr><td colspan="6" style="padding: 2.5rem; text-align: center; color: #94A3B8;">Cargando registros de auditoría...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
   <!-- MODAL: CREAR TORNEO AMERICANO MULTI-PISTA                -->
   <!-- ======================================================== -->
   <div id="create-americano-modal" class="modal-overlay modal-create-americano">
@@ -4869,8 +4996,229 @@ ${data.message}`);
     // ========================================================
     // INICIALIZACIÓN ESTRICTA EN DOMContentLoaded
     // ========================================================
+    
+    // ==========================================
+    // MÓDULO 🛡️ AUDITORÍA & CONTROL DE USUARIOS RBAC
+    // ==========================================
+    let currentAuditActionFilter = 'ALL';
+
+    function loadAuditData() {
+      loadAuditLogs();
+      loadStaffUsers();
+    }
+
+    async function fetchCurrentUser() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/auth/me`);
+        if (res.ok) {
+          const u = await res.json();
+          const badgeEl = document.getElementById('active-user-display');
+          if (badgeEl) {
+            badgeEl.textContent = `👤 ${u.full_name} (${u.role.replace('STAFF_', '').replace('_CLUB', '')})`;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch active user info:', err);
+      }
+    }
+
+    async function loadStaffUsers() {
+      const tbody = document.getElementById('users-table-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="7" style="padding: 1.5rem; text-align: center; color: #64748B;">Cargando operadores...</td></tr>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/audit/users`);
+        if (!res.ok) {
+          tbody.innerHTML = '<tr><td colspan="7" style="padding: 1.5rem; text-align: center; color: #EF4444;">Error al cargar operadores</td></tr>';
+          return;
+        }
+        const users = await res.json();
+        const statUsers = document.getElementById('audit-stat-users');
+        if (statUsers) statUsers.textContent = users.length;
+
+        if (!users || users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="padding: 1.5rem; text-align: center; color: #94A3B8;">No hay operadores registrados</td></tr>';
+          return;
+        }
+
+        let h = '';
+        users.forEach(u => {
+          let roleBadge = '';
+          if (u.role === 'SUPERADMIN') {
+            roleBadge = '<span style="background: #F3E8FF; color: #7E22CE; border: 1px solid #D8B4FE; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 800; font-size: 0.72rem;">👑 SUPERADMIN</span>';
+          } else if (u.role === 'ADMIN_CLUB') {
+            roleBadge = '<span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 800; font-size: 0.72rem;">👔 ADMIN CLUB</span>';
+          } else {
+            roleBadge = '<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 800; font-size: 0.72rem;">🏷️ RECEPCIÓN</span>';
+          }
+
+          const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('es-CO') : '-';
+
+          h += `
+            <tr style="border-bottom: 1px solid #F1F5F9;">
+              <td style="padding: 0.75rem 1rem; font-weight: 700; color: #64748B;">#${u.id}</td>
+              <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;">${u.full_name}</td>
+              <td style="padding: 0.75rem 1rem; font-family: monospace; color: #475569;">@${u.username}</td>
+              <td style="padding: 0.75rem 1rem;">${roleBadge}</td>
+              <td style="padding: 0.75rem 1rem; font-size: 0.75rem; color: #64748B;">${u.phone || u.email || '-'}</td>
+              <td style="padding: 0.75rem 1rem;">
+                <span style="display: inline-flex; align-items: center; gap: 0.3rem; color: #059669; font-weight: 700;">
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981;"></span>
+                  Activo
+                </span>
+              </td>
+              <td style="padding: 0.75rem 1rem; color: #64748B;">${createdDate}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = h;
+      } catch (err) {
+        console.error('Error in loadStaffUsers:', err);
+        tbody.innerHTML = '<tr><td colspan="7" style="padding: 1.5rem; text-align: center; color: #EF4444;">Fallo al consultar usuarios</td></tr>';
+      }
+    }
+
+    function filterAuditAction(action) {
+      currentAuditActionFilter = action;
+      const pills = ['all', 'res', 'tourn', 'cfg', 'auth', 'cancel'];
+      const map = {
+        'ALL': 'all',
+        'RESERVE_SLOT': 'res',
+        'CREATE_AMERICANO': 'tourn',
+        'UPDATE_CONFIG': 'cfg',
+        'LOGIN_SUCCESS': 'auth',
+        'CANCEL_SLOT_PLAYER': 'cancel'
+      };
+      pills.forEach(p => {
+        const btn = document.getElementById('btn-audit-' + p);
+        if (btn) {
+          btn.className = 'filter-pill' + (map[action] === p ? ' active' : '');
+        }
+      });
+      loadAuditLogs();
+    }
+
+    async function loadAuditLogs() {
+      const tbody = document.getElementById('audit-table-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #64748B;">Consultando pista de auditoría...</td></tr>';
+
+      try {
+        let url = `${API_BASE}/api/v1/audit/logs?limit=80`;
+        if (currentAuditActionFilter && currentAuditActionFilter !== 'ALL') {
+          url += `&action=${encodeURIComponent(currentAuditActionFilter)}`;
+        }
+        const res = await fetch(url);
+        if (!res.ok) {
+          tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #EF4444;">Error al cargar registros de auditoría</td></tr>';
+          return;
+        }
+        const logs = await res.json();
+        const statEvents = document.getElementById('audit-stat-events');
+        if (statEvents) statEvents.textContent = logs.length;
+
+        if (!logs || logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="padding: 2.5rem; text-align: center; color: #94A3B8;">No hay registros de auditoría para el filtro ${currentAuditActionFilter}</td></tr>`;
+          return;
+        }
+
+        let h = '';
+        logs.forEach(l => {
+          let actBadge = '';
+          const act = l.action || 'ACTIVITY';
+          if (act.includes('RESERVE') || act.includes('BOOK')) {
+            actBadge = `<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🟢 ${act}</span>`;
+          } else if (act.includes('AMERICANO') || act.includes('TOURNAMENT')) {
+            actBadge = `<span style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🏆 ${act}</span>`;
+          } else if (act.includes('CANCEL') || act.includes('DROP')) {
+            actBadge = `<span style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🔴 ${act}</span>`;
+          } else if (act.includes('CONFIG') || act.includes('UPDATE')) {
+            actBadge = `<span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">⚙️ ${act}</span>`;
+          } else if (act.includes('LOGIN') || act.includes('AUTH')) {
+            actBadge = `<span style="background: #F0F9FF; color: #0369A1; border: 1px solid #BAE6FD; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🔑 ${act}</span>`;
+          } else {
+            actBadge = `<span style="background: #F8FAFC; color: #334155; border: 1px solid #CBD5E1; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">📋 ${act}</span>`;
+          }
+
+          let tsStr = '-';
+          if (l.timestamp) {
+            const dt = new Date(l.timestamp);
+            tsStr = dt.toLocaleString('es-CO', { hour12: false });
+          }
+
+          h += `
+            <tr style="border-bottom: 1px solid #F1F5F9;">
+              <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.75rem; color: #334155; white-space: nowrap;">${tsStr}</td>
+              <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;">${l.username_snapshot || 'Sistema'}</td>
+              <td style="padding: 0.75rem 1rem;">${actBadge}</td>
+              <td style="padding: 0.75rem 1rem;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #64748B; background: #F1F5F9; padding: 0.1rem 0.4rem; border-radius: 4px;">${l.entity_name || '-'}</span>
+              </td>
+              <td style="padding: 0.75rem 1rem; color: #1E293B; max-width: 360px; word-break: break-word;">${l.details || '-'}</td>
+              <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.72rem; color: #64748B;">${l.ip_address || '127.0.0.1'}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = h;
+      } catch (err) {
+        console.error('Error in loadAuditLogs:', err);
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #EF4444;">Fallo al consultar pista de auditoría</td></tr>';
+      }
+    }
+
+    function openCreateUserModal() {
+      const m = document.getElementById('modal-create-user');
+      if (m) {
+        m.style.display = 'flex';
+        document.getElementById('cu-fullname').value = '';
+        document.getElementById('cu-username').value = '';
+        document.getElementById('cu-password').value = '';
+        document.getElementById('cu-phone').value = '';
+        document.getElementById('cu-email').value = '';
+      }
+    }
+
+    function closeCreateUserModal() {
+      const m = document.getElementById('modal-create-user');
+      if (m) m.style.display = 'none';
+    }
+
+    async function submitCreateUser(e) {
+      e.preventDefault();
+      const payload = {
+        full_name: document.getElementById('cu-fullname').value.trim(),
+        username: document.getElementById('cu-username').value.trim(),
+        password: document.getElementById('cu-password').value,
+        role: document.getElementById('cu-role').value,
+        phone: document.getElementById('cu-phone').value.trim() || null,
+        email: document.getElementById('cu-email').value.trim() || null
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/audit/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          alert('Error al crear usuario: ' + (errData.detail || 'Fallo desconocido'));
+          return;
+        }
+        alert(`Operador @${payload.username} creado exitosamente con rol ${payload.role}.`);
+        closeCreateUserModal();
+        loadStaffUsers();
+        loadAuditLogs();
+      } catch (err) {
+        console.error('Error submitting create user:', err);
+        alert('Fallo de conexión al crear usuario operador');
+      }
+    }
+
     function initDashboard() {
       try {
+        if (typeof fetchCurrentUser === 'function') fetchCurrentUser();
         const todayStr = getColombiaTodayString() || '2026-09-07';
         const picker = document.getElementById('selected-date') || document.getElementById('date-picker');
         if (picker && !picker.value) {
@@ -5617,6 +5965,54 @@ PARTIDO CERRADO</textarea>
         </button>
         <div id="sim-reply-box" style="display: none; margin-top: 0.75rem; background: #0F172A; color: #38BDF8; font-family: monospace; font-size: 0.72rem; padding: 0.75rem; border-radius: 6px; white-space: pre-wrap; line-height: 1.4;"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR USUARIO STAFF RBAC -->
+  <div id="modal-create-user" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 12px; width: 90%; max-width: 480px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 0.75rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.4rem;">
+          <span>👤</span> Alta de Usuario Operador (RBAC)
+        </h3>
+        <button onclick="closeCreateUserModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #64748B;">✕</button>
+      </div>
+      <form onsubmit="submitCreateUser(event)">
+        <div style="margin-bottom: 0.85rem;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Nombre Completo:</label>
+          <input type="text" id="cu-fullname" class="form-control" placeholder="Ej: Marcela Castro (Recepción Mañana)" required />
+        </div>
+        <div style="margin-bottom: 0.85rem;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Nombre de Usuario (Login):</label>
+          <input type="text" id="cu-username" class="form-control" placeholder="ej: marcela.castro" required />
+        </div>
+        <div style="margin-bottom: 0.85rem;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Contraseña de Acceso:</label>
+          <input type="password" id="cu-password" class="form-control" placeholder="Mínimo 6 caracteres" required />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.85rem;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Rol Asignado:</label>
+            <select id="cu-role" class="form-control" required>
+              <option value="STAFF_RECEPCION">Staff Recepción</option>
+              <option value="ADMIN_CLUB">Admin Club / Gerente</option>
+              <option value="SUPERADMIN">Superadmin</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Teléfono Celular:</label>
+            <input type="text" id="cu-phone" class="form-control" placeholder="+57 3..." />
+          </div>
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Correo Electrónico:</label>
+          <input type="email" id="cu-email" class="form-control" placeholder="ejemplo@capitalpadel.com" />
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" onclick="closeCreateUserModal()" class="btn-secondary" style="padding: 0.5rem 1rem;">Cancelar</button>
+          <button type="submit" class="btn-primary" style="padding: 0.5rem 1.2rem; background: #0F172A;">Guardar Operador</button>
+        </div>
+      </form>
     </div>
   </div>
 

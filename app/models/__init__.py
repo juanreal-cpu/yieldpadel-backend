@@ -13,6 +13,8 @@ from app.models.booking import Booking
 from app.models.incident import PlayerIncident
 from app.models.customer import Customer
 from app.models.competitor import CompetitorClub
+from app.models.user import User, UserRole
+from app.models.audit import AuditLog
 
 __all__ = [
     "Base",
@@ -23,6 +25,9 @@ __all__ = [
     "PlayerIncident",
     "Customer",
     "CompetitorClub",
+    "User",
+    "UserRole",
+    "AuditLog",
     "SlotMode",
     "SlotStatus",
     "HoldStatus",
