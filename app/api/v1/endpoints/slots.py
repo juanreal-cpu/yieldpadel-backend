@@ -678,6 +678,68 @@ async def seed_weekly_template(
         else {ev["id"] for ev in MALOKA_WEEKLY_EVENTS}
     )
 
+    def parse_time_val(t_val) -> time:
+        if isinstance(t_val, time):
+            return t_val
+        if isinstance(t_val, str):
+            parts = t_val.strip().split(":")
+            h = int(parts[0])
+            m = int(parts[1]) if len(parts) > 1 else 0
+            return time(h, m)
+        return time(20, 0)
+
+    def parse_prize_to_decimal(val) -> Optional[Decimal]:
+        if val is None:
+            return None
+        if isinstance(val, (int, float, Decimal)):
+            return Decimal(str(val))
+        val_str = str(val).replace("$", "").replace("COP", "").replace(".", "").replace(",", "").replace("k", "000").replace("K", "000").strip()
+        digits = re.findall(r"\d+", val_str)
+        if digits:
+            try:
+                return Decimal("".join(digits))
+            except Exception:
+                return Decimal("0.00")
+        return Decimal("0.00")
+
+    active_events = []
+    if payload and payload.events:
+        for ev in payload.events:
+            w_start = parse_time_val(ev.get("start_time"))
+            w_end = parse_time_val(ev.get("end_time"))
+            e_fee = Decimal(str(ev.get("entry_fee", 60000)))
+            p_pool = parse_prize_to_decimal(ev.get("prize") or ev.get("prize_pool"))
+            ev_courts = [int(x) for x in ev.get("courts", [1, 2, 3, 4])]
+            active_events.append({
+                "id": str(ev.get("id", f"ev_{ev.get('weekday', 0)}_{w_start.hour}")),
+                "weekday": int(ev.get("weekday", 0)),
+                "name": str(ev.get("name", "Torneo Americano")),
+                "modality": str(ev.get("modality", "PAREJA_FIJA")),
+                "category": str(ev.get("category", "5ta")),
+                "start_time": w_start,
+                "end_time": w_end,
+                "courts": ev_courts,
+                "entry_fee": e_fee,
+                "prize_pool": p_pool,
+                "prize_label": str(ev.get("prize") or ev.get("prize_pool") or f"${p_pool:,.0f} COP"),
+            })
+    else:
+        for ev in MALOKA_WEEKLY_EVENTS:
+            if ev["id"] in selected_ids:
+                active_events.append({
+                    "id": ev["id"],
+                    "weekday": ev["weekday"],
+                    "name": ev["name"],
+                    "modality": ev["modality"],
+                    "category": ev["category"],
+                    "start_time": ev["start_time"],
+                    "end_time": ev["end_time"],
+                    "courts": [1, 2, 3, 4],
+                    "entry_fee": ev["entry_fee"],
+                    "prize_pool": ev["prize_pool"],
+                    "prize_label": ev["prize_label"],
+                })
+
     BLOCKS_90_MIN = [
         (time(6, 0), time(7, 30)),
         (time(7, 30), time(9, 0)),
@@ -695,8 +757,10 @@ async def seed_weekly_template(
 
     padel_courts = [c for c in courts if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == "PADEL"]
     padel_courts.sort(key=lambda c: (getattr(c, "court_number", 99) or 99, c.name))
-    tourn_courts = padel_courts[:4] if len(padel_courts) >= 4 else padel_courts
-    tourn_court_ids = {c.id for c in tourn_courts}
+    padel_court_num_map = {}
+    for idx, c in enumerate(padel_courts):
+        c_num = getattr(c, "court_number", None) or (idx + 1)
+        padel_court_num_map[c.id] = c_num
 
     # 1. Limpieza en lote de turnos no reservados/sin jugadores para el rango de 7 días
     res_existing = await db.execute(
@@ -710,9 +774,13 @@ async def seed_weekly_template(
         has_active_holds = any(
             str(getattr(h, "status", "")).upper() in ("ACTIVE", "HOLDSTATUS.ACTIVE") for h in s.holds
         )
+        real_players = [
+            p for p in (s.players_names or [])
+            if not (isinstance(p, dict) and p.get("phone") == "+57-AMERICANO")
+        ]
         has_real_players = (
             (s.booked_spots > 0 and (s.slot_type or "MATCH") not in ("AMERICANO", "TOURNAMENT"))
-            or (len(s.players_names or []) > 0)
+            or (len(real_players) > 0)
         )
         if not has_active_holds and not has_real_players:
             unbooked_ids.append(s.id)
@@ -727,22 +795,27 @@ async def seed_weekly_template(
 
     for d in dates_to_seed:
         is_weekend = d.weekday() in (5, 6)
-        day_events = [
-            ev for ev in MALOKA_WEEKLY_EVENTS
-            if ev["weekday"] == d.weekday() and ev["id"] in selected_ids
-        ]
 
         for court in courts:
-            court_num = getattr(court, "court_number", None) or 1
-            c_sport = getattr(court, "sport_type", "PADEL") or "PADEL"
+            c_sport = (getattr(court, "sport_type", "PADEL") or "PADEL").upper()
             c_cap = getattr(court, "max_capacity", 4) or 4
-            is_tourn_court = (court.id in tourn_court_ids) and bool(day_events)
+            c_num = padel_court_num_map.get(court.id, getattr(court, "court_number", 1) or 1)
+
+            # Torneos aplican EXCLUSIVAMENTE a Pádel
+            if c_sport == "PADEL":
+                court_day_events = [
+                    ev for ev in active_events
+                    if ev["weekday"] == d.weekday() and c_num in ev["courts"]
+                ]
+            else:
+                court_day_events = []
 
             for start_t, end_t in BLOCKS_90_MIN:
-                if is_tourn_court:
+                # Si es cancha de Pádel y se solapa con un torneo de la plantilla, no generar turno regular
+                if court_day_events:
                     overlaps = any(
                         start_t < ev["end_time"] and end_t > ev["start_time"]
-                        for ev in day_events
+                        for ev in court_day_events
                     )
                     if overlaps:
                         continue
@@ -767,7 +840,7 @@ async def seed_weekly_template(
                     category = "Gaming / Consola"
                 else:
                     base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and court_num <= 3) else SlotMode.FULL_COURT
+                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and c_num <= 3) else SlotMode.FULL_COURT
                     category = "4ta"
 
                 all_to_add.append(
@@ -790,9 +863,11 @@ async def seed_weekly_template(
                     )
                 )
 
-            if is_tourn_court:
-                for ev in day_events:
-                    cat_label = f"Americano {ev['category']} ({ev['modality_label']})"
+            # Insertar los torneos seleccionados exclusivamente en las pistas de Pádel designadas
+            if court_day_events:
+                for ev in court_day_events:
+                    mod_label = "Pareja Fija" if ev["modality"] == "PAREJA_FIJA" else "Individual"
+                    cat_label = f"Americano {ev.get('category', '5ta')} ({mod_label})"
                     all_to_add.append(
                         TimeSlot(
                             court_id=court.id,
@@ -814,7 +889,7 @@ async def seed_weekly_template(
                             sport_type="PADEL",
                         )
                     )
-                    ev_desc = f"{d.strftime('%Y-%m-%d')} ({ev['day_name']}): {ev['name']} ({ev['time_str']})"
+                    ev_desc = f"{d.strftime('%Y-%m-%d')}: {ev['name']} ({ev['start_time'].strftime('%H:%M')} - {ev['end_time'].strftime('%H:%M')})"
                     if ev_desc not in scheduled_events:
                         scheduled_events.append(ev_desc)
 

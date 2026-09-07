@@ -3436,8 +3436,8 @@
   <!-- ======================================================== -->
   <!-- MODAL: PROGRAMADOR SEMANAL INTELIGENTE (MALOKA TEMPLATE) -->
   <!-- ======================================================== -->
-  <div id="weekly-template-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 680px; width: 95%;">
+  <div id="weekly-template-modal" data-alias="modal-weekly-template" class="modal-overlay">
+    <div class="modal-card" style="max-width: 860px; width: 95%;">
       <div class="modal-title">
         <span style="display: flex; align-items: center; gap: 0.5rem;">
           <span>🌱</span> Programador Semanal Inteligente (Semillero Maloka)
@@ -3446,7 +3446,7 @@
       </div>
 
       <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.75rem; color: #475569; line-height: 1.4;">
-        Genera automáticamente <strong>7 días completos</strong> (06:00 a 24:00 en bloques de 90 min) con tarifas inteligentes <strong>Valle ($80k)</strong> y <strong>Pico ($120k)</strong> para todas las canchas. Los eventos seleccionados se reservarán de inmediato en las pistas de Pádel (1 a 4) como torneos oficiales sin reservas ficticias.
+        Genera automáticamente <strong>7 días completos</strong> (06:00 a 24:00 en bloques de 90 min) con tarifas inteligentes <strong>Valle ($80k)</strong> y <strong>Pico ($120k)</strong>. Los torneos editados aplicarán <strong>exclusivamente a las pistas de Pádel seleccionadas</strong> (C1 a C4/C5), dejando libres las pistas restantes y creando turnos 100% disponibles sin bloqueos para las demás disciplinas (Pickleball, Vóley, Pilates, Consola).
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -3464,217 +3464,395 @@
         </div>
       </div>
 
-      <div style="max-height: 380px; overflow-y: auto; padding-right: 0.25rem; margin-bottom: 1.25rem;">
-        <div style="display: grid; grid-template-columns: 1fr; gap: 0.6rem;">
-          <!-- 1. LUNES 20:00-22:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="lun_20_22" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">LUN 20:00 - 22:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano 5ta</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #EDE9FE; color: #6D28D9; padding: 0.1rem 0.35rem; border-radius: 4px;">Pareja fija</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 5ta • Canchas 1 a 4
-                </div>
+      <div style="max-height: 420px; overflow-y: auto; padding-right: 0.25rem; margin-bottom: 1.25rem;" class="space-y-2.5">
+        <!-- 1. LUNES 20:00-22:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="lun_20_22" data-weekday="0">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">LUN</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 5ta" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA" selected>Pareja fija</option>
+              <option value="INDIVIDUAL">Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="20:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="22:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$200.000 COP" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: $200k</div>
-              <div style="color: #64748B;">Insc: $60k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 2. MARTES 14:00-16:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="mar_14_16" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">MAR 14:00 - 16:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano 6ta</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #E0F2FE; color: #0369A1; padding: 0.1rem 0.35rem; border-radius: 4px;">Individual</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 6ta • Canchas 1 a 4
-                </div>
+        <!-- 2. MARTES 14:00-16:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="mar_14_16" data-weekday="1">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">MAR</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6ta" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA">Pareja fija</option>
+              <option value="INDIVIDUAL" selected>Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="14:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="16:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="25000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="Premio Sorpresa" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio Sorpresa</div>
-              <div style="color: #64748B;">Insc: $25k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 3. MARTES 20:00-22:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="mar_20_22" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">MAR 20:00 - 22:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano 4ta-5ta</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #EDE9FE; color: #6D28D9; padding: 0.1rem 0.35rem; border-radius: 4px;">Pareja fija</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 4ta-5ta • Canchas 1 a 4
-                </div>
+        <!-- 3. MARTES 20:00-22:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="mar_20_22" data-weekday="1">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">MAR</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 4ta-5ta" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA" selected>Pareja fija</option>
+              <option value="INDIVIDUAL">Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="20:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="22:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$200.000 COP" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: $200k</div>
-              <div style="color: #64748B;">Insc: $60k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 4. MIÉRCOLES 20:00-22:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="mie_20_22" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">MIÉ 20:00 - 22:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano 6ta</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #EDE9FE; color: #6D28D9; padding: 0.1rem 0.35rem; border-radius: 4px;">Pareja fija</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 6ta • Canchas 1 a 4
-                </div>
+        <!-- 4. MIÉRCOLES 20:00-22:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="mie_20_22" data-weekday="2">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">MIÉ</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6ta" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA" selected>Pareja fija</option>
+              <option value="INDIVIDUAL">Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="20:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="22:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$200.000 COP" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: $200k</div>
-              <div style="color: #64748B;">Insc: $60k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 5. JUEVES 14:00-16:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="jue_14_16" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">JUE 14:00 - 16:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano 6ta-7ma</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #E0F2FE; color: #0369A1; padding: 0.1rem 0.35rem; border-radius: 4px;">Individual</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 6ta-7ma • Canchas 1 a 4
-                </div>
+        <!-- 5. JUEVES 14:00-16:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="jue_14_16" data-weekday="3">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">JUE</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6ta-7ma" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA">Pareja fija</option>
+              <option value="INDIVIDUAL" selected>Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="14:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="16:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="30000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$90.000 COP" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: $90k</div>
-              <div style="color: #64748B;">Insc: $30k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 6. VIERNES 18:00-20:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="vie_18_20" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">VIE 18:00 - 20:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano Femenino</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #FCE7F3; color: #BE185D; padding: 0.1rem 0.35rem; border-radius: 4px;">Individual</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. Femenino • Canchas 1 a 4
-                </div>
+        <!-- 6. VIERNES 18:00-20:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="vie_18_20" data-weekday="4">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">VIE</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano Femenino" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA">Pareja fija</option>
+              <option value="INDIVIDUAL" selected>Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="18:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="20:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="50000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="Pala Chingotto" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: Chingotto</div>
-              <div style="color: #64748B;">Insc: $50k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 7. SÁBADO 10:00-12:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="sab_10_12" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">SÁB 10:00 - 12:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano 6ta</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #E0F2FE; color: #0369A1; padding: 0.1rem 0.35rem; border-radius: 4px;">Individual</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 6ta • Canchas 1 a 4
-                </div>
+        <!-- 7. SÁBADO 10:00-12:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="sab_10_12" data-weekday="5">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">SÁB</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6ta" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA">Pareja fija</option>
+              <option value="INDIVIDUAL" selected>Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="10:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="12:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$170.000 COP" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: $170k</div>
-              <div style="color: #64748B;">Insc: $60k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 8. SÁBADO 19:00-21:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="sab_19_21" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">SÁB 19:00 - 21:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano 5ta</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #EDE9FE; color: #6D28D9; padding: 0.1rem 0.35rem; border-radius: 4px;">Pareja fija</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 5ta • Canchas 1 a 4
-                </div>
+        <!-- 8. SÁBADO 19:00-21:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="sab_19_21" data-weekday="5">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">SÁB</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 5ta" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA" selected>Pareja fija</option>
+              <option value="INDIVIDUAL">Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="19:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="21:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$250.000 COP" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: $250k</div>
-              <div style="color: #64748B;">Insc: $60k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 9. DOMINGO 18:00-20:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="dom_18_20" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">DOM 18:00 - 20:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Americano 6-8</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #EDE9FE; color: #6D28D9; padding: 0.1rem 0.35rem; border-radius: 4px;">Pareja fija</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 6ta-8va • Canchas 1 a 4
-                </div>
+        <!-- 9. DOMINGO 18:00-20:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="dom_18_20" data-weekday="6">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">DOM</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6-8" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA" selected>Pareja fija</option>
+              <option value="INDIVIDUAL">Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="18:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="20:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$250.000 COP" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: $250k</div>
-              <div style="color: #64748B;">Insc: $60k / jug</div>
-            </div>
-          </label>
+          </div>
+        </div>
 
-          <!-- 10. DOMINGO 20:00-22:00 -->
-          <label class="template-event-card" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; cursor: pointer; transition: all 0.15s;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <input type="checkbox" name="template-event" value="dom_20_22" checked style="cursor: pointer; width: 16px; height: 16px; accent-color: #0F172A;" />
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span style="font-size: 0.7rem; font-weight: 800; background: #0F172A; color: #FFFFFF; padding: 0.15rem 0.4rem; border-radius: 4px;">DOM 20:00 - 22:00</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">Ranking 4ta</span>
-                  <span style="font-size: 0.68rem; font-weight: 600; background: #FEF3C7; color: #B45309; padding: 0.1rem 0.35rem; border-radius: 4px;">Pareja fija</span>
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">
-                  Cat. 4ta Oficial • Canchas 1 a 4
-                </div>
+        <!-- 10. DOMINGO 20:00-22:00 -->
+        <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="dom_20_22" data-weekday="6">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
+            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">DOM</span>
+            <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Ranking 4ta" placeholder="Nombre del torneo" />
+            <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="PAREJA_FIJA" selected>Pareja fija</option>
+              <option value="INDIVIDUAL">Individual</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-slate-500 font-medium">🕒</span>
+              <input type="time" class="tpl-event-start border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="20:00" />
+              <span class="text-slate-400">-</span>
+              <input type="time" class="tpl-event-end border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="22:00" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-0.5">
+              <span class="text-[10px] font-bold text-slate-500 uppercase">Pistas:</span>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="1" checked /> C1</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="2" checked /> C2</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="3" checked /> C3</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
+              <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-slate-500">Insc:</span>
+                <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="100000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
+                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$600.000 COP" placeholder="Premio" />
               </div>
             </div>
-            <div style="text-align: right; font-size: 0.72rem;">
-              <div style="color: #059669; font-weight: 700;">Premio: $600k</div>
-              <div style="color: #64748B;">Insc: $200k pareja</div>
-            </div>
-          </label>
+          </div>
         </div>
       </div>
 
@@ -3698,9 +3876,25 @@
     window.currentSportFilter = window.currentSportFilter || 'PADEL';
     window.selectedCourtZoom = window.selectedCourtZoom || 'ALL';
     window.currentSport = window.currentSport || 'PADEL';
+    window.currentStatusFilter = window.currentStatusFilter || 'ALL';
+    var currentStatusFilter = window.currentStatusFilter;
+    window.currentTimeFilter = window.currentTimeFilter || 'ALL';
+    var currentTimeFilter = window.currentTimeFilter;
 
     window.openRegisterPlayerModal = function() {
       if (typeof openRegisterCustomerModal === 'function') openRegisterCustomerModal();
+    };
+
+    window.toggleEventRowState = function(cb) {
+      const row = cb.closest('.template-event-row');
+      if (!row) return;
+      if (cb.checked) {
+        row.classList.remove('opacity-40', 'bg-slate-100');
+        row.classList.add('bg-slate-50');
+      } else {
+        row.classList.add('opacity-40', 'bg-slate-100');
+        row.classList.remove('bg-slate-50');
+      }
     };
 
     window.toggleBotDrawer = function(force) {
@@ -4827,6 +5021,7 @@ ${data.message}`);
         const res = await fetch(`${API_BASE}/api/v1/slots/courts`);
         if (res.ok) {
           allCourts = await res.json();
+          window.allCourts = allCourts;
           updateCourtZoomOptions();
         }
       } catch (err) {
@@ -4872,10 +5067,12 @@ ${data.message}`);
         if (res.status === 404 || !res.ok) {
           console.warn('API slots error status:', res.status);
           allSlots = [];
+          window.allSlots = [];
         } else {
           const data = await res.json();
           const slotList = Array.isArray(data) ? data : (data.slots || []);
           allSlots = slotList;
+          window.allSlots = allSlots;
         }
 
         renderCalendarMatrix();
@@ -4907,26 +5104,28 @@ ${data.message}`);
       if (!container) return;
 
       // 1. Filtrar canchas estrictamente por el deporte activo (excluyendo canchas en mantenimiento)
-      let sportCourts = allCourts.filter(c => (c.sport_type || 'PADEL').toUpperCase() === currentSportFilter && c.is_active !== false && (c.status || '').toLowerCase() !== 'maintenance' && (c.status || '').toLowerCase() !== 'mantenimiento');
+      const activeSport = (window.currentSportFilter || (typeof currentSportFilter !== 'undefined' && currentSportFilter) || window.currentSport || 'PADEL').toUpperCase();
+      let courtsList = (window.allCourts && window.allCourts.length > 0) ? window.allCourts : allCourts;
+      let sportCourts = courtsList.filter(c => (c.sport_type || 'PADEL').toUpperCase() === activeSport && c.is_active !== false && (c.status || '').toLowerCase() !== 'maintenance' && (c.status || '').toLowerCase() !== 'mantenimiento');
       if (sportCourts.length === 0) {
-        if (currentSportFilter === 'CONSOLE') {
-          sportCourts = [{ id: 'cs1', name: 'Sala Gaming / Consola', sport_type: 'CONSOLE', max_capacity: 4 }];
-        } else if (currentSportFilter === 'PICKLEBALL') {
+        if (activeSport === 'CONSOLE') {
+          sportCourts = [{ id: 'cs1', court_number: 1, name: 'Sala Gaming / Consola', sport_type: 'CONSOLE', max_capacity: 4 }];
+        } else if (activeSport === 'PICKLEBALL') {
           sportCourts = [
-            { id: 'pb1', name: 'Pista PB 1', sport_type: 'PICKLEBALL', max_capacity: 4 },
-            { id: 'pb2', name: 'Pista PB 2', sport_type: 'PICKLEBALL', max_capacity: 4 }
+            { id: 'pb1', court_number: 1, name: 'Pista PB 1', sport_type: 'PICKLEBALL', max_capacity: 4 },
+            { id: 'pb2', court_number: 2, name: 'Pista PB 2', sport_type: 'PICKLEBALL', max_capacity: 4 }
           ];
-        } else if (currentSportFilter === 'VOLLEYBALL') {
-          sportCourts = [{ id: 'vb1', name: 'Pista Vóley Playa', sport_type: 'VOLLEYBALL', max_capacity: 12 }];
-        } else if (currentSportFilter === 'PILATES') {
-          sportCourts = [{ id: 'pi1', name: 'Estudio Pilates', sport_type: 'PILATES', max_capacity: 10 }];
+        } else if (activeSport === 'VOLLEYBALL') {
+          sportCourts = [{ id: 'vb1', court_number: 1, name: 'Pista Vóley Playa', sport_type: 'VOLLEYBALL', max_capacity: 12 }];
+        } else if (activeSport === 'PILATES') {
+          sportCourts = [{ id: 'pi1', court_number: 1, name: 'Estudio Pilates', sport_type: 'PILATES', max_capacity: 10 }];
         } else {
           sportCourts = [
-            { id: 'c1', name: 'Pista 1 Central', sport_type: 'PADEL', max_capacity: 4 },
-            { id: 'c2', name: 'Pista 2 Panorámica', sport_type: 'PADEL', max_capacity: 4 },
-            { id: 'c3', name: 'Pista 3 Cristal', sport_type: 'PADEL', max_capacity: 4 },
-            { id: 'c4', name: 'Pista 4 Club', sport_type: 'PADEL', max_capacity: 4 },
-            { id: 'c5', name: 'Pista 5 Pro', sport_type: 'PADEL', max_capacity: 4 }
+            { id: 'c1', court_number: 1, name: 'Pista 1 Central', sport_type: 'PADEL', max_capacity: 4 },
+            { id: 'c2', court_number: 2, name: 'Pista 2 Panorámica', sport_type: 'PADEL', max_capacity: 4 },
+            { id: 'c3', court_number: 3, name: 'Pista 3 Cristal', sport_type: 'PADEL', max_capacity: 4 },
+            { id: 'c4', court_number: 4, name: 'Pista 4 Club', sport_type: 'PADEL', max_capacity: 4 },
+            { id: 'c5', court_number: 5, name: 'Pista 5 Pro', sport_type: 'PADEL', max_capacity: 4 }
           ];
         }
       }
@@ -4936,14 +5135,15 @@ ${data.message}`);
       let displayedCourts = sportCourts;
       const zoom = (typeof selectedCourtZoom !== 'undefined') ? selectedCourtZoom : (window.selectedCourtZoom || 'ALL');
       if (zoom !== 'ALL') {
-        displayedCourts = sportCourts.filter(c => String(c.id) === String(zoom));
+        displayedCourts = sportCourts.filter(c => String(c.id) === String(zoom) || String(c.court_number) === String(zoom));
         if (displayedCourts.length === 0) displayedCourts = sportCourts;
       }
 
       // 3. Filtrar slots por deporte
-      let sportSlots = allSlots.filter(s => {
+      let slotsList = (window.allSlots && window.allSlots.length > 0) ? window.allSlots : allSlots;
+      let sportSlots = slotsList.filter(s => {
         const slotSport = (s.sport_type || (s.court ? s.court.sport_type : 'PADEL') || 'PADEL').toUpperCase();
-        return slotSport === currentSportFilter;
+        return slotSport === activeSport;
       });
 
       // Manejar arrays vacíos [] sin colapsar: Estado vacío limpio y amigable
@@ -4982,23 +5182,25 @@ ${data.message}`);
       }
 
       // 5. Filtrar slots según Estado
+      const activeStatus = (typeof currentStatusFilter !== 'undefined' && currentStatusFilter ? currentStatusFilter : (window.currentStatusFilter || 'ALL')).toUpperCase();
       let filteredSlots = sportSlots;
-      if (currentStatusFilter === 'OPEN') {
+      if (activeStatus === 'OPEN') {
         filteredSlots = sportSlots.filter(s => s.mode === 'SPLIT_MATCH' && s.booked_spots > 0 && (s.booked_spots + s.held_spots) < s.capacity);
-      } else if (currentStatusFilter === 'PAID') {
+      } else if (activeStatus === 'PAID') {
         filteredSlots = sportSlots.filter(s => s.status === 'FULLY_BOOKED' || (s.booked_spots + s.held_spots) >= s.capacity);
       }
 
       let START_MINUTES = 360; // 6:00 AM
       let END_MINUTES = 1440;  // 11:30 PM (hasta las 24:00)
 
-      if (currentTimeFilter === 'MORNING') {
+      const activeTime = (typeof currentTimeFilter !== 'undefined' && currentTimeFilter ? currentTimeFilter : (window.currentTimeFilter || 'ALL')).toUpperCase();
+      if (activeTime === 'MORNING') {
         START_MINUTES = 360;
         END_MINUTES = 720;
-      } else if (currentTimeFilter === 'AFTERNOON') {
+      } else if (activeTime === 'AFTERNOON') {
         START_MINUTES = 720;
         END_MINUTES = 1080;
-      } else if (currentTimeFilter === 'NIGHT') {
+      } else if (activeTime === 'NIGHT') {
         START_MINUTES = 1080;
         END_MINUTES = 1440;
       }
@@ -5074,7 +5276,21 @@ ${data.message}`);
       const currentNowMin = colHour * 60 + colMin;
 
       visibleSlots.forEach(slot => {
-        const courtIdx = displayedCourts.findIndex(c => String(c.id) === String(slot.court_id));
+        let courtIdx = displayedCourts.findIndex(c => String(c.id) === String(slot.court_id));
+        if (courtIdx === -1) {
+          courtIdx = displayedCourts.findIndex(c => 
+            (c.court_number && slot.court && c.court_number === slot.court.court_number) ||
+            (c.court_number && slot.court_number && c.court_number === slot.court_number) ||
+            (c.name && slot.court_name && c.name.toLowerCase() === slot.court_name.toLowerCase()) ||
+            (c.name && slot.court && slot.court.name && c.name.toLowerCase() === slot.court.name.toLowerCase())
+          );
+        }
+        if (courtIdx === -1 && displayedCourts.length > 0) {
+          const num = slot.court_number || (slot.court ? slot.court.court_number : null);
+          if (num && num >= 1 && num <= displayedCourts.length) {
+            courtIdx = num - 1;
+          }
+        }
         if (courtIdx === -1) return;
         const colNum = courtIdx + 2;
 
@@ -5088,7 +5304,7 @@ ${data.message}`);
         const durationMin = Math.max(30, slotEndMin - slotStartMin);
         const rowSpan = Math.max(1, Math.round(durationMin / 30));
 
-        const slotSport = (slot.sport_type || currentSportFilter).toUpperCase();
+        const slotSport = (slot.sport_type || activeSport).toUpperCase();
         const slotCap = slot.capacity || (slotSport === 'VOLLEYBALL' ? 12 : (slotSport === 'PILATES' ? 10 : 4));
         const sportIcon = slotSport === 'VOLLEYBALL' ? '🏐' : (slotSport === 'PICKLEBALL' ? '🏓' : (slotSport === 'PILATES' ? '🧘' : (slotSport === 'CONSOLE' ? '🎮' : '🎾')));
 
@@ -5341,9 +5557,26 @@ ${data.message}`);
     }
     window.closeWeeklyTemplateModal = closeWeeklyTemplateModal;
 
+    function toggleEventRowState(cb) {
+      const row = cb.closest('.template-event-row');
+      if (!row) return;
+      if (cb.checked) {
+        row.classList.remove('opacity-40', 'bg-slate-100');
+        row.classList.add('bg-slate-50');
+      } else {
+        row.classList.add('opacity-40', 'bg-slate-100');
+        row.classList.remove('bg-slate-50');
+      }
+    }
+    window.toggleEventRowState = toggleEventRowState;
+
     function toggleAllTemplateEvents(checkAll) {
-      document.querySelectorAll('input[name="template-event"]').forEach(cb => {
-        cb.checked = Boolean(checkAll);
+      document.querySelectorAll('.template-event-row').forEach(row => {
+        const cb = row.querySelector('.tpl-event-active');
+        if (cb) {
+          cb.checked = Boolean(checkAll);
+          toggleEventRowState(cb);
+        }
       });
     }
     window.toggleAllTemplateEvents = toggleAllTemplateEvents;
@@ -5353,9 +5586,34 @@ ${data.message}`);
       const dateInput = document.getElementById('tpl-start-date');
       const qDate = dateInput && dateInput.value ? dateInput.value : (selectedDate || getColombiaTodayString());
 
-      const selectedEvents = [];
-      document.querySelectorAll('input[name="template-event"]:checked').forEach(cb => {
-        selectedEvents.push(cb.value);
+      const activeEvents = [];
+      document.querySelectorAll('.template-event-row').forEach(row => {
+        const activeCb = row.querySelector('.tpl-event-active');
+        if (!activeCb || !activeCb.checked) return;
+
+        const eventId = row.dataset.eventId || '';
+        const weekday = parseInt(row.dataset.weekday || '0', 10);
+        const nameInput = row.querySelector('.tpl-event-name');
+        const modalitySelect = row.querySelector('.tpl-event-modality');
+        const startInput = row.querySelector('.tpl-event-start');
+        const endInput = row.querySelector('.tpl-event-end');
+        const entryInput = row.querySelector('.tpl-event-entry');
+        const prizeInput = row.querySelector('.tpl-event-prize');
+
+        const courtCbs = row.querySelectorAll('.tpl-court-cb:checked');
+        const courts = Array.from(courtCbs).map(cb => parseInt(cb.value, 10));
+
+        activeEvents.push({
+          id: eventId,
+          weekday: weekday,
+          name: nameInput ? nameInput.value.trim() : 'Torneo Americano',
+          modality: modalitySelect ? modalitySelect.value : 'PAREJA_FIJA',
+          start_time: startInput ? startInput.value : '20:00',
+          end_time: endInput ? endInput.value : '22:00',
+          courts: courts.length > 0 ? courts : [1, 2, 3, 4],
+          entry_fee: entryInput ? parseFloat(entryInput.value) || 60000 : 60000,
+          prize: prizeInput ? prizeInput.value.trim() : '$250.000 COP'
+        });
       });
 
       const originalHtml = btn ? btn.innerHTML : '<span>🌱</span> <span>Confirmar y Sembrar Semana</span>';
@@ -5370,13 +5628,26 @@ ${data.message}`);
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             date: qDate,
-            selected_events: selectedEvents
+            selected_events: activeEvents.map(e => e.id),
+            events: activeEvents
           })
         });
         const data = await res.json();
         if (res.ok) {
           closeWeeklyTemplateModal();
           alert(`✅ ${data.message || 'Semana programada con éxito'}\nTurnos generados: ${data.slots_created || 0}\nTorneos agendados: ${data.tournaments_scheduled || 0}`);
+
+          // Sincronizar fecha y forzar Pádel para ver los turnos inmediatamente
+          selectedDate = qDate;
+          const mainDateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
+          if (mainDateInput) mainDateInput.value = qDate;
+
+          window.currentSport = 'PADEL';
+          window.currentSportFilter = 'PADEL';
+          if (typeof setSportFilter === 'function') {
+            setSportFilter('PADEL');
+          }
+
           if (typeof fetchCourts === 'function') await fetchCourts();
           if (typeof fetchSlots === 'function') await fetchSlots();
           if (typeof loadTournamentsList === 'function') loadTournamentsList();

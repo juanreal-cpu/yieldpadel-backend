@@ -1,6 +1,6 @@
 from datetime import date, time, date as dt_date
 from decimal import Decimal
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict, Any
 import uuid
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -196,4 +196,5 @@ class DropPlayerResponse(BaseModel):
 
 class WeeklyTemplateSeedRequest(BaseModel):
     date: Optional[Union[dt_date, str]] = None
-    selected_events: Optional[List[str]] = None
+    selected_events: Optional[List[str]] = None
+    events: Optional[List[Dict[str, Any]]] = None
