@@ -2174,7 +2174,7 @@
                   <span>⚡</span> <span>Remate Flash -25%</span>
                 </button>
                 <button type="button" id="btn-seed-slots" onclick="seedWeeklySlots()" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 rounded-lg">
-                  <span>🌱</span> <span>Sembrar 7 Días</span>
+                  <span>🌱</span> <span>Programar Semana</span>
                 </button>
               </div>
             </div>
@@ -2182,31 +2182,29 @@
 <!-- NIVEL 2: Filtros y Deporte (bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4) -->
             <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
               <!-- Segmented Control de Deportes (Tabs tipo pastilla) -->
-              <div class="flex items-center gap-1.5" id="sport-selector-container">
-                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition bg-slate-900 !text-white font-bold active">
-                  <span>🎾</span> <span class="!text-white">Pádel (5 Pistas)</span>
+                            <div class="flex items-center gap-1.5" id="sport-selector-container">
+                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition bg-slate-900 text-white font-bold active">
+                  <span>🎾</span> <span>Pádel (5 Pistas)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white !text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
-                  <span>🏓</span> <span class="!text-slate-800">Pickleball (2)</span>
+                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
+                  <span>🏓</span> <span>Pickleball (2)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white !text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
-                  <span>🏐</span> <span class="!text-slate-800">Vóley (1)</span>
+                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
+                  <span>🏐</span> <span>Vóley (1)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white !text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
-                  <span>🧘</span> <span class="!text-slate-800">Pilates (1)</span>
+                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
+                  <span>🧘</span> <span>Pilates (1)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('CONSOLE')" id="btn-sport-console" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white !text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
-                  <span>🎮</span> <span class="!text-slate-800">Consola (1 Sala)</span>
+                <button type="button" onclick="setSportFilter('CONSOLE')" id="btn-sport-console" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
+                  <span>🎮</span> <span>Consola (1 Sala)</span>
                 </button>
               </div>
               <!-- Filtro Horario Horizontal Compacto -->
-              <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm" id="time-filter-container">
-
-
+                            <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm" id="time-filter-container">
                 <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="px-3 py-1 text-xs font-semibold rounded bg-slate-900 text-white transition active">Todo el día</button>
-                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition">Mañana (6-12)</button>
-                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition">Tarde (12-18)</button>
-                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition">Noche (18-24)</button>
+                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="px-3 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded transition">Mañana (6-12)</button>
+                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="px-3 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded transition">Tarde (12-18)</button>
+                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="px-3 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded transition">Noche (18-24)</button>
               </div>
 
               <!-- Selector de Cancha a la derecha con select nativo estilizado en Tailwind -->
@@ -2241,10 +2239,11 @@
                 </div>
               </div>
 
-              <!-- Contenedor Matriz Calendario Profesional Claro -->
-              <div class="calendar-wrapper" id="calendar-wrapper">
-                <div id="calendar-matrix" class="calendar-matrix">
-                  <div id="grid-loader" style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; text-align: center; color: #64748B;">
+                            <!-- Contenedor Matriz Calendario Profesional Claro -->
+              <div class="calendar-wrapper" id="calendar-matrix-container" data-alias="calendar-wrapper">
+                <div id="loading-spinner" class="hidden" style="display: none;"></div>
+                <div id="calendar-matrix" class="calendar-matrix" data-alias="slots-grid">
+                  <div id="grid-loader" class="hidden" style="display: none; grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; text-align: center; color: #64748B;">
                     <div style="display: inline-block; width: 36px; height: 36px; border: 3px solid #E2E8F0; border-radius: 50%; border-top-color: #0284C7; animation: spin 0.8s linear infinite; margin-bottom: 0.75rem;"></div>
                     <div style="font-size: 0.85rem; font-weight: 700; color: #0F172A;">Cargando turnos de la jornada...</div>
                     <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Consultando disponibilidad y tarifas dinámicas</div>
@@ -3555,28 +3554,27 @@
       if (sUpper === 'GAMING' || sUpper === 'ESPORTS') sUpper = 'CONSOLE';
       currentSportFilter = sUpper;
 
-      const sportButtons = {
-        PADEL: 'btn-sport-padel',
-        PICKLEBALL: 'btn-sport-pickleball',
-        VOLLEYBALL: 'btn-sport-volleyball',
-        PILATES: 'btn-sport-pilates',
-        CONSOLE: 'btn-sport-console'
+      const sportsConfig = {
+        PADEL: { id: 'btn-sport-padel', html: '<span>🎾</span> <span>Pádel (5 Pistas)</span>' },
+        PICKLEBALL: { id: 'btn-sport-pickleball', html: '<span>🏓</span> <span>Pickleball (2)</span>' },
+        VOLLEYBALL: { id: 'btn-sport-volleyball', html: '<span>🏐</span> <span>Vóley (1)</span>' },
+        PILATES: { id: 'btn-sport-pilates', html: '<span>🧘</span> <span>Pilates (1)</span>' },
+        CONSOLE: { id: 'btn-sport-console', html: '<span>🎮</span> <span>Consola (1 Sala)</span>' }
       };
 
-      Object.entries(sportButtons).forEach(([key, btnId]) => {
-        const btn = document.getElementById(btnId);
+      Object.entries(sportsConfig).forEach(([key, cfg]) => {
+        const btn = document.getElementById(cfg.id);
         if (btn) {
+          btn.innerHTML = cfg.html;
           if (key === currentSportFilter) {
-            btn.className = 'btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition bg-slate-900 !text-white font-bold active';
+            btn.className = 'btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition bg-slate-900 text-white font-bold active';
             btn.querySelectorAll('span').forEach(sp => {
               sp.style.color = '#ffffff';
-              sp.className = '!text-white';
             });
           } else {
-            btn.className = 'btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white !text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold';
+            btn.className = 'btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold';
             btn.querySelectorAll('span').forEach(sp => {
               sp.style.color = '#1e293b';
-              sp.className = '!text-slate-800';
             });
           }
         }
@@ -4534,26 +4532,30 @@ ${data.message}`);
     function setTimeFilter(timeFilter) {
       currentTimeFilter = (timeFilter || 'ALL').toUpperCase();
       const tods = {
-        ALL: 'btn-time-all',
-        MORNING: 'btn-time-morning',
-        AFTERNOON: 'btn-time-afternoon',
-        NIGHT: 'btn-time-night'
+        ALL: { id: 'btn-time-all', label: 'Todo el día' },
+        MORNING: { id: 'btn-time-morning', label: 'Mañana (6-12)' },
+        AFTERNOON: { id: 'btn-time-afternoon', label: 'Tarde (12-18)' },
+        NIGHT: { id: 'btn-time-night', label: 'Noche (18-24)' }
       };
 
-      Object.entries(tods).forEach(([key, btnId]) => {
-        const btn = document.getElementById(btnId);
+      Object.entries(tods).forEach(([key, cfg]) => {
+        const btn = document.getElementById(cfg.id);
         if (btn) {
+          btn.textContent = cfg.label;
           if (key === currentTimeFilter) {
             btn.className = 'px-3 py-1 text-xs font-semibold rounded bg-slate-900 text-white transition active';
           } else {
-            btn.className = 'px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 border border-slate-200 rounded transition';
+            btn.className = 'px-3 py-1 text-xs font-medium bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 rounded transition';
           }
         }
       });
 
       renderCalendarMatrix();
     }
+    window.setTimeFilter = setTimeFilter;
+    window.filterByTime = setTimeFilter;
     window.filterTimeOfDay = setTimeFilter;
+    function filterByTime(period) { setTimeFilter(period); }
 
     function setCourtZoom(courtVal) {
       selectedCourtZoom = courtVal;
@@ -4576,11 +4578,18 @@ ${data.message}`);
     // CORRECCIÓN ROBUSTA: fetchSlots() sin Loader Congelado
     // ========================================================
     async function fetchSlots() {
-      const container = document.getElementById('calendar-matrix');
-      const countEl = document.getElementById('slots-count');
-      const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
+      const spinner = document.getElementById('loading-spinner');
+      const gridLoader = document.getElementById('grid-loader');
+      if (spinner) {
+        spinner.classList.remove('hidden');
+        spinner.style.display = '';
+      }
+      if (gridLoader) {
+        gridLoader.classList.remove('hidden');
+        gridLoader.style.display = '';
+      }
 
-      // Inicializa el input #selected-date con '2026-09-07' si se encuentra vacío
+      const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
       if (dateInput && !dateInput.value) {
         dateInput.value = '2026-09-07';
       }
@@ -4600,24 +4609,14 @@ ${data.message}`);
         const slotsUrl = '/api/v1/slots/?date=' + encodeURIComponent(currentDate) + '&sport=' + encodeURIComponent(currentSport || 'PADEL');
         const res = await fetch(slotsUrl);
 
-        if (res.status === 404) {
-          allSlots = [];
-          renderCalendarMatrix();
-          updateMetrics();
-          return;
-        }
-
-        if (!res.ok) {
+        if (res.status === 404 || !res.ok) {
           console.warn('API slots error status:', res.status);
           allSlots = [];
-          renderCalendarMatrix();
-          updateMetrics();
-          return;
+        } else {
+          const data = await res.json();
+          const slotList = Array.isArray(data) ? data : (data.slots || []);
+          allSlots = slotList;
         }
-
-        const data = await res.json();
-        const slotList = Array.isArray(data) ? data : (data.slots || []);
-        allSlots = slotList;
 
         renderCalendarMatrix();
         updateMetrics();
@@ -4627,17 +4626,23 @@ ${data.message}`);
         renderCalendarMatrix();
         updateMetrics();
       } finally {
-        const spinner = document.getElementById('loading-spinner');
-        if (spinner) spinner.classList.add('hidden');
-        const gridLoader = document.getElementById('grid-loader');
-        if (gridLoader) gridLoader.classList.add('hidden');
+        const s = document.getElementById('loading-spinner');
+        if (s) {
+          s.classList.add('hidden');
+          s.style.display = 'none';
+        }
+        const gl = document.getElementById('grid-loader');
+        if (gl) {
+          gl.classList.add('hidden');
+          gl.style.display = 'none';
+        }
       }
     }
 
     const refreshData = fetchSlots;
 
-    function renderCalendarMatrix() {
-      const container = document.getElementById('calendar-matrix');
+        function renderCalendarMatrix() {
+      const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
       const countEl = document.getElementById('slots-count');
       if (!container) return;
 
@@ -4674,7 +4679,39 @@ ${data.message}`);
         if (displayedCourts.length === 0) displayedCourts = sportCourts;
       }
 
-      // 3. Configurar Grid Columns - Columna de horas fija de 75px
+      // 3. Filtrar slots por deporte
+      let sportSlots = allSlots.filter(s => {
+        const slotSport = (s.sport_type || (s.court ? s.court.sport_type : 'PADEL') || 'PADEL').toUpperCase();
+        return slotSport === currentSportFilter;
+      });
+
+      // Manejar arrays vacíos [] sin colapsar: Estado vacío limpio y amigable
+      if (sportSlots.length === 0) {
+        if (countEl) {
+          countEl.textContent = `0 turnos (${formatDateDisplay(selectedDate)})`;
+        }
+        container.style.gridTemplateColumns = '1fr';
+        container.style.minWidth = '100%';
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1;" class="py-16 text-center text-slate-500 w-full">
+            <p class="text-base font-semibold">No hay turnos registrados para este deporte en esta fecha.</p>
+            <p class="text-xs text-slate-400 mt-1">Usa "🌱 Programar Semana" para generar la agenda del club.</p>
+          </div>
+        `;
+        const spinner = document.getElementById('loading-spinner');
+        if (spinner) {
+          spinner.classList.add('hidden');
+          spinner.style.display = 'none';
+        }
+        const gridLoader = document.getElementById('grid-loader');
+        if (gridLoader) {
+          gridLoader.classList.add('hidden');
+          gridLoader.style.display = 'none';
+        }
+        return;
+      }
+
+      // 4. Configurar Grid Columns - Columna de horas fija de 75px
       if (displayedCourts.length > 1) {
         container.style.gridTemplateColumns = `75px repeat(${displayedCourts.length}, minmax(190px, 1fr))`;
         container.style.minWidth = `${75 + displayedCourts.length * 190}px`;
@@ -4682,12 +4719,6 @@ ${data.message}`);
         container.style.gridTemplateColumns = `75px 1fr`;
         container.style.minWidth = `100%`;
       }
-
-      // 4. Filtrar slots por deporte
-      let sportSlots = allSlots.filter(s => {
-        const slotSport = (s.sport_type || (s.court ? s.court.sport_type : 'PADEL') || 'PADEL').toUpperCase();
-        return slotSport === currentSportFilter;
-      });
 
       // 5. Filtrar slots según Estado
       let filteredSlots = sportSlots;
@@ -5035,7 +5066,7 @@ ${data.message}`);
     // ========================================================
     async function seedWeeklySlots() {
       const btn = document.getElementById('btn-seed-slots') || document.getElementById('btn-seed-week') || document.getElementById('btn-seed-courts');
-      const originalHTML = btn ? btn.innerHTML : '<span>🌱</span> <span>Sembrar 7 Días</span>';
+      const originalHTML = btn ? btn.innerHTML : '<span>🌱</span> <span>Programar Semana</span>';
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<span>⏳</span> <span>Sembrando turnos...</span>';
@@ -5059,7 +5090,7 @@ ${data.message}`);
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = originalHTML || '<span>🌱</span> <span>Sembrar 7 Días</span>';
+          btn.innerHTML = originalHTML || '<span>🌱</span> <span>Programar Semana</span>';
         }
         if (typeof fetchSlots === 'function') {
           await fetchSlots();
