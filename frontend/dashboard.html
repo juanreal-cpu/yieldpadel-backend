@@ -2105,7 +2105,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 1: 📅 MATRIZ CALENDARIO (OPERACIÓN EN TIEMPO REAL) -->
         <!-- ======================================================== -->
-        <div id="view-calendar" class="modular-view view-section">
+        <div id="view-calendar" class="view-section">
           
           <!-- BARRA DE HERRAMIENTAS OPERATIVA (Card Blanca 2 Filas) -->
 <!-- ======================================================== -->
@@ -2127,10 +2127,18 @@
 
               <!-- Derecha: Botones de Acción SaaS Agrupados -->
               <div class="flex items-center gap-2 flex-wrap">
-                <button id="btn-create-americano" onclick="openCreateAmericanoModal()" class="px-3.5 py-2 text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">🏆 + Torneo Americano</button>
-                <button id="btn-broadcast-whatsapp" onclick="broadcastAvailability()" class="px-3.5 py-2 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">📢 Difundir WhatsApp</button>
-                <button id="btn-flash-sale" onclick="broadcastPromoUrgent()" class="px-3.5 py-2 text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">⚡ Remate Flash</button>
-                <button id="btn-seed-week" onclick="seedWeeklySlots()" class="px-3.5 py-2 text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">🌱 Sembrar 7 Días</button>
+                <button type="button" id="btn-create-americano" onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm">
+                  <span>🏆</span> <span>+ Torneo Americano</span>
+                </button>
+                <button type="button" id="btn-broadcast-whatsapp" onclick="broadcastAvailability()" class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm">
+                  <span>📢</span> <span>Difundir WhatsApp</span>
+                </button>
+                <button type="button" id="btn-flash-promo" onclick="broadcastPromoUrgent()" class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-300 hover:bg-rose-100 rounded-lg shadow-sm">
+                  <span>⚡</span> <span>Remate Flash -25%</span>
+                </button>
+                <button type="button" id="btn-seed-slots" onclick="seedWeeklySlots()" class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-sm">
+                  <span>🌱</span> <span>Sembrar 7 Días</span>
+                </button>
               </div>
             </div>
 
@@ -2138,17 +2146,17 @@
             <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
               <!-- Segmented Control de Deportes (Tabs tipo pastilla) -->
               <div class="flex items-center gap-1.5" id="sport-selector-container">
-                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="bg-slate-900 text-white rounded-lg px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm transition active">
-                  🎾 Pádel (5 Pistas)
+                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 rounded-lg shadow-sm transition active">
+                  <span>🎾</span> <span>Pádel (5 Pistas)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
-                  🏓 Pickleball (2)
+                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition">
+                  <span>🏓</span> <span>Pickleball (2)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
-                  🏐 Vóley (1)
+                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition">
+                  <span>🏐</span> <span>Vóley (1)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
-                  🧘 Pilates (1)
+                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition">
+                  <span>🧘</span> <span>Pilates (1)</span>
                 </button>
               </div>
 
@@ -2255,7 +2263,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 2: 🏆 TORNEOS AMERICANOS (GESTIÓN Y HISTÓRICO)    -->
         <!-- ======================================================== -->
-        <div id="view-tournaments" class="modular-view view-section hidden" style="display: none;">
+        <div id="view-tournaments" class="view-section hidden">
           <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2317,7 +2325,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 3: 👥 CRM JUGADORES                                -->
         <!-- ======================================================== -->
-        <div id="view-crm" class="modular-view view-section hidden" style="display: none;">
+        <div id="view-crm" class="view-section hidden">
           <div style="max-width: 1100px; margin: 0 auto; padding-bottom: 3rem;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2405,7 +2413,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 4: 📈 RADAR DE PRECIOS                            -->
         <!-- ======================================================== -->
-        <div id="view-radar" class="modular-view view-section hidden" style="display: none;">
+        <div id="view-radar" class="view-section hidden">
           <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
             
             <!-- Header con Controles de Franja y Ciudad -->
@@ -2576,7 +2584,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 5: 💡 MOTOR DE YIELD & INDICADORES                -->
         <!-- ======================================================== -->
-        <div id="view-yield" class="modular-view view-section hidden" style="display: none;">
+        <div id="view-yield" class="view-section hidden">
           <div style="max-width: 1050px; margin: 0 auto;">
             <div style="margin-bottom: 1.5rem;">
               <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
@@ -2619,7 +2627,7 @@
         <!-- ======================================================== -->
         <!-- VISTA 6: ⚙️ CONFIGURACIÓN DEL CLUB                      -->
         <!-- ======================================================== -->
-        <div id="view-config" class="modular-view view-section hidden" style="display: none;">
+        <div id="view-config" class="view-section hidden">
           <div style="max-width: 1050px; margin: 0 auto;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -2731,7 +2739,7 @@
         <!-- ======================================================== -->
         <!-- VISTA MODULAR: 🛡️ AUDITORÍA & GESTIÓN DE USUARIOS RBAC    -->
         <!-- ======================================================== -->
-        <div id="view-audit" class="modular-view view-section hidden" style="display: none;">
+        <div id="view-audit" class="view-section hidden">
           <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
             
             <!-- Encabezado de la Vista de Auditoría -->
@@ -3131,7 +3139,7 @@
   <!-- ======================================================== -->
   <script>
     // ========================================================
-    // DEFINICIÓN GLOBAL DE FUNCIONES DE NAVEGACIÓN Y BOT DRAWER (Window Scope)
+    // DEFINICIÓN GLOBAL DE FUNCIONES DE NAVEGACIÓN (Window Scope)
     // ========================================================
     window.toggleBotDrawer = function(force) {
       const drawer = document.getElementById('bot-drawer');
@@ -3155,33 +3163,43 @@
     };
 
     window.switchMainView = function(viewName) {
-      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      console.log('Navegando a vista:', viewName);
       let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
       if (cleanName === 'matrix') cleanName = 'calendar';
       if (cleanName === 'indicators') cleanName = 'yield';
 
+      document.querySelectorAll('.view-section').forEach(el => {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+      });
       const target = document.getElementById('view-' + cleanName);
       if (target) {
         target.classList.remove('hidden');
+        target.style.display = '';
+      } else {
+        console.error('No se encontró el contenedor view-' + cleanName);
       }
-      document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
+      // Actualizar estilo del botón activo en el sidebar
+      document.querySelectorAll('.sidebar-link').forEach(btn => {
         btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
         btn.classList.add('text-slate-600');
       });
-      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('tab-' + cleanName);
+      const activeBtn = document.getElementById('btn-nav-' + cleanName);
       if (activeBtn) {
         activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
         activeBtn.classList.remove('text-slate-600');
       }
-
-      // Cargas bajo demanda por vista
+      // Disparar carga de datos específica si aplica
+      if (cleanName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments();
+      if (cleanName === 'tournaments' && typeof loadTournamentsList === 'function') loadTournamentsList();
+      if (cleanName === 'crm' && typeof loadCRMPlayers === 'function') loadCRMPlayers();
+      if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
+      if (cleanName === 'radar' && typeof initRadarMap === 'function') setTimeout(initRadarMap, 150);
+      if (cleanName === 'yield' && typeof loadYieldEngineStats === 'function') loadYieldEngineStats();
       if (cleanName === 'config' && typeof loadClubConfig === 'function') loadClubConfig();
-      else if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
-      else if (cleanName === 'tournaments' && typeof loadTournamentsList === 'function') loadTournamentsList();
-      else if (cleanName === 'yield' && typeof loadYieldEngineStats === 'function') loadYieldEngineStats();
-      else if (cleanName === 'radar' && typeof initRadarMap === 'function') initRadarMap();
-      else if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
-      else if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
+      if (cleanName === 'audit' && typeof loadAuditLogs === 'function') loadAuditLogs();
+      if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
+      if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
     };
 
     window.setSportFilter = function(sport) {
@@ -3202,9 +3220,9 @@
         const btn = document.getElementById(btnId);
         if (btn) {
           if (key === currentSportFilter) {
-            btn.className = 'bg-slate-900 text-white rounded-lg px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm transition active';
+            btn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 rounded-lg shadow-sm transition active';
           } else {
-            btn.className = 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition';
+            btn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition';
           }
         }
       });
@@ -3215,15 +3233,22 @@
       if (typeof fetchSlots === 'function') fetchSlots();
     };
 
-    // Aliases globales
+    // Aliases globales para interacción directa
     function toggleBotDrawer(f) { window.toggleBotDrawer(f); }
     function switchMainView(v) { window.switchMainView(v); }
     function setSportFilter(s) { window.setSportFilter(s); }
     window.selectSportFilter = window.setSportFilter;
 
-    function seedWeeklySlots() {
-      if (typeof seedFiveCourts === 'function') return seedFiveCourts();
+    // Conexión CRM y Auditoría
+    function loadCRMPlayers() {
+      if (typeof loadCRMDirectory === 'function') return loadCRMDirectory();
     }
+    window.loadCRMPlayers = loadCRMPlayers;
+
+    function loadAuditLogs() {
+      if (typeof loadAuditData === 'function') return loadAuditData();
+    }
+    window.loadAuditLogs = loadAuditLogs;
 
     window.addEventListener('error', function(e) {
       console.warn('Protección global de script en interfaz:', e.error || e.message);
@@ -4490,31 +4515,42 @@ ${data.message}`);
     // ========================================================
     // ACCIONES: SEED 7 DÍAS, AMERICANO, DIFUSIÓN & WHATSAPP
     // ========================================================
-    async function seedFiveCourts() {
-      const btn = document.getElementById('btn-seed-courts');
+    async function seedWeeklySlots() {
+      const btn = document.getElementById('btn-seed-slots') || document.getElementById('btn-seed-week') || document.getElementById('btn-seed-courts');
+      const originalHTML = btn ? btn.innerHTML : '<span>🌱</span> <span>Sembrar 7 Días</span>';
       if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Sembrando...';
+        btn.innerHTML = '<span>⏳</span> <span>Sembrando turnos...</span>';
       }
       try {
-        const query = selectedDate ? `?date=${selectedDate}` : '';
-        const res = await fetch(`${API_BASE}/api/v1/slots/seed${query}`, { method: 'POST' });
+        const dateInput = document.getElementById('selected-date');
+        const qDate = (dateInput && dateInput.value) ? dateInput.value : (selectedDate || '2026-09-07');
+        const res = await fetch(`/api/v1/slots/seed?date=${encodeURIComponent(qDate)}`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
-          addEvent('Turnos Sembrados (7 Días)', `${data.slots_created || 0} slots creados para 5 canchas`, 'green');
-          await fetchSlots();
+          if (typeof addEvent === 'function') {
+            addEvent('Turnos Sembrados (7 Días)', `${data.slots_created || 0} slots creados para 5 canchas`, 'green');
+          }
+          if (typeof fetchCourts === 'function') await fetchCourts();
         } else {
           alert(data.detail || 'Error al sembrar turnos');
         }
       } catch (err) {
+        console.error('Error al sembrar turnos:', err);
         alert('Error conectando con el servidor al sembrar turnos');
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<span>🌱</span> Sembrar 7 Días';
+          btn.innerHTML = originalHTML || '<span>🌱</span> <span>Sembrar 7 Días</span>';
+        }
+        if (typeof fetchSlots === 'function') {
+          await fetchSlots();
         }
       }
     }
+    const seedFiveCourts = seedWeeklySlots;
+    window.seedWeeklySlots = seedWeeklySlots;
+    window.seedFiveCourts = seedWeeklySlots;
 
     // Modal Crear Torneo Americano
     function openCreateAmericanoModal() {
@@ -4637,29 +4673,35 @@ ${data.message}`);
 
     // Botón Remate Flash Canchas Críticas
     async function broadcastPromoUrgent() {
-      const btn = document.getElementById('btn-broadcast-promo');
+      const btn = document.getElementById('btn-flash-promo') || document.getElementById('btn-flash-sale') || document.getElementById('btn-broadcast-promo');
+      const originalHTML = btn ? btn.innerHTML : '<span>⚡</span> <span>Remate Flash -25%</span>';
       if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Rematando...';
+        btn.innerHTML = '<span>⏳</span> <span>Aplicando remate...</span>';
       }
       try {
-        const res = await fetch(`${API_BASE}/api/v1/whatsapp/broadcast-promo-urgent`, { method: 'POST' });
+        const res = await fetch('/api/v1/whatsapp/broadcast-promo-urgent', { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
-          addEvent('Remate Flash Activado', `${data.total_critical_slots} turnos críticos enviados con descuento`, 'amber');
-          alert(`⚡ ¡Remate Flash completado!\n\nSe enviaron alertas de descuento (-25%) para ${data.total_critical_slots} turnos críticos.`);
+          if (typeof addEvent === 'function') {
+            addEvent('Remate Flash Activado', `${data.total_critical_slots || 0} turnos críticos enviados con descuento`, 'amber');
+          }
+          alert(`⚡ ¡Remate Flash completado!\n\nSe enviaron alertas de descuento (-25%) para ${data.total_critical_slots || 0} turnos críticos.`);
+          if (typeof fetchSlots === 'function') await fetchSlots();
         } else {
           alert(data.detail || 'Error en Remate Flash');
         }
       } catch (err) {
+        console.error('Error en Remate Flash:', err);
         alert('Fallo al conectar con el servidor');
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<span>⚡</span> Remate Flash <span class="badge-urgency-dot">-25%</span>';
+          btn.innerHTML = originalHTML || '<span>⚡</span> <span>Remate Flash -25%</span>';
         }
       }
     }
+    window.broadcastPromoUrgent = broadcastPromoUrgent;
 
     // Cargar y Guardar Parámetros de Configuración del Club
     async function loadClubConfig() {
@@ -5300,6 +5342,114 @@ ${data.message}`);
       }
     }
 
+    
+    // ========================================================
+    // GESTIÓN DE TORNEOS AMERICANOS
+    // ========================================================
+    function renderTournamentCard(t, isPast) {
+      const sportEmoji = t.sport_type === 'PICKLEBALL' ? '🏓' : (t.sport_type === 'VOLLEYBALL' ? '🏐' : '🎾');
+      const modalityLabel = t.modality === 'PAREJA_FIJA' ? 'Pareja Fija' : (t.modality === 'PAREJA_SORTEO' ? 'Pareja por Sorteo' : 'Individual');
+      const courtsStr = Array.isArray(t.courts_involved) ? t.courts_involved.map(c => typeof c === 'object' ? c.name : c).join(', ') : 'Pistas asignadas';
+      const prizeFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(t.prize_pool || 250000);
+
+      return `
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-violet-100 text-violet-800 mb-1">
+                ${sportEmoji} ${t.sport_type || 'PADEL'} • ${modalityLabel}
+              </span>
+              <h4 class="text-sm font-bold text-slate-900">${t.tournament_name || 'Torneo Americano'}</h4>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              💰 ${prizeFormatted}
+            </span>
+          </div>
+          <div class="text-xs text-slate-500 mb-3 space-y-0.5">
+            <p>📅 <strong>${t.date}</strong> | ⏰ <strong>${t.start_time} - ${t.end_time}</strong></p>
+            <p>📍 ${courtsStr}</p>
+            <p>👥 Inscritos: <strong>${t.registered_players_count || 0}/${t.max_players || 16}</strong></p>
+            ${isPast && t.winners_names ? `<p class="text-amber-700 font-semibold mt-1">🏆 Ganadores: ${t.winners_names}</p>` : ''}
+          </div>
+          <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+            ${!isPast ? `
+              <button onclick="openJoinAmericanoModal('${t.tournament_name}')" class="flex-1 py-1.5 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold shadow-xs transition text-center">
+                Inscribir Pareja
+              </button>
+            ` : `
+              <span class="text-xs font-medium text-slate-400">Torneo finalizado</span>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadTournaments(sport = 'ALL') {
+      const upGrid = document.getElementById('tournaments-upcoming-grid');
+      const pastGrid = document.getElementById('tournaments-past-grid');
+      const upCount = document.getElementById('tourn-upcoming-count');
+      const pastCount = document.getElementById('tourn-past-count');
+      try {
+        const res = await fetch(`/api/v1/tournaments/?sport=${encodeURIComponent(sport)}`);
+        if (!res.ok) throw new Error('Error al consultar torneos');
+        const data = await res.json();
+        const upcoming = data.upcoming || [];
+        const past = data.past || [];
+
+        if (upCount) upCount.textContent = `${upcoming.length} torneo${upcoming.length === 1 ? '' : 's'}`;
+        if (pastCount) pastCount.textContent = `${past.length} torneo${past.length === 1 ? '' : 's'}`;
+
+        if (upGrid) {
+          if (upcoming.length === 0) {
+            upGrid.innerHTML = `
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 2rem; text-align: center; color: #64748B; grid-column: 1/-1;">
+                <p class="text-slate-500 mb-3 font-medium">No hay torneos americanos programados para esta fecha.</p>
+                <button onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition">
+                  <span>🏆</span> <span>+ Crear Torneo Americano</span>
+                </button>
+              </div>
+            `;
+          } else {
+            upGrid.innerHTML = upcoming.map(t => renderTournamentCard(t, false)).join('');
+          }
+        }
+
+        if (pastGrid) {
+          if (past.length === 0) {
+            pastGrid.innerHTML = `
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.5rem; text-align: center; color: #64748B; grid-column: 1/-1;">
+                Sin torneos finalizados aún.
+              </div>
+            `;
+          } else {
+            pastGrid.innerHTML = past.map(t => renderTournamentCard(t, true)).join('');
+          }
+        }
+      } catch (err) {
+        console.warn('Error loading tournaments:', err);
+        if (upGrid) {
+          upGrid.innerHTML = `
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 2rem; text-align: center; color: #64748B; grid-column: 1/-1;">
+              <p class="text-slate-500 mb-3 font-medium">No hay torneos americanos programados para esta fecha.</p>
+              <button onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition">
+                <span>🏆</span> <span>+ Crear Torneo Americano</span>
+              </button>
+            </div>
+          `;
+        }
+      }
+    }
+    window.loadTournaments = loadTournaments;
+    window.loadTournamentsList = loadTournaments;
+
+    function filterTournamentsSport(sport) {
+      document.querySelectorAll('#view-tournaments .filter-pill').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById('btn-tourn-sport-' + (sport || 'all').toLowerCase());
+      if (btn) btn.classList.add('active');
+      loadTournaments(sport);
+    }
+    window.filterTournamentsSport = filterTournamentsSport;
+
     document.addEventListener('DOMContentLoaded', () => {
       // Inicializar fecha defensiva hoy si está vacío
       const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
@@ -5311,34 +5461,7 @@ ${data.message}`);
       }
       if (typeof updateDateUI === 'function') updateDateUI();
 
-      // Exponer globalmente switchMainView para los botones del sidebar
-      window.switchMainView = function(viewName) {
-        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-        let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
-        if (cleanName === 'matrix') cleanName = 'calendar';
-        if (cleanName === 'indicators') cleanName = 'yield';
-
-        const target = document.getElementById('view-' + cleanName);
-        if (target) target.classList.remove('hidden');
-
-        document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
-          btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
-          btn.classList.add('text-slate-600');
-        });
-        const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('tab-' + cleanName);
-        if (activeBtn) {
-          activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
-          activeBtn.classList.remove('text-slate-600');
-        }
-
-        if (cleanName === 'config' && typeof loadClubConfig === 'function') loadClubConfig();
-        else if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
-        else if (cleanName === 'tournaments' && typeof loadTournamentsList === 'function') loadTournamentsList();
-        else if (cleanName === 'yield' && typeof loadYieldEngineStats === 'function') loadYieldEngineStats();
-        else if (cleanName === 'radar' && typeof initRadarMap === 'function') initRadarMap();
-        else if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
-        else if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
-      };
+      // switchMainView ya está definida globalmente en window
 
       // Cargar usuario y cortes
       if (typeof fetchCurrentUser === 'function') fetchCurrentUser();
