@@ -2721,12 +2721,13 @@
             <!-- Controles de Navegación de Semana y Deporte -->
             <div class="flex items-center flex-wrap gap-2.5">
               <!-- Selector de Deporte para Analytics -->
-              <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200" id="analytics-sport-selector">
-                <button type="button" onclick="setAnalyticsSport('PADEL')" id="btn-an-sport-padel" class="px-2.5 py-1 text-xs font-bold rounded-md bg-slate-900 text-white shadow-xs transition active">🎾 Pádel</button>
-                <button type="button" onclick="setAnalyticsSport('PICKLEBALL')" id="btn-an-sport-pickleball" class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition">🏓 PB</button>
-                <button type="button" onclick="setAnalyticsSport('VOLLEYBALL')" id="btn-an-sport-volleyball" class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition">🏐 Vóley</button>
-                <button type="button" onclick="setAnalyticsSport('PILATES')" id="btn-an-sport-pilates" class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition">🧘 Pilates</button>
-                <button type="button" onclick="setAnalyticsSport('CONSOLE')" id="btn-an-sport-console" class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition">🎮 Consola</button>
+              <!-- Selector de Deporte para Analytics (Pills) -->
+              <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200" id="analytics-sport-selector">
+                <button type="button" onclick="setAnalyticsSport('PADEL')" id="btn-an-sport-padel" class="btn-an-sport-pill px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm transition active bg-slate-900 text-white">🎾 Pádel (5)</button>
+                <button type="button" onclick="setAnalyticsSport('PICKLEBALL')" id="btn-an-sport-pickleball" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300">🏓 Pickleball (2)</button>
+                <button type="button" onclick="setAnalyticsSport('VOLLEYBALL')" id="btn-an-sport-volleyball" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300">🏐 Vóley (1)</button>
+                <button type="button" onclick="setAnalyticsSport('PILATES')" id="btn-an-sport-pilates" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300">🧘 Pilates (1)</button>
+                <button type="button" onclick="setAnalyticsSport('CONSOLE')" id="btn-an-sport-console" class="btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300">🎮 Consola (1)</button>
               </div>
 
               <!-- Control Semana Anterior / Actual / Siguiente -->
@@ -2810,16 +2811,20 @@
                 <span class="text-slate-500 font-medium">0% Sin Ocupación</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded border border-rose-200 bg-rose-50 inline-block"></span>
-                <span class="text-rose-700 font-medium">1% - 40% Baja</span>
+                <span class="w-4 h-4 rounded border border-amber-200 bg-amber-50 inline-block"></span>
+                <span class="text-amber-900 font-medium">1% - 40% Baja</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded border border-amber-200 bg-amber-50 inline-block"></span>
-                <span class="text-amber-700 font-medium">41% - 75% Media</span>
+                <span class="w-4 h-4 rounded border border-sky-200 bg-sky-50 inline-block"></span>
+                <span class="text-sky-900 font-semibold">41% - 79% Media</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <span class="w-4 h-4 rounded border border-emerald-300 bg-emerald-100 inline-block"></span>
-                <span class="text-emerald-800 font-bold">76% - 100% Alta</span>
+                <span class="text-emerald-900 font-bold">80% - 99% Alta</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded border border-emerald-700 bg-emerald-600 inline-block"></span>
+                <span class="text-emerald-800 font-black">100% Lleno Total</span>
               </div>
             </div>
           </div>
@@ -4166,10 +4171,12 @@
       sports.forEach(sp => {
         const btn = document.getElementById('btn-an-sport-' + sp.toLowerCase());
         if (btn) {
-          if (sp === window.analyticsSport) {
-            btn.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-slate-900 text-white shadow-xs transition active';
+          const isActive = (sp === window.analyticsSport);
+          btn.classList.toggle('active', isActive);
+          if (isActive) {
+            btn.className = 'btn-an-sport-pill px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm transition active bg-slate-900 text-white';
           } else {
-            btn.className = 'px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition';
+            btn.className = 'btn-an-sport-pill px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition bg-white border border-slate-300';
           }
         }
       });
@@ -4288,13 +4295,31 @@
           const avgRevFormatted = formatCOP(cell.average_revenue || 0);
           const bookedStr = `${cell.slots_booked}/${cell.total_slots} canchas`;
 
-          let heatClass = 'bg-slate-50 text-slate-400 border border-dashed border-slate-200 hover:bg-slate-100';
-          if (occ > 75) {
-            heatClass = 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 hover:bg-emerald-200 shadow-xs';
-          } else if (occ > 40) {
-            heatClass = 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100';
-          } else if (occ > 0) {
-            heatClass = 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100';
+          let cellContainerClass = 'p-2.5 rounded-xl text-center bg-slate-50 border border-dashed border-slate-200 text-slate-400 transition hover:shadow-sm';
+          let pctColor = 'text-slate-400';
+          let fractionColor = 'text-slate-400';
+          let revColor = 'text-slate-400 font-medium';
+
+          if (occ >= 100) {
+            cellContainerClass = 'p-2.5 rounded-xl text-center bg-emerald-600 text-white font-black shadow-sm border border-emerald-700 transition hover:brightness-105';
+            pctColor = 'text-white';
+            fractionColor = 'text-emerald-100';
+            revColor = 'text-white font-black opacity-95';
+          } else if (occ >= 80) {
+            cellContainerClass = 'p-2.5 rounded-xl text-center bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold transition hover:shadow-sm';
+            pctColor = 'text-emerald-900';
+            fractionColor = 'text-emerald-800';
+            revColor = 'text-emerald-950 font-extrabold';
+          } else if (occ >= 41) {
+            cellContainerClass = 'p-2.5 rounded-xl text-center bg-sky-50 border border-sky-200 text-sky-900 font-semibold transition hover:shadow-sm';
+            pctColor = 'text-sky-900';
+            fractionColor = 'text-sky-800';
+            revColor = 'text-sky-950 font-bold';
+          } else if (occ >= 1) {
+            cellContainerClass = 'p-2.5 rounded-xl text-center bg-amber-50 border border-amber-200 text-amber-900 font-medium transition hover:shadow-sm';
+            pctColor = 'text-amber-900';
+            fractionColor = 'text-amber-800';
+            revColor = 'text-amber-950 font-bold';
           }
 
           // Delta tooltips
@@ -4316,10 +4341,10 @@
 
           tableHtml += `
             <td class="p-1.5 align-middle text-center cell-occupancy">
-              <div class="relative group cursor-pointer p-2.5 rounded-lg transition ${heatClass}">
-                <div class="text-base font-black tracking-tight">${occ}%</div>
-                <div class="text-[10px] font-medium opacity-80 mt-0.5">${bookedStr}</div>
-                <div class="text-[10px] font-bold mt-1 opacity-90">${avgRevFormatted}</div>
+              <div class="relative group cursor-pointer ${cellContainerClass}">
+                <div class="text-base font-black tracking-tight ${pctColor}">${occ}%</div>
+                <div class="text-[10px] font-semibold mt-0.5 ${fractionColor}">${bookedStr}</div>
+                <div class="text-[10px] mt-1 ${revColor}">${avgRevFormatted}</div>
 
                 <!-- Tooltip Hover Popover -->
                 <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-56 p-3 bg-slate-900 text-white rounded-xl shadow-2xl text-xs space-y-1.5 pointer-events-none text-left border border-slate-700">

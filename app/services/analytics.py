@@ -29,6 +29,14 @@ DAY_NAMES_ES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado",
 DAY_SHORTS_ES = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"]
 MONTH_NAMES_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
+SPORT_COURT_CONFIG = {
+    "PADEL": {"count": 5, "name": "Pádel"},
+    "PICKLEBALL": {"count": 2, "name": "Pickleball"},
+    "VOLLEYBALL": {"count": 1, "name": "Vóley"},
+    "PILATES": {"count": 1, "name": "Pilates"},
+    "CONSOLE": {"count": 1, "name": "Consola"},
+}
+
 
 class AnalyticsService:
     @staticmethod
@@ -40,6 +48,7 @@ class AnalyticsService:
         """
         Calcula la matriz semanal de ocupación (Horas vs Días), RevPAST,
         y comparativas con Semana Anterior (WoW) y Mes Anterior (MoM, 28 días).
+        Filtra estrictamente los slots y el conteo de canchas por el deporte especificado.
         """
         if not start_date:
             start_date = date.today()
@@ -52,20 +61,34 @@ class AnalyticsService:
         prev_month_dates = [monday - timedelta(days=28) + timedelta(days=i) for i in range(7)]
 
         all_queried_dates = curr_dates + prev_week_dates + prev_month_dates
-        sport_upper = (sport or "PADEL").upper()
+        sport_upper = (sport or "PADEL").strip().upper()
+        if sport_upper not in SPORT_COURT_CONFIG and sport_upper != "ALL":
+            sport_upper = "PADEL"
 
+        # 1. Obtener canchas del deporte
         court_q = select(Court).where(Court.is_active == True)
         if sport_upper != "ALL":
             court_q = court_q.where(Court.sport_type == sport_upper)
         res_courts = await db.execute(court_q)
         active_courts = res_courts.scalars().all()
-        num_courts = len(active_courts)
-        if num_courts == 0:
-            num_courts = 5 if sport_upper == "PADEL" else (2 if sport_upper == "PICKLEBALL" else 1)
+        active_court_ids = {c.id for c in active_courts}
 
+        # Determinación estricta del denominador de canchas
+        if sport_upper == "PADEL":
+            num_courts = 5
+        elif sport_upper in SPORT_COURT_CONFIG:
+            num_courts = SPORT_COURT_CONFIG[sport_upper]["count"]
+        elif sport_upper == "ALL":
+            num_courts = len(active_courts) if active_courts else 10
+        else:
+            num_courts = len(active_courts) if active_courts else 5
+
+        # 2. Consultar turnos de las fechas requeridas
         slot_q = select(TimeSlot).where(TimeSlot.date.in_(all_queried_dates))
         if sport_upper != "ALL":
             slot_q = slot_q.where(TimeSlot.sport_type == sport_upper)
+            if active_court_ids:
+                slot_q = slot_q.where(TimeSlot.court_id.in_(active_court_ids))
         res_slots = await db.execute(slot_q)
         all_slots = res_slots.scalars().all()
 
@@ -112,6 +135,11 @@ class AnalyticsService:
             day_slots = slots_by_date.get(day_date, [])
             matching_slots = []
             for s in day_slots:
+                if sport_upper != "ALL":
+                    if str(s.sport_type).upper() != sport_upper:
+                        continue
+                    if active_court_ids and s.court_id not in active_court_ids:
+                        continue
                 s_start = s.start_time
                 s_end = time(23, 59) if (s.end_time.hour == 0 and s.end_time.minute == 0) else s.end_time
                 if s_start < b_end and s_end > b_start:
@@ -127,17 +155,29 @@ class AnalyticsService:
                     "has_slots": False,
                 }
 
-            total_s = max(len(matching_slots), num_courts)
-            booked_frac_sum = sum(get_slot_booked_fraction(s) for s in matching_slots)
-            booked_count = round(booked_frac_sum)
-            total_rev = sum(get_slot_revenue(s) for s in matching_slots)
-            occ_pct = round((booked_frac_sum / total_s) * 100.0, 1) if total_s > 0 else 0.0
-            avg_rev = round(total_rev / total_s, 0) if total_s > 0 else 0.0
+            # Mapear como máximo 1 turno por cancha física para no duplicar denominadores
+            court_slot_map: Dict[Any, TimeSlot] = {}
+            for s in matching_slots:
+                cid = s.court_id
+                if cid not in court_slot_map:
+                    court_slot_map[cid] = s
+                else:
+                    # En caso de turnos duplicados, priorizar el reservado o de mayor ingreso
+                    if is_slot_booked(s) and not is_slot_booked(court_slot_map[cid]):
+                        court_slot_map[cid] = s
+                    elif get_slot_revenue(s) > get_slot_revenue(court_slot_map[cid]):
+                        court_slot_map[cid] = s
+
+            booked_frac_sum = sum(get_slot_booked_fraction(s) for s in court_slot_map.values())
+            booked_count = min(round(booked_frac_sum), num_courts)
+            total_rev = sum(get_slot_revenue(s) for s in court_slot_map.values())
+            occ_pct = round((booked_frac_sum / num_courts) * 100.0, 1) if num_courts > 0 else 0.0
+            avg_rev = round(total_rev / num_courts, 0) if num_courts > 0 else 0.0
 
             return {
-                "total_slots": total_s,
+                "total_slots": num_courts,
                 "slots_booked": booked_count,
-                "occupancy_percentage": occ_pct,
+                "occupancy_percentage": min(100.0, occ_pct),
                 "average_revenue": avg_rev,
                 "total_revenue": round(total_rev, 0),
                 "has_slots": True,
@@ -148,10 +188,12 @@ class AnalyticsService:
                 return "zero"
             elif occ_pct <= 40.0:
                 return "low"
-            elif occ_pct <= 75.0:
+            elif occ_pct < 80.0:
                 return "medium"
-            else:
+            elif occ_pct < 100.0:
                 return "high"
+            else:
+                return "full"
 
         matrix_rows = []
         total_curr_slots_sum = 0
@@ -183,8 +225,8 @@ class AnalyticsService:
                 delta_wow = None
                 delta_wow_rev = None
                 if has_prev_week_data:
-                    d_prev_w = prev_week_dates[d_idx]
-                    pw_metric = compute_cell_metrics(d_prev_w, b_start, b_end)
+                    pw_date = prev_week_dates[d_idx]
+                    pw_metric = compute_cell_metrics(pw_date, b_start, b_end)
                     if pw_metric["has_slots"]:
                         delta_wow = round(occ - pw_metric["occupancy_percentage"], 1)
                         delta_wow_rev = round(curr_metric["average_revenue"] - pw_metric["average_revenue"], 0)
@@ -195,8 +237,8 @@ class AnalyticsService:
                 delta_mom = None
                 delta_mom_rev = None
                 if has_prev_month_data:
-                    d_prev_m = prev_month_dates[d_idx]
-                    pm_metric = compute_cell_metrics(d_prev_m, b_start, b_end)
+                    pm_date = prev_month_dates[d_idx]
+                    pm_metric = compute_cell_metrics(pm_date, b_start, b_end)
                     if pm_metric["has_slots"]:
                         delta_mom = round(occ - pm_metric["occupancy_percentage"], 1)
                         delta_mom_rev = round(curr_metric["average_revenue"] - pm_metric["average_revenue"], 0)
@@ -242,7 +284,8 @@ class AnalyticsService:
                     dead_courts_count += 1
                 else:
                     c_booked = sum(1 for s in c_slots if is_slot_booked(s))
-                    c_occ = (c_booked / len(c_slots)) * 100.0
+                    c_total = len(c_slots)
+                    c_occ = (c_booked / c_total) * 100.0
                     if c_occ < 20.0:
                         dead_courts_count += 1
         elif avg_occ < 20.0:
