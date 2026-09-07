@@ -99,16 +99,18 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     /* ======================================================== */
     /* 1. ESTRUCTURA GENERAL SAAS: SIDEBAR FIJO & MAIN AREA     */
     /* ======================================================== */
+    #app-container,
     .saas-layout {
       display: flex;
       width: 100%;
       min-height: 100vh;
+      background-color: #F8FAFC;
     }
 
-    /* SIDEBAR FIJO A LA IZQUIERDA (w-64 = 260px) */
+    /* SIDEBAR FIJO A LA IZQUIERDA (w-64 = 16rem = 256px) */
     .saas-sidebar {
-      width: 260px;
-      min-width: 260px;
+      width: 16rem;
+      min-width: 16rem;
       height: 100vh;
       position: fixed;
       top: 0;
@@ -268,8 +270,8 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
 
     /* MAIN CONTENT AREA (Offset by sidebar w-64) */
     .saas-main-content {
-      margin-left: 260px;
-      width: calc(100% - 260px);
+      margin-left: 16rem;
+      width: calc(100% - 16rem);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -1956,15 +1958,15 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
 
   </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
 
   <!-- ======================================================== -->
   <!-- LAYOUT SAAS PROFESIONAL: SIDEBAR FIJO + CONTENIDO        -->
   <!-- ======================================================== -->
-  <div class="saas-layout">
+  <div id="app-container" class="saas-layout flex w-full min-h-screen bg-slate-50">
 
     <!-- 1. SIDEBAR FIJO A LA IZQUIERDA (w-64) -->
-    <aside class="saas-sidebar">
+    <aside class="saas-sidebar w-64 min-w-[16rem] h-screen fixed top-0 left-0 bg-white border-r border-slate-200 flex flex-col justify-between z-50 shadow-sm">
       <div>
         <!-- Logo & Marca -->
         <div class="sidebar-brand">
@@ -2024,7 +2026,7 @@ RECEPTION_DASHBOARD_HTML = """<!DOCTYPE html>
     </aside>
 
     <!-- 2. CONTENIDO PRINCIPAL SAAS -->
-    <div class="saas-main-content">
+    <div class="saas-main-content ml-64 flex-1 min-h-screen flex flex-col bg-slate-50" style="background-color: #f8fafc;">
 
       <!-- ======================================================== -->
       <!-- 2. BANNER EJECUTIVO SUPERIOR (HEADER OSCURO #0F172A)     -->

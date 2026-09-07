@@ -84,32 +84,28 @@ app.add_middleware(
 
 import logging
 from pathlib import Path
+from fastapi import Request
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from app.templates.dashboard_html import DASHBOARD_HTML, RECEPTION_DASHBOARD_HTML
 
 logger = logging.getLogger("yieldpadel.dashboard")
 
 BASE_DIR = Path(__file__).resolve().parent
-
-# Candidate paths for the reception dashboard HTML template
-DASHBOARD_CANDIDATE_PATHS = [
-    BASE_DIR / "templates" / "dashboard.html",
-    BASE_DIR.parent / "frontend" / "dashboard.html",
-    Path("frontend/dashboard.html").resolve(),
-]
+TEMPLATES_DIR = BASE_DIR / "templates"
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 def load_dashboard_html() -> str:
     """
-    Resolve and return dashboard HTML with fallback to embedded RECEPTION_DASHBOARD_HTML.
-    Guarantees that Render / Cloud deployments always serve the complete dark mode view.
+    Resolve and return dashboard HTML directly from template file with fallback.
     """
-    for path in DASHBOARD_CANDIDATE_PATHS:
-        if path.is_file():
-            try:
-                return path.read_text(encoding="utf-8")
-            except Exception as e:
-                logger.warning(f"Failed to read dashboard template from {path}: {e}")
+    dashboard_path = TEMPLATES_DIR / "dashboard.html"
+    if dashboard_path.is_file():
+        try:
+            return dashboard_path.read_text(encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Failed to read dashboard template from {dashboard_path}: {e}")
     return RECEPTION_DASHBOARD_HTML
 
 
@@ -120,9 +116,20 @@ async def health():
 
 @app.get("/dashboard", response_class=HTMLResponse, tags=["frontend"])
 @app.get("/", response_class=HTMLResponse, tags=["frontend"])
-async def serve_dashboard():
-    html_content = load_dashboard_html()
-    return HTMLResponse(content=html_content, status_code=200, media_type="text/html")
+async def serve_dashboard(request: Request):
+    try:
+        try:
+            response = templates.TemplateResponse(request=request, name="dashboard.html")
+        except TypeError:
+            response = templates.TemplateResponse("dashboard.html", {"request": request})
+    except Exception as e:
+        logger.warning(f"Jinja template error, fallback to direct file read: {e}")
+        response = HTMLResponse(content=load_dashboard_html(), status_code=200, media_type="text/html")
+
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 from app.api.v1.endpoints import whatsapp, radar
