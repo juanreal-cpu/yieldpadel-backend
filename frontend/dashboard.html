@@ -19,6 +19,21 @@
     body { background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
     .view-section.hidden { display: none !important; }
 
+    /* SOLUCIÓN RADICAL A TEXTOS EN BLANCO (FORZAR NEGRO DIRECTO) */
+    .btn-sport-filter, .time-filter-btn {
+      color: #0f172a !important; /* Negro slate puro */
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-sport-filter.active, .time-filter-btn.active {
+      color: #ffffff !important;
+      background-color: #0f172a !important;
+      border-color: #0f172a !important;
+    }
+    .btn-sport-filter span, .time-filter-btn span {
+      color: inherit !important;
+    }
+
     /* Leaflet Custom Pins */
     .radar-pin-target {
       display: flex;
@@ -2031,6 +2046,10 @@
             <span class="text-base">💡</span>
             <span>Motor de Yield</span>
           </button>
+          <button id="btn-nav-analytics" onclick="switchMainView('analytics')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 w-full transition">
+            <span class="text-base">📊</span>
+            <span>Métricas & Ocupación</span>
+          </button>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-config" onclick="switchMainView('config')">
             <span class="text-base">⚙️</span>
             <span>Configuración del Club</span>
@@ -2184,29 +2203,29 @@
 <!-- NIVEL 2: Filtros y Deporte (bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4) -->
             <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
               <!-- Segmented Control de Deportes (Tabs tipo pastilla) -->
-                            <div class="flex items-center gap-1.5" id="sport-selector-container">
-                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition bg-slate-900 text-white font-bold active">
+              <div class="flex items-center gap-1.5" id="sport-selector-container">
+                <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="btn-sport-filter active inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-bold">
                   <span>🎾</span> <span>Pádel (5 Pistas)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
+                <button type="button" onclick="setSportFilter('PICKLEBALL')" id="btn-sport-pickleball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold">
                   <span>🏓</span> <span>Pickleball (2)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
+                <button type="button" onclick="setSportFilter('VOLLEYBALL')" id="btn-sport-volleyball" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold">
                   <span>🏐</span> <span>Vóley (1)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
+                <button type="button" onclick="setSportFilter('PILATES')" id="btn-sport-pilates" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold">
                   <span>🧘</span> <span>Pilates (1)</span>
                 </button>
-                <button type="button" onclick="setSportFilter('CONSOLE')" id="btn-sport-console" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold">
+                <button type="button" onclick="setSportFilter('CONSOLE')" id="btn-sport-console" class="btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-semibold">
                   <span>🎮</span> <span>Consola (1 Sala)</span>
                 </button>
               </div>
               <!-- Filtro Horario Horizontal Compacto -->
-                            <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm" id="time-filter-container">
-                <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="px-3 py-1 text-xs font-semibold rounded bg-slate-900 text-white transition active">Todo el día</button>
-                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="px-3 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded transition">Mañana (6-12)</button>
-                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="px-3 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded transition">Tarde (12-18)</button>
-                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="px-3 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded transition">Noche (18-24)</button>
+              <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm" id="time-filter-container">
+                <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="time-filter-btn active px-3 py-1 text-xs font-semibold rounded transition"><span>Todo el día</span></button>
+                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition"><span>Mañana (6-12)</span></button>
+                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition"><span>Tarde (12-18)</span></button>
+                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition"><span>Noche (18-24)</span></button>
               </div>
 
               <!-- Selector de Cancha a la derecha con select nativo estilizado en Tailwind -->
@@ -2680,6 +2699,154 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VISTA: 📊 TABLERO DE INDICADORES & HEATMAP (#view-analytics) -->
+        <!-- ======================================================== -->
+        <div id="view-analytics" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-6">
+          
+          <!-- Header de Control de Semana -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">📊</span>
+                <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Tablero de Indicadores & Heatmap Semanal</h2>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">
+                Matriz de horas vs días, tasas de ocupación, RevPAST por bloque y comparativas WoW y MoM.
+              </p>
+            </div>
+
+            <!-- Controles de Navegación de Semana y Deporte -->
+            <div class="flex items-center flex-wrap gap-2.5">
+              <!-- Selector de Deporte para Analytics -->
+              <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200" id="analytics-sport-selector">
+                <button type="button" onclick="setAnalyticsSport('PADEL')" id="btn-an-sport-padel" class="px-2.5 py-1 text-xs font-bold rounded-md bg-slate-900 text-white shadow-xs transition active">🎾 Pádel</button>
+                <button type="button" onclick="setAnalyticsSport('PICKLEBALL')" id="btn-an-sport-pickleball" class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition">🏓 PB</button>
+                <button type="button" onclick="setAnalyticsSport('VOLLEYBALL')" id="btn-an-sport-volleyball" class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition">🏐 Vóley</button>
+                <button type="button" onclick="setAnalyticsSport('PILATES')" id="btn-an-sport-pilates" class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition">🧘 Pilates</button>
+                <button type="button" onclick="setAnalyticsSport('CONSOLE')" id="btn-an-sport-console" class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition">🎮 Consola</button>
+              </div>
+
+              <!-- Control Semana Anterior / Actual / Siguiente -->
+              <div class="flex items-center gap-1 bg-white border border-slate-300 rounded-lg p-1 shadow-xs">
+                <button type="button" onclick="prevAnalyticsWeek()" class="px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded transition" title="Semana Anterior">
+                  ‹ Semana Anterior
+                </button>
+                <span id="analytics-week-label" class="px-3 py-1 text-xs font-extrabold text-slate-900 bg-slate-100 rounded border border-slate-200">
+                  Semana Actual: 07-13 Sep 2026
+                </span>
+                <button type="button" onclick="nextAnalyticsWeek()" class="px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded transition" title="Semana Siguiente">
+                  Semana Siguiente ›
+                </button>
+              </div>
+
+              <button type="button" onclick="loadAnalyticsHeatmap()" class="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition inline-flex items-center gap-1.5 shadow-xs" title="Refrescar">
+                <span>🔄</span> <span>Actualizar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tarjetas Resumen Semanal -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="analytics-summary-cards">
+            <!-- 1. Ocupación Promedio -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ocupación Promedio Semanal</span>
+                <span class="text-lg">📈</span>
+              </div>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span id="an-stat-occupancy" class="text-3xl font-black text-slate-900 font-mono">0.0%</span>
+                <span id="an-stat-slots-count" class="text-xs text-slate-500 font-semibold">(0/0 turnos)</span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span id="an-delta-wow-occ" class="inline-flex items-center gap-1 text-slate-500 font-semibold">Vs Sem. Pasada: —</span>
+                <span id="an-delta-mom-occ" class="inline-flex items-center gap-1 text-slate-500 font-semibold">Vs Mes Pasado: —</span>
+              </div>
+            </div>
+
+            <!-- 2. RevPAST Semanal -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">RevPAST Semanal (Por Turno)</span>
+                <span class="text-lg">💵</span>
+              </div>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span id="an-stat-revpast" class="text-3xl font-black text-emerald-700 font-mono">$0 COP</span>
+                <span id="an-stat-total-rev" class="text-xs text-slate-500 font-semibold">Total: $0</span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span id="an-delta-wow-rev" class="inline-flex items-center gap-1 text-slate-500 font-semibold">Vs Sem. Pasada: —</span>
+                <span id="an-delta-mom-rev" class="inline-flex items-center gap-1 text-slate-500 font-semibold">Vs Mes Pasado: —</span>
+              </div>
+            </div>
+
+            <!-- 3. Canchas Muertas -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Canchas Muertas (&lt;20% Ocupación)</span>
+                <span class="text-lg">⚠️</span>
+              </div>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span id="an-stat-dead-courts" class="text-3xl font-black text-rose-600 font-mono">0</span>
+                <span class="text-xs text-slate-500 font-semibold">pistas subutilizadas</span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span id="an-stat-dead-cells" class="text-slate-500 font-semibold">0 franjas frías (&lt;20%)</span>
+                <span id="an-dead-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Óptimo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Guía Visual de Calor (Heatmap Legend) -->
+          <div class="bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between flex-wrap gap-3 text-xs">
+            <span class="font-bold text-slate-700 flex items-center gap-1.5">
+              <span>🌡️</span> <span>Escala de Intensidad de Ocupación:</span>
+            </span>
+            <div class="flex items-center gap-3 flex-wrap">
+              <div class="flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded border border-dashed border-slate-300 bg-slate-50 inline-block"></span>
+                <span class="text-slate-500 font-medium">0% Sin Ocupación</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded border border-rose-200 bg-rose-50 inline-block"></span>
+                <span class="text-rose-700 font-medium">1% - 40% Baja</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded border border-amber-200 bg-amber-50 inline-block"></span>
+                <span class="text-amber-700 font-medium">41% - 75% Media</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded border border-emerald-300 bg-emerald-100 inline-block"></span>
+                <span class="text-emerald-800 font-bold">76% - 100% Alta</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matriz Heatmap: Horas vs Días -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse text-left" id="heatmap-table">
+                <thead>
+                  <tr class="bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-700">
+                    <th class="p-3 w-28 text-center bg-slate-200 text-slate-800 sticky left-0 z-20">FRANJA</th>
+                    <th class="p-3 text-center min-w-[130px]" id="an-th-day-0">LUN</th>
+                    <th class="p-3 text-center min-w-[130px]" id="an-th-day-1">MAR</th>
+                    <th class="p-3 text-center min-w-[130px]" id="an-th-day-2">MIÉ</th>
+                    <th class="p-3 text-center min-w-[130px]" id="an-th-day-3">JUE</th>
+                    <th class="p-3 text-center min-w-[130px]" id="an-th-day-4">VIE</th>
+                    <th class="p-3 text-center min-w-[130px]" id="an-th-day-5">SÁB</th>
+                    <th class="p-3 text-center min-w-[130px]" id="an-th-day-6">DOM</th>
+                  </tr>
+                </thead>
+                <tbody id="heatmap-body" class="divide-y divide-slate-100 text-xs">
+                  <!-- Filas generadas dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
 
         <!-- ======================================================== -->
@@ -3963,6 +4130,8 @@
       } else if (cleanName === 'audit') {
         try { if (typeof loadAuditLogs === 'function') loadAuditLogs(); } catch(e) { console.error(e); }
         try { if (typeof loadStaffUsers === 'function') loadStaffUsers(); } catch(e) { console.error(e); }
+      } else if (cleanName === 'analytics') {
+        try { if (typeof loadAnalyticsHeatmap === 'function') loadAnalyticsHeatmap(); } catch(e) { console.error(e); }
       } else if (cleanName === 'calendar') {
         try { if (typeof fetchSlots === 'function') fetchSlots(); } catch(e) { console.error(e); }
       }
@@ -3984,6 +4153,228 @@
     }
     window.loadAuditLogs = loadAuditLogs;
 
+    // ========================================================
+    // TABLERO DE INDICADORES & HEATMAP (VISTA ANALYTICS)
+    // ========================================================
+    window.analyticsCurrentDate = '2026-09-07';
+    window.analyticsSport = 'PADEL';
+    window.analyticsData = null;
+
+    function setAnalyticsSport(sport) {
+      window.analyticsSport = (sport || 'PADEL').toUpperCase();
+      const sports = ['PADEL', 'PICKLEBALL', 'VOLLEYBALL', 'PILATES', 'CONSOLE'];
+      sports.forEach(sp => {
+        const btn = document.getElementById('btn-an-sport-' + sp.toLowerCase());
+        if (btn) {
+          if (sp === window.analyticsSport) {
+            btn.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-slate-900 text-white shadow-xs transition active';
+          } else {
+            btn.className = 'px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 hover:bg-slate-200 transition';
+          }
+        }
+      });
+      loadAnalyticsHeatmap(window.analyticsCurrentDate);
+    }
+    window.setAnalyticsSport = setAnalyticsSport;
+
+    function prevAnalyticsWeek() {
+      if (window.analyticsData && window.analyticsData.prev_week_date) {
+        loadAnalyticsHeatmap(window.analyticsData.prev_week_date);
+      }
+    }
+    window.prevAnalyticsWeek = prevAnalyticsWeek;
+
+    function nextAnalyticsWeek() {
+      if (window.analyticsData && window.analyticsData.next_week_date) {
+        loadAnalyticsHeatmap(window.analyticsData.next_week_date);
+      }
+    }
+    window.nextAnalyticsWeek = nextAnalyticsWeek;
+
+    function currentAnalyticsWeek() {
+      loadAnalyticsHeatmap(selectedDate || '2026-09-07');
+    }
+    window.currentAnalyticsWeek = currentAnalyticsWeek;
+
+    function renderAnalyticsHeatmap(data) {
+      if (!data) return;
+      window.analyticsData = data;
+      const qDate = window.analyticsCurrentDate || '2026-09-07';
+
+      // 1. Header Semana
+      const weekLabelEl = document.getElementById('analytics-week-label');
+      if (weekLabelEl) {
+        weekLabelEl.textContent = `Semana Actual: ${data.week_label || qDate}`;
+      }
+
+      // 2. Encabezados de Días
+      if (data.days && Array.isArray(data.days)) {
+        data.days.forEach((d, idx) => {
+          const th = document.getElementById(`an-th-day-${idx}`);
+          if (th) {
+            th.innerHTML = `<div>${d.day_short || ''}</div><div class="text-[11px] font-normal text-slate-500">${d.day_num || ''} ${d.month_short || ''}</div>`;
+          }
+        });
+      }
+
+      // 3. Tarjetas de Resumen
+      const sum = data.summary || {};
+      const occEl = document.getElementById('an-stat-occupancy');
+      const countEl = document.getElementById('an-stat-slots-count');
+      const revpastEl = document.getElementById('an-stat-revpast');
+      const totRevEl = document.getElementById('an-stat-total-rev');
+      const deadCourtsEl = document.getElementById('an-stat-dead-courts');
+      const deadCellsEl = document.getElementById('an-stat-dead-cells');
+      const deadBadge = document.getElementById('an-dead-badge');
+
+      if (occEl) occEl.textContent = `${sum.average_occupancy || 0}%`;
+      if (countEl) countEl.textContent = `(${sum.total_booked_slots || 0}/${sum.total_slots || 0} turnos)`;
+      if (revpastEl) revpastEl.textContent = formatCOP(sum.weekly_revpast || 0);
+      if (totRevEl) totRevEl.textContent = `Total: ${formatCOP(sum.total_revenue || 0)}`;
+      if (deadCourtsEl) deadCourtsEl.textContent = sum.dead_courts_count || 0;
+      if (deadCellsEl) deadCellsEl.textContent = `${sum.dead_cells_count || 0} franjas frías (<20%)`;
+
+      if (deadBadge) {
+        if ((sum.dead_courts_count || 0) > 0) {
+          deadBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800';
+          deadBadge.textContent = 'Alerta';
+        } else {
+          deadBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800';
+          deadBadge.textContent = 'Óptimo';
+        }
+      }
+
+      // Badges WoW / MoM
+      const deltaWowOccEl = document.getElementById('an-delta-wow-occ');
+      const deltaMomOccEl = document.getElementById('an-delta-mom-occ');
+      const deltaWowRevEl = document.getElementById('an-delta-wow-rev');
+      const deltaMomRevEl = document.getElementById('an-delta-mom-rev');
+
+      function renderDeltaHtml(val, unit, prefix) {
+        if (val === null || typeof val === 'undefined') {
+          return `<span>${prefix} <span class="text-slate-400 font-normal">—</span></span>`;
+        }
+        const isPos = val >= 0;
+        const color = isPos ? 'text-emerald-700' : 'text-rose-600';
+        const sign = isPos ? '▲ +' : '▼ ';
+        return `<span>${prefix} <span class="${color} font-bold">${sign}${val}${unit}</span></span>`;
+      }
+
+      if (deltaWowOccEl) deltaWowOccEl.innerHTML = renderDeltaHtml(sum.delta_last_week_occupancy, '%', 'Vs Sem. Pasada:');
+      if (deltaMomOccEl) deltaMomOccEl.innerHTML = renderDeltaHtml(sum.delta_last_month_occupancy, '%', 'Vs Mes Pasado:');
+      if (deltaWowRevEl) deltaWowRevEl.innerHTML = renderDeltaHtml(sum.delta_last_week_revpast, '', 'Vs Sem. Pasada:');
+      if (deltaMomRevEl) deltaMomRevEl.innerHTML = renderDeltaHtml(sum.delta_last_month_revpast, '', 'Vs Mes Pasado:');
+
+      // 4. Renderizar Matriz Heatmap
+      const tbody = document.getElementById('heatmap-body');
+      if (!tbody) return;
+
+      let tableHtml = '';
+      const matrix = data.matrix || [];
+
+      matrix.forEach(row => {
+        tableHtml += `<tr class="hover:bg-slate-50/50 transition">`;
+        const timeLabel = typeof row.time_block === 'object' ? (row.time_block.label || '') : row.time_block;
+        // Columna Franja Horaria (sticky izquierda)
+        tableHtml += `
+          <td class="p-2.5 text-center font-extrabold text-slate-800 bg-slate-100/90 border-r border-slate-200 sticky left-0 z-10 text-[11px]">
+            ${timeLabel}
+          </td>
+        `;
+
+        // Celdas de días
+        (row.days || []).forEach(cell => {
+          const occ = cell.occupancy_percentage || 0;
+          const avgRevFormatted = formatCOP(cell.average_revenue || 0);
+          const bookedStr = `${cell.slots_booked}/${cell.total_slots} canchas`;
+
+          let heatClass = 'bg-slate-50 text-slate-400 border border-dashed border-slate-200 hover:bg-slate-100';
+          if (occ > 75) {
+            heatClass = 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 hover:bg-emerald-200 shadow-xs';
+          } else if (occ > 40) {
+            heatClass = 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100';
+          } else if (occ > 0) {
+            heatClass = 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100';
+          }
+
+          // Delta tooltips
+          let wowText = '—';
+          let wowColor = 'text-slate-400';
+          if (cell.delta_last_week !== null && typeof cell.delta_last_week !== 'undefined') {
+            const isPos = cell.delta_last_week >= 0;
+            wowText = (isPos ? '▲ +' : '▼ ') + cell.delta_last_week + '%';
+            wowColor = isPos ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+          }
+
+          let momText = '—';
+          let momColor = 'text-slate-400';
+          if (cell.delta_last_month !== null && typeof cell.delta_last_month !== 'undefined') {
+            const isPos = cell.delta_last_month >= 0;
+            momText = (isPos ? '▲ +' : '▼ ') + cell.delta_last_month + '%';
+            momColor = isPos ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+          }
+
+          tableHtml += `
+            <td class="p-1.5 align-middle text-center cell-occupancy">
+              <div class="relative group cursor-pointer p-2.5 rounded-lg transition ${heatClass}">
+                <div class="text-base font-black tracking-tight">${occ}%</div>
+                <div class="text-[10px] font-medium opacity-80 mt-0.5">${bookedStr}</div>
+                <div class="text-[10px] font-bold mt-1 opacity-90">${avgRevFormatted}</div>
+
+                <!-- Tooltip Hover Popover -->
+                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-56 p-3 bg-slate-900 text-white rounded-xl shadow-2xl text-xs space-y-1.5 pointer-events-none text-left border border-slate-700">
+                  <div class="font-black border-b border-slate-700 pb-1 flex justify-between items-center text-slate-100">
+                    <span>${cell.day_name || ''} • ${timeLabel}</span>
+                    <span class="text-emerald-400 font-bold">${occ}%</span>
+                  </div>
+                  <div class="text-slate-300">👥 Ocupación: <span class="font-bold text-white">${occ}% (${cell.slots_booked}/${cell.total_slots} canchas)</span></div>
+                  <div class="text-slate-300">💵 RevPAST: <span class="font-bold text-emerald-400">${avgRevFormatted}</span></div>
+                  <div class="pt-1.5 border-t border-slate-800 space-y-0.5 text-[11px]">
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-400">Vs Semana Pasada:</span>
+                      <span class="${wowColor}">${wowText}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-400">Vs Mes Pasado:</span>
+                      <span class="${momColor}">${momText}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          `;
+        });
+
+        tableHtml += `</tr>`;
+      });
+
+      tbody.innerHTML = tableHtml;
+    }
+    window.renderAnalyticsHeatmap = renderAnalyticsHeatmap;
+
+    async function loadAnalyticsHeatmap(targetDate) {
+      const qDate = targetDate || window.analyticsCurrentDate || (typeof selectedDate !== 'undefined' && selectedDate ? selectedDate : '2026-09-07');
+      window.analyticsCurrentDate = qDate;
+      const qSport = window.analyticsSport || 'PADEL';
+
+      const weekLabelEl = document.getElementById('analytics-week-label');
+      if (weekLabelEl) weekLabelEl.textContent = 'Cargando datos...';
+
+      try {
+        const res = await fetch(`/api/v1/analytics/occupancy-matrix?start_date=${encodeURIComponent(qDate)}&sport=${encodeURIComponent(qSport)}`);
+        if (!res.ok) {
+          console.warn('Error fetching analytics matrix:', res.status);
+          if (weekLabelEl) weekLabelEl.textContent = `Semana: ${qDate}`;
+          return;
+        }
+        const data = await res.json();
+        renderAnalyticsHeatmap(data);
+      } catch (err) {
+        console.error('Error loading analytics heatmap:', err);
+      }
+    }
+    window.loadAnalyticsHeatmap = loadAnalyticsHeatmap;
+
     window.addEventListener('error', function(e) {
       console.warn('Protección global de script en interfaz:', e.error || e.message);
     });
@@ -4004,28 +4395,17 @@
       window.currentSportFilter = sUpper;
 
       const sportsConfig = {
-        PADEL: { id: 'btn-sport-padel', html: '<span>🎾</span> <span>Pádel (5 Pistas)</span>' },
-        PICKLEBALL: { id: 'btn-sport-pickleball', html: '<span>🏓</span> <span>Pickleball (2)</span>' },
-        VOLLEYBALL: { id: 'btn-sport-volleyball', html: '<span>🏐</span> <span>Vóley (1)</span>' },
-        PILATES: { id: 'btn-sport-pilates', html: '<span>🧘</span> <span>Pilates (1)</span>' },
-        CONSOLE: { id: 'btn-sport-console', html: '<span>🎮</span> <span>Consola (1 Sala)</span>' }
+        PADEL: 'btn-sport-padel',
+        PICKLEBALL: 'btn-sport-pickleball',
+        VOLLEYBALL: 'btn-sport-volleyball',
+        PILATES: 'btn-sport-pilates',
+        CONSOLE: 'btn-sport-console'
       };
 
-      Object.entries(sportsConfig).forEach(([key, cfg]) => {
-        const btn = document.getElementById(cfg.id);
+      Object.entries(sportsConfig).forEach(([key, btnId]) => {
+        const btn = document.getElementById(btnId);
         if (btn) {
-          btn.innerHTML = cfg.html;
-          if (key === window.currentSportFilter) {
-            btn.className = 'btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition bg-slate-900 text-white font-bold active';
-            btn.querySelectorAll('span').forEach(sp => {
-              sp.style.color = '#ffffff';
-            });
-          } else {
-            btn.className = 'btn-sport-filter inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition bg-white text-slate-800 hover:bg-slate-100 border border-slate-300 font-semibold';
-            btn.querySelectorAll('span').forEach(sp => {
-              sp.style.color = '#1e293b';
-            });
-          }
+          btn.classList.toggle('active', key === window.currentSportFilter);
         }
       });
 
@@ -4984,22 +5364,19 @@ ${data.message}`);
 
     function setTimeFilter(timeFilter) {
       currentTimeFilter = (timeFilter || 'ALL').toUpperCase();
+      window.currentTimeFilter = currentTimeFilter;
+
       const tods = {
-        ALL: { id: 'btn-time-all', label: 'Todo el día' },
-        MORNING: { id: 'btn-time-morning', label: 'Mañana (6-12)' },
-        AFTERNOON: { id: 'btn-time-afternoon', label: 'Tarde (12-18)' },
-        NIGHT: { id: 'btn-time-night', label: 'Noche (18-24)' }
+        ALL: 'btn-time-all',
+        MORNING: 'btn-time-morning',
+        AFTERNOON: 'btn-time-afternoon',
+        NIGHT: 'btn-time-night'
       };
 
-      Object.entries(tods).forEach(([key, cfg]) => {
-        const btn = document.getElementById(cfg.id);
+      Object.entries(tods).forEach(([key, btnId]) => {
+        const btn = document.getElementById(btnId);
         if (btn) {
-          btn.textContent = cfg.label;
-          if (key === currentTimeFilter) {
-            btn.className = 'px-3 py-1 text-xs font-semibold rounded bg-slate-900 text-white transition active';
-          } else {
-            btn.className = 'px-3 py-1 text-xs font-medium bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 rounded transition';
-          }
+          btn.classList.toggle('active', key === currentTimeFilter);
         }
       });
 
