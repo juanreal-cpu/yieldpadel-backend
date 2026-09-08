@@ -1,9 +1,12 @@
 from datetime import date, datetime, time, timezone, timedelta
 from decimal import Decimal
+import logging
 import re
-from typing import List, Optional
+import traceback
+from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status, Request
+from fastapi.responses import JSONResponse
 from app.services.audit import log_activity
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,8 +34,10 @@ from app.schemas.slot import (
     CreateAmericanoRequest,
     ClubConfigRequest,
     WeeklyTemplateSeedRequest,
+    ManualBookingRequest,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -414,7 +419,7 @@ async def get_courts(
     return deduped
 
 
-@router.post("/seed", status_code=status.HTTP_201_CREATED)
+@router.post("/seed", status_code=status.HTTP_200_OK)
 async def seed_demo_data(
     target_date: Optional[date] = Query(None, alias="date", description="Fecha inicial para sembrar 7 días"),
     db: AsyncSession = Depends(get_db),
@@ -426,115 +431,135 @@ async def seed_demo_data(
     (06:00-07:30, 07:30-09:00, ..., 22:30-24:00).
     Estado inicial: AVAILABLE con precios de Yield Management (Valle $80.000 / Pico $120.000).
     """
-    courts = await ensure_five_courts(db)
-    today = get_bogota_today()
-    start_d = target_date or today
-    dates_to_seed = [start_d + timedelta(days=i) for i in range(7)]
+    try:
+        courts = await ensure_five_courts(db)
+        today = get_bogota_today()
+        start_d = target_date or today
+        dates_to_seed = [start_d + timedelta(days=i) for i in range(7)]
 
-    # 12 bloques consecutivos de 90 minutos (1:30) de 06:00 a 24:00
-    BLOCKS_90_MIN = [
-        (time(6, 0), time(7, 30)),
-        (time(7, 30), time(9, 0)),
-        (time(9, 0), time(10, 30)),
-        (time(10, 30), time(12, 0)),
-        (time(12, 0), time(13, 30)),
-        (time(13, 30), time(15, 0)),
-        (time(15, 0), time(16, 30)),
-        (time(16, 30), time(18, 0)),
-        (time(18, 0), time(19, 30)),
-        (time(19, 30), time(21, 0)),
-        (time(21, 0), time(22, 30)),
-        (time(22, 30), time(23, 59)),
-    ]
+        # 12 bloques consecutivos de 90 minutos (1:30) de 06:00 a 24:00
+        BLOCKS_90_MIN = [
+            (time(6, 0), time(7, 30)),
+            (time(7, 30), time(9, 0)),
+            (time(9, 0), time(10, 30)),
+            (time(10, 30), time(12, 0)),
+            (time(12, 0), time(13, 30)),
+            (time(13, 30), time(15, 0)),
+            (time(15, 0), time(16, 30)),
+            (time(16, 30), time(18, 0)),
+            (time(18, 0), time(19, 30)),
+            (time(19, 30), time(21, 0)),
+            (time(21, 0), time(22, 30)),
+            (time(22, 30), time(23, 59)),
+        ]
 
-    total_created = 0
-    for day_idx, d in enumerate(dates_to_seed):
-        is_weekend = d.weekday() in (5, 6)
+        total_created = 0
+        for day_idx, d in enumerate(dates_to_seed):
+            is_weekend = d.weekday() in (5, 6)
 
-        for court_idx, court in enumerate(courts, start=1):
-            court_num = getattr(court, "court_number", None) or court_idx
-            c_sport = getattr(court, "sport_type", "PADEL") or "PADEL"
-            c_cap = getattr(court, "max_capacity", 4) or 4
+            for court_idx, court in enumerate(courts, start=1):
+                court_num = getattr(court, "court_number", None) or court_idx
+                c_sport = getattr(court, "sport_type", "PADEL") or "PADEL"
+                c_cap = getattr(court, "max_capacity", 4) or 4
 
-            existing_res = await db.execute(
-                select(TimeSlot.start_time).where(TimeSlot.court_id == court.id, TimeSlot.date == d)
-            )
-            existing_times = set(existing_res.scalars().all())
-
-            to_add = []
-            for b_idx, (start_t, end_t) in enumerate(BLOCKS_90_MIN):
-                if start_t in existing_times:
-                    continue
-
-                is_pico = is_weekend or (start_t.hour >= 18)
-                slot_cap = c_cap
-                slot_type = "MATCH"
-                instructor_name = None
-                booked_spots = 0
-                status_val = SlotStatus.AVAILABLE
-                players = []
-
-                if c_sport == "VOLLEYBALL":
-                    base_price = Decimal("120000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH
-                    category = "Vóley Arena Mixto"
-                elif c_sport == "PILATES":
-                    base_price = Decimal("180000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH
-                    category = "Pilates Mat & Reformer"
-                elif c_sport == "PICKLEBALL":
-                    base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20)) else SlotMode.FULL_COURT
-                    category = "Pickleball Abierto"
-                elif c_sport in ("CONSOLE", "GAMING"):
-                    base_price = Decimal("20000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH
-                    category = "Gaming / Consola"
-                else:
-                    # PADEL
-                    base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and court_num <= 3) else SlotMode.FULL_COURT
-                    category = "4ta"
-
-                to_add.append(
-                    TimeSlot(
-                        court_id=court.id,
-                        date=d,
-                        start_time=start_t,
-                        end_time=end_t,
-                        total_price=base_price,
-                        mode=slot_mode,
-                        capacity=slot_cap,
-                        booked_spots=0,
-                        category=category,
-                        players_names=[],
-                        status=SlotStatus.AVAILABLE,
-                        slot_type="MATCH",
-                        instructor_name=None,
-                        is_promo=False,
-                        sport_type=c_sport,
-                    )
+                existing_res = await db.execute(
+                    select(TimeSlot.start_time).where(TimeSlot.court_id == court.id, TimeSlot.date == d)
                 )
+                existing_times = set(existing_res.scalars().all())
 
-            if to_add:
-                db.add_all(to_add)
-                total_created += len(to_add)
+                to_add = []
+                for b_idx, (start_t, end_t) in enumerate(BLOCKS_90_MIN):
+                    if start_t in existing_times:
+                        continue
 
-    if total_created > 0:
-        await db.commit()
+                    is_pico = is_weekend or (start_t.hour >= 18)
+                    slot_cap = c_cap
+                    slot_type = "MATCH"
+                    instructor_name = None
+                    booked_spots = 0
+                    status_val = SlotStatus.AVAILABLE
+                    players = []
+
+                    if c_sport == "VOLLEYBALL":
+                        base_price = Decimal("120000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH
+                        category = "Vóley Arena Mixto"
+                    elif c_sport == "PILATES":
+                        base_price = Decimal("180000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH
+                        category = "Pilates Mat & Reformer"
+                    elif c_sport == "PICKLEBALL":
+                        base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20)) else SlotMode.FULL_COURT
+                        category = "Pickleball Abierto"
+                    elif c_sport in ("CONSOLE", "GAMING"):
+                        base_price = Decimal("20000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH
+                        category = "Gaming / Consola"
+                    else:
+                        # PADEL
+                        base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and court_num <= 3) else SlotMode.FULL_COURT
+                        category = "4ta"
+
+                    to_add.append(
+                        TimeSlot(
+                            club_id=1,
+                            court_id=court.id,
+                            date=d,
+                            start_time=start_t,
+                            end_time=end_t,
+                            total_price=base_price,
+                            price_total_cop=base_price,
+                            price_per_player_cop=base_price / slot_cap,
+                            price=base_price,
+                            mode=slot_mode,
+                            capacity=slot_cap,
+                            booked_spots=0,
+                            category=category,
+                            players_names=[],
+                            status=SlotStatus.AVAILABLE,
+                            slot_type="MATCH",
+                            instructor_name=None,
+                            is_promo=False,
+                            sport_type=c_sport,
+                        )
+                    )
+
+                if to_add:
+                    db.add_all(to_add)
+                    total_created += len(to_add)
+
+        if total_created > 0:
+            await db.commit()
+            return {
+                "status": "ok",
+                "created_slots": total_created,
+                "slots_created": total_created,
+                "message": f"Se sembraron {total_created} turnos de 90 min exitosamente para los próximos 7 días en las {len(courts)} canchas",
+                "courts_count": len(courts),
+                "days_count": len(dates_to_seed),
+            }
+
         return {
-            "message": f"Se sembraron {total_created} turnos de 90 min exitosamente para los próximos 7 días en las {len(courts)} canchas",
+            "status": "ok",
+            "created_slots": 0,
+            "slots_created": 0,
+            "message": f"Los 7 días de turnos de 90 minutos ya se encontraban presentes para todas las {len(courts)} canchas",
             "courts_count": len(courts),
             "days_count": len(dates_to_seed),
-            "slots_created": total_created,
         }
-
-    return {
-        "message": f"Los 7 días de turnos de 90 minutos ya se encontraban presentes para todas las {len(courts)} canchas",
-        "courts_count": len(courts),
-        "days_count": len(dates_to_seed),
-        "slots_created": 0,
-    }
+    except Exception as exc:
+        logger.error(f"Error en seed_demo_data: {traceback.format_exc()}")
+        await db.rollback()
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Error al sembrar turnos demo: {str(exc)}",
+                "detail": traceback.format_exc(),
+            },
+        )
 
 
 MALOKA_WEEKLY_EVENTS = [
@@ -717,7 +742,7 @@ async def get_weekly_template():
     }
 
 
-@router.post("/seed-weekly-template", status_code=status.HTTP_201_CREATED)
+@router.post("/seed-weekly-template", status_code=status.HTTP_200_OK)
 async def seed_weekly_template(
     payload: Optional[WeeklyTemplateSeedRequest] = Body(None),
     target_date: Optional[date] = Query(None, alias="date", description="Fecha inicial para sembrar 7 días"),
@@ -731,254 +756,469 @@ async def seed_weekly_template(
       con slot_type='AMERICANO' y status='FULLY_BOOKED'.
     - CERO reservas ficticias: players_names=[] en todos los turnos disponibles y de torneo.
     """
-    courts = await ensure_five_courts(db)
-    today = get_bogota_today()
-    raw_d = (payload.date if payload and payload.date else None) or target_date or today
-    if isinstance(raw_d, str):
-        try:
-            start_d = datetime.strptime(raw_d, "%Y-%m-%d").date()
-        except Exception:
-            start_d = today
-    else:
-        start_d = raw_d
-    dates_to_seed = [start_d + timedelta(days=i) for i in range(7)]
-
-
-    selected_ids = (
-        set(payload.selected_events)
-        if (payload and payload.selected_events is not None)
-        else {ev["id"] for ev in MALOKA_WEEKLY_EVENTS}
-    )
-
-    def parse_time_val(t_val) -> time:
-        if isinstance(t_val, time):
-            return t_val
-        if isinstance(t_val, str):
-            parts = t_val.strip().split(":")
-            h = int(parts[0])
-            m = int(parts[1]) if len(parts) > 1 else 0
-            return time(h, m)
-        return time(20, 0)
-
-    def parse_prize_to_decimal(val) -> Optional[Decimal]:
-        if val is None:
-            return None
-        if isinstance(val, (int, float, Decimal)):
-            return Decimal(str(val))
-        val_str = str(val).replace("$", "").replace("COP", "").replace(".", "").replace(",", "").replace("k", "000").replace("K", "000").strip()
-        digits = re.findall(r"\d+", val_str)
-        if digits:
+    try:
+        courts = await ensure_five_courts(db)
+        today = get_bogota_today()
+        raw_d = (payload.date if payload and payload.date else None) or target_date or today
+        if isinstance(raw_d, str):
             try:
-                return Decimal("".join(digits))
+                start_d = datetime.strptime(raw_d, "%Y-%m-%d").date()
             except Exception:
-                return Decimal("0.00")
-        return Decimal("0.00")
+                start_d = today
+        else:
+            start_d = raw_d
+        dates_to_seed = [start_d + timedelta(days=i) for i in range(7)]
 
-    active_events = []
-    if payload and payload.events:
-        for ev in payload.events:
-            w_start = parse_time_val(ev.get("start_time"))
-            w_end = parse_time_val(ev.get("end_time"))
-            e_fee = Decimal(str(ev.get("entry_fee", 60000)))
-            p_pool = parse_prize_to_decimal(ev.get("prize") or ev.get("prize_pool"))
-            ev_courts = [int(x) for x in ev.get("courts", [1, 2, 3, 4])]
-            active_events.append({
-                "id": str(ev.get("id", f"ev_{ev.get('weekday', 0)}_{w_start.hour}")),
-                "weekday": int(ev.get("weekday", 0)),
-                "name": str(ev.get("name", "Torneo Americano")),
-                "modality": str(ev.get("modality", "PAREJA_FIJA")),
-                "category": str(ev.get("category", "5ta")),
-                "start_time": w_start,
-                "end_time": w_end,
-                "courts": ev_courts,
-                "entry_fee": e_fee,
-                "prize_pool": p_pool,
-                "prize_label": str(ev.get("prize") or ev.get("prize_pool") or f"${p_pool:,.0f} COP"),
-            })
-    else:
-        for ev in MALOKA_WEEKLY_EVENTS:
-            if ev["id"] in selected_ids:
+        selected_ids = (
+            set(payload.selected_events)
+            if (payload and payload.selected_events is not None)
+            else {ev["id"] for ev in MALOKA_WEEKLY_EVENTS}
+        )
+
+        def parse_time_val(t_val) -> time:
+            if isinstance(t_val, time):
+                return t_val
+            if isinstance(t_val, str):
+                parts = t_val.strip().split(":")
+                h = int(parts[0])
+                m = int(parts[1]) if len(parts) > 1 else 0
+                return time(h, m)
+            return time(20, 0)
+
+        def parse_prize_to_decimal(val) -> Optional[Decimal]:
+            if val is None:
+                return None
+            if isinstance(val, (int, float, Decimal)):
+                return Decimal(str(val))
+            val_str = str(val).replace("$", "").replace("COP", "").replace(".", "").replace(",", "").replace("k", "000").replace("K", "000").strip()
+            digits = re.findall(r"\d+", val_str)
+            if digits:
+                try:
+                    return Decimal("".join(digits))
+                except Exception:
+                    return Decimal("0.00")
+            return Decimal("0.00")
+
+        active_events = []
+        if payload and payload.events:
+            for ev in payload.events:
+                w_start = parse_time_val(ev.get("start_time"))
+                w_end = parse_time_val(ev.get("end_time"))
+                e_fee = Decimal(str(ev.get("entry_fee", 60000)))
+                p_pool = parse_prize_to_decimal(ev.get("prize") or ev.get("prize_pool"))
+                ev_courts = [int(x) for x in ev.get("courts", [1, 2, 3, 4])]
                 active_events.append({
-                    "id": ev["id"],
-                    "weekday": ev["weekday"],
-                    "name": ev["name"],
-                    "modality": ev["modality"],
-                    "category": ev["category"],
-                    "start_time": ev["start_time"],
-                    "end_time": ev["end_time"],
-                    "courts": [1, 2, 3, 4],
-                    "entry_fee": ev["entry_fee"],
-                    "prize_pool": ev["prize_pool"],
-                    "prize_label": ev["prize_label"],
+                    "id": str(ev.get("id", f"ev_{ev.get('weekday', 0)}_{w_start.hour}")),
+                    "weekday": int(ev.get("weekday", 0)),
+                    "name": str(ev.get("name", "Torneo Americano")),
+                    "modality": str(ev.get("modality", "PAREJA_FIJA")),
+                    "category": str(ev.get("category", "5ta")),
+                    "start_time": w_start,
+                    "end_time": w_end,
+                    "courts": ev_courts,
+                    "entry_fee": e_fee,
+                    "prize_pool": p_pool,
+                    "prize_label": str(ev.get("prize") or ev.get("prize_pool") or f"${p_pool:,.0f} COP"),
                 })
+        else:
+            for ev in MALOKA_WEEKLY_EVENTS:
+                if ev["id"] in selected_ids:
+                    active_events.append({
+                        "id": ev["id"],
+                        "weekday": ev["weekday"],
+                        "name": ev["name"],
+                        "modality": ev["modality"],
+                        "category": ev["category"],
+                        "start_time": ev["start_time"],
+                        "end_time": ev["end_time"],
+                        "courts": [1, 2, 3, 4],
+                        "entry_fee": ev["entry_fee"],
+                        "prize_pool": ev["prize_pool"],
+                        "prize_label": ev["prize_label"],
+                    })
 
-    BLOCKS_90_MIN = [
-        (time(6, 0), time(7, 30)),
-        (time(7, 30), time(9, 0)),
-        (time(9, 0), time(10, 30)),
-        (time(10, 30), time(12, 0)),
-        (time(12, 0), time(13, 30)),
-        (time(13, 30), time(15, 0)),
-        (time(15, 0), time(16, 30)),
-        (time(16, 30), time(18, 0)),
-        (time(18, 0), time(19, 30)),
-        (time(19, 30), time(21, 0)),
-        (time(21, 0), time(22, 30)),
-        (time(22, 30), time(23, 59)),
-    ]
-
-    padel_courts = [c for c in courts if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == "PADEL"]
-    padel_courts.sort(key=lambda c: (getattr(c, "court_number", 99) or 99, c.name))
-    padel_court_num_map = {}
-    for idx, c in enumerate(padel_courts):
-        c_num = getattr(c, "court_number", None) or (idx + 1)
-        padel_court_num_map[c.id] = c_num
-
-    # 1. Limpieza en lote de turnos no reservados/sin jugadores para el rango de 7 días
-    res_existing = await db.execute(
-        select(TimeSlot)
-        .options(selectinload(TimeSlot.holds))
-        .where(TimeSlot.date.in_(dates_to_seed))
-    )
-    all_existing = res_existing.scalars().all()
-    unbooked_ids = []
-    for s in all_existing:
-        has_active_holds = any(
-            str(getattr(h, "status", "")).upper() in ("ACTIVE", "HOLDSTATUS.ACTIVE") for h in s.holds
-        )
-        real_players = [
-            p for p in (s.players_names or [])
-            if not (isinstance(p, dict) and p.get("phone") == "+57-AMERICANO")
+        BLOCKS_90_MIN = [
+            (time(6, 0), time(7, 30)),
+            (time(7, 30), time(9, 0)),
+            (time(9, 0), time(10, 30)),
+            (time(10, 30), time(12, 0)),
+            (time(12, 0), time(13, 30)),
+            (time(13, 30), time(15, 0)),
+            (time(15, 0), time(16, 30)),
+            (time(16, 30), time(18, 0)),
+            (time(18, 0), time(19, 30)),
+            (time(19, 30), time(21, 0)),
+            (time(21, 0), time(22, 30)),
+            (time(22, 30), time(23, 59)),
         ]
-        has_real_players = (
-            (s.booked_spots > 0 and (s.slot_type or "MATCH") not in ("AMERICANO", "TOURNAMENT"))
-            or (len(real_players) > 0)
+
+        padel_courts = [c for c in courts if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == "PADEL"]
+        padel_courts.sort(key=lambda c: (getattr(c, "court_number", 99) or 99, c.name))
+        padel_court_num_map = {}
+        for idx, c in enumerate(padel_courts):
+            c_num = getattr(c, "court_number", None) or (idx + 1)
+            padel_court_num_map[c.id] = c_num
+
+        # 1. Limpieza en lote de turnos no reservados/sin jugadores para el rango de 7 días
+        res_existing = await db.execute(
+            select(TimeSlot)
+            .options(selectinload(TimeSlot.holds))
+            .where(TimeSlot.date.in_(dates_to_seed))
         )
-        if not has_active_holds and not has_real_players:
-            unbooked_ids.append(s.id)
-
-    if unbooked_ids:
-        await db.execute(delete(TimeSlot).where(TimeSlot.id.in_(unbooked_ids)))
-        await db.flush()
-
-    # 2. Generación en lote de turnos regulares y eventos de plantilla
-    all_to_add = []
-    scheduled_events = []
-
-    for d in dates_to_seed:
-        is_weekend = d.weekday() in (5, 6)
-
-        for court in courts:
-            c_sport = (getattr(court, "sport_type", "PADEL") or "PADEL").upper()
-            c_cap = getattr(court, "max_capacity", 4) or 4
-            c_num = padel_court_num_map.get(court.id, getattr(court, "court_number", 1) or 1)
-
-            # Torneos aplican EXCLUSIVAMENTE a Pádel
-            if c_sport == "PADEL":
-                court_day_events = [
-                    ev for ev in active_events
-                    if ev["weekday"] == d.weekday() and c_num in ev["courts"]
-                ]
+        all_existing = res_existing.scalars().all()
+        unbooked_ids = []
+        protected_keys = set()  # (court_id, date, start_time)
+        for s in all_existing:
+            has_active_holds = any(
+                str(getattr(h, "status", "")).upper() in ("ACTIVE", "HOLDSTATUS.ACTIVE") for h in s.holds
+            )
+            real_players = [
+                p for p in (s.players_names or [])
+                if not (isinstance(p, dict) and p.get("phone") == "+57-AMERICANO")
+            ]
+            has_real_players = (
+                (s.booked_spots > 0 and (s.slot_type or "MATCH") not in ("AMERICANO", "TOURNAMENT"))
+                or (len(real_players) > 0)
+            )
+            if not has_active_holds and not has_real_players:
+                unbooked_ids.append(s.id)
             else:
-                court_day_events = []
+                protected_keys.add((s.court_id, s.date, s.start_time))
 
-            for start_t, end_t in BLOCKS_90_MIN:
-                # Si es cancha de Pádel y se solapa con un torneo de la plantilla, no generar turno regular
-                if court_day_events:
-                    overlaps = any(
-                        start_t < ev["end_time"] and end_t > ev["start_time"]
-                        for ev in court_day_events
-                    )
-                    if overlaps:
+        if unbooked_ids:
+            await db.execute(delete(TimeSlot).where(TimeSlot.id.in_(unbooked_ids)))
+            await db.flush()
+
+        # 2. Generación en lote de turnos regulares y eventos de plantilla evitando duplicados
+        all_to_add = []
+        scheduled_events = []
+
+        for d in dates_to_seed:
+            is_weekend = d.weekday() in (5, 6)
+
+            for court in courts:
+                c_sport = (getattr(court, "sport_type", "PADEL") or "PADEL").upper()
+                c_cap = getattr(court, "max_capacity", 4) or 4
+                c_num = padel_court_num_map.get(court.id, getattr(court, "court_number", 1) or 1)
+
+                # Torneos aplican EXCLUSIVAMENTE a Pádel
+                if c_sport == "PADEL":
+                    court_day_events = [
+                        ev for ev in active_events
+                        if ev["weekday"] == d.weekday() and c_num in ev["courts"]
+                    ]
+                else:
+                    court_day_events = []
+
+                for start_t, end_t in BLOCKS_90_MIN:
+                    # Si ya existe un slot protegido en esta cancha/fecha/hora, no duplicar
+                    if (court.id, d, start_t) in protected_keys:
                         continue
 
-                is_pico = is_weekend or (start_t.hour >= 18)
-                slot_cap = c_cap
-                if c_sport == "VOLLEYBALL":
-                    base_price = Decimal("120000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH
-                    category = "Vóley Arena Mixto"
-                elif c_sport == "PILATES":
-                    base_price = Decimal("180000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH
-                    category = "Pilates Mat & Reformer"
-                elif c_sport == "PICKLEBALL":
-                    base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20)) else SlotMode.FULL_COURT
-                    category = "Pickleball Abierto"
-                elif c_sport in ("CONSOLE", "GAMING"):
-                    base_price = Decimal("20000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH
-                    category = "Gaming / Consola"
-                else:
-                    base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
-                    slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and c_num <= 3) else SlotMode.FULL_COURT
-                    category = "4ta"
+                    # Si es cancha de Pádel y se solapa con un torneo de la plantilla, no generar turno regular
+                    if court_day_events:
+                        overlaps = any(
+                            start_t < ev["end_time"] and end_t > ev["start_time"]
+                            for ev in court_day_events
+                        )
+                        if overlaps:
+                            continue
 
-                all_to_add.append(
-                    TimeSlot(
-                        court_id=court.id,
-                        date=d,
-                        start_time=start_t,
-                        end_time=end_t,
-                        total_price=base_price,
-                        mode=slot_mode,
-                        capacity=slot_cap,
-                        booked_spots=0,
-                        category=category,
-                        players_names=[],
-                        status=SlotStatus.AVAILABLE,
-                        slot_type="MATCH",
-                        instructor_name=None,
-                        is_promo=False,
-                        sport_type=c_sport,
-                    )
-                )
+                    is_pico = is_weekend or (start_t.hour >= 18)
+                    slot_cap = c_cap
+                    if c_sport == "VOLLEYBALL":
+                        base_price = Decimal("120000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH
+                        category = "Vóley Arena Mixto"
+                    elif c_sport == "PILATES":
+                        base_price = Decimal("180000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH
+                        category = "Pilates Mat & Reformer"
+                    elif c_sport == "PICKLEBALL":
+                        base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20)) else SlotMode.FULL_COURT
+                        category = "Pickleball Abierto"
+                    elif c_sport in ("CONSOLE", "GAMING"):
+                        base_price = Decimal("20000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH
+                        category = "Gaming / Consola"
+                    else:
+                        base_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+                        slot_mode = SlotMode.SPLIT_MATCH if (start_t.hour in (18, 19, 20) and c_num <= 3) else SlotMode.FULL_COURT
+                        category = "4ta"
 
-            # Insertar los torneos seleccionados exclusivamente en las pistas de Pádel designadas
-            if court_day_events:
-                for ev in court_day_events:
-                    mod_label = "Pareja Fija" if ev["modality"] == "PAREJA_FIJA" else "Individual"
-                    cat_label = f"Americano {ev.get('category', '5ta')} ({mod_label})"
                     all_to_add.append(
                         TimeSlot(
+                            club_id=1,
                             court_id=court.id,
                             date=d,
-                            start_time=ev["start_time"],
-                            end_time=ev["end_time"],
-                            total_price=ev["entry_fee"] * 4,
-                            mode=SlotMode.FULL_COURT,
-                            capacity=4,
-                            booked_spots=4,
-                            category=cat_label,
-                            status=SlotStatus.FULLY_BOOKED,
-                            slot_type="AMERICANO",
-                            tournament_type=ev["modality"],
-                            tournament_name=ev["name"],
-                            prize_pool=ev["prize_pool"],
+                            start_time=start_t,
+                            end_time=end_t,
+                            total_price=base_price,
+                            price_total_cop=base_price,
+                            price_per_player_cop=base_price / slot_cap,
+                            price=base_price,
+                            mode=slot_mode,
+                            capacity=slot_cap,
+                            booked_spots=0,
+                            category=category,
                             players_names=[],
+                            status=SlotStatus.AVAILABLE,
+                            slot_type="MATCH",
+                            instructor_name=None,
                             is_promo=False,
-                            sport_type="PADEL",
+                            sport_type=c_sport,
                         )
                     )
-                    ev_desc = f"{d.strftime('%Y-%m-%d')}: {ev['name']} ({ev['start_time'].strftime('%H:%M')} - {ev['end_time'].strftime('%H:%M')})"
-                    if ev_desc not in scheduled_events:
-                        scheduled_events.append(ev_desc)
 
-    if all_to_add:
-        db.add_all(all_to_add)
+                # Insertar los torneos seleccionados exclusivamente en las pistas de Pádel designadas
+                if court_day_events:
+                    for ev in court_day_events:
+                        if (court.id, d, ev["start_time"]) in protected_keys:
+                            continue
+                        mod_label = "Pareja Fija" if ev["modality"] == "PAREJA_FIJA" else "Individual"
+                        cat_label = f"Americano {ev.get('category', '5ta')} ({mod_label})"
+                        total_tournament_price = ev["entry_fee"] * 4
+                        all_to_add.append(
+                            TimeSlot(
+                                club_id=1,
+                                court_id=court.id,
+                                date=d,
+                                start_time=ev["start_time"],
+                                end_time=ev["end_time"],
+                                total_price=total_tournament_price,
+                                price_total_cop=total_tournament_price,
+                                price_per_player_cop=ev["entry_fee"],
+                                price=total_tournament_price,
+                                mode=SlotMode.FULL_COURT,
+                                capacity=4,
+                                booked_spots=4,
+                                category=cat_label,
+                                status=SlotStatus.FULLY_BOOKED,
+                                slot_type="AMERICANO",
+                                tournament_type=ev["modality"],
+                                tournament_name=ev["name"],
+                                prize_pool=ev["prize_pool"],
+                                players_names=[],
+                                is_promo=False,
+                                sport_type="PADEL",
+                            )
+                        )
+                        ev_desc = f"{d.strftime('%Y-%m-%d')}: {ev['name']} ({ev['start_time'].strftime('%H:%M')} - {ev['end_time'].strftime('%H:%M')})"
+                        if ev_desc not in scheduled_events:
+                            scheduled_events.append(ev_desc)
 
-    await db.commit()
+        if all_to_add:
+            db.add_all(all_to_add)
 
-    return {
-        "status": "success",
-        "message": f"Se sembraron exitosamente {len(all_to_add)} turnos para los 7 días con la plantilla de torneos Capital Pádel Maloka.",
-        "courts_count": len(courts),
-        "days_count": len(dates_to_seed),
-        "slots_created": len(all_to_add),
-        "tournaments_scheduled": len(scheduled_events),
-        "scheduled_events": scheduled_events,
-    }
+        await db.commit()
+
+        return {
+            "status": "ok",
+            "created_slots": len(all_to_add),
+            "slots_created": len(all_to_add),
+            "message": "Plantilla sembrada con éxito",
+            "courts_count": len(courts),
+            "days_count": len(dates_to_seed),
+            "tournaments_scheduled": len(scheduled_events),
+            "scheduled_events": scheduled_events,
+        }
+    except Exception as exc:
+        logger.error(f"Error en seed_weekly_template: {traceback.format_exc()}")
+        await db.rollback()
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Error al sembrar plantilla semanal: {str(exc)}",
+                "detail": traceback.format_exc(),
+            },
+        )
+
+
+@router.post("/manual-booking", status_code=status.HTTP_200_OK)
+async def create_manual_booking(
+    payload: ManualBookingRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Crea una reserva puntual individual para recepción de manera inmediata en PostgreSQL / Supabase,
+    sin necesidad de sembrar semanas enteras:
+    - Si el slot ya existe en esa cancha, fecha y hora, agrega al jugador y actualiza ocupación.
+    - Si el slot no existe, crea el TimeSlot en el instante con precio, deporte y horario.
+    - Asocia o crea el cliente en el CRM de Supabase.
+    """
+    try:
+        # 1. Resolver Cancha
+        target_court = None
+        raw_court_id = payload.court_id
+        if isinstance(raw_court_id, uuid.UUID):
+            c_res = await db.execute(select(Court).where(Court.id == raw_court_id))
+            target_court = c_res.scalars().first()
+        else:
+            c_str = str(raw_court_id).strip()
+            try:
+                c_uuid = uuid.UUID(c_str)
+                c_res = await db.execute(select(Court).where(Court.id == c_uuid))
+                target_court = c_res.scalars().first()
+            except ValueError:
+                digits = re.findall(r"\d+", c_str)
+                c_num = int(digits[0]) if digits else 1
+                c_res = await db.execute(select(Court).where(Court.court_number == c_num))
+                target_court = c_res.scalars().first()
+                if not target_court:
+                    all_c = await ensure_five_courts(db)
+                    idx = min(max(0, c_num - 1), len(all_c) - 1)
+                    target_court = all_c[idx]
+
+        if not target_court:
+            all_c = await ensure_five_courts(db)
+            target_court = all_c[0]
+
+        # 2. Parsear fecha y hora
+        if isinstance(payload.date, str):
+            b_date = datetime.strptime(payload.date.strip(), "%Y-%m-%d").date()
+        else:
+            b_date = payload.date
+
+        t_parts = str(payload.start_time).strip().split(":")
+        start_h = int(t_parts[0])
+        start_m = int(t_parts[1]) if len(t_parts) > 1 else 0
+        start_t = time(start_h, start_m)
+
+        duration = int(payload.duration_minutes or 90)
+        start_dt = datetime.combine(b_date, start_t)
+        end_dt = start_dt + timedelta(minutes=duration)
+        end_t = end_dt.time()
+
+        # 3. Registrar o actualizar cliente en CRM (Customer)
+        client_name = payload.client_name.strip()
+        client_phone = payload.client_phone.strip()
+        cust_res = await db.execute(select(Customer).where(Customer.phone == client_phone))
+        customer = cust_res.scalars().first()
+        if not customer:
+            customer = Customer(
+                name=client_name,
+                phone=client_phone,
+                category=payload.category or "4ta",
+                membership_tier="ESTANDAR",
+            )
+            db.add(customer)
+            await db.flush()
+        else:
+            if not customer.name and client_name:
+                customer.name = client_name
+            customer.total_bookings_completed = (customer.total_bookings_completed or 0) + 1
+
+        # 4. Determinar precio y deporte
+        sport = (payload.sport_type or getattr(target_court, "sport_type", "PADEL") or "PADEL").upper()
+        cap = 4 if sport in ("PADEL", "PICKLEBALL", "VOLLEYBALL") else 2
+        is_pico = b_date.weekday() in (5, 6) or (start_t.hour >= 18)
+        if payload.price is not None and payload.price > 0:
+            total_price = Decimal(str(payload.price))
+        else:
+            total_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
+
+        player_entry = {
+            "spot_index": 1,
+            "phone": client_phone,
+            "display_name": client_name,
+            "client_tier": getattr(customer, "membership_tier", "STANDARD") or "STANDARD",
+            "host_phone": None,
+            "is_first_visit": False,
+            "onboarding_status": "CONFIRMED",
+            "customer_id": customer.id,
+        }
+
+        # 5. Buscar si ya existe slot en esa cancha, fecha y hora
+        slot_res = await db.execute(
+            select(TimeSlot)
+            .where(
+                TimeSlot.court_id == target_court.id,
+                TimeSlot.date == b_date,
+                TimeSlot.start_time == start_t,
+            )
+        )
+        slot = slot_res.scalars().first()
+
+        mode_enum = SlotMode.FULL_COURT if (payload.mode or "FULL_COURT").upper() == "FULL_COURT" else SlotMode.SPLIT_MATCH
+
+        if slot:
+            # Slot existente -> actualizar
+            slot.total_price = total_price
+            slot.price_total_cop = total_price
+            slot.price = total_price
+            slot.price_per_player_cop = total_price / (slot.capacity or cap)
+            slot.sport_type = sport
+
+            curr_players = list(slot.players_names or [])
+            already_in = any(isinstance(p, dict) and p.get("phone") == client_phone for p in curr_players)
+            if not already_in:
+                player_entry["spot_index"] = len(curr_players) + 1
+                curr_players.append(player_entry)
+            slot.players_names = curr_players
+
+            if mode_enum == SlotMode.FULL_COURT:
+                slot.mode = SlotMode.FULL_COURT
+                slot.booked_spots = slot.capacity
+                slot.status = SlotStatus.FULLY_BOOKED
+            else:
+                slot.mode = SlotMode.SPLIT_MATCH
+                slot.booked_spots = len(curr_players)
+                slot.status = SlotStatus.FULLY_BOOKED if slot.booked_spots >= slot.capacity else SlotStatus.PARTIALLY_BOOKED
+        else:
+            # Crear TimeSlot nuevo puntual
+            booked_spots = cap if mode_enum == SlotMode.FULL_COURT else 1
+            st_status = SlotStatus.FULLY_BOOKED if booked_spots >= cap else SlotStatus.PARTIALLY_BOOKED
+            slot = TimeSlot(
+                club_id=1,
+                court_id=target_court.id,
+                date=b_date,
+                start_time=start_t,
+                end_time=end_t,
+                total_price=total_price,
+                price_total_cop=total_price,
+                price_per_player_cop=total_price / cap,
+                price=total_price,
+                mode=mode_enum,
+                capacity=cap,
+                booked_spots=booked_spots,
+                status=st_status,
+                category=payload.category or "4ta",
+                players_names=[player_entry],
+                slot_type="MATCH",
+                instructor_name=None,
+                is_promo=False,
+                sport_type=sport,
+            )
+            db.add(slot)
+
+        await db.commit()
+        await db.refresh(slot)
+
+        return {
+            "status": "ok",
+            "message": "Reserva confirmada con éxito",
+            "slot_id": slot.id,
+            "court_id": str(target_court.id),
+            "court_name": target_court.name,
+            "date": str(b_date),
+            "start_time": start_t.strftime("%H:%M"),
+            "end_time": end_t.strftime("%H:%M"),
+            "client_name": client_name,
+            "client_phone": client_phone,
+            "total_price": float(total_price),
+            "mode": slot.mode.value if hasattr(slot.mode, "value") else str(slot.mode),
+            "status_slot": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
+        }
+
+    except Exception as exc:
+        logger.error(f"Error en create_manual_booking: {traceback.format_exc()}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al procesar reserva manual: {str(exc)}",
+        )
 
 
 @router.get("/{slot_id}/yield-recommendation")

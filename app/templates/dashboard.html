@@ -2352,6 +2352,10 @@
 
               <!-- Derecha: Botones de Acción SaaS Agrupados -->
               <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" onclick="openManualBookingModal()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all focus:ring-2 focus:ring-blue-500" style="background-color: #2563eb !important; color: #ffffff !important;">
+                  <span>➕</span>
+                  <span>Nueva Reserva</span>
+                </button>
                 <button type="button" id="btn-create-americano" onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm">
                   <span>🏆</span> <span>+ Torneo Americano</span>
                 </button>
@@ -4769,10 +4773,117 @@
 
       <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
         <button type="button" onclick="closeWeeklyTemplateModal()" class="btn-secondary">Cancelar</button>
-        <button type="button" id="btn-confirm-weekly-seed" onclick="submitWeeklyTemplateSeed()" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition">
-          <span>🌱</span> <span>Confirmar y Sembrar Semana</span>
+        <button type="button" id="btn-confirm-weekly-seed" onclick="submitWeeklyTemplateSeed()" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white rounded-lg shadow-sm transition" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;">
+          <span>🌱</span> <span style="color: #ffffff !important;">Confirmar y Sembrar Semana</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: RESERVA PUNTUAL INDIVIDUAL DIRECTA                -->
+  <!-- ======================================================== -->
+  <div id="modal-manual-booking" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 520px; width: 95%;">
+      <div class="modal-title">
+        <span style="display: flex; align-items: center; gap: 0.5rem; color: #0F172A; font-weight: 800;">
+          <span style="font-size: 1.25rem;">➕</span> Nueva Reserva Puntual Directa
+        </span>
+        <button type="button" onclick="closeManualBookingModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; font-size: 0.75rem; color: #1E40AF; line-height: 1.4;">
+        ⚡ <strong>Reserva Inmediata:</strong> Agenda un turno o reserva directa en PostgreSQL sin necesidad de sembrar semanas completas. Se sincroniza al instante con el CRM.
+      </div>
+
+      <form id="form-manual-booking" onsubmit="submitManualBooking(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Cancha</label>
+            <select id="mb-court" class="form-control" required style="font-weight: 600;">
+              <option value="1">Cancha 1 (Panorámica)</option>
+              <option value="2">Cancha 2</option>
+              <option value="3">Cancha 3</option>
+              <option value="4">Cancha 4</option>
+              <option value="5">Cancha 5</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Deporte</label>
+            <select id="mb-sport" class="form-control" required style="font-weight: 600;" onchange="onManualBookingSportChange(this.value)">
+              <option value="PADEL">🎾 Pádel</option>
+              <option value="PICKLEBALL">🏓 Pickleball</option>
+              <option value="VOLLEYBALL">🏐 Vóley</option>
+              <option value="PILATES">🧘 Pilates</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Fecha</label>
+            <input type="date" id="mb-date" class="form-control" required style="font-weight: 600;" />
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Hora de Inicio</label>
+            <input type="time" id="mb-start-time" class="form-control" value="08:00" required style="font-weight: 600;" />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Duración</label>
+            <select id="mb-duration" class="form-control" required style="font-weight: 600;">
+              <option value="60">60 minutos (1 hora)</option>
+              <option value="90" selected>90 minutos (1.5 horas)</option>
+              <option value="120">120 minutos (2 horas)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Modalidad</label>
+            <select id="mb-mode" class="form-control" required style="font-weight: 600;">
+              <option value="FULL_COURT">🏟️ Cancha Completa (4/4)</option>
+              <option value="SPLIT_MATCH">👤 Cupo Individual (1/4)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Nombre del Cliente</label>
+            <input type="text" id="mb-client-name" class="form-control" placeholder="Ej: Juan Pérez" required style="font-weight: 600;" />
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Teléfono / WhatsApp</label>
+            <input type="tel" id="mb-client-phone" class="form-control" placeholder="+573001234567" required style="font-weight: 600;" />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Precio Acordado (COP)</label>
+            <input type="number" id="mb-price" class="form-control" placeholder="80000" value="80000" step="1000" min="0" required style="font-weight: 700; color: #047857;" />
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Nivel / Categoría (Opcional)</label>
+            <select id="mb-category" class="form-control" style="font-weight: 600;">
+              <option value="4ta">4ta Categoría (Intermedio)</option>
+              <option value="5ta">5ta Categoría (Iniciación)</option>
+              <option value="3ra">3ra Categoría (Avanzado)</option>
+              <option value="2da">2da Categoría</option>
+              <option value="1ra">1ra Categoría (Pro)</option>
+              <option value="Open">Abierto</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+          <button type="button" onclick="closeManualBookingModal()" class="btn-secondary">Cancelar</button>
+          <button type="submit" id="btn-confirm-manual-booking" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition" style="background-color: #2563eb !important; color: #ffffff !important;">
+            <span>➕</span> <span>Confirmar Reserva</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -7783,6 +7894,7 @@ ${data.message}`);
       }
     }
     window.submitWeeklyTemplateSeed = submitWeeklyTemplateSeed;
+    window.submitWeeklyTemplate = submitWeeklyTemplateSeed;
 
     function seedWeeklySlots() {
       openWeeklyTemplateModal();
@@ -7790,6 +7902,188 @@ ${data.message}`);
     const seedFiveCourts = seedWeeklySlots;
     window.seedWeeklySlots = seedWeeklySlots;
     window.seedFiveCourts = seedWeeklySlots;
+
+    // ========================================================
+    // MODAL RESERVA PUNTUAL INDIVIDUAL DIRECTA
+    // ========================================================
+    function openManualBookingModal() {
+      const modal = document.getElementById('modal-manual-booking');
+      if (!modal) return;
+
+      const dateInput = document.getElementById('mb-date');
+      if (dateInput) {
+        dateInput.value = (typeof selectedDate !== 'undefined' && selectedDate) ? selectedDate : getColombiaTodayString();
+      }
+
+      // Pre-seleccionar deporte activo
+      const sportSelect = document.getElementById('mb-sport');
+      if (sportSelect) {
+        const activeSport = (typeof window.currentSport !== 'undefined' && window.currentSport) 
+          ? window.currentSport 
+          : ((typeof window.currentSportFilter !== 'undefined' && window.currentSportFilter) ? window.currentSportFilter : 'PADEL');
+        if (['PADEL', 'PICKLEBALL', 'VOLLEYBALL', 'PILATES'].includes(activeSport)) {
+          sportSelect.value = activeSport;
+        } else {
+          sportSelect.value = 'PADEL';
+        }
+        onManualBookingSportChange(sportSelect.value);
+      }
+
+      // Si tenemos canchas disponibles en courtsList o allCourts, actualizar opciones
+      const courtSelect = document.getElementById('mb-court');
+      const courtsSource = (typeof courtsList !== 'undefined' && courtsList && courtsList.length > 0)
+        ? courtsList
+        : ((typeof allCourts !== 'undefined' && allCourts && allCourts.length > 0) ? allCourts : null);
+
+      if (courtSelect && courtsSource && courtsSource.length > 0) {
+        const activeSport = sportSelect ? sportSelect.value : 'PADEL';
+        const filteredCourts = courtsSource.filter(c => (c.sport_type || 'PADEL').toUpperCase() === activeSport);
+        const toShow = filteredCourts.length > 0 ? filteredCourts : courtsSource.slice(0, 5);
+        
+        let opts = '';
+        toShow.forEach((c, idx) => {
+          const cId = c.id || (idx + 1);
+          const cName = c.name || `Cancha ${idx + 1}`;
+          opts += `<option value="${cId}">${cName}</option>`;
+        });
+        if (opts) {
+          courtSelect.innerHTML = opts;
+        }
+      }
+
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
+    window.openManualBookingModal = openManualBookingModal;
+
+    function closeManualBookingModal() {
+      const modal = document.getElementById('modal-manual-booking');
+      if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+      }
+    }
+    window.closeManualBookingModal = closeManualBookingModal;
+
+    function onManualBookingSportChange(sport) {
+      const priceInput = document.getElementById('mb-price');
+      if (priceInput) {
+        const sp = (sport || 'PADEL').toUpperCase();
+        if (sp === 'VOLLEYBALL') priceInput.value = '120000';
+        else if (sp === 'PILATES') priceInput.value = '180000';
+        else if (sp === 'PICKLEBALL') priceInput.value = '80000';
+        else priceInput.value = '80000';
+      }
+
+      // Actualizar opciones de canchas según el deporte
+      const courtSelect = document.getElementById('mb-court');
+      const courtsSource = (typeof courtsList !== 'undefined' && courtsList && courtsList.length > 0)
+        ? courtsList
+        : ((typeof allCourts !== 'undefined' && allCourts && allCourts.length > 0) ? allCourts : null);
+
+      if (courtSelect) {
+        if (courtsSource && courtsSource.length > 0) {
+          const sp = (sport || 'PADEL').toUpperCase();
+          const filtered = courtsSource.filter(c => (c.sport_type || 'PADEL').toUpperCase() === sp);
+          const toShow = filtered.length > 0 ? filtered : courtsSource.slice(0, 5);
+          let opts = '';
+          toShow.forEach((c, idx) => {
+            const cId = c.id || (idx + 1);
+            const cName = c.name || `Cancha ${idx + 1}`;
+            opts += `<option value="${cId}">${cName}</option>`;
+          });
+          courtSelect.innerHTML = opts;
+        } else {
+          // Default fallback
+          courtSelect.innerHTML = `
+            <option value="1">Cancha 1 (Panorámica)</option>
+            <option value="2">Cancha 2</option>
+            <option value="3">Cancha 3</option>
+            <option value="4">Cancha 4</option>
+            <option value="5">Cancha 5</option>
+          `;
+        }
+      }
+    }
+    window.onManualBookingSportChange = onManualBookingSportChange;
+
+    async function submitManualBooking(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const btn = document.getElementById('btn-confirm-manual-booking');
+      const courtVal = document.getElementById('mb-court').value;
+      const sportVal = document.getElementById('mb-sport').value;
+      const dateVal = document.getElementById('mb-date').value;
+      const timeVal = document.getElementById('mb-start-time').value;
+      const durVal = parseInt(document.getElementById('mb-duration').value || '90', 10);
+      const modeVal = document.getElementById('mb-mode').value;
+      const nameVal = document.getElementById('mb-client-name').value.trim();
+      const phoneVal = document.getElementById('mb-client-phone').value.trim();
+      const priceVal = parseFloat(document.getElementById('mb-price').value || '0');
+      const catVal = document.getElementById('mb-category').value;
+
+      if (!nameVal || !phoneVal || !dateVal || !timeVal) {
+        alert('Por favor completa todos los campos requeridos.');
+        return;
+      }
+
+      const payload = {
+        court_id: courtVal,
+        sport_type: sportVal,
+        date: dateVal,
+        start_time: timeVal,
+        duration_minutes: durVal,
+        mode: modeVal,
+        client_name: nameVal,
+        client_phone: phoneVal,
+        price: priceVal,
+        category: catVal
+      };
+
+      const origHtml = btn ? btn.innerHTML : '<span>➕</span> <span>Confirmar Reserva</span>';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span> <span>Guardando Reserva...</span>';
+      }
+
+      try {
+        const res = await fetch('/api/v1/slots/manual-booking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'ok') {
+          closeManualBookingModal();
+          alert(`✅ ${data.message || 'Reserva creada con éxito'}\nCancha: ${data.court_name || courtVal}\nFecha: ${data.date} (${data.start_time} - ${data.end_time})\nCliente: ${data.client_name}`);
+
+          // Sincronizar fecha y deporte
+          selectedDate = dateVal;
+          const mainDateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
+          if (mainDateInput) mainDateInput.value = dateVal;
+
+          if (typeof setSportFilter === 'function') {
+            setSportFilter(sportVal);
+          }
+          if (typeof fetchSlots === 'function') {
+            await fetchSlots();
+          }
+          if (typeof addEvent === 'function') {
+            addEvent('Reserva Creada', `${nameVal} - ${data.court_name || ('Cancha ' + courtVal)} (${timeVal})`, 'green');
+          }
+        } else {
+          alert(`❌ Error al crear reserva: ${data.detail || data.message || 'Error en el servidor'}`);
+        }
+      } catch (err) {
+        console.error('Error al registrar reserva manual:', err);
+        alert('❌ Error al conectar con el servidor para registrar la reserva puntual.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+    window.submitManualBooking = submitManualBooking;
 
 
     // Modal Crear Torneo Americano

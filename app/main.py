@@ -64,6 +64,16 @@ async def lifespan(app: FastAPI):
                         await conn.execute(text(f"ALTER TABLE academy_classes ADD COLUMN {acad_col}"))
                     except Exception:
                         pass
+                for slot_col in [
+                    "club_id INTEGER DEFAULT 1",
+                    "price_total_cop NUMERIC(10, 2)",
+                    "price_per_player_cop NUMERIC(10, 2)",
+                    "price NUMERIC(10, 2)",
+                ]:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE time_slots ADD COLUMN {slot_col}"))
+                    except Exception:
+                        pass
                 for plan_col in [
                     "badge_label VARCHAR(50) DEFAULT 'PLAN SOCIO'",
                     "card_gradient VARCHAR(100) DEFAULT 'from-slate-800 to-indigo-900'",
@@ -75,6 +85,10 @@ async def lifespan(app: FastAPI):
                         pass
             else:
                 pg_statements = [
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS club_id INTEGER DEFAULT 1",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS price_total_cop NUMERIC(10, 2)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS price_per_player_cop NUMERIC(10, 2)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS price NUMERIC(10, 2)",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP WITH TIME ZONE",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS slot_type VARCHAR(50) DEFAULT 'MATCH'",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS instructor_name VARCHAR(100)",

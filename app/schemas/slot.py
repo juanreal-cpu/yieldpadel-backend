@@ -197,4 +197,17 @@ class DropPlayerResponse(BaseModel):
 class WeeklyTemplateSeedRequest(BaseModel):
     date: Optional[Union[dt_date, str]] = None
     selected_events: Optional[List[str]] = None
-    events: Optional[List[Dict[str, Any]]] = None
+    events: Optional[List[Dict[str, Any]]] = None
+
+
+class ManualBookingRequest(BaseModel):
+    court_id: Union[str, uuid.UUID, int]
+    sport_type: Optional[str] = "PADEL"
+    date: Union[dt_date, str]
+    start_time: str
+    duration_minutes: Optional[int] = 90
+    mode: Optional[str] = "FULL_COURT"
+    client_name: str
+    client_phone: str
+    price: Optional[Decimal] = None
+    category: Optional[str] = "4ta"

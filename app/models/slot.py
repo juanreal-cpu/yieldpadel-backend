@@ -108,6 +108,24 @@ class TimeSlot(Base):
     # Soporte Multideporte
     sport_type: Mapped[str] = mapped_column(String(50), default="PADEL", nullable=False)
 
+    # Campos de compatibilidad y control por club
+    club_id: Mapped[Optional[int]] = mapped_column(Integer, default=1, nullable=True)
+    price_total_cop: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    price_per_player_cop: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+
+    @property
+    def price_val(self) -> Decimal:
+        return self.total_price
+
+    @price_val.setter
+    def price_val(self, value: Decimal):
+        self.total_price = value
+        self.price = value
+        self.price_total_cop = value
+        if self.capacity:
+            self.price_per_player_cop = value / self.capacity
+
 
     court: Mapped["Court"] = relationship("Court", back_populates="slots", lazy="selectin")
     holds: Mapped[List["SlotHold"]] = relationship(
