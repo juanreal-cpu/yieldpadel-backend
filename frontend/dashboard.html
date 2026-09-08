@@ -2323,7 +2323,7 @@
               <div class="calendar-wrapper" id="calendar-matrix-container" data-alias="calendar-wrapper">
                 <div id="loading-spinner" class="hidden" style="display: none;"></div>
                 <div id="calendar-matrix" class="calendar-matrix" data-alias="slots-grid">
-                  <div id="grid-loader" class="hidden" style="display: none; grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; text-align: center; color: #64748B;">
+                  <div id="grid-loader" class="hidden" style="display: none; grid-column: 1/-1; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; text-align: center; color: #64748B;">
                     <div style="display: inline-block; width: 36px; height: 36px; border: 3px solid #E2E8F0; border-radius: 50%; border-top-color: #0284C7; animation: spin 0.8s linear infinite; margin-bottom: 0.75rem;"></div>
                     <div style="font-size: 0.85rem; font-weight: 700; color: #0F172A;">Cargando turnos de la jornada...</div>
                     <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Consultando disponibilidad y tarifas dinámicas</div>
@@ -4519,6 +4519,49 @@
   <script>
 
     // ========================================================
+    // 3. BLINDAJE DE NAVEGACIÓN GLOBAL (switchMainView)
+    // Declarado de forma aislada al inicio del bloque script principal
+    // ========================================================
+    window.switchMainView = function(viewName) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
+      if (cleanName === 'matrix') cleanName = 'calendar';
+      if (cleanName === 'indicators') cleanName = 'yield';
+
+      const target = document.getElementById('view-' + cleanName);
+      if (target) {
+        target.classList.remove('hidden');
+      }
+      document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
+        btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
+        btn.classList.add('text-slate-600');
+      });
+      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('tab-' + cleanName);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
+        activeBtn.classList.remove('text-slate-600');
+      }
+
+      // Disparadores secundarios con try...catch individuales para que ningún fallo impida cambiar de pestaña
+      try { if (cleanName === 'crm' && typeof loadCRMPlayers === 'function') loadCRMPlayers(); } catch (err) { console.warn('loadCRMPlayers error:', err); }
+      try { if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory(); } catch (err) { console.warn('loadCRMDirectory error:', err); }
+      try { if (cleanName === 'pos' && typeof loadPosData === 'function') loadPosData(); } catch (err) { console.warn('loadPosData error:', err); }
+      try { if (cleanName === 'pos' && typeof loadPOSData === 'function') loadPOSData(); } catch (err) { console.warn('loadPOSData error:', err); }
+      try { if (cleanName === 'access' && typeof loadAccessPresence === 'function') loadAccessPresence(); } catch (err) { console.warn('loadAccessPresence error:', err); }
+      try { if (cleanName === 'access' && typeof loadAccessData === 'function') loadAccessData(); } catch (err) { console.warn('loadAccessData error:', err); }
+      try { if (cleanName === 'audit' && typeof loadAuditLogs === 'function') loadAuditLogs(); } catch (err) { console.warn('loadAuditLogs error:', err); }
+      try { if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData(); } catch (err) { console.warn('loadAuditData error:', err); }
+      try { if (cleanName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments(); } catch (err) { console.warn('loadTournaments error:', err); }
+      try { if (cleanName === 'tournaments' && typeof loadTournamentsList === 'function') loadTournamentsList(); } catch (err) { console.warn('loadTournamentsList error:', err); }
+      try { if (cleanName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig(); } catch (err) { console.warn('loadClubCourtsConfig error:', err); }
+      try { if (cleanName === 'config' && typeof loadClubConfig === 'function') loadClubConfig(); } catch (err) { console.warn('loadClubConfig error:', err); }
+      try { if (cleanName === 'yield' && typeof loadYieldEngineStats === 'function') loadYieldEngineStats(); } catch (err) { console.warn('loadYieldEngineStats error:', err); }
+      try { if (cleanName === 'radar' && typeof initRadarMap === 'function') initRadarMap(); } catch (err) { console.warn('initRadarMap error:', err); }
+      try { if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots(); } catch (err) { console.warn('fetchSlots error:', err); }
+    };
+    function switchMainView(viewName) { window.switchMainView(viewName); }
+
+    // ========================================================
     // DECLARACIONES GLOBALES EXPLÍCITAS & NAVEGACIÓN
     // ========================================================
     window.currentSportFilter = window.currentSportFilter || 'PADEL';
@@ -4566,74 +4609,8 @@
       }
     };
 
-    window.switchMainView = function(viewName) {
-      console.log('Navegando a vista:', viewName);
-      let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
-      if (cleanName === 'matrix') cleanName = 'calendar';
-      if (cleanName === 'indicators') cleanName = 'yield';
-
-      document.querySelectorAll('.view-section').forEach(el => {
-        el.classList.add('hidden');
-        el.style.display = 'none';
-      });
-      const target = document.getElementById('view-' + cleanName);
-      if (target) {
-        target.classList.remove('hidden');
-        target.style.display = '';
-      } else {
-        console.error('No se encontró el contenedor view-' + cleanName);
-      }
-      // Actualizar estilo del botón activo en el sidebar
-      document.querySelectorAll('.sidebar-link').forEach(btn => {
-        btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
-        btn.classList.add('text-slate-600');
-      });
-      const activeBtn = document.getElementById('btn-nav-' + cleanName);
-      if (activeBtn) {
-        activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
-        activeBtn.classList.remove('text-slate-600');
-      }
-
-      // Disparar carga de datos protegida con try/catch individual por subvista para evitar bloqueos
-      if (cleanName === 'tournaments') {
-        try { if (typeof loadTournaments === 'function') loadTournaments(); } catch(e) { console.error(e); }
-        try { if (typeof loadTournamentsList === 'function') loadTournamentsList(); } catch(e) { console.error(e); }
-      } else if (cleanName === 'crm' || viewName === 'crm') {
-        const crmView = document.getElementById('view-crm');
-        if (crmView) {
-          crmView.classList.remove('hidden');
-          crmView.style.display = '';
-        }
-        try {
-          if (viewName === 'crm' && typeof loadCRMPlayers === 'function') loadCRMPlayers();
-          else if (typeof loadCRMPlayers === 'function') loadCRMPlayers();
-        } catch (err) {
-          console.warn("Advertencia al cargar clientes CRM:", err);
-        }
-      } else if (cleanName === 'radar') {
-        try { if (typeof initRadarMap === 'function') setTimeout(initRadarMap, 150); } catch(e) { console.error(e); }
-      } else if (cleanName === 'yield') {
-        try { if (typeof loadYieldEngineStats === 'function') loadYieldEngineStats(); } catch(e) { console.error(e); }
-      } else if (cleanName === 'config') {
-        try { if (typeof loadClubConfig === 'function') loadClubConfig(); } catch(e) { console.error(e); }
-        try { if (typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig(); } catch(e) { console.error(e); }
-      } else if (cleanName === 'audit') {
-        try { if (typeof loadAuditLogs === 'function') loadAuditLogs(); } catch(e) { console.error(e); }
-        try { if (typeof loadStaffUsers === 'function') loadStaffUsers(); } catch(e) { console.error(e); }
-      } else if (cleanName === 'analytics') {
-        try { if (typeof loadAnalyticsHeatmap === 'function') loadAnalyticsHeatmap(); } catch(e) { console.error(e); }
-      } else if (cleanName === 'pos') {
-        try { if (typeof loadPOSData === 'function') loadPOSData(); } catch(e) { console.error(e); }
-      } else if (cleanName === 'access') {
-        try { if (typeof loadAccessData === 'function') loadAccessData(); } catch(e) { console.error(e); }
-      } else if (cleanName === 'calendar') {
-        try { if (typeof fetchSlots === 'function') fetchSlots(); } catch(e) { console.error(e); }
-      }
-    };
-
     // Aliases globales para interacción directa
     function toggleBotDrawer(f) { window.toggleBotDrawer(f); }
-    function switchMainView(v) { window.switchMainView(v); }
 
 
     // Sistema de Toasts con contraste forzado absoluto
@@ -6121,7 +6098,7 @@ ${data.message}`);
     // CORRECCIÓN ROBUSTA: fetchSlots() sin Loader Congelado
     // ========================================================
     async function fetchSlots() {
-      const spinner = document.getElementById('loading-spinner');
+      const spinner = document.getElementById('loading-spinner') || document.querySelector('.loading-spinner');
       const gridLoader = document.getElementById('grid-loader');
       if (spinner) {
         spinner.classList.remove('hidden');
@@ -6129,14 +6106,17 @@ ${data.message}`);
       }
       if (gridLoader) {
         gridLoader.classList.remove('hidden');
-        gridLoader.style.display = '';
+        gridLoader.style.display = 'flex';
       }
 
-      const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
-      if (dateInput && !dateInput.value) {
-        dateInput.value = '2026-09-07';
+      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+      if (!window.currentDate || !window.currentDate.trim() || (dateInput && !dateInput.value)) {
+        window.currentDate = (dateInput && dateInput.value) ? dateInput.value : '2026-09-07';
+        if (dateInput && !dateInput.value) {
+          dateInput.value = window.currentDate;
+        }
       }
-      const currentDate = (dateInput && dateInput.value) ? dateInput.value : (typeof selectedDate !== 'undefined' && selectedDate ? selectedDate : '2026-09-07');
+      const currentDate = window.currentDate || (dateInput && dateInput.value) || '2026-09-07';
       selectedDate = currentDate;
 
       const currentSport = (typeof currentSportFilter !== 'undefined' && currentSportFilter ? currentSportFilter : (window.currentSport || 'PADEL')).toUpperCase();
@@ -6145,7 +6125,7 @@ ${data.message}`);
 
       try {
         await fetch('/api/v1/holds/check-expirations', { method: 'POST' }).catch(() => {});
-        if (allCourts.length === 0) {
+        if (typeof allCourts !== 'undefined' && allCourts.length === 0 && typeof fetchCourts === 'function') {
           await fetchCourts();
         }
 
@@ -6163,18 +6143,31 @@ ${data.message}`);
           window.allSlots = allSlots;
         }
 
-        renderCalendarMatrix();
-        updateMetrics();
+        const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
+        if (!allSlots || allSlots.length === 0) {
+          if (container) {
+            container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa '+ Torneo Americano' o 'Programar Semana' para generarlos.</div>";
+          }
+          const countEl = document.getElementById('slots-count');
+          if (countEl) countEl.textContent = '0 turnos';
+        } else {
+          renderCalendarMatrix();
+        }
+        if (typeof updateMetrics === 'function') updateMetrics();
       } catch (err) {
         console.warn('Error fetching slots:', err);
         allSlots = [];
-        renderCalendarMatrix();
-        updateMetrics();
+        window.allSlots = [];
+        const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
+        if (container) {
+          container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa '+ Torneo Americano' o 'Programar Semana' para generarlos.</div>";
+        }
+        if (typeof updateMetrics === 'function') updateMetrics();
       } finally {
-        const s = document.getElementById('loading-spinner');
-        if (s) {
-          s.classList.add('hidden');
-          s.style.display = 'none';
+        const spinner = document.getElementById('loading-spinner') || document.querySelector('.loading-spinner');
+        if (spinner) {
+          spinner.classList.add('hidden');
+          spinner.style.display = 'none';
         }
         const gl = document.getElementById('grid-loader');
         if (gl) {
@@ -9803,14 +9796,15 @@ Jugador: ${checkData.player_name}`);
     window.submitClearDebtAndCheckout = submitClearDebtAndCheckout;
 
     function initOperationalDashboard() {
-      // Inicializar fecha defensiva hoy si está vacío
-      const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
-      const todayStr = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
+      // 1. INICIALIZACIÓN OBLIGATORIA DE FECHA EN EL DOM
+      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
       if (dateInput && !dateInput.value) {
-        dateInput.value = todayStr;
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+        window.currentDate = today;
       }
       if (typeof selectedDate === 'undefined' || !selectedDate) {
-        selectedDate = (dateInput && dateInput.value) ? dateInput.value : todayStr;
+        selectedDate = (dateInput && dateInput.value) ? dateInput.value : (window.currentDate || '2026-09-07');
       }
       if (typeof updateDateUI === 'function') updateDateUI();
 
@@ -9825,15 +9819,31 @@ Jugador: ${checkData.player_name}`);
       if (typeof fetchSlots === 'function') {
         fetchSlots().catch(err => {
           console.error('Error al cargar turnos:', err);
-          const spinner = document.getElementById('loading-spinner');
+          const spinner = document.getElementById('loading-spinner') || document.querySelector('.loading-spinner');
           if (spinner) spinner.classList.add('hidden');
+          const gl = document.getElementById('grid-loader');
+          if (gl) gl.classList.add('hidden');
         });
       }
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initOperationalDashboard);
+      document.addEventListener('DOMContentLoaded', () => {
+        const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+        if (dateInput && !dateInput.value) {
+          const today = new Date().toISOString().split('T')[0];
+          dateInput.value = today;
+          window.currentDate = today;
+        }
+        initOperationalDashboard();
+      });
     } else {
+      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+      if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+        window.currentDate = today;
+      }
       initOperationalDashboard();
     }
 
