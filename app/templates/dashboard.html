@@ -19,6 +19,42 @@
     body { background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
     .view-section.hidden { display: none !important; }
 
+    /* =========================================================================
+       REGLA MAESTRA DE CONTRASTE ESTRICTO (PROTECCIÓN VISUAL CONTRA TEXTO BLANCO)
+       ========================================================================= */
+    /* Forzar contraste estricto en tarjetas claras */
+    .card-light, .bg-white, .bg-slate-50 {
+      color: #0f172a !important;
+    }
+    .card-light h1, .card-light h2, .card-light h3, .card-light h4, .card-light p, .card-light span, .card-light div {
+      color: inherit;
+    }
+    /* Evitar que texto blanco se cuele en contenedores claros */
+    .bg-white .text-white, .bg-slate-50 .text-white, .bg-slate-100 .text-white {
+      color: #0f172a !important;
+    }
+    /* Proteger botones y elementos oscuros dentro de contenedores claros para que su texto blanco se mantenga blanco */
+    .bg-white button.text-white, .bg-slate-50 button.text-white, .bg-slate-100 button.text-white,
+    .bg-white .bg-slate-900, .bg-white .bg-slate-800, .bg-white .bg-emerald-600, .bg-white .bg-indigo-600, .bg-white .bg-rose-600, .bg-white .bg-amber-500,
+    .bg-slate-50 .bg-slate-900, .bg-slate-50 .bg-slate-800, .bg-slate-50 .bg-emerald-600, .bg-slate-50 .bg-indigo-600,
+    .bg-slate-100 .bg-slate-900, .bg-slate-100 .bg-slate-800, .bg-slate-100 .bg-emerald-600, .bg-slate-100 .bg-indigo-600,
+    button.bg-slate-900, button.bg-slate-800, button.bg-emerald-600, button.bg-indigo-600, button.bg-rose-600,
+    .btn-primary {
+      color: #ffffff !important;
+    }
+    .bg-white button.text-white *, .bg-slate-50 button.text-white *, .bg-slate-100 button.text-white *,
+    button.bg-slate-900 *, button.bg-slate-800 *, button.bg-emerald-600 *, button.bg-indigo-600 *, button.bg-rose-600 *,
+    .btn-primary * {
+      color: inherit !important;
+    }
+    /* Clases de texto forzado */
+    .force-text-dark {
+      color: #0f172a !important;
+    }
+    .force-text-muted {
+      color: #64748b !important;
+    }
+
     /* SOLUCIÓN RADICAL A TEXTOS EN BLANCO (FORZAR NEGRO DIRECTO) */
     .btn-sport-filter, .time-filter-btn, .btn-an-sport-pill {
       color: #0f172a !important; /* Negro slate puro */
@@ -3687,107 +3723,162 @@
             <!-- 5 KPI Plan Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
               <!-- Plan Tapia -->
-              <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+              <div class="bg-white border border-slate-200 border-t-4 border-t-amber-500 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
                 <div>
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">👑 VIP Oro</span>
-                    <span id="stat-mem-tapia" class="text-sm font-black bg-white text-amber-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200" style="color: #92400e !important; background-color: #fef3c7 !important;">
+                      👑 VIP TAPIA
+                    </span>
+                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-tapia" style="color: #64748b !important;">0 socios</span>
                   </div>
-                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Tapia</h3>
-                  <div class="text-[11px] text-amber-100 font-medium mt-0.5">Horario Full Day (6am - 12am)</div>
-                  <div class="mt-3 space-y-1 text-xs text-white/95">
-                    <div>⚡ <strong>40% OFF</strong> en Americanos</div>
-                    <div>🥤 Bebidas incluidas</div>
-                    <div>🎓 <strong>4 clases</strong> academia/mes</div>
+                  
+                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Tapia</h3>
+                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Full Day (6:00 AM - 11:59 PM)</p>
+                  
+                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
+                    <div class="flex items-center gap-2"><span style="color: #d97706;">🎾</span> <span><strong>40% OFF</strong> en Torneos</span></div>
+                    <div class="flex items-center gap-2"><span>🥤</span> <span>Bebidas incluidas ($0)</span></div>
+                    <div class="flex items-center gap-2"><span>🎓</span> <span><strong>4 clases</strong> academia/mes</span></div>
+                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
                   </div>
                 </div>
-                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
-                  <span class="text-[10px] uppercase font-bold text-amber-100">Cuota Mensual</span>
-                  <span class="text-base font-black">$320.000 COP</span>
+                
+                <div class="flex items-baseline justify-between pt-2">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
+                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$320.000 COP</span>
+                  </div>
+                  <button type="button" onclick="window.openAssignMembershipModal(null, 'TAPIA')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
+                    Asignar
+                  </button>
                 </div>
               </div>
 
               <!-- Plan Coello -->
-              <div class="bg-gradient-to-br from-purple-600 to-indigo-700 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+              <div class="bg-white border border-slate-200 border-t-4 border-t-purple-600 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
                 <div>
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">⚡ Pro Club</span>
-                    <span id="stat-mem-coello" class="text-sm font-black bg-white text-purple-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-purple-50 text-purple-800 border border-purple-200" style="color: #6b21a8 !important; background-color: #f3e8ff !important;">
+                      ⚡ PRO COELLO
+                    </span>
+                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-coello" style="color: #64748b !important;">0 socios</span>
                   </div>
-                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Coello</h3>
-                  <div class="text-[11px] text-purple-100 font-medium mt-0.5">Horario Full Day (6am - 12am)</div>
-                  <div class="mt-3 space-y-1 text-xs text-white/95">
-                    <div>⚡ <strong>30% OFF</strong> en Americanos</div>
-                    <div>🥤 Bebidas incluidas</div>
-                    <div>🎓 <strong>2 clases</strong> academia/mes</div>
+                  
+                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Coello</h3>
+                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Full Day (6:00 AM - 11:59 PM)</p>
+                  
+                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
+                    <div class="flex items-center gap-2"><span style="color: #9333ea;">🎾</span> <span><strong>30% OFF</strong> en Torneos</span></div>
+                    <div class="flex items-center gap-2"><span>🥤</span> <span>Bebidas incluidas ($0)</span></div>
+                    <div class="flex items-center gap-2"><span>🎓</span> <span><strong>2 clases</strong> academia/mes</span></div>
+                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
                   </div>
                 </div>
-                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
-                  <span class="text-[10px] uppercase font-bold text-purple-100">Cuota Mensual</span>
-                  <span class="text-base font-black">$260.000 COP</span>
+                
+                <div class="flex items-baseline justify-between pt-2">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
+                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$260.000 COP</span>
+                  </div>
+                  <button type="button" onclick="window.openAssignMembershipModal(null, 'COELLO')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
+                    Asignar
+                  </button>
                 </div>
               </div>
 
               <!-- Plan Galán -->
-              <div class="bg-gradient-to-br from-blue-600 to-sky-700 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+              <div class="bg-white border border-slate-200 border-t-4 border-t-blue-600 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
                 <div>
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">🎾 Competitivo</span>
-                    <span id="stat-mem-galan" class="text-sm font-black bg-white text-blue-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200" style="color: #1e40af !important; background-color: #dbeafe !important;">
+                      🎾 COMPETITIVO GALÁN
+                    </span>
+                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-galan" style="color: #64748b !important;">0 socios</span>
                   </div>
-                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Galán</h3>
-                  <div class="text-[11px] text-blue-100 font-medium mt-0.5">Horario Full Day (6am - 12am)</div>
-                  <div class="mt-3 space-y-1 text-xs text-white/95">
-                    <div>⚡ <strong>20% OFF</strong> en Americanos</div>
-                    <div>🥤 Bebidas incluidas</div>
-                    <div>🎾 Reserva hasta 1.5h/día</div>
+                  
+                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Galán</h3>
+                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Full Day (6:00 AM - 11:59 PM)</p>
+                  
+                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
+                    <div class="flex items-center gap-2"><span style="color: #2563eb;">🎾</span> <span><strong>20% OFF</strong> en Torneos</span></div>
+                    <div class="flex items-center gap-2"><span>🥤</span> <span>Bebidas incluidas ($0)</span></div>
+                    <div class="flex items-center gap-2"><span>🎓</span> <span>Sin clases incluidas</span></div>
+                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
                   </div>
                 </div>
-                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
-                  <span class="text-[10px] uppercase font-bold text-blue-100">Cuota Mensual</span>
-                  <span class="text-base font-black">$210.000 COP</span>
+                
+                <div class="flex items-baseline justify-between pt-2">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
+                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$210.000 COP</span>
+                  </div>
+                  <button type="button" onclick="window.openAssignMembershipModal(null, 'GALAN')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
+                    Asignar
+                  </button>
                 </div>
               </div>
 
               <!-- Plan Chingotto -->
-              <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+              <div class="bg-white border border-slate-200 border-t-4 border-t-emerald-600 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
                 <div>
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">🌅 Matutino</span>
-                    <span id="stat-mem-chingotto" class="text-sm font-black bg-white text-emerald-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200" style="color: #065f46 !important; background-color: #d1fae5 !important;">
+                      🌅 MATUTINO CHINGOTTO
+                    </span>
+                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-chingotto" style="color: #64748b !important;">0 socios</span>
                   </div>
-                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Chingotto</h3>
-                  <div class="text-[11px] text-emerald-100 font-medium mt-0.5">Restringido: 6:00 AM - 3:00 PM</div>
-                  <div class="mt-3 space-y-1 text-xs text-white/95">
-                    <div>⚡ <strong>10% OFF</strong> en Americanos</div>
-                    <div>🌅 Tarifa reducida madrugadores</div>
-                    <div>🎾 Pistas valle preferenciales</div>
+                  
+                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Chingotto</h3>
+                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Restringido (6:00 AM - 3:00 PM)</p>
+                  
+                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
+                    <div class="flex items-center gap-2"><span style="color: #059669;">🎾</span> <span><strong>10% OFF</strong> en Torneos</span></div>
+                    <div class="flex items-center gap-2"><span>🥤</span> <span>Sin bebidas de cortesía</span></div>
+                    <div class="flex items-center gap-2"><span>🎓</span> <span>Sin clases incluidas</span></div>
+                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
                   </div>
                 </div>
-                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
-                  <span class="text-[10px] uppercase font-bold text-emerald-100">Cuota Mensual</span>
-                  <span class="text-base font-black">$140.000 COP</span>
+                
+                <div class="flex items-baseline justify-between pt-2">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
+                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$140.000 COP</span>
+                  </div>
+                  <button type="button" onclick="window.openAssignMembershipModal(null, 'CHINGOTTO')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
+                    Asignar
+                  </button>
                 </div>
               </div>
 
               <!-- Plan Lebrón -->
-              <div class="bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+              <div class="bg-white border border-slate-200 border-t-4 border-t-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
                 <div>
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">🐺 Diurno</span>
-                    <span id="stat-mem-lebron" class="text-sm font-black bg-white text-slate-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-300" style="color: #1e293b !important; background-color: #f1f5f9 !important;">
+                      🐺 DIURNO LEBRÓN
+                    </span>
+                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-lebron" style="color: #64748b !important;">0 socios</span>
                   </div>
-                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Lebrón</h3>
-                  <div class="text-[11px] text-slate-300 font-medium mt-0.5">Restringido: 6:00 AM - 6:00 PM</div>
-                  <div class="mt-3 space-y-1 text-xs text-white/95">
-                    <div>⚡ <strong>20% OFF</strong> en Americanos</div>
-                    <div>🐺 Hasta las 6:00 PM diario</div>
-                    <div>🎾 Óptimo para tardes activas</div>
+                  
+                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Lebrón</h3>
+                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Restringido (6:00 AM - 6:00 PM)</p>
+                  
+                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
+                    <div class="flex items-center gap-2"><span style="color: #475569;">🎾</span> <span><strong>20% OFF</strong> en Torneos</span></div>
+                    <div class="flex items-center gap-2"><span>🥤</span> <span>Sin bebidas de cortesía</span></div>
+                    <div class="flex items-center gap-2"><span>🎓</span> <span>Sin clases incluidas</span></div>
+                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
                   </div>
                 </div>
-                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
-                  <span class="text-[10px] uppercase font-bold text-slate-300">Cuota Mensual</span>
-                  <span class="text-base font-black">$170.000 COP</span>
+                
+                <div class="flex items-baseline justify-between pt-2">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
+                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$170.000 COP</span>
+                  </div>
+                  <button type="button" onclick="window.openAssignMembershipModal(null, 'LEBRON')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
+                    Asignar
+                  </button>
                 </div>
               </div>
             </div>
@@ -3816,15 +3907,15 @@
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
-                      <th class="py-3 px-4">Socio / Jugador</th>
-                      <th class="py-3 px-4">Plan Activo</th>
-                      <th class="py-3 px-4">Ventana Horaria</th>
-                      <th class="py-3 px-4">Beneficios / Perks</th>
-                      <th class="py-3 px-4">Desc. Americanos</th>
-                      <th class="py-3 px-4">Vigencia (Inicio - Fin)</th>
-                      <th class="py-3 px-4">Estado</th>
-                      <th class="py-3 px-4 text-center">Acciones</th>
+                    <tr class="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200" style="color: #475569 !important; background-color: #f8fafc !important;">
+                      <th class="py-3 px-4" style="color: #475569 !important;">Socio / Jugador</th>
+                      <th class="py-3 px-4" style="color: #475569 !important;">Plan Activo</th>
+                      <th class="py-3 px-4" style="color: #475569 !important;">Ventana Horaria</th>
+                      <th class="py-3 px-4" style="color: #475569 !important;">Beneficios / Perks</th>
+                      <th class="py-3 px-4" style="color: #475569 !important;">Desc. Americanos</th>
+                      <th class="py-3 px-4" style="color: #475569 !important;">Vigencia (Inicio - Fin)</th>
+                      <th class="py-3 px-4" style="color: #475569 !important;">Estado</th>
+                      <th class="py-3 px-4 text-center" style="color: #475569 !important;">Acciones</th>
                     </tr>
                   </thead>
                   <tbody id="memberships-table-tbody" class="divide-y divide-slate-100 text-slate-700">
@@ -11499,33 +11590,33 @@ Jugador: ${checkData.player_name}`);
         const endStr = c.membership_end_date || '+30 días';
 
         return `
-          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-            <td class="py-3 px-4">
-              <div class="font-extrabold text-slate-900 text-xs">${c.name}</div>
-              <div class="text-[11px] font-mono text-slate-500">${c.phone || '-'}</div>
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100" style="color: #0f172a !important;">
+            <td class="py-3 px-4" style="color: #0f172a !important;">
+              <div class="font-extrabold text-slate-900 text-xs" style="color: #0f172a !important;">${c.name}</div>
+              <div class="text-[11px] font-mono text-slate-500" style="color: #64748b !important;">${c.phone || '-'}</div>
             </td>
             <td class="py-3 px-4">
               <span class="px-2.5 py-1 text-[11px] font-black rounded-lg border ${planBadge}">
                 ${tier}
               </span>
             </td>
-            <td class="py-3 px-4 text-[11px] text-slate-700 font-medium">
+            <td class="py-3 px-4 text-[11px] text-slate-700 font-medium" style="color: #334155 !important;">
               ${schedule}
             </td>
             <td class="py-3 px-4">
               ${perks}
             </td>
-            <td class="py-3 px-4 text-xs font-black text-indigo-600">
+            <td class="py-3 px-4 text-xs font-black text-indigo-600" style="color: #4f46e5 !important;">
               ${discount}
             </td>
-            <td class="py-3 px-4 text-[11px] text-slate-600 font-medium">
-              <div>${startStr} &rarr; <strong>${endStr}</strong></div>
+            <td class="py-3 px-4 text-[11px] text-slate-600 font-medium" style="color: #475569 !important;">
+              <div>${startStr} &rarr; <strong style="color: #0f172a !important;">${endStr}</strong></div>
             </td>
             <td class="py-3 px-4">
               ${statusBadge}
             </td>
             <td class="py-3 px-4 text-center">
-              <button type="button" onclick="window.openAssignMembershipModal(${c.id}, '${tier}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 shadow-2xs transition">
+              <button type="button" onclick="window.openAssignMembershipModal(${c.id}, '${tier}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 shadow-2xs transition" style="color: #4338ca !important; background-color: #eef2ff !important;">
                 🔄 Renovar / Cambiar
               </button>
             </td>
