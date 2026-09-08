@@ -16,6 +16,7 @@ from app.models.competitor import CompetitorClub
 from app.models.user import User, UserRole
 from app.models.audit import AuditLog
 from app.models.product import Product, Order, OrderItem, Sale
+from app.models.access import ClubPresence
 
 __all__ = [
     "Base",
@@ -33,6 +34,7 @@ __all__ = [
     "Order",
     "OrderItem",
     "Sale",
+    "ClubPresence",
     "SlotMode",
     "SlotStatus",
     "HoldStatus",

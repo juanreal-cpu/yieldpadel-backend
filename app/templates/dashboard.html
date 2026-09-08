@@ -2086,13 +2086,16 @@
             <span>Torneos Americanos</span>
           </button>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-crm" onclick="switchMainView('crm')">
+            <span class="text-base">👥</span>
+            <span>CRM Jugadores</span>
+          </button>
           <button id="btn-nav-pos" onclick="switchMainView('pos')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 w-full transition">
             <span class="text-base">🛒</span>
             <span>Tienda & Barra (POS)</span>
           </button>
-
-            <span class="text-base">👥</span>
-            <span>CRM Jugadores</span>
+          <button id="btn-nav-access" onclick="switchMainView('access')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 w-full transition">
+            <span class="text-base">🚪</span>
+            <span>Acceso & Presencia en Club</span>
           </button>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-radar" onclick="switchMainView('radar')">
             <span class="text-base">📈</span>
@@ -3131,6 +3134,186 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VISTA: 🚪 ACCESO, PRESENCIA & BLOQUEO FINANCIERO (#view-access) -->
+        <!-- ======================================================== -->
+        <div id="view-access" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-6">
+
+          <!-- Header de Control de Acceso -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">🚪</span>
+                <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Control de Acceso, Presencia & Bloqueo Financiero</h2>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">
+                Monitoreo de aforo en vivo, validación de reglas de horarios por membresía y bloqueo estricto de salida a deudores.
+              </p>
+            </div>
+
+            <div class="flex items-center flex-wrap gap-2">
+              <button type="button" onclick="loadAccessData()" class="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition inline-flex items-center gap-1.5 shadow-xs" title="Actualizar Aforo">
+                <span>🔄</span> <span>Actualizar Aforo</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tarjetas KPI Superiores -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- 1. Personas en Club (Live) -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Personas en Club (Live)</span>
+                <span class="text-lg">👥</span>
+              </div>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span id="kpi-access-people-inside" class="text-3xl font-black text-slate-900 font-mono">0</span>
+                <span class="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Presentes ahora
+                </span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                <span>Aforo activo en sede</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Torno Activo</span>
+              </div>
+            </div>
+
+            <!-- 2. Tiempo Promedio de Estancia -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tiempo Promedio de Estancia</span>
+                <span class="text-lg">⏱️</span>
+              </div>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span id="kpi-access-avg-stay" class="text-3xl font-black text-indigo-700 font-mono">0 min</span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                <span>Permanencia media en sede</span>
+                <span class="text-slate-400 font-bold">Tiempo Real</span>
+              </div>
+            </div>
+
+            <!-- 3. Deudores Bloqueados en Puerta -->
+            <div class="bg-rose-50/70 p-5 rounded-xl border border-rose-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-rose-700 uppercase tracking-wider">Deudores Bloqueados en Puerta</span>
+                <span class="text-lg">⛔</span>
+              </div>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span id="kpi-access-blocked-debtors" class="text-3xl font-black text-rose-700 font-mono">0</span>
+                <span class="text-xs font-bold text-rose-600">con saldo pendiente</span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-rose-200/60 flex items-center justify-between text-xs text-rose-600 font-semibold">
+                <span>Torno de salida retenido</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-200 text-rose-900">Salida Bloqueada</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel: Simulador de Puerta / Molinete Biométrico -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>🔬</span> <span>Simulador de Torno Biométrico & Mostrador de Acceso</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Prueba de paso de torniquetes: registro de check-in y validación de salida con verificación de saldo.</p>
+              </div>
+              <span class="px-2.5 py-1 text-[11px] font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                Simulador Operativo
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <!-- Selector o búsqueda de jugador CRM -->
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Seleccionar Jugador (CRM):</label>
+                <select id="access-sim-player-select" onchange="onAccessSimPlayerSelect()" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg shadow-xs text-slate-900 bg-white">
+                  <option value="">-- Jugador Rápido / Manual --</option>
+                </select>
+              </div>
+
+              <!-- Nombre directo -->
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nombre del Jugador:</label>
+                <input type="text" id="access-sim-player-name" placeholder="Ej. Carlos Alcaraz" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg shadow-xs text-slate-900 bg-white" />
+              </div>
+
+              <!-- Teléfono -->
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Teléfono:</label>
+                <input type="text" id="access-sim-phone" placeholder="Ej. 3101234567" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg shadow-xs text-slate-900 bg-white" />
+              </div>
+
+              <!-- Membresía -->
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Membresía:</label>
+                <select id="access-sim-tier" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg shadow-xs text-slate-900 bg-white">
+                  <option value="ESTANDAR" selected>ESTANDAR (Sin cortesías)</option>
+                  <option value="TAPIA">TAPIA (Sin restricción)</option>
+                  <option value="COELLO">COELLO (Sin restricción)</option>
+                  <option value="GALAN">GALAN (Sin restricción)</option>
+                  <option value="CHINGOTTO">CHINGOTTO (Límite 15:00)</option>
+                  <option value="LEBRON">LEBRON (Límite 18:00)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Botones de Acción de Molinete -->
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+              <button type="button" onclick="simulateGateCheckIn()" class="px-4 py-2 text-xs font-extrabold rounded-lg shadow-xs transition inline-flex items-center gap-1.5" style="background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #0f172a;">
+                <span>📥</span> <span style="color: #ffffff !important;">Registrar Entrada (Check-In)</span>
+              </button>
+              <button type="button" onclick="simulateGateCheckOut()" class="px-4 py-2 text-xs font-extrabold rounded-lg shadow-xs transition inline-flex items-center gap-1.5" style="background-color: #2563eb !important; color: #ffffff !important; border: 1px solid #1d4ed8;">
+                <span>📤</span> <span style="color: #ffffff !important;">Registrar Salida (Check-Out)</span>
+              </button>
+              <span class="text-[11px] text-slate-400 italic">
+                * Si el usuario tiene deudas en barra o turnos, la salida será bloqueada automáticamente.
+              </span>
+            </div>
+          </div>
+
+          <!-- Tabla de Aforo y Presencia en Tiempo Real -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>📋</span> <span>Aforo y Presencia en Tiempo Real</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Listado de jugadores actualmente presentes dentro del complejo deportivo.</p>
+              </div>
+
+              <!-- Filtro de Búsqueda -->
+              <div class="flex items-center gap-2">
+                <input type="text" id="access-table-search" oninput="filterAccessList()" placeholder="🔍 Buscar por nombre o teléfono..." class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg shadow-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-500 w-64" />
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-50 text-slate-600 font-extrabold text-[11px] border-b border-slate-200 uppercase tracking-wider">
+                  <tr>
+                    <th class="py-3 px-4">Jugador</th>
+                    <th class="py-3 px-4">Teléfono</th>
+                    <th class="py-3 px-4">Membresía</th>
+                    <th class="py-3 px-4">Hora Entrada</th>
+                    <th class="py-3 px-4">Tiempo en Sede</th>
+                    <th class="py-3 px-4">Cancha / Ubicación</th>
+                    <th class="py-3 px-4">Alertas Operativas</th>
+                    <th class="py-3 px-4">Estado Salida / Financiero</th>
+                    <th class="py-3 px-4 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="access-presences-tbody" class="divide-y divide-slate-100 bg-white">
+                  <!-- Filas dinámicas -->
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -4421,6 +4604,8 @@
         try { if (typeof loadAnalyticsHeatmap === 'function') loadAnalyticsHeatmap(); } catch(e) { console.error(e); }
       } else if (cleanName === 'pos') {
         try { if (typeof loadPOSData === 'function') loadPOSData(); } catch(e) { console.error(e); }
+      } else if (cleanName === 'access') {
+        try { if (typeof loadAccessData === 'function') loadAccessData(); } catch(e) { console.error(e); }
       } else if (cleanName === 'calendar') {
         try { if (typeof fetchSlots === 'function') fetchSlots(); } catch(e) { console.error(e); }
       }
@@ -8604,6 +8789,370 @@ ${data.message}`);
     }
     window.submitChallengeWinner = submitChallengeWinner;
 
+
+    // ========================================================
+    // MÓDULO DE CONTROL DE ACCESO, PRESENCIA & BLOQUEO FINANCIERO
+    // ========================================================
+    window.accessPresences = [];
+
+    async function loadAccessData() {
+      try {
+        const res = await fetch('/api/v1/access/active-now');
+        if (!res.ok) {
+          console.error('Error fetching active presences');
+          return;
+        }
+        const data = await res.json();
+        window.accessPresences = data.presences || [];
+        renderAccessKPIs(data.kpis || {});
+        renderAccessTable(window.accessPresences);
+        populateAccessSimSelects();
+      } catch (err) {
+        console.error('Error cargando datos de acceso:', err);
+      }
+    }
+    window.loadAccessData = loadAccessData;
+
+    function renderAccessKPIs(kpis) {
+      const elPeople = document.getElementById('kpi-access-people-inside');
+      const elStay = document.getElementById('kpi-access-avg-stay');
+      const elDebtors = document.getElementById('kpi-access-blocked-debtors');
+
+      if (elPeople) elPeople.textContent = kpis.people_inside_count || 0;
+      if (elStay) elStay.textContent = kpis.avg_stay_formatted || '0 min';
+      if (elDebtors) elDebtors.textContent = kpis.blocked_debtors_count || 0;
+    }
+    window.renderAccessKPIs = renderAccessKPIs;
+
+    function renderAccessTable(presences) {
+      const tbody = document.getElementById('access-presences-tbody');
+      if (!tbody) return;
+
+      if (!presences || presences.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="py-8 text-center text-slate-400 text-xs">
+              No hay personas registradas actualmente dentro del club.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = presences.map(p => {
+        const tierBadgeClass = getTierBadgeClass(p.membership_tier);
+        const hasDebt = p.pending_balance > 0;
+
+        // Semáforo de Salida
+        const exitBadge = hasDebt
+          ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black animate-pulse" style="background-color: #ffe4e6 !important; color: #9f1239 !important; border: 1.5px solid #f43f5e !important;">
+               🔴 PENDIENTE (${p.pending_balance_formatted}) - SALIDA BLOQUEADA
+             </span>`
+          : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black" style="background-color: #d1fae5 !important; color: #065f46 !important; border: 1.5px solid #10b981 !important;">
+               🟢 LISTO - SALIDA AUTORIZADA
+             </span>`;
+
+        // Alertas Operativas
+        let alertsHtml = '<span class="text-slate-400 font-semibold text-[11px]">✔️ Normal</span>';
+        if (p.alerts && p.alerts.length > 0) {
+          alertsHtml = p.alerts.map(a => {
+            const isWarn = a.severity === 'WARNING';
+            const styleStr = isWarn 
+              ? 'background-color: #fef3c7 !important; color: #92400e !important; border: 1px solid #f59e0b !important;' 
+              : 'background-color: #e0f2fe !important; color: #075985 !important; border: 1px solid #0284c7 !important;';
+            return `<span class="inline-block px-2.5 py-1 rounded-md text-[10px] font-bold mb-1 shadow-2xs" style="${styleStr}" title="${escapeHtml(a.message)}">${a.badge || a.message}</span>`;
+          }).join('<br/>');
+        }
+
+        // Acciones
+        let actionsHtml = '';
+        if (hasDebt) {
+          actionsHtml = `
+            <div class="flex items-center justify-center gap-1.5 flex-wrap">
+              <button type="button" onclick="openDebtCounterModal(${p.id})" class="px-2.5 py-1 text-xs font-bold rounded shadow-xs transition inline-flex items-center gap-1" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;" title="Cobrar en Counter">
+                <span>💳</span> <span style="color: #ffffff !important;">Cobrar</span>
+              </button>
+              <button type="button" onclick="attemptCheckOut(${p.id})" class="px-2.5 py-1 text-xs font-bold rounded shadow-xs transition inline-flex items-center gap-1" style="background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #0f172a;" title="Validar Salida">
+                <span>🚪</span> <span style="color: #ffffff !important;">Validar Salida</span>
+              </button>
+            </div>
+          `;
+        } else {
+          actionsHtml = `
+            <div class="flex items-center justify-center">
+              <button type="button" onclick="attemptCheckOut(${p.id})" class="px-3 py-1 text-xs font-bold rounded shadow-xs transition inline-flex items-center gap-1" style="background-color: #2563eb !important; color: #ffffff !important; border: 1px solid #1d4ed8;" title="Registrar Salida">
+                <span>🚪</span> <span style="color: #ffffff !important;">Check-Out</span>
+              </button>
+            </div>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition text-slate-800">
+            <td class="py-3 px-4 font-bold flex items-center gap-2">
+              <div class="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-black text-xs">
+                ${(p.player_name || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <span class="text-slate-900 block font-black">${escapeHtml(p.player_name)}</span>
+                ${p.player_id ? '<span class="text-[10px] text-slate-400 font-semibold">Cliente #' + p.player_id + '</span>' : '<span class="text-[10px] text-slate-400 font-semibold">Externo</span>'}
+              </div>
+            </td>
+            <td class="py-3 px-4 font-mono font-semibold text-slate-600">${escapeHtml(p.phone || '-')}</td>
+            <td class="py-3 px-4">
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold ${tierBadgeClass}">
+                ${p.membership_tier || 'ESTANDAR'}
+              </span>
+            </td>
+            <td class="py-3 px-4 font-mono text-slate-700 font-semibold">${p.check_in_time_formatted || '-'}</td>
+            <td class="py-3 px-4 font-bold text-slate-800 font-mono">${p.stay_formatted || '0 min'}</td>
+            <td class="py-3 px-4 text-slate-700 font-semibold">${escapeHtml(p.court_label || 'Sin Cancha')}</td>
+            <td class="py-3 px-4">${alertsHtml}</td>
+            <td class="py-3 px-4">${exitBadge}</td>
+            <td class="py-3 px-4 text-center">${actionsHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+    window.renderAccessTable = renderAccessTable;
+
+    function getTierBadgeClass(tier) {
+      const t = (tier || 'ESTANDAR').toUpperCase();
+      switch (t) {
+        case 'TAPIA': return 'bg-yellow-100 text-yellow-900 border border-yellow-300';
+        case 'COELLO': return 'bg-amber-100 text-amber-900 border border-amber-300';
+        case 'GALAN': return 'bg-blue-100 text-blue-900 border border-blue-300';
+        case 'CHINGOTTO': return 'bg-purple-100 text-purple-900 border border-purple-300';
+        case 'LEBRON': return 'bg-rose-100 text-rose-900 border border-rose-300';
+        default: return 'bg-slate-100 text-slate-700 border border-slate-300';
+      }
+    }
+
+    function filterAccessList() {
+      const q = (document.getElementById('access-table-search').value || '').toLowerCase().trim();
+      if (!q) {
+        renderAccessTable(window.accessPresences);
+        return;
+      }
+      const filtered = window.accessPresences.filter(p => {
+        return (p.player_name || '').toLowerCase().includes(q) ||
+               (p.phone || '').toLowerCase().includes(q) ||
+               (p.membership_tier || '').toLowerCase().includes(q) ||
+               (p.court_label || '').toLowerCase().includes(q);
+      });
+      renderAccessTable(filtered);
+    }
+    window.filterAccessList = filterAccessList;
+
+    async function populateAccessSimSelects() {
+      const sel = document.getElementById('access-sim-player-select');
+      if (!sel) return;
+
+      try {
+        const res = await fetch('/api/v1/customers/?limit=100');
+        if (res.ok) {
+          const players = await res.json();
+          window.allCRMPlayersList = players;
+          let opts = '<option value="">-- Jugador Rápido / Manual --</option>';
+          players.forEach(p => {
+            opts += `<option value="${p.id}" data-name="${escapeHtml(p.name)}" data-phone="${escapeHtml(p.phone)}" data-tier="${p.membership_tier || 'ESTANDAR'}">${escapeHtml(p.name)} (${p.membership_tier || 'ESTANDAR'} - ${p.phone})</option>`;
+          });
+          sel.innerHTML = opts;
+        }
+      } catch (e) {
+        console.error('Error populating sim players:', e);
+      }
+    }
+    window.populateAccessSimSelects = populateAccessSimSelects;
+
+    function onAccessSimPlayerSelect() {
+      const sel = document.getElementById('access-sim-player-select');
+      const opt = sel.options[sel.selectedIndex];
+      if (opt && opt.value) {
+        document.getElementById('access-sim-player-name').value = opt.getAttribute('data-name') || '';
+        document.getElementById('access-sim-phone').value = opt.getAttribute('data-phone') || '';
+        document.getElementById('access-sim-tier').value = opt.getAttribute('data-tier') || 'ESTANDAR';
+      }
+    }
+    window.onAccessSimPlayerSelect = onAccessSimPlayerSelect;
+
+    async function simulateGateCheckIn() {
+      const sel = document.getElementById('access-sim-player-select');
+      const playerId = sel && sel.value ? parseInt(sel.value, 10) : null;
+      const playerName = document.getElementById('access-sim-player-name').value.trim();
+      const phone = document.getElementById('access-sim-phone').value.trim();
+      const tier = document.getElementById('access-sim-tier').value;
+
+      if (!playerName && !playerId) {
+        alert('Por favor ingrese o seleccione un jugador para registrar entrada.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/access/check-in', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            player_id: playerId,
+            player_name: playerName,
+            phone: phone,
+            membership_tier: tier
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(`🟢 ENTRADA AUTORIZADA: Molinete abierto.
+
+Bienvenido ${data.presence.player_name} (Membresía: ${data.presence.membership_tier})`);
+          loadAccessData();
+        } else {
+          const err = await res.json();
+          alert('Error en check-in: ' + (err.detail || 'Fallo en la operación'));
+        }
+      } catch (err) {
+        console.error('Error en simulateGateCheckIn:', err);
+        alert('Fallo de conexión al registrar entrada.');
+      }
+    }
+    window.simulateGateCheckIn = simulateGateCheckIn;
+
+    async function simulateGateCheckOut() {
+      const sel = document.getElementById('access-sim-player-select');
+      const playerId = sel && sel.value ? parseInt(sel.value, 10) : null;
+      const playerName = document.getElementById('access-sim-player-name').value.trim();
+
+      // Buscar si está en window.accessPresences
+      let match = null;
+      if (playerId) {
+        match = window.accessPresences.find(p => p.player_id === playerId);
+      }
+      if (!match && playerName) {
+        match = window.accessPresences.find(p => (p.player_name || '').toLowerCase() === playerName.toLowerCase());
+      }
+
+      if (!match) {
+        alert('El jugador no se encuentra registrado actualmente dentro del club.');
+        return;
+      }
+
+      attemptCheckOut(match.id);
+    }
+    window.simulateGateCheckOut = simulateGateCheckOut;
+
+    async function attemptCheckOut(presenceId) {
+      try {
+        const res = await fetch('/api/v1/access/check-out', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ presence_id: presenceId, force_clear: false })
+        });
+
+        const data = await res.json();
+
+        if (data.status === 'BLOCKED') {
+          // Bloqueo Financiero: Abrir Modal de Deuda
+          openDebtCounterModal(presenceId, data.player_name, data.pending_balance, data.breakdown, data.message);
+        } else if (data.status === 'AUTHORIZED') {
+          alert(`🟢 SALIDA AUTORIZADA: Molinete desbloqueado.
+
+¡Hasta pronto, ${data.player_name}!`);
+          loadAccessData();
+        } else {
+          alert('Respuesta inesperada: ' + (data.message || 'Error'));
+        }
+      } catch (err) {
+        console.error('Error en attemptCheckOut:', err);
+        alert('Fallo de conexión al validar salida.');
+      }
+    }
+    window.attemptCheckOut = attemptCheckOut;
+
+    function openDebtCounterModal(presenceId, playerName, pendingBalance, breakdown, bannerMsg) {
+      const modal = document.getElementById('modal-access-debt');
+      if (!modal) return;
+
+      document.getElementById('access-debt-presence-id').value = presenceId;
+
+      // Buscar presencia si no se pasaron todos los datos
+      const p = window.accessPresences.find(x => x.id === presenceId);
+      const name = playerName || (p ? p.player_name : 'Jugador');
+      const balance = (pendingBalance !== undefined) ? pendingBalance : (p ? p.pending_balance : 0);
+      const items = breakdown || (p ? p.breakdown : []);
+
+      document.getElementById('access-debt-player-name').textContent = name;
+      document.getElementById('access-debt-total-amount').textContent = formatCOP(balance);
+
+      const bannerText = bannerMsg || `SALIDA DENEGADA: El usuario tiene pagos pendientes por ${formatCOP(balance)}. Liquide su cuenta en counter para autorizar la salida.`;
+      document.getElementById('access-debt-banner-message').textContent = bannerText;
+
+      const tbody = document.getElementById('access-debt-breakdown-list');
+      if (tbody) {
+        if (!items || items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="2" class="p-3 text-center text-slate-400 text-xs">Cargos por liquidar en mostrador</td></tr>';
+        } else {
+          tbody.innerHTML = items.map(it => `
+            <tr>
+              <td class="p-2.5 font-semibold text-slate-800">${escapeHtml(it.description || 'Cargo pendiente')}</td>
+              <td class="p-2.5 text-right font-mono font-black text-rose-600">${formatCOP(it.amount)}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      modal.style.display = 'flex';
+    }
+    window.openDebtCounterModal = openDebtCounterModal;
+
+    function closeDebtCounterModal() {
+      const modal = document.getElementById('modal-access-debt');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeDebtCounterModal = closeDebtCounterModal;
+
+    async function submitClearDebtAndCheckout() {
+      const presenceId = parseInt(document.getElementById('access-debt-presence-id').value, 10);
+      if (!presenceId) return;
+
+      try {
+        // 1. Clear Debt in counter
+        const resClear = await fetch(`/api/v1/access/clear-debt/${presenceId}`, {
+          method: 'POST'
+        });
+
+        if (!resClear.ok) {
+          const err = await resClear.json();
+          alert('Error liquidando deudas: ' + (err.detail || 'Fallo'));
+          return;
+        }
+
+        // 2. Perform Checkout
+        const resCheckout = await fetch('/api/v1/access/check-out', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ presence_id: presenceId, force_clear: false })
+        });
+
+        const checkData = await resCheckout.json();
+        closeDebtCounterModal();
+
+        if (checkData.status === 'AUTHORIZED') {
+          alert(`✅ ¡Cuenta liquidada y salida autorizada con éxito!
+
+${checkData.message}
+Jugador: ${checkData.player_name}`);
+        } else {
+          alert('Aviso: ' + checkData.message);
+        }
+
+        loadAccessData();
+      } catch (err) {
+        console.error('Error en submitClearDebtAndCheckout:', err);
+        alert('Fallo de conexión al liquidar y validar salida.');
+      }
+    }
+    window.submitClearDebtAndCheckout = submitClearDebtAndCheckout;
+
     function initOperationalDashboard() {
       // Inicializar fecha defensiva hoy si está vacío
       const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
@@ -9095,6 +9644,82 @@ PARTIDO CERRADO</textarea>
 
         <div class="flex justify-end pt-2 border-t border-slate-100">
           <button type="button" onclick="closeChallengeModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ⛔ SALIDA DENEGADA / COBRAR EN COUNTER           -->
+  <!-- ======================================================== -->
+  <div id="modal-access-debt" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999; backdrop-filter: blur(4px);">
+    <div style="background: #FFFFFF; border-radius: 16px; width: 92%; max-width: 560px; padding: 1.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-height: 90vh; overflow-y: auto; border: 2px solid #ef4444;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #FEE2E2; padding-bottom: 1rem; margin-bottom: 1rem;">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-2xl flex-shrink-0 animate-bounce">
+            ⛔
+          </div>
+          <div>
+            <h3 class="text-base font-black text-rose-700 uppercase tracking-tight flex items-center gap-2">
+              Salida Denegada - Torno Bloqueado
+            </h3>
+            <p class="text-xs font-semibold text-slate-500 mt-0.5">El usuario presenta obligaciones financieras sin liquidar.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeDebtCounterModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B; line-height: 1;">&times;</button>
+      </div>
+
+      <div class="space-y-4">
+        <input type="hidden" id="access-debt-presence-id" />
+
+        <!-- Alert Banner -->
+        <div class="p-3.5 bg-rose-50 border-l-4 border-rose-500 rounded-r-xl">
+          <p id="access-debt-banner-message" class="text-xs font-bold text-rose-900 leading-relaxed">
+            SALIDA DENEGADA: El usuario tiene pagos pendientes por $0 COP. Liquide su cuenta en counter para autorizar la salida.
+          </p>
+        </div>
+
+        <!-- Info del Jugador -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span class="text-slate-400 font-bold block text-[10px] uppercase">Jugador</span>
+            <span id="access-debt-player-name" class="font-extrabold text-slate-900 text-sm truncate block">-</span>
+          </div>
+          <div>
+            <span class="text-slate-400 font-bold block text-[10px] uppercase">Saldo Total Pendiente</span>
+            <span id="access-debt-total-amount" class="font-black text-rose-600 text-sm font-mono block">$0 COP</span>
+          </div>
+        </div>
+
+        <!-- Desglose de Deudas -->
+        <div>
+          <label class="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
+            Desglose de Cargos Pendientes:
+          </label>
+          <div class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-100 text-slate-600 font-bold text-[11px] border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5">Concepto</th>
+                  <th class="p-2.5 text-right">Monto</th>
+                </tr>
+              </thead>
+              <tbody id="access-debt-breakdown-list" class="divide-y divide-slate-100 bg-white">
+                <!-- Items dinámicos -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Acciones en Counter -->
+        <div class="pt-2 flex flex-col sm:flex-row gap-2">
+          <button type="button" onclick="submitClearDebtAndCheckout()" class="flex-1 py-2.5 px-4 font-extrabold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;">
+            <span>💳</span> <span style="color: #ffffff !important;">Liquidar en Counter y Desbloquear Salida</span>
+          </button>
+          <button type="button" onclick="closeDebtCounterModal()" class="py-2.5 px-4 font-bold text-xs rounded-xl transition" style="background-color: #f1f5f9 !important; color: #334155 !important; border: 1px solid #cbd5e1;">
+            Cerrar
+          </button>
         </div>
       </div>
     </div>

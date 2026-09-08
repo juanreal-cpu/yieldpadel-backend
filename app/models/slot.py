@@ -134,7 +134,7 @@ class SlotHold(Base):
     amount_to_pay: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     status: Mapped[HoldStatus] = mapped_column(
-        Enum(HoldStatus, name="hold_status_enum", values_callable=lambda x: [e.value for e in x]),
+        Enum(HoldStatus, name="hold_status_enum", native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=HoldStatus.ACTIVE,
         nullable=False,
     )
@@ -144,12 +144,12 @@ class SlotHold(Base):
 
     # Nuevos campos de tipo de cliente y estado de pago
     client_tier: Mapped[ClientTier] = mapped_column(
-        Enum(ClientTier, name="client_tier_enum", values_callable=lambda x: [e.value for e in x]),
+        Enum(ClientTier, name="client_tier_enum", native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=ClientTier.STANDARD,
         nullable=False,
     )
     payment_status: Mapped[PaymentStatus] = mapped_column(
-        Enum(PaymentStatus, name="payment_status_enum", values_callable=lambda x: [e.value for e in x]),
+        Enum(PaymentStatus, name="payment_status_enum", native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=PaymentStatus.PAID,
         nullable=False,
     )

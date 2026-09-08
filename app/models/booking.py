@@ -36,12 +36,12 @@ class Booking(Base):
     )
 
     client_tier: Mapped[ClientTier] = mapped_column(
-        Enum(ClientTier, name="client_tier_enum", values_callable=lambda x: [e.value for e in x]),
+        Enum(ClientTier, name="client_tier_enum", native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=ClientTier.STANDARD,
         nullable=False,
     )
     payment_status: Mapped[PaymentStatus] = mapped_column(
-        Enum(PaymentStatus, name="payment_status_enum", values_callable=lambda x: [e.value for e in x]),
+        Enum(PaymentStatus, name="payment_status_enum", native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=PaymentStatus.PAID,
         nullable=False,
     )
