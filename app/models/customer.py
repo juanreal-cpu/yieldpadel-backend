@@ -1,12 +1,15 @@
-from datetime import datetime, timezone
-from typing import Optional
-from sqlalchemy import Boolean, Integer, String, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+import enum
+from datetime import date, datetime, timezone
+from typing import TYPE_CHECKING, List, Optional
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
+if TYPE_CHECKING:
+    from app.models.membership import MembershipPlan
+    from app.models.academy import AcademyEnrollment
 
-import enum
 
 class MembershipTier(str, enum.Enum):
     TAPIA = "TAPIA"
@@ -28,6 +31,19 @@ class Customer(Base):
     membership_tier: Mapped[str] = mapped_column(String(50), default="ESTANDAR", nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
+    # Perfil Enriquecido de Jugador
+    gender: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # MASCULINO, FEMENINO, OTRO
+    preferred_music: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    preferred_play_time: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    # Vinculación y Vigencia de Membresía
+    membership_plan_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("membership_plans.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    membership_start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    membership_end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    academy_classes_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
     # Módulo de Primera Visita y Onboarding
     total_bookings_completed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_first_visit: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -47,3 +63,13 @@ class Customer(Base):
         nullable=False,
     )
 
+    membership_plan: Mapped[Optional["MembershipPlan"]] = relationship(
+        "MembershipPlan", back_populates="customers", lazy="joined"
+    )
+    academy_enrollments: Mapped[List["AcademyEnrollment"]] = relationship(
+        "AcademyEnrollment", back_populates="customer", cascade="all, delete-orphan", lazy="selectin", overlaps="player"
+    )
+
+
+# Alias Player para soporte semántico
+Player = Customer

@@ -40,6 +40,19 @@ async def lifespan(app: FastAPI):
                         await conn.execute(text(f"ALTER TABLE courts ADD COLUMN {court_col}"))
                     except Exception:
                         pass
+                for cust_col in [
+                    "gender VARCHAR(20)",
+                    "preferred_music VARCHAR(100)",
+                    "preferred_play_time VARCHAR(100)",
+                    "membership_plan_id INTEGER",
+                    "membership_start_date DATE",
+                    "membership_end_date DATE",
+                    "academy_classes_used INTEGER DEFAULT 0",
+                ]:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE customers ADD COLUMN {cust_col}"))
+                    except Exception:
+                        pass
             else:
                 pg_statements = [
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP WITH TIME ZONE",
@@ -54,13 +67,19 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 4",
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS court_number INTEGER",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_tier VARCHAR(50) DEFAULT 'ESTANDAR'",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS gender VARCHAR(20)",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS preferred_music VARCHAR(100)",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS preferred_play_time VARCHAR(100)",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_plan_id INTEGER",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_start_date DATE",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_end_date DATE",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS academy_classes_used INTEGER DEFAULT 0",
                 ]
                 for stmt in pg_statements:
                     try:
                         await conn.execute(text(stmt))
-                        await conn.commit()
                     except Exception:
-                        await conn.rollback()
+                        pass
         except Exception:
             pass
     yield

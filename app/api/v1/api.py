@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import slots, holds, webhooks, customers, tournaments, auth, audit, courts, admin, analytics, pos, access
+from app.api.v1.endpoints import slots, holds, webhooks, customers, tournaments, auth, audit, courts, admin, analytics, pos, access, memberships, academy
 
 api_router = APIRouter()
 api_router.include_router(slots.router, prefix="/slots", tags=["slots"])
@@ -15,3 +15,5 @@ api_router.include_router(analytics.router, prefix="/analytics", tags=["analytic
 api_router.include_router(pos.router, prefix="/pos", tags=["pos"])
 api_router.include_router(access.router, prefix="/access", tags=["access"])
 
+api_router.include_router(memberships.router, prefix="/memberships", tags=["memberships"])
+api_router.include_router(academy.router, prefix="/academy", tags=["academy"])

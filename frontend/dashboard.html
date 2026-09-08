@@ -2085,6 +2085,15 @@
             <span class="text-base">🏆</span>
             <span>Torneos Americanos</span>
           </button>
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-academy" onclick="switchMainView('academy')">
+            <span class="text-base">🎓</span>
+            <span>Academia de Pádel</span>
+          </button>
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-memberships" onclick="switchMainView('memberships')">
+            <span class="text-base">💎</span>
+            <span>Membresías del Club</span>
+          </button>
+
           <button id="btn-nav-crm" onclick="switchMainView('crm')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 w-full transition">
             <span class="text-base">👥</span>
             <span>CRM Jugadores</span>
@@ -2465,8 +2474,8 @@
                 </div>
                 <button type="button" onclick="window.filterCRMTable()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-lg shadow-sm">Buscar</button>
               </div>
-              <button type="button" onclick="window.openRegisterPlayerModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2">
-                <span>+</span> <span>Registrar Jugador</span>
+              <button type="button" onclick="window.openCustomerModal('create')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2">
+                <span>➕</span> <span>Nuevo Jugador CRM</span>
               </button>
             </div>
 
@@ -2522,14 +2531,14 @@
                     <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0; font-size: 0.75rem; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">
                       <th style="padding: 0.85rem 1rem;"># Pos</th>
                       <th style="padding: 0.85rem 1rem;">Jugador</th>
-                      <th style="padding: 0.85rem 1rem;">Membresía</th>
-                      <th style="padding: 0.85rem 1rem;">WhatsApp</th>
+                      <th style="padding: 0.85rem 1rem;">Género</th>
+                      <th style="padding: 0.85rem 1rem;">Música</th>
+                      <th style="padding: 0.85rem 1rem;">Horario</th>
+                      <th style="padding: 0.85rem 1rem;">Membresía & Vigencia</th>
                       <th style="padding: 0.85rem 1rem;">Categoría</th>
                       <th style="padding: 0.85rem 1rem;">Reservas</th>
                       <th style="padding: 0.85rem 1rem;">Puntos Ranking</th>
-                      <th style="padding: 0.85rem 1rem;">Torneos Ganados</th>
-                      <th style="padding: 0.85rem 1rem;">Onboarding / Estado</th>
-                      <th style="padding: 0.85rem 1rem; text-align: center;">⚔️ Retos</th>
+                      <th style="padding: 0.85rem 1rem; text-align: center;">Acciones</th>
                     </tr>
                   </thead>
                   <tbody id="crm-table-body" data-alias="crm-ranking-tbody">
@@ -3593,6 +3602,242 @@
           </div>
         </div>
 
+        <!-- ======================================================== -->
+        <!-- VISTA: 🎓 ACADEMIA DE PÁDEL & CLASES                    -->
+        <!-- ======================================================== -->
+        <div id="view-academy" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-6">
+          <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
+            
+            <!-- Encabezado -->
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>🎓</span> Academia de Pádel & Clases
+                </h2>
+                <p class="text-xs text-slate-500 mt-1">
+                  Programación de clases por nivel, asignación automática de pista (bloqueo como CLASS), control de aforo e inscripción de alumnos con perk de membresía.
+                </p>
+              </div>
+              <div class="flex items-center gap-3">
+                <button type="button" onclick="window.loadAcademyClasses()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
+                  <span>🔄</span> <span>Actualizar</span>
+                </button>
+                <button type="button" onclick="window.openCreateAcademyClassModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm">
+                  <span>➕</span> <span>Programar Nueva Clase</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Barra de Filtros y Selector de Fecha -->
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6">
+              <!-- Filtro de Nivel -->
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Nivel:</span>
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl" id="academy-level-filters">
+                  <button type="button" onclick="window.filterAcademyByLevel('ALL')" id="btn-acad-lvl-all" class="px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs">Todos</button>
+                  <button type="button" onclick="window.filterAcademyByLevel('Iniciación')" id="btn-acad-lvl-ini" class="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Iniciación</button>
+                  <button type="button" onclick="window.filterAcademyByLevel('Intermedio')" id="btn-acad-lvl-int" class="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Intermedio</button>
+                  <button type="button" onclick="window.filterAcademyByLevel('Avanzado')" id="btn-acad-lvl-ava" class="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Avanzado</button>
+                </div>
+              </div>
+
+              <!-- Selector de Fecha de Clases -->
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="window.shiftAcademyDate(-1)" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs">◀</button>
+                <input type="date" id="academy-date-input" onchange="window.onAcademyDateChange(this.value)" class="text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shadow-xs focus:ring-2 focus:ring-emerald-500">
+                <button type="button" onclick="window.shiftAcademyDate(1)" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs">▶</button>
+                <button type="button" onclick="window.setAcademyDateToday()" class="px-2.5 py-1 text-[11px] font-bold bg-slate-800 text-white rounded-lg">Hoy</button>
+              </div>
+            </div>
+
+            <!-- Grid de Clases de Academia -->
+            <div id="academy-classes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="col-span-full py-12 text-center text-slate-400">Cargando clases de la academia...</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VISTA: 💎 MEMBRESÍAS & PLANES DEL CLUB                  -->
+        <!-- ======================================================== -->
+        <div id="view-memberships" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-6">
+          <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
+            
+            <!-- Encabezado -->
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>💎</span> Parametrización y Control de Membresías
+                </h2>
+                <p class="text-xs text-slate-500 mt-1">
+                  Planes de socios con control de franja horaria, descuentos para torneos Americanos, perks de academia y bebidas, y seguimiento de vigencia.
+                </p>
+              </div>
+              <div class="flex items-center gap-3">
+                <button type="button" onclick="window.loadMembershipsData()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
+                  <span>🔄</span> <span>Actualizar</span>
+                </button>
+                <button type="button" onclick="window.openAssignMembershipModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm">
+                  <span>➕</span> <span>Asignar / Renovar Membresía</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 5 KPI Plan Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              <!-- Plan Tapia -->
+              <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">👑 VIP Oro</span>
+                    <span id="stat-mem-tapia" class="text-sm font-black bg-white text-amber-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  </div>
+                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Tapia</h3>
+                  <div class="text-[11px] text-amber-100 font-medium mt-0.5">Horario Full Day (6am - 12am)</div>
+                  <div class="mt-3 space-y-1 text-xs text-white/95">
+                    <div>⚡ <strong>40% OFF</strong> en Americanos</div>
+                    <div>🥤 Bebidas incluidas</div>
+                    <div>🎓 <strong>4 clases</strong> academia/mes</div>
+                  </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
+                  <span class="text-[10px] uppercase font-bold text-amber-100">Cuota Mensual</span>
+                  <span class="text-base font-black">$320.000 COP</span>
+                </div>
+              </div>
+
+              <!-- Plan Coello -->
+              <div class="bg-gradient-to-br from-purple-600 to-indigo-700 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">⚡ Pro Club</span>
+                    <span id="stat-mem-coello" class="text-sm font-black bg-white text-purple-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  </div>
+                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Coello</h3>
+                  <div class="text-[11px] text-purple-100 font-medium mt-0.5">Horario Full Day (6am - 12am)</div>
+                  <div class="mt-3 space-y-1 text-xs text-white/95">
+                    <div>⚡ <strong>30% OFF</strong> en Americanos</div>
+                    <div>🥤 Bebidas incluidas</div>
+                    <div>🎓 <strong>2 clases</strong> academia/mes</div>
+                  </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
+                  <span class="text-[10px] uppercase font-bold text-purple-100">Cuota Mensual</span>
+                  <span class="text-base font-black">$260.000 COP</span>
+                </div>
+              </div>
+
+              <!-- Plan Galán -->
+              <div class="bg-gradient-to-br from-blue-600 to-sky-700 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">🎾 Competitivo</span>
+                    <span id="stat-mem-galan" class="text-sm font-black bg-white text-blue-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  </div>
+                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Galán</h3>
+                  <div class="text-[11px] text-blue-100 font-medium mt-0.5">Horario Full Day (6am - 12am)</div>
+                  <div class="mt-3 space-y-1 text-xs text-white/95">
+                    <div>⚡ <strong>20% OFF</strong> en Americanos</div>
+                    <div>🥤 Bebidas incluidas</div>
+                    <div>🎾 Reserva hasta 1.5h/día</div>
+                  </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
+                  <span class="text-[10px] uppercase font-bold text-blue-100">Cuota Mensual</span>
+                  <span class="text-base font-black">$210.000 COP</span>
+                </div>
+              </div>
+
+              <!-- Plan Chingotto -->
+              <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">🌅 Matutino</span>
+                    <span id="stat-mem-chingotto" class="text-sm font-black bg-white text-emerald-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  </div>
+                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Chingotto</h3>
+                  <div class="text-[11px] text-emerald-100 font-medium mt-0.5">Restringido: 6:00 AM - 3:00 PM</div>
+                  <div class="mt-3 space-y-1 text-xs text-white/95">
+                    <div>⚡ <strong>10% OFF</strong> en Americanos</div>
+                    <div>🌅 Tarifa reducida madrugadores</div>
+                    <div>🎾 Pistas valle preferenciales</div>
+                  </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
+                  <span class="text-[10px] uppercase font-bold text-emerald-100">Cuota Mensual</span>
+                  <span class="text-base font-black">$140.000 COP</span>
+                </div>
+              </div>
+
+              <!-- Plan Lebrón -->
+              <div class="bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">🐺 Diurno</span>
+                    <span id="stat-mem-lebron" class="text-sm font-black bg-white text-slate-800 px-2 py-0.5 rounded-full">0 socios</span>
+                  </div>
+                  <h3 class="text-lg font-black tracking-tight mt-1">Plan Lebrón</h3>
+                  <div class="text-[11px] text-slate-300 font-medium mt-0.5">Restringido: 6:00 AM - 6:00 PM</div>
+                  <div class="mt-3 space-y-1 text-xs text-white/95">
+                    <div>⚡ <strong>20% OFF</strong> en Americanos</div>
+                    <div>🐺 Hasta las 6:00 PM diario</div>
+                    <div>🎾 Óptimo para tardes activas</div>
+                  </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/20 flex items-baseline justify-between">
+                  <span class="text-[10px] uppercase font-bold text-slate-300">Cuota Mensual</span>
+                  <span class="text-base font-black">$170.000 COP</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de Socios y Gestión de Vigencias -->
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              <div class="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3 w-full sm:w-80">
+                  <div class="relative w-full">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">🔍</span>
+                    <input type="text" id="mem-table-search" oninput="window.filterMembershipsTable()" placeholder="Buscar socio por nombre o teléfono..." class="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 text-slate-800">
+                  </div>
+                </div>
+                <!-- Filtros de Plan -->
+                <div class="flex items-center gap-1.5 flex-wrap" id="mem-plan-filter-pills">
+                  <button type="button" onclick="window.filterMembershipsByPlan('ALL')" id="btn-mem-plan-all" class="mem-pill active px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-800 text-white">Todos</button>
+                  <button type="button" onclick="window.filterMembershipsByPlan('TAPIA')" id="btn-mem-plan-tapia" class="mem-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">Tapia</button>
+                  <button type="button" onclick="window.filterMembershipsByPlan('COELLO')" id="btn-mem-plan-coello" class="mem-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">Coello</button>
+                  <button type="button" onclick="window.filterMembershipsByPlan('GALAN')" id="btn-mem-plan-galan" class="mem-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">Galán</button>
+                  <button type="button" onclick="window.filterMembershipsByPlan('CHINGOTTO')" id="btn-mem-plan-chingotto" class="mem-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">Chingotto</button>
+                  <button type="button" onclick="window.filterMembershipsByPlan('LEBRON')" id="btn-mem-plan-lebron" class="mem-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">Lebrón</button>
+                  <button type="button" onclick="window.filterMembershipsByPlan('EXPIRING')" id="btn-mem-plan-exp" class="mem-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200">⚠️ Por Vencer (≤ 5d)</button>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
+                      <th class="py-3 px-4">Socio / Jugador</th>
+                      <th class="py-3 px-4">Plan Activo</th>
+                      <th class="py-3 px-4">Ventana Horaria</th>
+                      <th class="py-3 px-4">Beneficios / Perks</th>
+                      <th class="py-3 px-4">Desc. Americanos</th>
+                      <th class="py-3 px-4">Vigencia (Inicio - Fin)</th>
+                      <th class="py-3 px-4">Estado</th>
+                      <th class="py-3 px-4 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="memberships-table-tbody" class="divide-y divide-slate-100 text-slate-700">
+                    <tr><td colspan="8" class="text-center py-8 text-slate-400">Cargando socios y membresías...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+
   </div>
       </div>
     </div>
@@ -4531,6 +4776,311 @@
   <!-- ======================================================== -->
   <!-- JAVASCRIPT: LÓGICA DE CONTROL, WEBSOCKETS & API FETCH    -->
   <!-- ======================================================== -->
+  
+  <!-- ======================================================== -->
+  <!-- MODAL: PROGRAMAR NUEVA CLASE DE ACADEMIA                 -->
+  <!-- ======================================================== -->
+  <div id="modal-create-academy-class" class="modal-overlay">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-title">
+        <span class="flex items-center gap-2">
+          <span>🎓</span> Programar Nueva Clase de Academia
+        </span>
+        <button type="button" onclick="window.closeCreateAcademyClassModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      <form id="form-create-academy-class" onsubmit="window.submitCreateAcademyClass(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Título de la Clase</label>
+          <input type="text" id="acad-new-title" required placeholder="Ej: Clase Iniciación - Bandeja y Pared" class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-slate-800 font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Nivel</label>
+            <select id="acad-new-level" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+              <option value="Iniciación">Iniciación (1ra a 6ta Principiantes)</option>
+              <option value="Intermedio" selected>Intermedio</option>
+              <option value="Avanzado">Avanzado (Competición)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Profesor / Entrenador</label>
+            <input type="text" id="acad-new-coach" required placeholder="Ej: Profe Lucas" class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-slate-800 font-medium">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Fecha</label>
+            <input type="date" id="acad-new-date" required class="w-full p-2.5 border border-slate-300 rounded-xl text-slate-800 font-semibold bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Hora Inicio</label>
+            <input type="time" id="acad-new-start" required value="08:00" class="w-full p-2.5 border border-slate-300 rounded-xl text-slate-800 font-semibold bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Hora Fin</label>
+            <input type="time" id="acad-new-end" required value="09:30" class="w-full p-2.5 border border-slate-300 rounded-xl text-slate-800 font-semibold bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Pista Asignada</label>
+            <select id="acad-new-court" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+              <option value="1">Pista 1</option>
+              <option value="2">Pista 2</option>
+              <option value="3">Pista 3</option>
+              <option value="4">Pista 4</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Capacidad Máx</label>
+            <input type="number" id="acad-new-max" min="1" max="8" value="4" required class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Tarifa COP</label>
+            <input type="number" id="acad-new-price" min="0" step="1000" value="35000" required class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800">
+          </div>
+        </div>
+
+        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] leading-relaxed">
+          ℹ️ Al guardar, se sincronizará automáticamente un turno reservado tipo <strong>CLASS</strong> en la Matriz de Pistas para bloquear la cancha en este horario.
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+          <button type="button" onclick="window.closeCreateAcademyClassModal()" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <span>💾</span> <span>Programar y Bloquear Pista</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: INSCRIBIR ALUMNO EN ACADEMIA                      -->
+  <!-- ======================================================== -->
+  <div id="modal-enroll-academy" class="modal-overlay">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-title">
+        <span class="flex items-center gap-2">
+          <span>🎓</span> Inscribir Alumno en Academia
+        </span>
+        <button type="button" onclick="window.closeEnrollAcademyModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      <form id="form-enroll-academy" onsubmit="window.submitEnrollAcademy(event)" class="space-y-4 text-xs">
+        <input type="hidden" id="acad-enroll-class-id" value="">
+
+        <!-- Resumen de Clase -->
+        <div id="acad-enroll-summary-box" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 space-y-1">
+          <div class="font-extrabold text-sm text-slate-900" id="acad-enroll-class-title">Clase de Pádel</div>
+          <div class="text-[11px] text-slate-500" id="acad-enroll-class-details">Pista 1 | Horario | Cupos</div>
+        </div>
+
+        <!-- Buscador Reactivo CRM -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Buscar Jugador / Alumno (CRM)</label>
+          <div class="relative w-full">
+            <input type="text" id="acad-enroll-player-search" oninput="window.handleAcademyStudentSearch(event)" autocomplete="off" placeholder="Escribe para buscar cliente (Juan, Camilo, David)..." class="w-full px-3.5 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-slate-800 bg-white font-medium" />
+            <div id="acad-enroll-crm-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-44 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+          </div>
+          <input type="hidden" id="acad-enroll-player-id" required>
+        </div>
+
+        <!-- Alerta de Tarifa & Perk de Membresía -->
+        <div id="acad-enroll-perk-box" class="p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-700">
+          <div class="font-bold text-slate-800 text-xs mb-1" id="acad-enroll-perk-title">Tarifa Estándar</div>
+          <div class="text-[11px]" id="acad-enroll-perk-desc">Selecciona un jugador del CRM para validar si tiene beneficio de academia ($0) o tarifa regular.</div>
+          <div class="mt-2 text-sm font-black text-emerald-600" id="acad-enroll-price-display">$35.000 COP</div>
+        </div>
+
+        <!-- Estado de Pago -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Estado del Pago</label>
+          <select id="acad-enroll-payment-status" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+            <option value="COMPLETED" selected>✅ Pagado / Cubierto por Membresía</option>
+            <option value="PENDING">⏳ Pendiente de Pago</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+          <button type="button" onclick="window.closeEnrollAcademyModal()" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <span>✅</span> <span>Confirmar Inscripción</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ASIGNAR O RENOVAR MEMBRESÍA                       -->
+  <!-- ======================================================== -->
+  <div id="modal-assign-membership" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-title">
+        <span class="flex items-center gap-2">
+          <span>💎</span> Asignar o Renovar Membresía
+        </span>
+        <button type="button" onclick="window.closeAssignMembershipModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      <form id="form-assign-membership" onsubmit="window.submitAssignMembership(event)" class="space-y-4 text-xs">
+        <!-- Buscador Reactivo CRM -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Buscar Socio / Jugador (CRM)</label>
+          <div class="relative w-full">
+            <input type="text" id="mem-assign-player-search" oninput="window.handleMembershipPlayerSearch(event)" autocomplete="off" placeholder="Escribe el nombre o teléfono del socio..." class="w-full px-3.5 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 text-slate-800 bg-white font-medium" />
+            <div id="mem-assign-crm-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-44 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+          </div>
+          <input type="hidden" id="mem-assign-player-id" required>
+        </div>
+
+        <!-- Plan a Asignar -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Seleccionar Plan de Membresía</label>
+          <select id="mem-assign-plan-id" required class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-indigo-700 bg-white">
+            <option value="1">👑 Plan Tapia ($320.000 COP/mes) - 40% OFF Americanos + Bebidas + 4 Clases</option>
+            <option value="2">⚡ Plan Coello ($260.000 COP/mes) - 30% OFF Americanos + Bebidas + 2 Clases</option>
+            <option value="3">🎾 Plan Galán ($210.000 COP/mes) - 20% OFF Americanos + Bebidas</option>
+            <option value="4">🌅 Plan Chingotto ($140.000 COP/mes) - 10% OFF Americanos (Hasta 3:00 PM)</option>
+            <option value="5">🐺 Plan Lebrón ($170.000 COP/mes) - 20% OFF Americanos (Hasta 6:00 PM)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Duración</label>
+            <input type="text" readonly value="30 Días (1 Mes Oficial)" class="w-full p-2.5 border border-slate-200 bg-slate-100 text-slate-600 rounded-xl font-semibold">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Método de Pago</label>
+            <select id="mem-assign-payment-method" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+              <option value="TRANSFER">Transferencia Bancaria</option>
+              <option value="CARD">Tarjeta Débito/Crédito</option>
+              <option value="CASH">Efectivo en Caja</option>
+              <option value="ACCOUNT">Saldo a Favor del Socio</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Referencia / Comprobante de Pago</label>
+          <input type="text" id="mem-assign-payment-ref" placeholder="Ej: TRANSF-98212 / Aprobación POS" class="w-full p-2.5 border border-slate-300 rounded-xl text-slate-800 font-medium">
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+          <button type="button" onclick="window.closeAssignMembershipModal()" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <span>💎</span> <span>Guardar y Activar Membresía</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: PERFIL DE JUGADOR CRM (CREAR / EDITAR)            -->
+  <!-- ======================================================== -->
+  <div id="modal-crm-player" class="modal-overlay">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-title">
+        <span class="flex items-center gap-2">
+          <span>👤</span> <span id="modal-crm-player-title">Registrar Nuevo Jugador CRM</span>
+        </span>
+        <button type="button" onclick="window.closeCustomerModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      <form id="form-crm-player" onsubmit="window.submitCustomerForm(event)" class="space-y-4 text-xs">
+        <input type="hidden" id="crm-edit-player-id" value="">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label class="block font-bold text-slate-700 mb-1">Nombre Completo</label>
+            <input type="text" id="crm-edit-name" required placeholder="Ej: Juan Real Florez" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Teléfono WhatsApp</label>
+            <input type="tel" id="crm-edit-phone" required placeholder="+57 313 2058547" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Correo Electrónico</label>
+            <input type="email" id="crm-edit-email" placeholder="jugador@ejemplo.com" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Categoría</label>
+            <select id="crm-edit-category" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800 bg-white">
+              <option value="1ra">1ra Categoría (Competición)</option>
+              <option value="2da">2da Categoría</option>
+              <option value="3ra">3ra Categoría</option>
+              <option value="4ta" selected>4ta Categoría</option>
+              <option value="5ta">5ta Categoría</option>
+              <option value="6ta">6ta Categoría (Iniciación)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Género</label>
+            <select id="crm-edit-gender" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+              <option value="Masculino" selected>👨 Masculino</option>
+              <option value="Femenino">👩 Femenino</option>
+              <option value="Otro">🧑 Otro</option>
+              <option value="No especificado">No especificado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Música Preferida</label>
+            <select id="crm-edit-music" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 bg-white">
+              <option value="Reggaeton / Urbano" selected>🎵 Reggaeton / Urbano</option>
+              <option value="Rock / Clásico">🎸 Rock / Clásico</option>
+              <option value="Electrónica / House">🎧 Electrónica / House</option>
+              <option value="Pop / Top Hits">🎤 Pop / Top Hits</option>
+              <option value="Salsa / Crossover">💃 Salsa / Crossover</option>
+              <option value="Sin preferencia">Sin preferencia</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Franja Horaria Preferida</label>
+            <select id="crm-edit-time" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 bg-white">
+              <option value="Mañana (06:00 - 10:00)">🌅 Mañana (06:00 - 10:00)</option>
+              <option value="Mediodía (10:00 - 16:00)">☀️ Mediodía (10:00 - 16:00)</option>
+              <option value="Tarde/Noche (16:00 - 23:00)" selected>🌙 Tarde/Noche (16:00 - 23:00)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Membresía del Socio</label>
+          <select id="crm-edit-tier" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-indigo-700 bg-white">
+            <option value="ESTANDAR" selected>ESTÁNDAR (Sin membresía activa)</option>
+            <option value="TAPIA">👑 TAPIA (-40% Americanos + Academia + Bebidas)</option>
+            <option value="COELLO">⚡ COELLO (-30% Americanos + Academia + Bebidas)</option>
+            <option value="GALAN">🎾 GALÁN (-20% Americanos + Bebidas)</option>
+            <option value="CHINGOTTO">🌅 CHINGOTTO (-10% Mañanas hasta 3pm)</option>
+            <option value="LEBRON">🐺 LEBRÓN (-20% Diurno hasta 6pm)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Notas / Observaciones</label>
+          <textarea id="crm-edit-notes" rows="2" placeholder="Observaciones deportivas, nivel de juego, etc." class="w-full p-2.5 border border-slate-300 rounded-xl text-slate-800 font-medium"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+          <button type="button" onclick="window.closeCustomerModal()" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <span>💾</span> <span id="modal-crm-player-submit-text">Guardar Perfil</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
   <script>
 
     // ========================================================
@@ -4589,6 +5139,8 @@
         if (cleanName === 'access' && typeof loadAccessData === 'function') loadAccessData();
         if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
         if (cleanName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments();
+        if ((cleanName === 'academy' || viewName === 'academy') && typeof loadAcademyClasses === 'function') loadAcademyClasses();
+        if ((cleanName === 'memberships' || viewName === 'memberships') && typeof loadMembershipsData === 'function') loadMembershipsData();
         if (cleanName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
         if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
         if (cleanName === 'radar' || viewName === 'radar') {
@@ -4620,12 +5172,12 @@
 
     // =========================================================================
     window.DEFAULT_CRM_PLAYERS = window.DEFAULT_CRM_PLAYERS || [
-      { id: 1, name: "Juan Real Florez", phone: "+573132058547", category: "4ta", client_type: "Socio VIP (Tapia)", membership_tier: "TAPIA", total_bookings_completed: 24, ranking_points: 1850, titles_count: 5, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 2, name: "Camilo Real", phone: "+573001234567", category: "4ta", client_type: "Socio VIP (Coello)", membership_tier: "COELLO", total_bookings_completed: 19, ranking_points: 1520, titles_count: 3, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 3, name: "David P", phone: "+573109876543", category: "3ra", client_type: "Socio VIP (Galán)", membership_tier: "GALAN", total_bookings_completed: 16, ranking_points: 1340, titles_count: 2, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 4, name: "Andrés Gómez", phone: "+573155551122", category: "4ta", client_type: "Socio Matutino (Chingotto)", membership_tier: "CHINGOTTO", total_bookings_completed: 12, ranking_points: 980, titles_count: 1, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 5, name: "Mateo Ruiz", phone: "+573174443322", category: "5ta", client_type: "Socio Diurno (Lebrón)", membership_tier: "LEBRON", total_bookings_completed: 8, ranking_points: 750, titles_count: 0, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 6, name: "Sofía Martínez", phone: "+573187778899", category: "6ta", client_type: "Estándar", membership_tier: "ESTANDAR", total_bookings_completed: 2, ranking_points: 210, titles_count: 0, is_first_visit: true, onboarding_status: "PENDING" }
+      { id: 1, name: "Juan Real Florez", phone: "+573132058547", email: "juan@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Reggaeton / Urbano", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Tapia)", membership_tier: "TAPIA", membership_plan_id: 1, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 1, total_bookings_completed: 24, ranking_points: 1850, titles_count: 5, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 2, name: "Camilo Real", phone: "+573001234567", email: "camilo@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Rock / Clásico", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Coello)", membership_tier: "COELLO", membership_plan_id: 2, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 19, ranking_points: 1520, titles_count: 3, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 3, name: "David P", phone: "+573109876543", email: "david@yieldpadel.com", category: "3ra", gender: "Masculino", preferred_music: "Electrónica / House", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Galán)", membership_tier: "GALAN", membership_plan_id: 3, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 16, ranking_points: 1340, titles_count: 2, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 4, name: "Andrés Gómez", phone: "+573155551122", email: "andres@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Pop / Top Hits", preferred_play_time: "Mañana (06:00 - 10:00)", client_type: "Socio Matutino (Chingotto)", membership_tier: "CHINGOTTO", membership_plan_id: 4, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 12, ranking_points: 980, titles_count: 1, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 5, name: "Mateo Ruiz", phone: "+573174443322", email: "mateo@yieldpadel.com", category: "5ta", gender: "Masculino", preferred_music: "Salsa / Crossover", preferred_play_time: "Mediodía (10:00 - 16:00)", client_type: "Socio Diurno (Lebrón)", membership_tier: "LEBRON", membership_plan_id: 5, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 8, ranking_points: 750, titles_count: 0, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 6, name: "Sofía Martínez", phone: "+573187778899", email: "sofia@yieldpadel.com", category: "6ta", gender: "Femenino", preferred_music: "Pop / Top Hits", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Estándar", membership_tier: "ESTANDAR", membership_plan_id: null, membership_start_date: null, membership_end_date: null, academy_classes_used: 0, total_bookings_completed: 2, ranking_points: 210, titles_count: 0, is_first_visit: true, onboarding_status: "PENDING" }
     ];
     window.cachedPlayers = window.cachedPlayers || window.DEFAULT_CRM_PLAYERS;
     window.allCRMCustomers = window.allCRMCustomers || window.DEFAULT_CRM_PLAYERS;
@@ -4660,14 +5212,14 @@
         return;
       }
 
-      dropdownEl.innerHTML = matches.map(p => {
+      dropdownEl.innerHTML = matches.map((p, mIdx) => {
         const tier = p.membership_tier || 'ESTANDAR';
         const tierBadgeClass = (tier === 'ORO' || tier === 'TAPIA' || tier === 'COELLO' || tier === 'GALAN') ? 'bg-amber-100 text-amber-800' :
                                (tier === 'PLATA' || tier === 'CHINGOTTO') ? 'bg-slate-200 text-slate-700' :
                                'bg-emerald-100 text-emerald-800';
         return `
         <div class="crm-dropdown-item px-4 py-2.5 hover:bg-slate-50 cursor-pointer text-xs flex justify-between items-center transition-colors border-b border-slate-50 last:border-0"
-             data-name="${(p.name || '').replace(/"/g, '&quot;')}" data-phone="${(p.phone || '').replace(/"/g, '&quot;')}" data-tier="${tier.replace(/"/g, '&quot;')}" data-cat="${(p.category || '4ta').replace(/"/g, '&quot;')}">
+             data-match-idx="${mIdx}" data-id="${p.id || ''}" data-name="${(p.name || '').replace(/"/g, '&quot;')}" data-phone="${(p.phone || '').replace(/"/g, '&quot;')}" data-tier="${tier.replace(/"/g, '&quot;')}" data-cat="${(p.category || '4ta').replace(/"/g, '&quot;')}">
           <div>
             <div class="font-bold text-slate-800">${p.name}</div>
             <div class="text-[10px] text-slate-400 font-medium">${p.phone || 'Sin tel'} · Cat: ${p.category || '4ta'}</div>
@@ -4684,10 +5236,15 @@
       dropdownEl.querySelectorAll('.crm-dropdown-item').forEach(item => {
         item.addEventListener('click', (e) => {
           e.stopPropagation();
+          const mIdx = parseInt(item.getAttribute('data-match-idx'));
+          const matchObj = matches[mIdx] || {};
           const pData = {
+            ...matchObj,
+            id: matchObj.id || item.getAttribute('data-id'),
             name: item.getAttribute('data-name'),
             phone: item.getAttribute('data-phone'),
             tier: item.getAttribute('data-tier'),
+            membership_tier: matchObj.membership_tier || item.getAttribute('data-tier'),
             category: item.getAttribute('data-cat')
           };
           dropdownEl.classList.add('hidden');
@@ -5635,53 +6192,54 @@ window.handleCRMSearch = window.filterCRMTable;
             ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
             : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
 
-          // 5 Membresías oficiales con badge limpio (porcentaje solo en tooltip hover)
+          // Membresía y Vigencia
           const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
-          const tierInfoMap = {
-            TAPIA: { name: '👑 TAPIA', schedule: '6:00 AM - 11:59 PM', discount: 40 },
-            COELLO: { name: '⚡ COELLO', schedule: '6:00 AM - 11:59 PM', discount: 30 },
-            GALAN: { name: '🎾 GALÁN', schedule: '6:00 AM - 11:59 PM', discount: 20 },
-            CHINGOTTO: { name: '🌅 CHINGOTTO', schedule: '6:00 AM - 3:00 PM', discount: 10 },
-            LEBRON: { name: '🐺 LEBRÓN', schedule: '6:00 AM - 6:00 PM', discount: 20 },
-            ESTANDAR: { name: 'ESTÁNDAR', schedule: 'Tarifa General', discount: 0 }
-          };
-          const tObj = tierInfoMap[tier] || tierInfoMap['ESTANDAR'];
-          const membershipBadge = `<span class="px-2.5 py-1 text-xs font-bold rounded-md bg-slate-100 text-slate-800 border border-slate-200 cursor-help" title="Horario: ${tObj.schedule} | Descuento Americanos: ${tObj.discount}%">${tObj.name}</span>`;
-
-          // Columna Onboarding y Estado de Primera Visita + Sugerencia de Ascenso
-          let onboardingBadge = '';
-          if (c.promotion_recommended) {
-            onboardingBadge += `
-              <div style="margin-bottom: 0.35rem;">
-                <span class="badge-promotion-sug" title="Mérito deportivo: 2 victorias consecutivas">
-                  ⚡ Sugerencia: Ascender de Categoría (${c.recommended_category || 'Siguiente'})
-                </span>
-                <button onclick="promoteCustomer(${c.id}, '${c.recommended_category || ''}')" class="btn-approve-promote" title="Aprobar ascenso de categoría inmediatamente">
-                  ✓ Aprobar
-                </button>
-              </div>
-            `;
-          }
-
-          if (c.is_first_visit) {
-            onboardingBadge += `
-              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                <span class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 rounded-md inline-flex items-center gap-1">
-                  ⭐ 1ra Visita (${c.onboarding_status || 'PENDING'})
-                </span>
-                <div style="display: flex; gap: 0.25rem;">
-                  <button onclick="quickUpdateOnboarding(${c.id}, 'WELCOMED')" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; cursor: pointer;" title="Marcar Bienvenida Realizada">✅ Bienvenida</button>
-                  <button onclick="quickUpdateOnboarding(${c.id}, 'MEMBER_OFFERED')" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: #F5F3FF; border: 1px solid #DDD6FE; color: #5B21B6; cursor: pointer;" title="Ofrecer Membresía">💳 Membresía</button>
-                </div>
-              </div>
-            `;
+          let memValidityBadge = '';
+          if (tier === 'ESTANDAR') {
+            memValidityBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-100 text-slate-500 border border-slate-200">Estándar</span>`;
           } else {
-            onboardingBadge += `
-              <span class="px-1.5 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md inline-flex items-center">
-                ✓ Habitual
-              </span>
+            let daysLeft = 30;
+            let statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+            let statusText = '🟢 Activa';
+            if (c.membership_end_date) {
+              const today = new Date();
+              const end = new Date(c.membership_end_date);
+              daysLeft = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              if (daysLeft < 0) {
+                statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+                statusText = '🔴 Vencida';
+              } else if (daysLeft <= 5) {
+                statusBadge = 'bg-amber-100 text-amber-800 border-amber-300';
+                statusText = `🟠 Expira en ${daysLeft}d`;
+              } else {
+                statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                statusText = `🟢 ${daysLeft}d`;
+              }
+            }
+            memValidityBadge = `
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">${tier}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${statusBadge}">${statusText}</span>
+              </div>
             `;
           }
+
+          // Género
+          const gender = c.gender || 'No especificado';
+          const genderBadge = (gender === 'Femenino')
+            ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-pink-50 text-pink-700 border border-pink-200">👩 F</span>'
+            : ((gender === 'Masculino')
+              ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-50 text-blue-700 border border-blue-200">👨 M</span>'
+              : `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-50 text-slate-600 border border-slate-200">🧑 ${gender}</span>`);
+
+          // Música y Horario Chips
+          const musicChip = c.preferred_music
+            ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">🎵 ${c.preferred_music}</span>`
+            : '<span class="text-slate-400 text-xs">-</span>';
+
+          const timeChip = c.preferred_play_time
+            ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">⏰ ${c.preferred_play_time}</span>`
+            : '<span class="text-slate-400 text-xs">-</span>';
 
           h += `
             <tr style="border-bottom: 1px solid #F1F5F9;">
@@ -5698,18 +6256,20 @@ window.handleCRMSearch = window.filterCRMTable;
                     </span>
                   ` : ''}
                 </div>
-                ${c.is_playing_now ? `
-                  <div style="margin-top: 0.35rem; font-size: 0.72rem; font-family: monospace; background: #FFFBEB; border: 1px solid #FDE68A; padding: 0.25rem 0.5rem; border-radius: 6px; color: #78350F; line-height: 1.3;">
-                    Saldo Cancha: <strong>${formatCOP(c.court_price)}</strong> + Consumos Barra: <strong>${formatCOP(c.bar_consumos)}</strong> = <strong style="color: #DC2626;">Total Pendiente: ${formatCOP(c.total_pending)}</strong>
-                  </div>
-                ` : ''}
+                <div style="font-size: 0.75rem; font-family: monospace; color: #64748B; margin-top: 0.15rem;">${c.phone || '-'}</div>
                 <div style="margin-top: 0.2rem;">${typeBadge}</div>
               </td>
               <td style="padding: 0.85rem 1rem;">
-                ${membershipBadge}
+                ${genderBadge}
               </td>
-              <td style="padding: 0.85rem 1rem; font-size: 0.78rem; font-family: monospace; color: #334155;">
-                ${c.phone || '-'}
+              <td style="padding: 0.85rem 1rem;">
+                ${musicChip}
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                ${timeChip}
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                ${memValidityBadge}
               </td>
               <td style="padding: 0.85rem 1rem;">
                 <span style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
@@ -5724,20 +6284,19 @@ window.handleCRMSearch = window.filterCRMTable;
                   ${c.ranking_points || 0} pts
                 </span>
               </td>
-              <td style="padding: 0.85rem 1rem; font-size: 0.85rem; font-weight: 600; color: #059669;">
-                🏆 ${c.titles_count || 0}
-              </td>
-              <td style="padding: 0.85rem 1rem;">
-                ${onboardingBadge}
-              </td>
               <td style="padding: 0.85rem 1rem; text-align: center;">
-                <button onclick="openChallengeModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm inline-flex items-center gap-1 transition" title="Lanzar Reto Oficial">
-                  <span>⚔️</span> <span>Retar</span>
-                </button>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                  <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; border-radius: 0.5rem; cursor: pointer;" title="Editar Perfil CRM">
+                    ✏️ Editar
+                  </button>
+                  <button type="button" onclick="openChallengeModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: #F59E0B; color: #FFFFFF; border: none; border-radius: 0.5rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.2rem;" title="Lanzar Reto Oficial">
+                    <span>⚔️</span> <span>Retar</span>
+                  </button>
+                </div>
               </td>
             </tr>
           `;
-        });
+});
         tbody.innerHTML = h;
         filterCRMTable();
       } catch (err) {
@@ -5745,30 +6304,123 @@ window.handleCRMSearch = window.filterCRMTable;
         try {
           let h = '';
           DEFAULT_CRM_PLAYERS.forEach((c, idx) => {
-            const pos = idx + 1;
-            let posClass = 'badge-rank-other';
-            if (pos === 1) posClass = 'badge-rank-1';
-            else if (pos === 2) posClass = 'badge-rank-2';
-            else if (pos === 3) posClass = 'badge-rank-3';
-            h += `
-              <tr style="border-bottom: 1px solid #F1F5F9;">
-                <td style="padding: 0.85rem 1rem;"><span class="badge-rank ${posClass}">${pos}</span></td>
-                <td style="padding: 0.85rem 1rem;"><div style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</div></td>
-                <td style="padding: 0.85rem 1rem;"><span class="px-2.5 py-1 text-xs font-bold rounded-md bg-slate-100 text-slate-800 border border-slate-200">👑 ${c.membership_tier}</span></td>
-                <td style="padding: 0.85rem 1rem; font-size: 0.78rem; font-family: monospace; color: #334155;">${c.phone}</td>
-                <td style="padding: 0.85rem 1rem;"><span style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">${c.category}</span></td>
-                <td style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: #0F172A;">${c.total_bookings_completed} turnos</td>
-                <td style="padding: 0.85rem 1rem;"><span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">${c.ranking_points} pts</span></td>
-                <td style="padding: 0.85rem 1rem; font-size: 0.85rem; font-weight: 600; color: #059669;">🏆 ${c.titles_count}</td>
-                <td style="padding: 0.85rem 1rem;"><span class="px-1.5 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md">✓ Habitual</span></td>
-                <td style="padding: 0.85rem 1rem; text-align: center;">
-                  <button onclick="openChallengeModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm inline-flex items-center gap-1 transition" title="Lanzar Reto Oficial">
+          const pos = idx + 1;
+          let posClass = 'badge-rank-other';
+          if (pos === 1) posClass = 'badge-rank-1';
+          else if (pos === 2) posClass = 'badge-rank-2';
+          else if (pos === 3) posClass = 'badge-rank-3';
+
+          const isVip = (c.client_type || '').toLowerCase().includes('vip') || (c.client_type || '').toLowerCase().includes('socio');
+          const typeBadge = isVip
+            ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
+            : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
+
+          // Membresía y Vigencia
+          const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
+          let memValidityBadge = '';
+          if (tier === 'ESTANDAR') {
+            memValidityBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-100 text-slate-500 border border-slate-200">Estándar</span>`;
+          } else {
+            let daysLeft = 30;
+            let statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+            let statusText = '🟢 Activa';
+            if (c.membership_end_date) {
+              const today = new Date();
+              const end = new Date(c.membership_end_date);
+              daysLeft = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              if (daysLeft < 0) {
+                statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+                statusText = '🔴 Vencida';
+              } else if (daysLeft <= 5) {
+                statusBadge = 'bg-amber-100 text-amber-800 border-amber-300';
+                statusText = `🟠 Expira en ${daysLeft}d`;
+              } else {
+                statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                statusText = `🟢 ${daysLeft}d`;
+              }
+            }
+            memValidityBadge = `
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">${tier}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${statusBadge}">${statusText}</span>
+              </div>
+            `;
+          }
+
+          // Género
+          const gender = c.gender || 'No especificado';
+          const genderBadge = (gender === 'Femenino')
+            ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-pink-50 text-pink-700 border border-pink-200">👩 F</span>'
+            : ((gender === 'Masculino')
+              ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-50 text-blue-700 border border-blue-200">👨 M</span>'
+              : `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-50 text-slate-600 border border-slate-200">🧑 ${gender}</span>`);
+
+          // Música y Horario Chips
+          const musicChip = c.preferred_music
+            ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">🎵 ${c.preferred_music}</span>`
+            : '<span class="text-slate-400 text-xs">-</span>';
+
+          const timeChip = c.preferred_play_time
+            ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">⏰ ${c.preferred_play_time}</span>`
+            : '<span class="text-slate-400 text-xs">-</span>';
+
+          h += `
+            <tr style="border-bottom: 1px solid #F1F5F9;">
+              <td style="padding: 0.85rem 1rem;">
+                <span class="badge-rank ${posClass}">${pos}</span>
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                  <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
+                  ${c.is_playing_now ? `
+                    <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
+                      🟢 En ${c.active_court_name}
+                    </span>
+                  ` : ''}
+                </div>
+                <div style="font-size: 0.75rem; font-family: monospace; color: #64748B; margin-top: 0.15rem;">${c.phone || '-'}</div>
+                <div style="margin-top: 0.2rem;">${typeBadge}</div>
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                ${genderBadge}
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                ${musicChip}
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                ${timeChip}
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                ${memValidityBadge}
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                <span style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
+                  ${c.category || '4ta'}
+                </span>
+              </td>
+              <td style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: #0F172A;">
+                ${c.total_bookings_completed || 0} turnos
+              </td>
+              <td style="padding: 0.85rem 1rem;">
+                <span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">
+                  ${c.ranking_points || 0} pts
+                </span>
+              </td>
+              <td style="padding: 0.85rem 1rem; text-align: center;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                  <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; border-radius: 0.5rem; cursor: pointer;" title="Editar Perfil CRM">
+                    ✏️ Editar
+                  </button>
+                  <button type="button" onclick="openChallengeModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: #F59E0B; color: #FFFFFF; border: none; border-radius: 0.5rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.2rem;" title="Lanzar Reto Oficial">
                     <span>⚔️</span> <span>Retar</span>
                   </button>
-                </td>
-              </tr>
-            `;
-          });
+                </div>
+              </td>
+            </tr>
+          `;
+
+        });
           tbody.innerHTML = h;
         } catch (e) {
           tbody.innerHTML = '<tr><td colspan="10" style="padding: 2rem; text-align: center; color: #64748B;">No hay datos de jugadores disponibles.</td></tr>';
@@ -10305,7 +10957,814 @@ Jugador: ${checkData.player_name}`);
       }
     }, 30000);
 
-  </script>
+  
+
+    // =========================================================================
+    // MODULO: 🎓 ACADEMIA DE PÁDEL & CLASES
+    // =========================================================================
+    window.academySelectedDate = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
+    window.academyLevelFilter = 'ALL';
+    window.cachedAcademyClasses = [];
+    window.selectedAcademyPlayer = null;
+
+    window.onAcademyDateChange = function(val) {
+      if (!val) return;
+      window.academySelectedDate = val;
+      window.loadAcademyClasses(val);
+    };
+
+    window.shiftAcademyDate = function(delta) {
+      const input = document.getElementById('academy-date-input');
+      const cur = window.academySelectedDate || (input ? input.value : new Date().toISOString().split('T')[0]);
+      const parts = cur.split('-').map(Number);
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      d.setDate(d.getDate() + delta);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const newDate = `${y}-${m}-${day}`;
+      window.academySelectedDate = newDate;
+      if (input) input.value = newDate;
+      window.loadAcademyClasses(newDate);
+    };
+
+    window.setAcademyDateToday = function() {
+      const today = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
+      window.academySelectedDate = today;
+      const input = document.getElementById('academy-date-input');
+      if (input) input.value = today;
+      window.loadAcademyClasses(today);
+    };
+
+    window.filterAcademyByLevel = function(lvl) {
+      window.academyLevelFilter = lvl;
+      document.querySelectorAll('#academy-level-filters button').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-slate-800', 'shadow-xs', 'font-bold');
+        btn.classList.add('text-slate-600', 'font-medium');
+      });
+      const activeId = lvl === 'ALL' ? 'btn-acad-lvl-all' : (lvl === 'Iniciación' ? 'btn-acad-lvl-ini' : (lvl === 'Intermedio' ? 'btn-acad-lvl-int' : 'btn-acad-lvl-ava'));
+      const activeBtn = document.getElementById(activeId);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white', 'text-slate-800', 'shadow-xs', 'font-bold');
+        activeBtn.classList.remove('text-slate-600', 'font-medium');
+      }
+      window.renderAcademyClasses(window.cachedAcademyClasses || []);
+    };
+
+    window.loadAcademyClasses = async function(date) {
+      const dateStr = date || window.academySelectedDate || (typeof getColombiaTodayString === 'function' ? getColombiaTodayString() : new Date().toISOString().split('T')[0]);
+      window.academySelectedDate = dateStr;
+      const input = document.getElementById('academy-date-input');
+      if (input) input.value = dateStr;
+
+      const grid = document.getElementById('academy-classes-grid');
+      if (!grid) return;
+      grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400">Cargando clases de la academia...</div>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/academy/classes?date=${dateStr}`);
+        let classes = [];
+        if (res.ok) {
+          classes = await res.json();
+        }
+        window.cachedAcademyClasses = classes;
+        window.renderAcademyClasses(classes);
+      } catch (err) {
+        console.error('Error cargando academia:', err);
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-rose-500 font-semibold">Error al cargar clases de academia.</div>';
+      }
+    };
+
+    window.renderAcademyClasses = function(classes) {
+      const grid = document.getElementById('academy-classes-grid');
+      if (!grid) return;
+
+      let filtered = classes || [];
+      if (window.academyLevelFilter && window.academyLevelFilter !== 'ALL') {
+        filtered = filtered.filter(c => (c.level || '').toLowerCase().includes(window.academyLevelFilter.toLowerCase()));
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-16 text-center bg-white border border-dashed border-slate-200 rounded-3xl p-8 shadow-xs">
+            <div class="text-4xl mb-3">🎾</div>
+            <h3 class="text-base font-bold text-slate-800">No hay clases programadas para esta fecha (${window.academySelectedDate})</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">Programa una clase para sincronizar automáticamente el turno tipo CLASS en las pistas del club.</p>
+            <button type="button" onclick="window.openCreateAcademyClassModal()" class="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition">
+              ➕ Programar Primera Clase
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(cls => {
+        const lvl = cls.level || 'Intermedio';
+        let lvlBadge = 'bg-sky-100 text-sky-800 border-sky-300';
+        if (lvl.toLowerCase().includes('inicia')) lvlBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        else if (lvl.toLowerCase().includes('avanz')) lvlBadge = 'bg-purple-100 text-purple-800 border-purple-300';
+
+        const pct = Math.min(100, Math.round((cls.enrolled_count / (cls.max_students || 4)) * 100));
+        const slotsLeft = Math.max(0, (cls.max_students || 4) - cls.enrolled_count);
+
+        const studentsList = (cls.students && cls.students.length > 0)
+          ? cls.students.map(s => `
+              <div class="flex items-center justify-between text-[11px] bg-slate-50 border border-slate-200/70 rounded-lg px-2.5 py-1.5">
+                <span class="font-bold text-slate-800 truncate max-w-[140px]" title="${s.player_name}">👤 ${s.player_name}</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${s.amount_charged === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">
+                  ${s.amount_charged === 0 ? '💎 Perk $0' : '$35.000'}
+                </span>
+              </div>
+            `).join('')
+          : '<div class="text-[11px] text-slate-400 italic py-1">Sin alumnos inscritos aún.</div>';
+
+        return `
+          <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <span class="px-2.5 py-1 text-[10px] font-extrabold uppercase rounded-lg border ${lvlBadge}">
+                  ${lvl}
+                </span>
+                <span class="text-[11px] font-bold ${slotsLeft === 0 ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'} px-2 py-0.5 rounded-full">
+                  ${slotsLeft === 0 ? 'COMPLETO' : `${slotsLeft} cupos`}
+                </span>
+              </div>
+
+              <h3 class="text-base font-extrabold text-slate-900 tracking-tight leading-snug">
+                🎾 ${cls.title}
+              </h3>
+              <div class="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1.5">
+                <span>👨‍🏫 Entrenador:</span> <strong class="text-slate-700">${cls.coach}</strong>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100 text-xs">
+                <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                  <div class="text-[10px] text-slate-400 font-bold uppercase">Horario</div>
+                  <div class="font-bold text-slate-800 mt-0.5">🕒 ${cls.start_time.slice(0, 5)} - ${cls.end_time.slice(0, 5)}</div>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                  <div class="text-[10px] text-slate-400 font-bold uppercase">Pista Asignada</div>
+                  <div class="font-bold text-emerald-700 mt-0.5">🏟️ Pista ${cls.court_id}</div>
+                </div>
+              </div>
+
+              <!-- Barra de Ocupación -->
+              <div class="mt-4">
+                <div class="flex justify-between text-[10px] font-bold text-slate-600 mb-1">
+                  <span>Alumnos Inscritos</span>
+                  <span>${cls.enrolled_count} / ${cls.max_students}</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div class="h-2 rounded-full ${pct >= 100 ? 'bg-rose-500' : 'bg-emerald-500'}" style="width: ${pct}%"></div>
+                </div>
+              </div>
+
+              <!-- Lista de Alumnos -->
+              <div class="mt-4 space-y-1.5">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Lista de Alumnos</div>
+                <div class="space-y-1 max-h-28 overflow-y-auto pr-1">
+                  ${studentsList}
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-100">
+              ${slotsLeft > 0 ? `
+                <button type="button" onclick="window.openEnrollAcademyModal(${cls.id}, '${cls.title.replace(/'/g, "\'")}', '${cls.coach}', ${cls.court_id}, ${slotsLeft})" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2">
+                  <span>➕</span> <span>Inscribir Alumno</span>
+                </button>
+              ` : `
+                <button type="button" disabled class="w-full py-2.5 bg-slate-100 text-slate-400 font-bold text-xs rounded-xl cursor-not-allowed">
+                  Cupos Agotados (Clase Llena)
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    window.openCreateAcademyClassModal = function() {
+      const modal = document.getElementById('modal-create-academy-class');
+      if (!modal) return;
+      const dateInput = document.getElementById('acad-new-date');
+      if (dateInput) dateInput.value = window.academySelectedDate || (typeof getColombiaTodayString === 'function' ? getColombiaTodayString() : new Date().toISOString().split('T')[0]);
+      modal.classList.add('active');
+    };
+
+    window.closeCreateAcademyClassModal = function() {
+      const modal = document.getElementById('modal-create-academy-class');
+      if (modal) modal.classList.remove('active');
+    };
+
+    window.submitCreateAcademyClass = async function(e) {
+      e.preventDefault();
+      const title = document.getElementById('acad-new-title').value.trim();
+      const level = document.getElementById('acad-new-level').value;
+      const coach = document.getElementById('acad-new-coach').value.trim();
+      const date = document.getElementById('acad-new-date').value;
+      const start_time = document.getElementById('acad-new-start').value;
+      const end_time = document.getElementById('acad-new-end').value;
+      const court_id = parseInt(document.getElementById('acad-new-court').value) || 1;
+      const max_students = parseInt(document.getElementById('acad-new-max').value) || 4;
+      const price_cop = parseInt(document.getElementById('acad-new-price').value) || 35000;
+
+      const payload = {
+        title,
+        level,
+        coach,
+        date,
+        start_time,
+        end_time,
+        court_id,
+        max_students,
+        price_cop
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/academy/classes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('🎓 Clase Programada', `Clase '${data.title}' guardada y pista ${court_id} bloqueada en el calendario.`);
+          } else {
+            alert(`✅ Clase '${data.title}' programada y pista bloqueada con éxito.`);
+          }
+          window.closeCreateAcademyClassModal();
+          window.academySelectedDate = date;
+          window.loadAcademyClasses(date);
+          if (typeof fetchSlots === 'function') fetchSlots();
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo crear la clase'}`);
+        }
+      } catch (err) {
+        console.error('Error creando clase:', err);
+        alert('Fallo de red al programar la clase.');
+      }
+    };
+
+    window.openEnrollAcademyModal = function(classId, title, coach, courtId, slotsLeft) {
+      const modal = document.getElementById('modal-enroll-academy');
+      if (!modal) return;
+      document.getElementById('acad-enroll-class-id').value = classId;
+      document.getElementById('acad-enroll-class-title').textContent = `🎾 ${title}`;
+      document.getElementById('acad-enroll-class-details').textContent = `Profesor: ${coach} | Pista ${courtId} | ${slotsLeft} cupos disponibles`;
+      
+      const searchInput = document.getElementById('acad-enroll-player-search');
+      if (searchInput) searchInput.value = '';
+      document.getElementById('acad-enroll-player-id').value = '';
+      window.selectedAcademyPlayer = null;
+
+      const perkTitle = document.getElementById('acad-enroll-perk-title');
+      const perkDesc = document.getElementById('acad-enroll-perk-desc');
+      const priceDisp = document.getElementById('acad-enroll-price-display');
+      if (perkTitle) perkTitle.textContent = 'Tarifa Estándar';
+      if (perkDesc) perkDesc.textContent = 'Selecciona un jugador del CRM para validar si aplica beneficio de membresía ($0) o tarifa regular.';
+      if (priceDisp) priceDisp.textContent = '$35.000 COP';
+
+      modal.classList.add('active');
+    };
+
+    window.closeEnrollAcademyModal = function() {
+      const modal = document.getElementById('modal-enroll-academy');
+      if (modal) modal.classList.remove('active');
+      const dropdown = document.getElementById('acad-enroll-crm-dropdown');
+      if (dropdown) {
+        dropdown.classList.add('hidden');
+        dropdown.style.display = 'none';
+      }
+    };
+
+    window.handleAcademyStudentSearch = function(e) {
+      const inputEl = document.getElementById('acad-enroll-player-search');
+      const dropdownEl = document.getElementById('acad-enroll-crm-dropdown');
+      if (!inputEl || !dropdownEl) return;
+
+      window.renderCRMSearchDropdown(inputEl, dropdownEl, function(p) {
+        inputEl.value = `${p.name} (${p.phone || ''})`;
+        document.getElementById('acad-enroll-player-id').value = p.id;
+        window.selectedAcademyPlayer = p;
+        dropdownEl.classList.add('hidden');
+        dropdownEl.style.display = 'none';
+
+        // Validar beneficio de membresía
+        const perkTitle = document.getElementById('acad-enroll-perk-title');
+        const perkDesc = document.getElementById('acad-enroll-perk-desc');
+        const priceDisp = document.getElementById('acad-enroll-price-display');
+        const statusSelect = document.getElementById('acad-enroll-payment-status');
+
+        const tier = (p.membership_tier || '').toUpperCase();
+        const hasPerk = tier === 'TAPIA' || tier === 'COELLO' || Boolean(p.includes_academy_classes);
+
+        if (hasPerk) {
+          const used = p.academy_classes_used || 0;
+          const maxMonthly = (tier === 'TAPIA') ? 4 : 2;
+          if (used < maxMonthly) {
+            if (perkTitle) perkTitle.innerHTML = `<span class="text-emerald-700">💎 Beneficio Membresía Activo (${tier})</span>`;
+            if (perkDesc) perkDesc.textContent = `Clases utilizadas este mes: ${used}/${maxMonthly}. La clase queda 100% cubierta.`;
+            if (priceDisp) priceDisp.textContent = '$0 COP (Cubierto por Membresía)';
+            if (statusSelect) statusSelect.value = 'COMPLETED';
+            return;
+          }
+        }
+
+        if (perkTitle) perkTitle.innerHTML = `<span>🎟️ Tarifa Estándar de Academia</span>`;
+        if (perkDesc) perkDesc.textContent = `El jugador no posee clases libres activas en su plan de membresía.`;
+        if (priceDisp) priceDisp.textContent = '$35.000 COP';
+      });
+    };
+
+    window.submitEnrollAcademy = async function(e) {
+      e.preventDefault();
+      const class_id = parseInt(document.getElementById('acad-enroll-class-id').value);
+      const player_id = parseInt(document.getElementById('acad-enroll-player-id').value);
+      const payment_status = document.getElementById('acad-enroll-payment-status').value;
+
+      if (!class_id || !player_id) {
+        alert('Por favor busca y selecciona un jugador del CRM.');
+        return;
+      }
+
+      const payload = {
+        class_id,
+        player_id,
+        payment_status
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/academy/enroll`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('🎓 Alumno Inscrito', `Alumno inscrito exitosamente. Monto: $${data.amount_charged} COP.`);
+          } else {
+            alert(`✅ Alumno inscrito con éxito en la clase. Tarifa cobrada: $${data.amount_charged} COP`);
+          }
+          window.closeEnrollAcademyModal();
+          window.loadAcademyClasses(window.academySelectedDate);
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo inscribir al alumno'}`);
+        }
+      } catch (err) {
+        console.error('Error inscribiendo alumno:', err);
+        alert('Fallo de red al inscribir alumno.');
+      }
+    };
+
+
+    // =========================================================================
+    // MODULO: 💎 MEMBRESÍAS PARAMETRIZADAS DEL CLUB
+    // =========================================================================
+    window.cachedMembershipPlans = [];
+    window.cachedMembersList = [];
+    window.currentMembershipFilter = 'ALL';
+    window.selectedMembershipPlayer = null;
+
+    window.loadMembershipsData = async function() {
+      const tbody = document.getElementById('memberships-table-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400">Cargando socios y planes...</td></tr>';
+
+      try {
+        // Consultar planes
+        const resPlans = await fetch(`${API_BASE}/api/v1/memberships/`);
+        let plans = [];
+        if (resPlans.ok) {
+          plans = await resPlans.json();
+        }
+        window.cachedMembershipPlans = plans;
+
+        // Actualizar contadores en KPI Cards
+        let tapiaCount = 0, coelloCount = 0, galanCount = 0, chingottoCount = 0, lebronCount = 0;
+        plans.forEach(p => {
+          const nameNorm = (p.name || '').toUpperCase();
+          if (nameNorm.includes('TAPIA')) tapiaCount = p.active_members_count || 0;
+          else if (nameNorm.includes('COELLO')) coelloCount = p.active_members_count || 0;
+          else if (nameNorm.includes('GALAN') || nameNorm.includes('GALÁN')) galanCount = p.active_members_count || 0;
+          else if (nameNorm.includes('CHINGOTTO')) chingottoCount = p.active_members_count || 0;
+          else if (nameNorm.includes('LEBRON') || nameNorm.includes('LEBRÓN')) lebronCount = p.active_members_count || 0;
+        });
+
+        const elTapia = document.getElementById('stat-mem-tapia');
+        if (elTapia) elTapia.textContent = `${tapiaCount} socio${tapiaCount === 1 ? '' : 's'}`;
+        const elCoello = document.getElementById('stat-mem-coello');
+        if (elCoello) elCoello.textContent = `${coelloCount} socio${coelloCount === 1 ? '' : 's'}`;
+        const elGalan = document.getElementById('stat-mem-galan');
+        if (elGalan) elGalan.textContent = `${galanCount} socio${galanCount === 1 ? '' : 's'}`;
+        const elChing = document.getElementById('stat-mem-chingotto');
+        if (elChing) elChing.textContent = `${chingottoCount} socio${chingottoCount === 1 ? '' : 's'}`;
+        const elLebron = document.getElementById('stat-mem-lebron');
+        if (elLebron) elLebron.textContent = `${lebronCount} socio${lebronCount === 1 ? '' : 's'}`;
+
+        // Consultar clientes para listar socios
+        let customers = window.cachedPlayers;
+        try {
+          const resCust = await fetch(`${API_BASE}/api/v1/customers/`);
+          if (resCust.ok) {
+            customers = await resCust.json();
+            window.cachedPlayers = customers;
+          }
+        } catch(e) {}
+
+        if (!customers || customers.length === 0) {
+          customers = window.DEFAULT_CRM_PLAYERS || [];
+        }
+
+        // Filtrar socios que tengan plan o tier distinto a ESTANDAR
+        const members = customers.filter(c => {
+          const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
+          return tier !== 'ESTANDAR' || c.membership_plan_id;
+        });
+
+        window.cachedMembersList = members;
+        window.renderMembershipsTable(members);
+      } catch (err) {
+        console.error('Error cargando membresías:', err);
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-rose-500 font-semibold">Error al cargar datos de membresías.</td></tr>';
+      }
+    };
+
+    window.filterMembershipsByPlan = function(plan) {
+      window.currentMembershipFilter = plan;
+      document.querySelectorAll('#mem-plan-filter-pills button').forEach(btn => {
+        btn.classList.remove('bg-slate-800', 'text-white', 'active');
+        btn.classList.add('bg-slate-100', 'text-slate-700');
+      });
+      const activeId = plan === 'ALL' ? 'btn-mem-plan-all' : (plan === 'EXPIRING' ? 'btn-mem-plan-exp' : `btn-mem-plan-${plan.toLowerCase()}`);
+      const activeBtn = document.getElementById(activeId);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-slate-800', 'text-white', 'active');
+        activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
+      }
+      window.filterMembershipsTable();
+    };
+
+    window.filterMembershipsTable = function() {
+      const searchVal = (document.getElementById('mem-table-search') ? document.getElementById('mem-table-search').value : '').trim().toLowerCase();
+      let list = window.cachedMembersList || [];
+
+      if (window.currentMembershipFilter && window.currentMembershipFilter !== 'ALL') {
+        if (window.currentMembershipFilter === 'EXPIRING') {
+          list = list.filter(c => {
+            if (!c.membership_end_date) return false;
+            const today = new Date();
+            const end = new Date(c.membership_end_date);
+            const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            return diffDays >= 0 && diffDays <= 5;
+          });
+        } else {
+          list = list.filter(c => (c.membership_tier || '').toUpperCase() === window.currentMembershipFilter);
+        }
+      }
+
+      if (searchVal) {
+        list = list.filter(c => 
+          (c.name && c.name.toLowerCase().includes(searchVal)) ||
+          (c.phone && c.phone.includes(searchVal))
+        );
+      }
+
+      window.renderMembershipsTable(list);
+    };
+
+    window.renderMembershipsTable = function(members) {
+      const tbody = document.getElementById('memberships-table-tbody');
+      if (!tbody) return;
+
+      if (!members || members.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400">No se encontraron socios con el filtro actual.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = members.map(c => {
+        const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
+        
+        let planBadge = 'bg-slate-100 text-slate-800 border-slate-200';
+        let schedule = '6:00 AM - 11:59 PM (Full Day)';
+        let perks = '<span class="text-slate-400 text-[11px]">-</span>';
+        let discount = '0%';
+
+        if (tier === 'TAPIA') {
+          planBadge = 'bg-amber-100 text-amber-900 border-amber-300';
+          schedule = '6:00 AM - 11:59 PM (Full Day)';
+          perks = '<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">🥤 Bebidas + 🎓 4 Clases</span>';
+          discount = '40%';
+        } else if (tier === 'COELLO') {
+          planBadge = 'bg-purple-100 text-purple-900 border-purple-300';
+          schedule = '6:00 AM - 11:59 PM (Full Day)';
+          perks = '<span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200 text-[10px] font-bold">🥤 Bebidas + 🎓 2 Clases</span>';
+          discount = '30%';
+        } else if (tier === 'GALAN') {
+          planBadge = 'bg-blue-100 text-blue-900 border-blue-300';
+          schedule = '6:00 AM - 11:59 PM (Full Day)';
+          perks = '<span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold">🥤 Bebidas</span>';
+          discount = '20%';
+        } else if (tier === 'CHINGOTTO') {
+          planBadge = 'bg-emerald-100 text-emerald-900 border-emerald-300';
+          schedule = '6:00 AM - 3:00 PM (Matutino)';
+          perks = '<span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">Tarifa Valle</span>';
+          discount = '10%';
+        } else if (tier === 'LEBRON') {
+          planBadge = 'bg-slate-200 text-slate-900 border-slate-300';
+          schedule = '6:00 AM - 6:00 PM (Diurno)';
+          perks = '<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-bold">Hasta 6:00 PM</span>';
+          discount = '20%';
+        }
+
+        // Calcular Vigencia
+        let daysLeft = 30;
+        let statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Activa</span>';
+        if (c.membership_end_date) {
+          const today = new Date();
+          const end = new Date(c.membership_end_date);
+          daysLeft = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysLeft < 0) {
+            statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300">🔴 Vencida</span>';
+          } else if (daysLeft <= 5) {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">🟠 Expira en ${daysLeft}d</span>`;
+          } else {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 ${daysLeft}d restantes</span>`;
+          }
+        }
+
+        const startStr = c.membership_start_date || 'Reciente';
+        const endStr = c.membership_end_date || '+30 días';
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="py-3 px-4">
+              <div class="font-extrabold text-slate-900 text-xs">${c.name}</div>
+              <div class="text-[11px] font-mono text-slate-500">${c.phone || '-'}</div>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2.5 py-1 text-[11px] font-black rounded-lg border ${planBadge}">
+                ${tier}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-[11px] text-slate-700 font-medium">
+              ${schedule}
+            </td>
+            <td class="py-3 px-4">
+              ${perks}
+            </td>
+            <td class="py-3 px-4 text-xs font-black text-indigo-600">
+              ${discount}
+            </td>
+            <td class="py-3 px-4 text-[11px] text-slate-600 font-medium">
+              <div>${startStr} &rarr; <strong>${endStr}</strong></div>
+            </td>
+            <td class="py-3 px-4">
+              ${statusBadge}
+            </td>
+            <td class="py-3 px-4 text-center">
+              <button type="button" onclick="window.openAssignMembershipModal(${c.id}, '${tier}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 shadow-2xs transition">
+                🔄 Renovar / Cambiar
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    };
+
+    window.openAssignMembershipModal = function(playerId, currentTier) {
+      const modal = document.getElementById('modal-assign-membership');
+      if (!modal) return;
+      const searchInput = document.getElementById('mem-assign-player-search');
+      const idInput = document.getElementById('mem-assign-player-id');
+      const planSelect = document.getElementById('mem-assign-plan-id');
+
+      if (playerId) {
+        idInput.value = playerId;
+        const player = (window.cachedPlayers || []).find(p => p.id === playerId) || (window.cachedMembersList || []).find(p => p.id === playerId);
+        if (player && searchInput) searchInput.value = `${player.name} (${player.phone || ''})`;
+        if (currentTier && planSelect) {
+          const tierUpper = currentTier.toUpperCase();
+          if (tierUpper === 'TAPIA') planSelect.value = "1";
+          else if (tierUpper === 'COELLO') planSelect.value = "2";
+          else if (tierUpper === 'GALAN') planSelect.value = "3";
+          else if (tierUpper === 'CHINGOTTO') planSelect.value = "4";
+          else if (tierUpper === 'LEBRON') planSelect.value = "5";
+        }
+      } else {
+        if (searchInput) searchInput.value = '';
+        if (idInput) idInput.value = '';
+      }
+
+      modal.classList.add('active');
+    };
+
+    window.closeAssignMembershipModal = function() {
+      const modal = document.getElementById('modal-assign-membership');
+      if (modal) modal.classList.remove('active');
+      const dropdown = document.getElementById('mem-assign-crm-dropdown');
+      if (dropdown) {
+        dropdown.classList.add('hidden');
+        dropdown.style.display = 'none';
+      }
+    };
+
+    window.handleMembershipPlayerSearch = function(e) {
+      const inputEl = document.getElementById('mem-assign-player-search');
+      const dropdownEl = document.getElementById('mem-assign-crm-dropdown');
+      if (!inputEl || !dropdownEl) return;
+
+      window.renderCRMSearchDropdown(inputEl, dropdownEl, function(p) {
+        inputEl.value = `${p.name} (${p.phone || ''})`;
+        document.getElementById('mem-assign-player-id').value = p.id;
+        window.selectedMembershipPlayer = p;
+        dropdownEl.classList.add('hidden');
+        dropdownEl.style.display = 'none';
+      });
+    };
+
+    window.submitAssignMembership = async function(e) {
+      e.preventDefault();
+      const customer_id = parseInt(document.getElementById('mem-assign-player-id').value);
+      const plan_id = parseInt(document.getElementById('mem-assign-plan-id').value);
+      const payment_method = document.getElementById('mem-assign-payment-method').value;
+      const payment_reference = document.getElementById('mem-assign-payment-ref').value.trim();
+
+      if (!customer_id || !plan_id) {
+        alert('Por favor busca y selecciona un socio del CRM.');
+        return;
+      }
+
+      const payload = {
+        customer_id,
+        plan_id,
+        payment_method,
+        payment_reference: payment_reference || null
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/memberships/assign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('💎 Membresía Activada', `Plan asignado a ${data.name}. Válido por 30 días hasta ${data.membership_end_date}.`);
+          } else {
+            alert(`✅ Membresía asignada con éxito a ${data.name}. Vigencia de 30 días.`);
+          }
+          window.closeAssignMembershipModal();
+          window.loadMembershipsData();
+          if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
+        } else {
+          alert(`⚠️ Error al asignar membresía: ${data.detail || 'Fallo desconocido'}`);
+        }
+      } catch (err) {
+        console.error('Error asignando membresía:', err);
+        alert('Fallo de red al asignar membresía.');
+      }
+    };
+
+
+    // =========================================================================
+    // MODULO: 👤 PERFILES ENRIQUECIDOS CRM (CREAR / EDITAR)
+    // =========================================================================
+    window.openCustomerModal = function(mode, playerOrId) {
+      const modal = document.getElementById('modal-crm-player') || document.getElementById('register-customer-modal');
+      if (!modal) return;
+
+      const titleEl = document.getElementById('modal-crm-player-title');
+      const submitTextEl = document.getElementById('modal-crm-player-submit-text');
+      const idInput = document.getElementById('crm-edit-player-id');
+      const nameInput = document.getElementById('crm-edit-name') || document.getElementById('reg-cust-name');
+      const phoneInput = document.getElementById('crm-edit-phone') || document.getElementById('reg-cust-phone');
+      const emailInput = document.getElementById('crm-edit-email');
+      const catSelect = document.getElementById('crm-edit-category') || document.getElementById('reg-cust-category');
+      const genderSelect = document.getElementById('crm-edit-gender');
+      const musicSelect = document.getElementById('crm-edit-music');
+      const timeSelect = document.getElementById('crm-edit-time');
+      const tierSelect = document.getElementById('crm-edit-tier') || document.getElementById('reg-cust-tier');
+      const notesInput = document.getElementById('crm-edit-notes') || document.getElementById('reg-cust-notes');
+
+      if (mode === 'edit' && playerOrId) {
+        let p = (typeof playerOrId === 'object') ? playerOrId : null;
+        if (!p) {
+          p = (window.cachedPlayers || []).find(item => item.id == playerOrId) ||
+              (window.allCRMCustomers || []).find(item => item.id == playerOrId) ||
+              (window.DEFAULT_CRM_PLAYERS || []).find(item => item.id == playerOrId);
+        }
+
+        if (titleEl) titleEl.textContent = `Editar Perfil: ${p ? p.name : 'Jugador'}`;
+        if (submitTextEl) submitTextEl.textContent = 'Actualizar Perfil';
+        if (idInput) idInput.value = p ? p.id : playerOrId;
+        if (nameInput) nameInput.value = p ? p.name : '';
+        if (phoneInput) phoneInput.value = p ? p.phone : '';
+        if (emailInput) emailInput.value = (p && p.email) ? p.email : '';
+        if (catSelect) catSelect.value = (p && p.category) ? p.category : '4ta';
+        if (genderSelect) genderSelect.value = (p && p.gender) ? p.gender : 'Masculino';
+        if (musicSelect) musicSelect.value = (p && p.preferred_music) ? p.preferred_music : 'Reggaeton / Urbano';
+        if (timeSelect) timeSelect.value = (p && p.preferred_play_time) ? p.preferred_play_time : 'Tarde/Noche (16:00 - 23:00)';
+        if (tierSelect) tierSelect.value = (p && p.membership_tier) ? p.membership_tier : 'ESTANDAR';
+        if (notesInput) notesInput.value = (p && p.notes) ? p.notes : '';
+      } else {
+        if (titleEl) titleEl.textContent = 'Registrar Nuevo Jugador CRM';
+        if (submitTextEl) submitTextEl.textContent = 'Guardar Jugador';
+        if (idInput) idInput.value = '';
+        if (nameInput) nameInput.value = '';
+        if (phoneInput) phoneInput.value = '';
+        if (emailInput) emailInput.value = '';
+        if (catSelect) catSelect.value = '4ta';
+        if (genderSelect) genderSelect.value = 'Masculino';
+        if (musicSelect) musicSelect.value = 'Reggaeton / Urbano';
+        if (timeSelect) timeSelect.value = 'Tarde/Noche (16:00 - 23:00)';
+        if (tierSelect) tierSelect.value = 'ESTANDAR';
+        if (notesInput) notesInput.value = '';
+      }
+
+      modal.classList.add('active');
+    };
+
+    window.closeCustomerModal = function() {
+      const modal = document.getElementById('modal-crm-player') || document.getElementById('register-customer-modal');
+      if (modal) modal.classList.remove('active');
+    };
+
+    window.openRegisterPlayerModal = function() {
+      window.openCustomerModal('create');
+    };
+    window.openRegisterCustomerModal = function() {
+      window.openCustomerModal('create');
+    };
+
+    window.submitCustomerForm = async function(e) {
+      e.preventDefault();
+      const idInput = document.getElementById('crm-edit-player-id');
+      const playerId = idInput ? idInput.value : '';
+
+      const name = (document.getElementById('crm-edit-name') || document.getElementById('reg-cust-name')).value.trim();
+      const phone = (document.getElementById('crm-edit-phone') || document.getElementById('reg-cust-phone')).value.trim();
+      const email = document.getElementById('crm-edit-email') ? document.getElementById('crm-edit-email').value.trim() : null;
+      const category = (document.getElementById('crm-edit-category') || document.getElementById('reg-cust-category')).value;
+      const gender = document.getElementById('crm-edit-gender') ? document.getElementById('crm-edit-gender').value : 'No especificado';
+      const preferred_music = document.getElementById('crm-edit-music') ? document.getElementById('crm-edit-music').value : null;
+      const preferred_play_time = document.getElementById('crm-edit-time') ? document.getElementById('crm-edit-time').value : null;
+      const membership_tier = (document.getElementById('crm-edit-tier') || document.getElementById('reg-cust-tier')).value;
+      const notes = (document.getElementById('crm-edit-notes') || document.getElementById('reg-cust-notes')).value.trim();
+
+      const payload = {
+        name,
+        phone,
+        email: email || null,
+        category,
+        gender,
+        preferred_music: preferred_music || null,
+        preferred_play_time: preferred_play_time || null,
+        membership_tier,
+        client_type: membership_tier !== 'ESTANDAR' ? `Socio VIP (${membership_tier})` : 'Estándar',
+        notes: notes || null
+      };
+
+      try {
+        let url = `${API_BASE}/api/v1/customers/`;
+        let method = 'POST';
+
+        if (playerId) {
+          url = `${API_BASE}/api/v1/customers/${playerId}`;
+          method = 'PUT';
+        }
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast(
+              playerId ? '✏️ Perfil Actualizado' : '👤 Jugador Creado',
+              `Perfil de ${data.name} guardado con éxito en CRM.`
+            );
+          } else {
+            alert(`✅ Jugador ${data.name} guardado con éxito.`);
+          }
+          window.closeCustomerModal();
+          if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
+          if (typeof loadMembershipsData === 'function') loadMembershipsData();
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo guardar el jugador'}`);
+        }
+      } catch (err) {
+        console.error('Error guardando jugador:', err);
+        alert('Fallo de conexión al guardar el perfil del jugador.');
+      }
+    };
+
+</script>
   <!-- BOTÓN FLOTANTE: ASISTENTE WHATSAPP BOT -->
   <button id="btn-floating-bot" class="btn-floating-bot" onclick="toggleBotDrawer()" title="Abrir Asistente WhatsApp Bot en vivo">
     <span class="bot-floating-dot"></span>
