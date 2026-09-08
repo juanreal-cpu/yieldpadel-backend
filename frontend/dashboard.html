@@ -12,8 +12,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Leaflet CSS & JS for Geospatial Radar Map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <style>
     body { background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
@@ -2671,7 +2671,7 @@
               </div>
 
               <!-- Contenedor del Mapa -->
-              <div id="radar-map" style="height: 520px; width: 100%; border-radius: 10px; border: 1px solid #CBD5E1; z-index: 10; background: #F8FAFC;"></div>
+              <div id="radar-map" class="w-full rounded-2xl border border-slate-200 shadow-inner" style="height: 540px !important; min-height: 540px !important; z-index: 10;"></div>
             </div>
 
             <!-- Tabla de Benchmark de Clubes -->
@@ -4591,6 +4591,15 @@
         if (cleanName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments();
         if (cleanName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
         if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
+        if (cleanName === 'radar' || viewName === 'radar') {
+          setTimeout(() => {
+            if (!window.radarMapInstance && typeof initRadarMap === 'function') {
+              initRadarMap();
+            } else if (window.radarMapInstance) {
+              window.radarMapInstance.invalidateSize();
+            }
+          }, 200);
+        }
       } catch (err) {
         console.warn('Carga diferida:', err);
       }
@@ -5801,35 +5810,29 @@ ${data.message}`);
     let radarDataCache = null;
 
     function initRadarMap() {
-      if (typeof L === 'undefined') {
-        console.warn("Leaflet no cargado aún.");
-        return;
-      }
-      const container = document.getElementById('radar-map');
-      if (!container) return;
+      const mapContainer = document.getElementById('radar-map');
+      if (!mapContainer || typeof L === 'undefined') return;
 
-      if (!radarMap) {
-        // Inicializar Leaflet centrado en Bogotá (Capital Pádel Club)
-        radarMap = L.map('radar-map', {
-          zoomControl: true,
-          scrollWheelZoom: true
-        }).setView([4.6533, -74.0836], 12);
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-          maxZoom: 19
-        }).addTo(radarMap);
+      if (window.radarMapInstance) {
+        window.radarMapInstance.remove();
       }
 
-      // InvalidateSize después de que el elemento es visible para evitar tiles incompletos
+      window.radarMapInstance = L.map('radar-map').setView([4.6533, -74.0836], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18
+      }).addTo(window.radarMapInstance);
+      radarMap = window.radarMapInstance;
+
       setTimeout(() => {
-        if (radarMap) {
-          radarMap.invalidateSize();
+        if (window.radarMapInstance) {
+          window.radarMapInstance.invalidateSize();
         }
-      }, 250);
+      }, 200);
 
       loadRadarData();
     }
+    window.initRadarMap = initRadarMap;
 
     function setRadarFranja(franja) {
       radarCurrentFranja = franja;
