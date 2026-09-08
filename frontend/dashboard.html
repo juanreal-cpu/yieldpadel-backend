@@ -2246,8 +2246,8 @@
                 <button type="button" id="btn-create-americano" onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm">
                   <span>🏆</span> <span>+ Torneo Americano</span>
                 </button>
-                <button type="button" id="btn-broadcast-whatsapp" onclick="broadcastAvailability()" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm">
-                  <span>📢</span> <span>Difundir WhatsApp</span>
+                <button type="button" id="btn-broadcast-whatsapp" onclick="broadcastAvailability()" class="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-100 shadow-sm flex items-center gap-1.5" style="color: #0f172a !important;">
+                  <span>📢</span> <span style="color: #0f172a !important;">Difundir WhatsApp</span>
                 </button>
                 <button type="button" id="btn-flash-promo" onclick="broadcastPromoUrgent()" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded-lg">
                   <span>⚡</span> <span>Remate Flash -25%</span>
@@ -4626,6 +4626,32 @@
     function toggleBotDrawer(f) { window.toggleBotDrawer(f); }
 
 
+    // ========================================================
+    // Sistema de Notificación de Difusión (showDarkToast forzado)
+    // ========================================================
+    window.showDarkToast = function(title, message) {
+      const existingToast = document.getElementById('dark-toast-notification');
+      if (existingToast) existingToast.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'dark-toast-notification';
+      toast.setAttribute('style', 'position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 99999 !important; background-color: #0f172a !important; color: #ffffff !important; padding: 16px 20px !important; border-radius: 12px !important; border: 1px solid #334155 !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important; max-width: 380px !important; font-family: ui-sans-serif, system-ui, sans-serif !important; transition: opacity 0.3s ease !important;');
+      
+      toast.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 12px; color: #ffffff !important;">
+          <span style="font-size: 20px; line-height: 1;">📢</span>
+          <div style="flex: 1;">
+            <div style="font-weight: 800; font-size: 14px; margin-bottom: 4px; color: #ffffff !important;">${title}</div>
+            <div style="font-size: 12px; line-height: 1.4; color: #cbd5e1 !important;">${message}</div>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer; padding: 0 4px;">✕</button>
+        </div>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => { if (toast && toast.parentElement) toast.remove(); }, 5000);
+    };
+    function showDarkToast(title, message) { window.showDarkToast(title, message); }
+
     // Sistema de Toasts con contraste forzado absoluto
     function showCustomToast(title, message, icon = '📢', isError = false) {
       let toast = document.getElementById('custom-floating-toast');
@@ -6915,22 +6941,18 @@ ${data.message}`);
         const data = await res.json();
         if (res.ok) {
           if (typeof addEvent === 'function') {
-            addEvent('WhatsApp Difundido', `Resumen de disponibilidad (${data.total_available_slots} turnos) enviado`, 'green');
+            addEvent('WhatsApp Difundido', `Resumen de disponibilidad (${data.total_available_slots || 0} turnos) enviado`, 'green');
           }
-          showCustomToast(
-            '¡Difusión WhatsApp Enviada!',
-            `Se notificaron ${data.total_available_slots || 0} turnos libres al canal de difusión (${data.recipient || 'Comunidad'}).`,
-            '📢'
-          );
+          window.showDarkToast('Difusión Enviada con Éxito', 'Se notificó la disponibilidad de turnos al canal oficial de WhatsApp del club.');
         } else {
-          showCustomToast('Error en Difusión', data.detail || 'Error al enviar difusión WhatsApp', '❌', true);
+          window.showDarkToast('Error en Difusión', data.detail || 'Error al enviar difusión WhatsApp');
         }
       } catch (err) {
-        showCustomToast('Fallo de Conexión', 'No fue posible conectar con el servicio de difusión WhatsApp.', '❌', true);
+        window.showDarkToast('Fallo de Conexión', 'No fue posible conectar con el servicio de difusión WhatsApp.');
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<span>📢</span> <span>Difundir WhatsApp</span>';
+          btn.innerHTML = '<span>📢</span> <span style="color: #0f172a !important;">Difundir WhatsApp</span>';
         }
       }
     }
@@ -6951,18 +6973,14 @@ ${data.message}`);
           if (typeof addEvent === 'function') {
             addEvent('Remate Flash Activado', `${data.total_critical_slots || 0} turnos críticos enviados con descuento`, 'amber');
           }
-          showCustomToast(
-            '¡Remate Flash -25% Activado!',
-            `Se enviaron alertas de descuento (-25%) para ${data.total_critical_slots || 0} turnos críticos.`,
-            '⚡'
-          );
+          window.showDarkToast('Remate Flash Activado (-25%)', 'La oferta especial de última hora fue difundida por WhatsApp.');
           if (typeof fetchSlots === 'function') await fetchSlots();
         } else {
-          showCustomToast('Error en Remate Flash', data.detail || 'Error en Remate Flash', '❌', true);
+          window.showDarkToast('Error en Remate Flash', data.detail || 'Error en Remate Flash');
         }
       } catch (err) {
         console.error('Error en Remate Flash:', err);
-        showCustomToast('Fallo de Conexión', 'Fallo al conectar con el servidor para Remate Flash', '❌', true);
+        window.showDarkToast('Fallo de Conexión', 'Fallo al conectar con el servidor para Remate Flash');
       } finally {
         if (btn) {
           btn.disabled = false;
