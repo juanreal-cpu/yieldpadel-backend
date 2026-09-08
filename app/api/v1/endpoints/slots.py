@@ -1177,6 +1177,7 @@ async def reserve_or_block_slot(
         else:
             audit_action = "RESERVA_MODIFICADA"
         court_name = slot.court.name if slot.court else f"Cancha #{slot.court_id}"
+        assignment_type = getattr(payload, "assignment_type", None) or getattr(payload, "slot_type", None) or stype
         details_msg = f"Asignación {assignment_type} en {court_name} ({slot.start_time.strftime('%H:%M')} - {slot.end_time.strftime('%H:%M')})"
         if payload.client_name:
             details_msg += f" | Cliente: {payload.client_name}"
@@ -1267,6 +1268,7 @@ async def create_americano(
 
     created_slots = []
     now_utc = datetime.now(timezone.utc)
+    prize_val = payload.prize_pool or Decimal("300000.00")
 
     for court_id_str in payload.court_ids:
         try:
@@ -1362,7 +1364,7 @@ async def create_americano(
             action="CREATE_AMERICANO",
             entity_name="TOURNAMENT",
             entity_id=str(loaded_slots[0].id) if loaded_slots else None,
-            details=f"Torneo Americano '{t_name}' ({t_type}) creado para {payload.date} ({payload.start_time}). Canchas: {court_names or payload.court_ids}. Valor: ${price_val:,.0f} COP",
+            details=f"Torneo Americano '{t_name}' ({t_type}) creado para {payload.date} ({payload.start_time}). Canchas: {court_names or payload.court_ids}. Valor: ${prize_val:,.0f} COP",
             username_snapshot="Camilo Real (Director Deportivo)"
         )
     except Exception as e:

@@ -13,7 +13,7 @@ from app.core.database import get_db
 from app.models.court import Court
 from app.models.customer import Customer
 from app.models.product import INITIAL_DUMMY_PRODUCTS, Order, OrderItem, Product
-from app.models.slot import HoldStatus, SlotStatus, TimeSlot
+from app.models.slot import HoldStatus, PaymentStatus, SlotStatus, TimeSlot
 from app.services.audit import log_activity
 
 logger = logging.getLogger("yieldpadel.pos")
