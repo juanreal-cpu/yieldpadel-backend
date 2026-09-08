@@ -2062,6 +2062,7 @@ class MatchResultRequest(BaseModel):
     points: int = 25
 
 
+@router.post("/record-match-result", status_code=status.HTTP_200_OK)
 @router.post("/match-result", status_code=status.HTTP_200_OK)
 @router.post("/{slot_id}/match-result", status_code=status.HTTP_200_OK)
 async def record_slot_match_result(
@@ -2074,19 +2075,30 @@ async def record_slot_match_result(
     """
     from app.services.ranking_engine import award_match_points
 
-    target_slot_id = slot_id or payload.slot_id
+    target_slot_id = None
+    if slot_id is not None:
+        try:
+            target_slot_id = int(slot_id)
+        except (ValueError, TypeError):
+            pass
+    if target_slot_id is None and payload.slot_id is not None:
+        try:
+            target_slot_id = int(payload.slot_id)
+        except (ValueError, TypeError):
+            pass
+
     slot = None
     if target_slot_id:
         stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == target_slot_id)
         res = await db.execute(stmt)
         slot = res.scalars().first()
 
-    names = list(payload.winner_names or [])
-    phones = list(payload.winner_phones or [])
+    names = [n.strip() for n in (payload.winner_names or []) if n and n.strip()]
+    phones = [p.strip() for p in (payload.winner_phones or []) if p and p.strip()]
 
     if not names and slot and slot.players_names:
         plist = to_participants_list(slot.players_names)
-        w_team = (payload.winner_team or "pair1").lower()
+        w_team = (payload.winner_team or "team_1").lower()
         if "2" in w_team:
             team_players = plist[2:4] if len(plist) >= 4 else plist[1:]
         else:

@@ -3687,14 +3687,15 @@
         </div>
 
         <!-- Búsqueda dinámica CRM Autocompletado Reactivo -->
-        <div class="form-group" id="rb-customer-search-group" style="position: relative;">
+        <div class="form-group relative" id="rb-customer-search-group">
           <label class="form-label font-bold text-slate-700 flex items-center justify-between">
             <span>🔍 Buscar Cliente (CRM)</span>
             <span class="text-[10px] text-slate-400 font-normal">Autocompleta nombre, WhatsApp, categoría y membresía</span>
           </label>
-          <input type="text" id="rb-customer-search" list="rb-customer-datalist" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="searchCustomersForModal(this.value)">
-          <datalist id="rb-customer-datalist"></datalist>
-          <div id="rb-customer-dropdown" class="customer-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); max-height: 220px; overflow-y: auto;"></div>
+          <div class="relative">
+            <input type="text" id="turn-crm-search" data-alias="rb-customer-search" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="window.handleTurnCRMSearch(event)">
+            <div id="turn-crm-dropdown" data-alias="rb-customer-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+          </div>
         </div>
 
         <div class="form-group" id="rb-instructor-group" style="display: none;">
@@ -3781,12 +3782,12 @@
           </p>
           <div class="flex items-center gap-2 flex-wrap">
             <div class="flex-1 min-w-[200px]">
-              <select id="rb-match-pair-select" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="pair1">🎾 Pareja 1</option>
-                <option value="pair2">🎾 Pareja 2</option>
+              <select id="turn-winner-team" data-alias="rb-match-pair-select" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="team_1">🎾 Pareja 1</option>
+                <option value="team_2">🎾 Pareja 2</option>
               </select>
             </div>
-            <button type="button" id="rb-btn-save-match" onclick="saveMatchResult(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+            <button type="button" id="rb-btn-save-match" onclick="window.saveMatchResult(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
               Guardar Victoria (+25 Pts)
             </button>
           </div>
@@ -5346,6 +5347,9 @@ window.handleCRMSearch = window.filterCRMTable;
       { id: 5, name: "Mateo Ruiz", phone: "+573174443322", category: "5ta", client_type: "Socio Diurno (Lebrón)", membership_tier: "LEBRON", total_bookings_completed: 8, ranking_points: 750, titles_count: 0, is_first_visit: false, onboarding_status: "WELCOMED" },
       { id: 6, name: "Sofía Martínez", phone: "+573187778899", category: "6ta", client_type: "Estándar", membership_tier: "ESTANDAR", total_bookings_completed: 2, ranking_points: 210, titles_count: 0, is_first_visit: true, onboarding_status: "PENDING" }
     ];
+    window.DEFAULT_CRM_PLAYERS = DEFAULT_CRM_PLAYERS;
+    window.cachedPlayers = window.cachedPlayers || DEFAULT_CRM_PLAYERS;
+    window.allCRMCustomers = window.allCRMCustomers || DEFAULT_CRM_PLAYERS;
 
     async function loadCRMDirectory() {
       const tbody = document.getElementById('crm-table-body') || document.getElementById('crm-ranking-tbody');
@@ -5381,6 +5385,8 @@ window.handleCRMSearch = window.filterCRMTable;
         if (!customers || !Array.isArray(customers) || customers.length === 0) {
           customers = DEFAULT_CRM_PLAYERS;
         }
+        window.allCRMCustomers = customers;
+        window.cachedPlayers = customers;
 
         // Consultar canchas y turnos activos para detectar jugadores en pista
         let activeCourts = [];
@@ -7215,68 +7221,75 @@ ${data.message}`);
     }
     window.saveClubConfig = saveClubConfig;
 
-    // Búsqueda reactiva de Clientes CRM en Modal Gestión de Turno (#modal-turn)
-    function searchCustomersForModal(query) {
-      const q = (query || '').trim().toLowerCase();
-      const dropdown = document.getElementById('rb-customer-dropdown');
-      const datalist = document.getElementById('rb-customer-datalist');
+    // =========================================================================
+    // BUSCADOR REACTIVO FLOTANTE CRM EN MODAL DE TURNO (#modal-turn)
+    // =========================================================================
+    window.handleTurnCRMSearch = async function(e) {
+      const query = (e && e.target ? e.target.value : (typeof e === 'string' ? e : '')).trim().toLowerCase();
+      const dropdown = document.getElementById('turn-crm-dropdown') || document.getElementById('rb-customer-dropdown');
       if (!dropdown) return;
 
-      const customers = (window.allCRMCustomers && window.allCRMCustomers.length > 0)
-        ? window.allCRMCustomers
-        : (typeof DEFAULT_CRM_PLAYERS !== 'undefined' ? DEFAULT_CRM_PLAYERS : []);
-
-      if (datalist && (!datalist.options || datalist.options.length === 0)) {
-        datalist.innerHTML = customers.map(c => `<option value="${c.name}">${c.phone || ''} - ${c.category || '4ta'}</option>`).join('');
-      }
-
-      if (!q) {
+      if (!query) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
         dropdown.style.display = 'none';
         return;
       }
 
-      const matches = customers.filter(c => 
-        (c.name || '').toLowerCase().includes(q) ||
-        (c.phone || '').includes(q) ||
-        (c.category || '').toLowerCase().includes(q) ||
-        (c.membership_tier || '').toLowerCase().includes(q)
+      let players = (window.cachedPlayers && window.cachedPlayers.length > 0)
+        ? window.cachedPlayers
+        : ((window.allCRMCustomers && window.allCRMCustomers.length > 0) ? window.allCRMCustomers : (typeof DEFAULT_CRM_PLAYERS !== 'undefined' ? DEFAULT_CRM_PLAYERS : []));
+
+      let matches = players.filter(p => 
+        (p.name || '').toLowerCase().includes(query) ||
+        (p.phone || '').includes(query) ||
+        (p.category || '').toLowerCase().includes(query) ||
+        (p.membership_tier || '').toLowerCase().includes(query)
       );
 
-      if (matches.length === 0) {
-        dropdown.innerHTML = '<div style="padding: 0.6rem 0.8rem; font-size: 0.75rem; color: #64748b;">No se encontraron clientes. Puedes escribir los datos directamente abajo.</div>';
-        dropdown.style.display = 'block';
-        return;
+      // Si no hay coincidencias en memoria y se escribieron al menos 2 caracteres, consultar API
+      if (matches.length === 0 && query.length >= 2) {
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/customers/?query=${encodeURIComponent(query)}`);
+          if (res.ok) {
+            const remotePlayers = await res.json();
+            if (Array.isArray(remotePlayers) && remotePlayers.length > 0) {
+              matches = remotePlayers;
+              if (window.cachedPlayers) {
+                remotePlayers.forEach(rp => {
+                  if (!window.cachedPlayers.some(cp => cp.id === rp.id)) window.cachedPlayers.push(rp);
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Consulta reactiva CRM falló:", err);
+        }
       }
 
-      dropdown.innerHTML = matches.slice(0, 6).map(c => {
-        const tier = c.membership_tier && c.membership_tier !== 'ESTANDAR' ? c.membership_tier : (c.client_type || 'Estándar');
-        const escapedName = (c.name || '').replace(/'/g, "\\'");
-        const escapedPhone = (c.phone || '').replace(/'/g, "\\'");
-        const escapedCat = (c.category || '4ta').replace(/'/g, "\\'");
-        const escapedTier = (tier || 'Estándar').replace(/'/g, "\\'");
-        return `
-          <div onclick="selectCRMCustomerForModal('${escapedName}', '${escapedPhone}', '${escapedCat}', '${escapedTier}')" style="padding: 0.6rem 0.8rem; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #ffffff;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
-            <div>
-              <div style="font-weight: 700; font-size: 0.8rem; color: #0f172a;">${c.name}</div>
-              <div style="font-size: 0.72rem; color: #64748b;">📱 ${c.phone || 'Sin tel'} • Cat: ${c.category || '4ta'}</div>
-            </div>
-            <span style="font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; background: #e0f2fe; color: #0369a1;">
-              ${tier}
-            </span>
-          </div>
-        `;
-      }).join('');
-      dropdown.style.display = 'block';
-    }
-    window.searchCustomersForModal = searchCustomersForModal;
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div class="px-4 py-2 text-xs text-slate-400">Sin resultados</div>';
+      } else {
+        dropdown.innerHTML = matches.slice(0, 10).map(p => {
+          const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const safePhone = (p.phone || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const safeCat = (p.category || '4ta').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const safeTier = (p.membership_tier || p.client_type || 'Estándar').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          return `<div onclick="window.selectPlayerForTurn('${safeName}', '${safePhone}', '${safeCat}', '${safeTier}')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer text-xs flex justify-between font-semibold text-slate-800"><span>${p.name}</span><span class="text-slate-400">${p.phone || ''} · ${p.category || '4ta'}</span></div>`;
+        }).join('');
+      }
 
-    function selectCRMCustomerForModal(name, phone, category, clientType) {
+      dropdown.classList.remove('hidden');
+      dropdown.style.display = 'block';
+    };
+
+    window.selectPlayerForTurn = function(name, phone, category, tier) {
       const nameEl = document.getElementById('rb-client-name');
       const phoneEl = document.getElementById('rb-client-phone');
       const catEl = document.getElementById('rb-client-category');
       const typeEl = document.getElementById('rb-client-type');
-      const searchInput = document.getElementById('rb-customer-search');
-      const dropdown = document.getElementById('rb-customer-dropdown');
+      const searchInput = document.getElementById('turn-crm-search') || document.getElementById('rb-customer-search');
+      const dropdown = document.getElementById('turn-crm-dropdown') || document.getElementById('rb-customer-dropdown');
 
       if (nameEl) nameEl.value = name || '';
       if (phoneEl) phoneEl.value = phone || '';
@@ -7291,21 +7304,32 @@ ${data.message}`);
         }
         if (!found) catEl.value = category;
       }
-      if (typeEl && clientType) {
+      if (typeEl && tier) {
         let found = false;
         for (let i = 0; i < typeEl.options.length; i++) {
-          if (typeEl.options[i].value === clientType || typeEl.options[i].text.includes(clientType)) {
+          if (typeEl.options[i].value === tier || typeEl.options[i].text.toLowerCase().includes(tier.toLowerCase())) {
             typeEl.selectedIndex = i;
             found = true;
             break;
           }
         }
-        if (!found) typeEl.value = clientType.includes('VIP') || clientType.includes('Socio') ? 'Socio VIP' : 'Estándar';
+        if (!found) {
+          const isVip = tier.includes('VIP') || tier.includes('Socio') || ['TAPIA', 'COELLO', 'GALAN', 'CHINGOTTO', 'LEBRON'].includes(tier.toUpperCase());
+          typeEl.value = isVip ? 'Socio VIP' : 'Estándar';
+        }
       }
+
       if (searchInput) searchInput.value = name || '';
-      if (dropdown) dropdown.style.display = 'none';
-    }
-    window.selectCRMCustomerForModal = selectCRMCustomerForModal;
+      if (dropdown) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
+        dropdown.style.display = 'none';
+      }
+    };
+
+    // Aliases retrocompatibles
+    window.searchCustomersForModal = (q) => window.handleTurnCRMSearch({ target: { value: q } });
+    window.selectCRMCustomerForModal = window.selectPlayerForTurn;
 
     // Modal Reservar o Bloquear (6 Opciones y CRM)
     function openReserveOrBlockModal(slotId) {
@@ -7322,7 +7346,11 @@ ${data.message}`);
       }
       const isPast = (slotDate < dateStr) || (slotDate === dateStr && slotEnd <= timeStr);
       if (isPast && slot.status === 'AVAILABLE') {
-        showToast('Este turno ya ha finalizado y no está disponible para reserva.', 'error');
+        if (typeof window.showDarkToast === 'function') {
+          window.showDarkToast('Turno No Disponible', 'Este turno ya ha finalizado y no está disponible para reserva.');
+        } else {
+          alert('Este turno ya ha finalizado y no está disponible para reserva.');
+        }
         return;
       }
 
@@ -7336,10 +7364,15 @@ ${data.message}`);
       if (catEl) catEl.value = slot.category || '4ta';
       const typeEl = document.getElementById('rb-client-type');
       if (typeEl) typeEl.value = 'Estándar';
-      const searchInput = document.getElementById('rb-customer-search');
+      
+      const searchInput = document.getElementById('turn-crm-search') || document.getElementById('rb-customer-search');
       if (searchInput) searchInput.value = '';
-      const dropdown = document.getElementById('rb-customer-dropdown');
-      if (dropdown) dropdown.style.display = 'none';
+      const dropdown = document.getElementById('turn-crm-dropdown') || document.getElementById('rb-customer-dropdown');
+      if (dropdown) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
+        dropdown.style.display = 'none';
+      }
 
       const typeSelect = document.getElementById('rb-slot-type-select');
       if (typeSelect) {
@@ -7349,63 +7382,83 @@ ${data.message}`);
       onSlotTypeChange('FULL_COURT');
 
       // Helper para extraer nombre legible
-      function resolvePlayerName(p, fallback) {
-        if (!p) return fallback;
+      function resolvePlayerName(p) {
+        if (!p) return '';
         if (typeof p === 'string') return p.trim();
-        return p.display_name || p.name || p.player_name || fallback;
+        return (p.display_name || p.name || p.player_name || '').trim();
       }
 
-      // Poblar selector de resultado del partido con los nombres reales de los jugadores del slot
-      const pairSel = document.getElementById('rb-match-pair-select');
+      // Extraer jugadores confirmados reales (soporta strings, objetos o JSON)
+      let rawPlayers = [];
+      if (slot.players_names && Array.isArray(slot.players_names) && slot.players_names.length > 0) {
+        rawPlayers = slot.players_names;
+      } else if (slot.players_details && Array.isArray(slot.players_details) && slot.players_details.length > 0) {
+        rawPlayers = slot.players_details;
+      } else if (typeof slot.players_names === 'string' && slot.players_names.trim()) {
+        try {
+          const parsed = JSON.parse(slot.players_names);
+          if (Array.isArray(parsed)) rawPlayers = parsed;
+          else rawPlayers = [slot.players_names.trim()];
+        } catch (_) {
+          rawPlayers = slot.players_names.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      } else if (slot.customer_name) {
+        rawPlayers = [slot.customer_name];
+      }
+
+      const players = rawPlayers
+        .map(p => resolvePlayerName(p))
+        .filter(name => name && name.length > 0 && !name.toLowerCase().includes('disponible') && !name.toLowerCase().includes('cupo libre'));
+
       const matchSection = document.getElementById('rb-match-result-section');
-      if (pairSel) {
-        let players = [];
-        if (slot.players_names && Array.isArray(slot.players_names) && slot.players_names.length > 0) {
-          players = slot.players_names.map((p, idx) => resolvePlayerName(p, `Jugador ${idx + 1}`));
-        } else if (slot.players_details && Array.isArray(slot.players_details) && slot.players_details.length > 0) {
-          players = slot.players_details.map((p, idx) => resolvePlayerName(p, `Jugador ${idx + 1}`));
-        }
-        if (players.length === 0 && slot.customer_name) {
-          players = [slot.customer_name];
-        }
-        const defaultNames = ['Juanda', 'Camilo', 'David', 'Pipe'];
-        while (players.length < 4) {
-          players.push(defaultNames[players.length]);
-        }
-
-        const p1 = players[0];
-        const p2 = players[1];
-        const p3 = players[2];
-        const p4 = players[3];
-
-        pairSel.innerHTML = `
-          <option value="pair1" data-p1="${p1}" data-p2="${p2}">🎾 [${p1} & ${p2}]</option>
-          <option value="pair2" data-p1="${p3}" data-p2="${p4}">🎾 [${p3} & ${p4}]</option>
-        `;
-
-        if (matchSection) {
-          const descP = matchSection.querySelector('p');
-          if (descP) {
-            descP.innerHTML = `Encuentro: <strong class="text-emerald-950 font-bold">[${p1} & ${p2}] vs [${p3} & ${p4}]</strong>. Selecciona la pareja vencedora (+25 pts ranking):`;
-          }
+      if (matchSection) {
+        if (players.length < 4) {
+          matchSection.innerHTML = `
+            <div class="p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400 font-medium">El registro de victoria se habilitará cuando el turno cuente con los 4 jugadores confirmados.</div>
+          `;
+        } else {
+          const p1 = players[0];
+          const p2 = players[1];
+          const p3 = players[2];
+          const p4 = players[3];
+          matchSection.innerHTML = `
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                <span>🏅</span> Resultado del Partido
+              </span>
+              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">+25 Pts de Ranking</span>
+            </div>
+            <p class="text-[11px] text-emerald-800 mb-2">
+              Encuentro: <strong class="text-emerald-950 font-bold">[${p1} & ${p2}] vs [${p3} & ${p4}]</strong>. Selecciona la pareja vencedora (+25 pts ranking):
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="flex-1 min-w-[200px]">
+                <select id="turn-winner-team" data-alias="rb-match-pair-select" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="team_1" data-p1="${p1.replace(/"/g, '&quot;')}" data-p2="${p2.replace(/"/g, '&quot;')}">[${p1} & ${p2}]</option>
+                  <option value="team_2" data-p1="${p3.replace(/"/g, '&quot;')}" data-p2="${p4.replace(/"/g, '&quot;')}">[${p3} & ${p4}]</option>
+                </select>
+              </div>
+              <button type="button" id="rb-btn-save-match" onclick="window.saveMatchResult('${slot.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                Guardar Victoria (+25 Pts)
+              </button>
+            </div>
+          `;
         }
       }
-
-      const btnMatch = document.getElementById('rb-btn-save-match');
-      if (btnMatch) btnMatch.setAttribute('onclick', `saveMatchResult('${slot.id}')`);
 
       const modal = document.getElementById('modal-turn') || document.getElementById('reserve-block-modal');
       if (modal) modal.classList.add('active');
     }
+    window.openReserveOrBlockModal = openReserveOrBlockModal;
+    window.openTurnModal = openReserveOrBlockModal;
 
-    
     async function saveMatchResult(slotId) {
       if (!slotId) {
         alert('Turno no seleccionado');
         return;
       }
-      const pairSel = document.getElementById('rb-match-pair-select');
-      const selectedTeam = pairSel ? pairSel.value : 'pair1';
+      const pairSel = document.getElementById('turn-winner-team') || document.getElementById('rb-match-pair-select');
+      const selectedTeam = pairSel ? pairSel.value : 'team_1';
       const selectedOpt = pairSel ? pairSel.options[pairSel.selectedIndex] : null;
       let winnerNames = [];
       if (selectedOpt) {
@@ -7421,19 +7474,33 @@ ${data.message}`);
         btn.textContent = 'Guardando...';
       }
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/match-result`, {
+        const targetSlotId = parseInt(slotId, 10);
+        const payload = {
+          slot_id: targetSlotId,
+          winner_team: selectedTeam,
+          winner_names: winnerNames.length > 0 ? winnerNames : undefined,
+          points: 25
+        };
+        let res = await fetch(`${API_BASE}/api/v1/slots/record-match-result`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            slot_id: parseInt(slotId, 10),
-            winner_team: selectedTeam,
-            winner_names: winnerNames.length > 0 ? winnerNames : undefined,
-            points: 25
-          })
+          body: JSON.stringify(payload)
         });
+        if (!res.ok && res.status === 404) {
+          res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/match-result`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
         const data = await res.json();
         if (res.ok) {
-          alert(`🏅 ${data.message || '¡Victoria registrada (+25 Pts)!'}`);
+          const successMsg = data.message || `¡Victoria registrada (+25 Pts)${winnerNames.length > 0 ? ': ' + winnerNames.join(' & ') : ''}!`;
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('Victoria Registrada', `🏅 ${successMsg}`);
+          } else {
+            alert(`🏅 ${successMsg}`);
+          }
           closeReserveOrBlockModal();
           if (typeof fetchSlots === 'function') fetchSlots();
           if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
@@ -7456,6 +7523,7 @@ ${data.message}`);
       const modal = document.getElementById('modal-turn') || document.getElementById('reserve-block-modal');
       if (modal) modal.classList.remove('active');
     }
+    window.closeReserveOrBlockModal = closeReserveOrBlockModal;
 
     function onSlotTypeChange(val) {
       const instrGroup = document.getElementById('rb-instructor-group');
