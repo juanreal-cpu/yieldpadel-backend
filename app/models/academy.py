@@ -17,7 +17,8 @@ class AcademyClass(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(150), nullable=False)
-    level: Mapped[str] = mapped_column(String(50), nullable=False)  # INICIACION_6_7, MEDIO_4_5, AVANZADO
+    level: Mapped[str] = mapped_column(String(50), nullable=False)  # KIDS_INICIACION, KIDS_INTERMEDIO, INICIACION_6_7, MEDIO_4_5, AVANZADO
+    target_age: Mapped[str] = mapped_column(String(50), default="ADULTOS", nullable=False)  # ADULTOS, KIDS_SUB10, KIDS_SUB14, JUNIOR
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)

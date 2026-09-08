@@ -48,9 +48,29 @@ async def lifespan(app: FastAPI):
                     "membership_start_date DATE",
                     "membership_end_date DATE",
                     "academy_classes_used INTEGER DEFAULT 0",
+                    "is_minor BOOLEAN DEFAULT 0",
+                    "birth_date DATE",
+                    "guardian_id INTEGER",
+                    "guardian_relationship VARCHAR(50)",
                 ]:
                     try:
                         await conn.execute(text(f"ALTER TABLE customers ADD COLUMN {cust_col}"))
+                    except Exception:
+                        pass
+                for acad_col in [
+                    "target_age VARCHAR(50) DEFAULT 'ADULTOS'",
+                ]:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE academy_classes ADD COLUMN {acad_col}"))
+                    except Exception:
+                        pass
+                for plan_col in [
+                    "badge_label VARCHAR(50) DEFAULT 'PLAN SOCIO'",
+                    "card_gradient VARCHAR(100) DEFAULT 'from-slate-800 to-indigo-900'",
+                    "is_active BOOLEAN DEFAULT 1",
+                ]:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE membership_plans ADD COLUMN {plan_col}"))
                     except Exception:
                         pass
             else:
@@ -74,6 +94,14 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_start_date DATE",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_end_date DATE",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS academy_classes_used INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_minor BOOLEAN DEFAULT FALSE",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS birth_date DATE",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS guardian_id INTEGER",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS guardian_relationship VARCHAR(50)",
+                    "ALTER TABLE academy_classes ADD COLUMN IF NOT EXISTS target_age VARCHAR(50) DEFAULT 'ADULTOS'",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS badge_label VARCHAR(50) DEFAULT 'PLAN SOCIO'",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS card_gradient VARCHAR(100) DEFAULT 'from-slate-800 to-indigo-900'",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
                 ]
                 for stmt in pg_statements:
                     try:

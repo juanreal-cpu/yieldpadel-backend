@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.customer import Customer
@@ -37,6 +38,12 @@ class CustomerResponse(BaseModel):
     consecutive_wins: int = 0
     promotion_recommended: bool = False
     recommended_category: Optional[str] = None
+    is_minor: bool = False
+    birth_date: Optional[str] = None
+    guardian_id: Optional[int] = None
+    guardian_relationship: Optional[str] = None
+    guardian_name: Optional[str] = None
+    guardian_phone: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -52,6 +59,10 @@ class CustomerCreateRequest(BaseModel):
     preferred_play_time: Optional[str] = None
     notes: Optional[str] = None
     membership_plan_id: Optional[int] = None
+    is_minor: bool = False
+    birth_date: Optional[str] = None
+    guardian_id: Optional[int] = None
+    guardian_relationship: Optional[str] = None
 
 
 class CustomerUpdateRequest(BaseModel):
@@ -68,6 +79,10 @@ class CustomerUpdateRequest(BaseModel):
     membership_start_date: Optional[str] = None
     membership_end_date: Optional[str] = None
     academy_classes_used: Optional[int] = None
+    is_minor: Optional[bool] = None
+    birth_date: Optional[str] = None
+    guardian_id: Optional[int] = None
+    guardian_relationship: Optional[str] = None
 
 
 class CustomerOnboardingRequest(BaseModel):
@@ -80,6 +95,9 @@ def format_customer_response(c: Customer) -> CustomerResponse:
     days_rem = 0
     if c.membership_end_date:
         days_rem = (c.membership_end_date - today).days
+
+    guardian_name = c.guardian.name if (c.guardian is not None) else None
+    guardian_phone = c.guardian.phone if (c.guardian is not None) else None
 
     return CustomerResponse(
         id=c.id,
@@ -106,6 +124,12 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         consecutive_wins=c.consecutive_wins or 0,
         promotion_recommended=c.promotion_recommended or False,
         recommended_category=c.recommended_category,
+        is_minor=c.is_minor or False,
+        birth_date=c.birth_date.isoformat() if c.birth_date else None,
+        guardian_id=c.guardian_id,
+        guardian_relationship=c.guardian_relationship,
+        guardian_name=guardian_name,
+        guardian_phone=guardian_phone,
     )
 
 
@@ -122,6 +146,7 @@ INITIAL_CUSTOMERS_SEED = [
         "membership_start_date": date.today() - timedelta(days=10),
         "membership_end_date": date.today() + timedelta(days=20),
         "academy_classes_used": 1,
+        "is_minor": False,
         "notes": "Acceso 6:00 AM - 11:59 PM | 40% descuento en torneos americanos | 4 clases academia",
     },
     {
@@ -136,6 +161,7 @@ INITIAL_CUSTOMERS_SEED = [
         "membership_start_date": date.today() - timedelta(days=5),
         "membership_end_date": date.today() + timedelta(days=25),
         "academy_classes_used": 0,
+        "is_minor": False,
         "notes": "Acceso 6:00 AM - 11:59 PM | 30% descuento en torneos americanos | 2 clases academia",
     },
     {
@@ -150,6 +176,7 @@ INITIAL_CUSTOMERS_SEED = [
         "membership_start_date": date.today() - timedelta(days=27),
         "membership_end_date": date.today() + timedelta(days=3),
         "academy_classes_used": 0,
+        "is_minor": False,
         "notes": "Acceso 6:00 AM - 11:59 PM | 20% descuento en torneos americanos",
     },
     {
@@ -164,6 +191,7 @@ INITIAL_CUSTOMERS_SEED = [
         "membership_start_date": date.today() - timedelta(days=12),
         "membership_end_date": date.today() + timedelta(days=18),
         "academy_classes_used": 0,
+        "is_minor": False,
         "notes": "Acceso 6:00 AM - 3:00 PM | 10% descuento en torneos americanos",
     },
     {
@@ -178,6 +206,7 @@ INITIAL_CUSTOMERS_SEED = [
         "membership_start_date": date.today() - timedelta(days=32),
         "membership_end_date": date.today() - timedelta(days=2),
         "academy_classes_used": 0,
+        "is_minor": False,
         "notes": "Acceso 6:00 AM - 6:00 PM | 20% descuento en torneos americanos (Vencida)",
     },
     {
@@ -192,25 +221,50 @@ INITIAL_CUSTOMERS_SEED = [
         "membership_start_date": None,
         "membership_end_date": None,
         "academy_classes_used": 0,
+        "is_minor": False,
         "notes": "Cliente nueva, primera visita",
+    },
+    {
+        "name": "Lucas Real (Kid)",
+        "phone": "+573132058547",
+        "category": "6ta",
+        "client_type": "Semillero Kids",
+        "membership_tier": "ESTANDAR",
+        "gender": "MASCULINO",
+        "is_minor": True,
+        "birth_date": date(2016, 5, 14),
+        "guardian_relationship": "HIJO",
+        "notes": "Kid Sub-10 apadrinado por Juan Real Florez (Plan Tapia)",
     },
 ]
 
 
 async def ensure_initial_customers(db: AsyncSession):
     for c_data in INITIAL_CUSTOMERS_SEED:
-        stmt = select(Customer).where(Customer.phone == c_data["phone"])
+        stmt = select(Customer).where(Customer.name == c_data["name"])
         res = await db.execute(stmt)
         existing = res.scalars().first()
         if not existing:
             new_cust = Customer(**c_data)
             db.add(new_cust)
         else:
-            # Enriquecer datos existentes si faltan campos
             for k, v in c_data.items():
                 if getattr(existing, k, None) is None and v is not None:
                     setattr(existing, k, v)
     await db.commit()
+
+    # Vincular Lucas Real con Juan Real Florez si no tiene guardian_id
+    kid_stmt = select(Customer).where(Customer.name.ilike("%Lucas Real%"))
+    kid_res = await db.execute(kid_stmt)
+    kid = kid_res.scalars().first()
+    if kid and not kid.guardian_id:
+        guardian_stmt = select(Customer).where(Customer.name.ilike("%Juan Real Florez%"))
+        g_res = await db.execute(guardian_stmt)
+        guardian = g_res.scalars().first()
+        if guardian:
+            kid.guardian_id = guardian.id
+            kid.guardian_relationship = "HIJO"
+            await db.commit()
 
 
 @router.get("/search", response_model=List[CustomerResponse])
@@ -223,13 +277,19 @@ async def search_customers(
 
     term = (q or "").strip().lower()
     if not term:
-        stmt = select(Customer).order_by(Customer.name.asc()).limit(20)
+        stmt = (
+            select(Customer)
+            .options(selectinload(Customer.guardian))
+            .order_by(Customer.name.asc())
+            .limit(20)
+        )
         res = await db.execute(stmt)
         return [format_customer_response(c) for c in res.scalars().all()]
 
     pattern = f"%{term}%"
     stmt = (
         select(Customer)
+        .options(selectinload(Customer.guardian))
         .where(
             or_(
                 Customer.name.ilike(pattern),
@@ -255,9 +315,9 @@ async def list_all_customers(
     query: Optional[str] = Query(None, description="Búsqueda libre"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Retorna el listado completo de clientes del club con perfiles enriquecidos."""
+    """Retorna el listado completo de clientes del club con perfiles enriquecidos y soporte Kids."""
     await ensure_initial_customers(db)
-    stmt = select(Customer)
+    stmt = select(Customer).options(selectinload(Customer.guardian))
 
     if category and category.upper() not in ["TODAS", "ALL", ""]:
         stmt = stmt.where(Customer.category.ilike(f"%{category.strip()}%"))
@@ -268,6 +328,8 @@ async def list_all_customers(
             stmt = stmt.where(Customer.is_first_visit == True)
         elif seg_upper == "HABITUAL":
             stmt = stmt.where(Customer.total_bookings_completed > 0, Customer.is_first_visit == False)
+        elif seg_upper in ["KIDS", "MENORES"]:
+            stmt = stmt.where(Customer.is_minor == True)
         elif seg_upper in ["VIP", "MEMBER"]:
             stmt = stmt.where(
                 or_(
@@ -304,16 +366,29 @@ async def register_customer(
     payload: CustomerCreateRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Registra un nuevo socio/jugador en el CRM con su perfil integral enriquecido."""
-    phone = payload.phone.strip()
+    """Registra un nuevo socio o menor de edad (Kid) en el CRM con su perfil enriquecido."""
     name = payload.name.strip()
+    phone = payload.phone.strip() if payload.phone else ""
+
+    # Si es menor de edad y no tiene teléfono, heredar del acudiente si se especificó
+    if payload.is_minor and not phone and payload.guardian_id:
+        g_stmt = select(Customer).where(Customer.id == payload.guardian_id)
+        g_res = await db.execute(g_stmt)
+        guardian = g_res.scalar_one_or_none()
+        if guardian:
+            phone = guardian.phone
+
     if not name or not phone:
         raise HTTPException(status_code=400, detail="Nombre y teléfono son requeridos.")
 
     tier = payload.membership_tier.upper() if payload.membership_tier else "ESTANDAR"
-    client_type = payload.client_type or ("Socio VIP" if tier != "ESTANDAR" else "Estándar")
+    client_type = payload.client_type or ("Semillero Kids" if payload.is_minor else ("Socio VIP" if tier != "ESTANDAR" else "Estándar"))
 
-    stmt = select(Customer).where(Customer.phone == phone)
+    stmt = (
+        select(Customer)
+        .options(selectinload(Customer.guardian))
+        .where(Customer.name.ilike(name), Customer.phone == phone)
+    )
     res = await db.execute(stmt)
     customer = res.scalar_one_or_none()
 
@@ -328,6 +403,13 @@ async def register_customer(
         p_res = await db.execute(p_stmt)
         plan_id = p_res.scalar()
 
+    birth_d = None
+    if payload.birth_date:
+        try:
+            birth_d = datetime.strptime(payload.birth_date.strip(), "%Y-%m-%d").date()
+        except Exception:
+            pass
+
     if customer:
         customer.name = name
         customer.category = payload.category or customer.category
@@ -336,6 +418,13 @@ async def register_customer(
         customer.gender = payload.gender or customer.gender
         customer.preferred_music = payload.preferred_music or customer.preferred_music
         customer.preferred_play_time = payload.preferred_play_time or customer.preferred_play_time
+        customer.is_minor = bool(payload.is_minor)
+        if birth_d:
+            customer.birth_date = birth_d
+        if payload.guardian_id is not None:
+            customer.guardian_id = payload.guardian_id
+        if payload.guardian_relationship is not None:
+            customer.guardian_relationship = payload.guardian_relationship.strip()
         if plan_id:
             customer.membership_plan_id = plan_id
         if tier != "ESTANDAR" and not customer.membership_end_date:
@@ -357,6 +446,10 @@ async def register_customer(
             membership_start_date=start_date,
             membership_end_date=end_date,
             academy_classes_used=0,
+            is_minor=bool(payload.is_minor),
+            birth_date=birth_d,
+            guardian_id=payload.guardian_id,
+            guardian_relationship=payload.guardian_relationship.strip() if payload.guardian_relationship else None,
             notes=payload.notes.strip() if payload.notes else None,
             is_first_visit=True,
             onboarding_status="PENDING",
@@ -364,7 +457,11 @@ async def register_customer(
         db.add(customer)
 
     await db.commit()
-    await db.refresh(customer)
+    # Reconsultar con guardian cargado
+    re_stmt = select(Customer).options(selectinload(Customer.guardian)).where(Customer.id == customer.id)
+    re_res = await db.execute(re_stmt)
+    customer = re_res.scalar_one()
+
     return format_customer_response(customer)
 
 
@@ -374,8 +471,8 @@ async def update_customer_profile(
     payload: CustomerUpdateRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Actualiza la información y perfil de cualquier socio existente en el CRM."""
-    stmt = select(Customer).where(Customer.id == player_id)
+    """Actualiza la información y perfil de cualquier socio o menor en el CRM."""
+    stmt = select(Customer).options(selectinload(Customer.guardian)).where(Customer.id == player_id)
     res = await db.execute(stmt)
     customer = res.scalar_one_or_none()
     if not customer:
@@ -403,6 +500,17 @@ async def update_customer_profile(
         customer.membership_plan_id = payload.membership_plan_id
     if payload.academy_classes_used is not None:
         customer.academy_classes_used = payload.academy_classes_used
+    if payload.is_minor is not None:
+        customer.is_minor = bool(payload.is_minor)
+    if payload.birth_date is not None:
+        try:
+            customer.birth_date = datetime.strptime(payload.birth_date.strip(), "%Y-%m-%d").date()
+        except Exception:
+            pass
+    if payload.guardian_id is not None:
+        customer.guardian_id = payload.guardian_id
+    if payload.guardian_relationship is not None:
+        customer.guardian_relationship = payload.guardian_relationship.strip()
 
     if payload.membership_start_date:
         try:
@@ -417,7 +525,10 @@ async def update_customer_profile(
             pass
 
     await db.commit()
-    await db.refresh(customer)
+    re_stmt = select(Customer).options(selectinload(Customer.guardian)).where(Customer.id == customer.id)
+    re_res = await db.execute(re_stmt)
+    customer = re_res.scalar_one()
+
     return format_customer_response(customer)
 
 
@@ -427,7 +538,7 @@ async def update_customer_onboarding(
     payload: CustomerOnboardingRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(Customer).where(Customer.id == customer_id)
+    stmt = select(Customer).options(selectinload(Customer.guardian)).where(Customer.id == customer_id)
     res = await db.execute(stmt)
     customer = res.scalar_one_or_none()
     if not customer:

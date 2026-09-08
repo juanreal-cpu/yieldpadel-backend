@@ -23,6 +23,11 @@ class MembershipPlan(Base):
     includes_beverage_perk: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     americano_discount_pct: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     monthly_price_cop: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    badge_label: Mapped[Optional[str]] = mapped_column(String(50), default="PLAN SOCIO", nullable=True)
+    card_gradient: Mapped[Optional[str]] = mapped_column(
+        String(100), default="from-slate-800 to-indigo-900", nullable=True
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

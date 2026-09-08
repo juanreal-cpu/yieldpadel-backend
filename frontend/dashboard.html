@@ -2084,6 +2084,70 @@
       border: 1px solid #c4b5fd !important;
     }
 
+  
+    /* =========================================================================
+       TARJETAS VIBRANTES DE MEMBRESÍAS CON ALTO CONTRASTE (100% TEXTO BLANCO)
+       ========================================================================= */
+    .membership-card-vibrant {
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+    .membership-card-vibrant h1,
+    .membership-card-vibrant h2,
+    .membership-card-vibrant h3,
+    .membership-card-vibrant h4,
+    .membership-card-vibrant p,
+    .membership-card-vibrant span:not(.card-action-btn *):not(.card-action-btn),
+    .membership-card-vibrant div:not(.card-action-btn):not(.card-action-btn *),
+    .membership-card-vibrant li,
+    .membership-card-vibrant i:not(.card-action-btn *) {
+      color: #ffffff !important;
+    }
+    .membership-card-vibrant .badge-pill-vibrant {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+    .membership-card-vibrant .card-divider-vibrant {
+      border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+    .membership-card-vibrant .card-action-btn-white {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid #ffffff !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
+    }
+    .membership-card-vibrant .card-action-btn-white * {
+      color: #0f172a !important;
+    }
+    .membership-card-vibrant .card-action-btn-white:hover {
+      background-color: #f1f5f9 !important;
+      color: #000000 !important;
+    }
+    .membership-card-vibrant .card-action-btn-outline {
+      background: rgba(255, 255, 255, 0.15) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.35) !important;
+      font-weight: 600 !important;
+    }
+    .membership-card-vibrant .card-action-btn-outline * {
+      color: #ffffff !important;
+    }
+    .membership-card-vibrant .card-action-btn-outline:hover {
+      background: rgba(255, 255, 255, 0.25) !important;
+    }
+
+    /* Degradados directos de respaldo para tarjetas de membresías */
+    .card-grad-tapia { background: linear-gradient(135deg, #d97706 0%, #a16207 100%) !important; }
+    .card-grad-coello { background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%) !important; }
+    .card-grad-galan { background: linear-gradient(135deg, #2563eb 0%, #4338ca 100%) !important; }
+    .card-grad-chingotto { background: linear-gradient(135deg, #059669 0%, #0f766e 100%) !important; }
+    .card-grad-lebron { background: linear-gradient(135deg, #334155 0%, #0f172a 100%) !important; }
+    .card-grad-dark { background: linear-gradient(135deg, #1e293b 0%, #312e81 100%) !important; }
+
   </style>
   <!-- Leaflet CSS & JS for Geospatial Radar Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -2525,6 +2589,7 @@
                     <button onclick="filterCRMSegment('PLAYING_NOW')" id="btn-crm-seg-playing" class="filter-pill" style="color: #059669; font-weight: 700;">⚡ Jugando Ahora (En Sede)</button>
                     <button onclick="filterCRMSegment('FIRST_VISIT')" id="btn-crm-seg-first" class="filter-pill" style="color: #92400E; font-weight: 700;">⭐ Nuevos</button>
                     <button onclick="filterCRMSegment('VIP')" id="btn-crm-seg-vip" class="filter-pill" style="color: #0284C7; font-weight: 700;">Socios VIP</button>
+                    <button onclick="filterCRMSegment('KIDS')" id="btn-crm-seg-kids" class="filter-pill" style="color: #6366F1; font-weight: 700;">👦 Kids / Menores</button>
                   </div>
                 </div>
 
@@ -3658,7 +3723,7 @@
                 <button type="button" onclick="window.loadAcademyClasses()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
                   <span>🔄</span> <span>Actualizar</span>
                 </button>
-                <button type="button" onclick="window.openCreateAcademyClassModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm">
+                <button type="button" onclick="window.openCreateAcademyClassModal()" class="px-4 py-2.5 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm" style="background-color: #059669 !important; color: #ffffff !important;">
                   <span>➕</span> <span>Programar Nueva Clase</span>
                 </button>
               </div>
@@ -3669,11 +3734,13 @@
               <!-- Filtro de Nivel -->
               <div class="flex items-center gap-2">
                 <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Nivel:</span>
-                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl" id="academy-level-filters">
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl flex-wrap" id="academy-level-filters">
                   <button type="button" onclick="window.filterAcademyByLevel('ALL')" id="btn-acad-lvl-all" class="px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs">Todos</button>
-                  <button type="button" onclick="window.filterAcademyByLevel('Iniciación')" id="btn-acad-lvl-ini" class="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Iniciación</button>
-                  <button type="button" onclick="window.filterAcademyByLevel('Intermedio')" id="btn-acad-lvl-int" class="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Intermedio</button>
-                  <button type="button" onclick="window.filterAcademyByLevel('Avanzado')" id="btn-acad-lvl-ava" class="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Avanzado</button>
+                  <button type="button" onclick="window.filterAcademyByLevel('KIDS_SUB10')" id="btn-acad-lvl-sub10" class="px-2.5 py-1 text-xs font-semibold rounded-lg text-indigo-700 hover:bg-indigo-50">👶 Kids Sub-10</button>
+                  <button type="button" onclick="window.filterAcademyByLevel('KIDS_SUB14')" id="btn-acad-lvl-sub14" class="px-2.5 py-1 text-xs font-semibold rounded-lg text-purple-700 hover:bg-purple-50">🧒 Kids Sub-14</button>
+                  <button type="button" onclick="window.filterAcademyByLevel('INICIACION')" id="btn-acad-lvl-ini" class="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Iniciación</button>
+                  <button type="button" onclick="window.filterAcademyByLevel('MEDIO')" id="btn-acad-lvl-int" class="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Intermedio</button>
+                  <button type="button" onclick="window.filterAcademyByLevel('AVANZADO')" id="btn-acad-lvl-ava" class="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg">Avanzado</button>
                 </div>
               </div>
 
@@ -3714,173 +3781,18 @@
                 <button type="button" onclick="window.loadMembershipsData()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
                   <span>🔄</span> <span>Actualizar</span>
                 </button>
+                <button type="button" onclick="window.openCreateMembershipPlanModal()" class="px-4 py-2.5 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm" style="background-color: #059669 !important; color: #ffffff !important;">
+                  <span>➕</span> <span>Crear Nuevo Tipo de Membresía</span>
+                </button>
                 <button type="button" onclick="window.openAssignMembershipModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm">
-                  <span>➕</span> <span>Asignar / Renovar Membresía</span>
+                  <span>💎</span> <span>Asignar / Renovar</span>
                 </button>
               </div>
             </div>
 
-            <!-- 5 KPI Plan Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-              <!-- Plan Tapia -->
-              <div class="bg-white border border-slate-200 border-t-4 border-t-amber-500 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
-                <div>
-                  <div class="flex items-center justify-between gap-2 mb-3">
-                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200" style="color: #92400e !important; background-color: #fef3c7 !important;">
-                      👑 VIP TAPIA
-                    </span>
-                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-tapia" style="color: #64748b !important;">0 socios</span>
-                  </div>
-                  
-                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Tapia</h3>
-                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Full Day (6:00 AM - 11:59 PM)</p>
-                  
-                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
-                    <div class="flex items-center gap-2"><span style="color: #d97706;">🎾</span> <span><strong>40% OFF</strong> en Torneos</span></div>
-                    <div class="flex items-center gap-2"><span>🥤</span> <span>Bebidas incluidas ($0)</span></div>
-                    <div class="flex items-center gap-2"><span>🎓</span> <span><strong>4 clases</strong> academia/mes</span></div>
-                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
-                  </div>
-                </div>
-                
-                <div class="flex items-baseline justify-between pt-2">
-                  <div>
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
-                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$320.000 COP</span>
-                  </div>
-                  <button type="button" onclick="window.openAssignMembershipModal(null, 'TAPIA')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
-                    Asignar
-                  </button>
-                </div>
-              </div>
-
-              <!-- Plan Coello -->
-              <div class="bg-white border border-slate-200 border-t-4 border-t-purple-600 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
-                <div>
-                  <div class="flex items-center justify-between gap-2 mb-3">
-                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-purple-50 text-purple-800 border border-purple-200" style="color: #6b21a8 !important; background-color: #f3e8ff !important;">
-                      ⚡ PRO COELLO
-                    </span>
-                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-coello" style="color: #64748b !important;">0 socios</span>
-                  </div>
-                  
-                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Coello</h3>
-                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Full Day (6:00 AM - 11:59 PM)</p>
-                  
-                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
-                    <div class="flex items-center gap-2"><span style="color: #9333ea;">🎾</span> <span><strong>30% OFF</strong> en Torneos</span></div>
-                    <div class="flex items-center gap-2"><span>🥤</span> <span>Bebidas incluidas ($0)</span></div>
-                    <div class="flex items-center gap-2"><span>🎓</span> <span><strong>2 clases</strong> academia/mes</span></div>
-                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
-                  </div>
-                </div>
-                
-                <div class="flex items-baseline justify-between pt-2">
-                  <div>
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
-                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$260.000 COP</span>
-                  </div>
-                  <button type="button" onclick="window.openAssignMembershipModal(null, 'COELLO')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
-                    Asignar
-                  </button>
-                </div>
-              </div>
-
-              <!-- Plan Galán -->
-              <div class="bg-white border border-slate-200 border-t-4 border-t-blue-600 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
-                <div>
-                  <div class="flex items-center justify-between gap-2 mb-3">
-                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200" style="color: #1e40af !important; background-color: #dbeafe !important;">
-                      🎾 COMPETITIVO GALÁN
-                    </span>
-                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-galan" style="color: #64748b !important;">0 socios</span>
-                  </div>
-                  
-                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Galán</h3>
-                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Full Day (6:00 AM - 11:59 PM)</p>
-                  
-                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
-                    <div class="flex items-center gap-2"><span style="color: #2563eb;">🎾</span> <span><strong>20% OFF</strong> en Torneos</span></div>
-                    <div class="flex items-center gap-2"><span>🥤</span> <span>Bebidas incluidas ($0)</span></div>
-                    <div class="flex items-center gap-2"><span>🎓</span> <span>Sin clases incluidas</span></div>
-                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
-                  </div>
-                </div>
-                
-                <div class="flex items-baseline justify-between pt-2">
-                  <div>
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
-                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$210.000 COP</span>
-                  </div>
-                  <button type="button" onclick="window.openAssignMembershipModal(null, 'GALAN')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
-                    Asignar
-                  </button>
-                </div>
-              </div>
-
-              <!-- Plan Chingotto -->
-              <div class="bg-white border border-slate-200 border-t-4 border-t-emerald-600 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
-                <div>
-                  <div class="flex items-center justify-between gap-2 mb-3">
-                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200" style="color: #065f46 !important; background-color: #d1fae5 !important;">
-                      🌅 MATUTINO CHINGOTTO
-                    </span>
-                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-chingotto" style="color: #64748b !important;">0 socios</span>
-                  </div>
-                  
-                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Chingotto</h3>
-                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Restringido (6:00 AM - 3:00 PM)</p>
-                  
-                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
-                    <div class="flex items-center gap-2"><span style="color: #059669;">🎾</span> <span><strong>10% OFF</strong> en Torneos</span></div>
-                    <div class="flex items-center gap-2"><span>🥤</span> <span>Sin bebidas de cortesía</span></div>
-                    <div class="flex items-center gap-2"><span>🎓</span> <span>Sin clases incluidas</span></div>
-                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
-                  </div>
-                </div>
-                
-                <div class="flex items-baseline justify-between pt-2">
-                  <div>
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
-                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$140.000 COP</span>
-                  </div>
-                  <button type="button" onclick="window.openAssignMembershipModal(null, 'CHINGOTTO')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
-                    Asignar
-                  </button>
-                </div>
-              </div>
-
-              <!-- Plan Lebrón -->
-              <div class="bg-white border border-slate-200 border-t-4 border-t-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden card-light" style="color: #0f172a !important; background-color: #ffffff !important;">
-                <div>
-                  <div class="flex items-center justify-between gap-2 mb-3">
-                    <span class="px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-300" style="color: #1e293b !important; background-color: #f1f5f9 !important;">
-                      🐺 DIURNO LEBRÓN
-                    </span>
-                    <span class="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap" id="stat-mem-lebron" style="color: #64748b !important;">0 socios</span>
-                  </div>
-                  
-                  <h3 class="text-xl font-black text-slate-900 mb-1" style="color: #0f172a !important;">Plan Lebrón</h3>
-                  <p class="text-xs font-semibold text-slate-500 mb-4" style="color: #64748b !important;">Horario: Restringido (6:00 AM - 6:00 PM)</p>
-                  
-                  <div class="space-y-2 py-3 border-t border-b border-slate-100 text-xs font-medium text-slate-600 mb-4" style="color: #334155 !important;">
-                    <div class="flex items-center gap-2"><span style="color: #475569;">🎾</span> <span><strong>20% OFF</strong> en Torneos</span></div>
-                    <div class="flex items-center gap-2"><span>🥤</span> <span>Sin bebidas de cortesía</span></div>
-                    <div class="flex items-center gap-2"><span>🎓</span> <span>Sin clases incluidas</span></div>
-                    <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta 1.5h/día</span></div>
-                  </div>
-                </div>
-                
-                <div class="flex items-baseline justify-between pt-2">
-                  <div>
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block" style="color: #94a3b8 !important;">Cuota Mensual</span>
-                    <span class="text-lg font-black text-slate-900" style="color: #0f172a !important;">$170.000 COP</span>
-                  </div>
-                  <button type="button" onclick="window.openAssignMembershipModal(null, 'LEBRON')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition" style="color: #ffffff !important; background-color: #0f172a !important;">
-                    Asignar
-                  </button>
-                </div>
-              </div>
+            <!-- Contenedor Dinámico de Tarjetas de Membresía Vibrantes -->
+            <div id="membership-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              <!-- Renderizado dinámicamente con estilos de alto contraste -->
             </div>
 
             <!-- Tabla de Socios y Gestión de Vigencias -->
@@ -4889,9 +4801,20 @@
           <div>
             <label class="block font-bold text-slate-700 mb-1">Nivel</label>
             <select id="acad-new-level" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
-              <option value="Iniciación">Iniciación (1ra a 6ta Principiantes)</option>
-              <option value="Intermedio" selected>Intermedio</option>
-              <option value="Avanzado">Avanzado (Competición)</option>
+              <option value="KIDS_INICIACION">👶 Kids Iniciación (Sub-10 Semillero)</option>
+              <option value="KIDS_INTERMEDIO">🧒 Kids Intermedio (Sub-14 Junior)</option>
+              <option value="INICIACION_6_7">🎾 Adultos Iniciación (6ta / Principiantes)</option>
+              <option value="MEDIO_4_5" selected>🔥 Adultos Medio (4ta - 5ta)</option>
+              <option value="AVANZADO">🏆 Adultos Avanzado (1ra - 3ra)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Público / Edad</label>
+            <select id="acad-new-target-age" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+              <option value="ADULTOS" selected>Adultos</option>
+              <option value="KIDS_SUB10">Kids Sub-10</option>
+              <option value="KIDS_SUB14">Kids Sub-14</option>
+              <option value="JUNIOR">Junior (14-17 años)</option>
             </select>
           </div>
           <div>
@@ -5008,6 +4931,97 @@
   <!-- ======================================================== -->
   <!-- MODAL: ASIGNAR O RENOVAR MEMBRESÍA                       -->
   <!-- ======================================================== -->
+    <!-- ======================================================== -->
+  <!-- MODAL: CREAR O EDITAR PLAN DE MEMBRESÍA                  -->
+  <!-- ======================================================== -->
+  <div id="modal-membership-plan" class="modal-overlay">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-title">
+        <span class="flex items-center gap-2">
+          <span>💎</span> <span id="modal-membership-plan-title">Crear Nuevo Tipo de Membresía</span>
+        </span>
+        <button type="button" onclick="window.closeMembershipPlanModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      <form id="form-membership-plan" onsubmit="window.submitMembershipPlanForm(event)" class="space-y-4 text-xs">
+        <input type="hidden" id="mem-plan-edit-id" value="">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Nombre del Plan</label>
+            <input type="text" id="mem-plan-name" required placeholder="Ej: Tapia, Bela, Paquito..." class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Badge / Distintivo Superior</label>
+            <input type="text" id="mem-plan-badge" placeholder="Ej: VIP PLATINUM, ALL ACCESS..." class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Paleta / Degradado de Tarjeta</label>
+            <select id="mem-plan-gradient" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 bg-white">
+              <option value="from-amber-600 to-yellow-700">👑 Ámbar Dorado (Tapia VIP)</option>
+              <option value="from-indigo-600 to-purple-700">⚡ Índigo Eléctrico (Coello Pro)</option>
+              <option value="from-blue-600 to-indigo-600">🎾 Azul Competitivo (Galán)</option>
+              <option value="from-emerald-600 to-teal-700">🌅 Verde Esmeralda (Chingotto)</option>
+              <option value="from-slate-700 to-slate-900">🐺 Gris / Grafito (Lebrón)</option>
+              <option value="from-purple-700 to-indigo-900">🔥 Púrpura Huracán (Navarro)</option>
+              <option value="from-rose-600 to-red-800">🥊 Rojo Pasión (Bela)</option>
+              <option value="from-slate-800 to-indigo-900">💎 Azul Marino Élite</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Cuota Mensual (COP)</label>
+            <input type="number" id="mem-plan-price" required min="0" step="5000" placeholder="320000" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Hora Inicio</label>
+            <input type="time" id="mem-plan-start-time" required value="06:00" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Hora Fin</label>
+            <input type="time" id="mem-plan-end-time" required value="23:59" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Máx Horas / Día</label>
+            <input type="number" id="mem-plan-max-hours" step="0.5" min="0.5" max="6" value="1.5" required class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+          <div>
+            <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-700 mb-2">
+              <input type="checkbox" id="mem-plan-includes-academy" onchange="document.getElementById('mem-plan-classes-count-wrap').style.display = this.checked ? 'block' : 'none'" class="w-4 h-4 text-indigo-600 rounded">
+              <span>🎓 Incluye Clases Academia</span>
+            </label>
+            <div id="mem-plan-classes-count-wrap" style="display: none;">
+              <label class="block font-bold text-slate-600 text-[11px] mb-1">Clases Incluidas / Mes</label>
+              <input type="number" id="mem-plan-monthly-classes" min="1" max="12" value="2" class="w-full p-2 border border-slate-300 rounded-lg text-slate-800 font-bold">
+            </div>
+          </div>
+          <div>
+            <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-700 mb-2">
+              <input type="checkbox" id="mem-plan-includes-drinks" class="w-4 h-4 text-indigo-600 rounded">
+              <span>🥤 Bebidas de Cortesía ($0)</span>
+            </label>
+            <label class="block font-bold text-slate-600 text-[11px] mb-1">% Descuento Americanos</label>
+            <input type="number" id="mem-plan-discount" min="0" max="100" step="5" value="20" class="w-full p-2 border border-slate-300 rounded-lg text-slate-800 font-bold">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+          <button type="button" onclick="window.closeMembershipPlanModal()" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <span>💾</span> <span id="modal-membership-plan-submit-btn">Guardar Plan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="modal-assign-membership" class="modal-overlay">
     <div class="modal-card" style="max-width: 500px;">
       <div class="modal-title">
@@ -5154,6 +5168,49 @@
             <option value="CHINGOTTO">🌅 CHINGOTTO (-10% Mañanas hasta 3pm)</option>
             <option value="LEBRON">🐺 LEBRÓN (-20% Diurno hasta 6pm)</option>
           </select>
+        </div>
+
+                <!-- Sección Menor de Edad / Kid Apadrinado -->
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+              <input type="checkbox" id="crm-player-is-minor" onchange="window.toggleMinorFields(this.checked)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+              <span>👦 ¿Es Menor de Edad / Dependiente (Kid)?</span>
+            </label>
+            <span class="text-[10px] px-2 py-0.5 rounded font-bold bg-indigo-100 text-indigo-800">Semillero / Sub-14</span>
+          </div>
+
+          <div id="crm-minor-fields-container" class="hidden space-y-3 pt-2 border-t border-slate-200">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Fecha de Nacimiento</label>
+                <input type="date" id="crm-player-birth-date" class="w-full p-2 border border-slate-300 rounded-xl text-slate-800 bg-white">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Parentesco con Acudiente</label>
+                <select id="crm-player-guardian-relationship" class="w-full p-2 border border-slate-300 rounded-xl font-medium text-slate-800 bg-white">
+                  <option value="HIJO" selected>Hijo / Hija</option>
+                  <option value="SOBRINO">Sobrino / Sobrina</option>
+                  <option value="NIETO">Nieto / Nieta</option>
+                  <option value="TUTOR">Tutor Legal</option>
+                  <option value="OTRO">Otro</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Acudiente / Socio Responsable (CRM)</label>
+              <div class="relative w-full">
+                <input type="text" id="crm-guardian-search" oninput="window.handleGuardianSearch(event)" autocomplete="off" placeholder="Buscar socio acudiente por nombre o teléfono..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 font-medium">
+                <div id="crm-guardian-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              </div>
+              <input type="hidden" id="crm-player-guardian-id" value="">
+              <div id="crm-guardian-selected-badge" class="hidden mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 flex items-center justify-between">
+                <span id="crm-guardian-selected-text" class="font-bold"></span>
+                <button type="button" onclick="window.clearSelectedGuardian()" class="text-xs text-red-600 hover:underline font-bold">Cambiar</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -6231,9 +6288,11 @@ window.handleCRMSearch = window.filterCRMTable;
           }
         });
 
-        // Filtrar por segmento Jugando Ahora (En Sede)
+        // Filtrar por segmento Jugando Ahora (En Sede) o Kids
         if (currentCRMSegment === 'PLAYING_NOW') {
           customers = customers.filter(c => c.is_playing_now);
+        } else if (currentCRMSegment === 'KIDS') {
+          customers = customers.filter(c => Boolean(c.is_minor));
         }
 
         // Actualizar banner de Clientes Nuevos de la Semana
@@ -6340,6 +6399,11 @@ window.handleCRMSearch = window.filterCRMTable;
               <td style="padding: 0.85rem 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
                   <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
+                  ${c.is_minor ? `
+                    <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-2xs">
+                      <span>👦</span> Kid${c.guardian_name ? ` (Hijo de ${c.guardian_name})` : ''}
+                    </span>
+                  ` : ''}
                   ${c.is_playing_now ? `
                     <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
                       <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
@@ -6463,6 +6527,11 @@ window.handleCRMSearch = window.filterCRMTable;
               <td style="padding: 0.85rem 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
                   <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
+                  ${c.is_minor ? `
+                    <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-2xs">
+                      <span>👦</span> Kid${c.guardian_name ? ` (Hijo de ${c.guardian_name})` : ''}
+                    </span>
+                  ` : ''}
                   ${c.is_playing_now ? `
                     <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
                       <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
@@ -11158,12 +11227,18 @@ Jugador: ${checkData.player_name}`);
         const pct = Math.min(100, Math.round((cls.enrolled_count / (cls.max_students || 4)) * 100));
         const slotsLeft = Math.max(0, (cls.max_students || 4) - cls.enrolled_count);
 
-        const studentsList = (cls.students && cls.students.length > 0)
-          ? cls.students.map(s => `
+        const enrollments = cls.enrollments || cls.students || [];
+        const studentsList = (enrollments && enrollments.length > 0)
+          ? enrollments.map(s => `
               <div class="flex items-center justify-between text-[11px] bg-slate-50 border border-slate-200/70 rounded-lg px-2.5 py-1.5">
-                <span class="font-bold text-slate-800 truncate max-w-[140px]" title="${s.player_name}">👤 ${s.player_name}</span>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${s.amount_charged === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">
-                  ${s.amount_charged === 0 ? '💎 Perk $0' : '$35.000'}
+                <div class="flex flex-col truncate max-w-[170px]">
+                  <span class="font-bold text-slate-800 truncate" title="${s.player_name}">
+                    ${s.is_minor ? '👦' : '👤'} ${s.player_name}
+                  </span>
+                  ${s.guardian_name ? `<span class="text-[9px] text-slate-500 truncate">Acudiente: ${s.guardian_name}</span>` : ''}
+                </div>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${s.payment_status && s.payment_status.includes('MEMBERSHIP') ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">
+                  ${s.payment_status && s.payment_status.includes('MEMBERSHIP') ? '💎 Perk $0' : `$${(s.amount_charged || 35000).toLocaleString('es-CO')}`}
                 </span>
               </div>
             `).join('')
@@ -11235,11 +11310,27 @@ Jugador: ${checkData.player_name}`);
       }).join('');
     };
 
-    window.openCreateAcademyClassModal = function() {
+    window.openCreateAcademyClassModal = async function() {
       const modal = document.getElementById('modal-create-academy-class');
       if (!modal) return;
       const dateInput = document.getElementById('acad-new-date');
       if (dateInput) dateInput.value = window.academySelectedDate || (typeof getColombiaTodayString === 'function' ? getColombiaTodayString() : new Date().toISOString().split('T')[0]);
+      
+      const courtSelect = document.getElementById('acad-new-court');
+      if (courtSelect) {
+        try {
+          if (!window.cachedCourts || window.cachedCourts.length === 0) {
+            const cRes = await fetch(`${API_BASE}/api/v1/courts/`);
+            if (cRes.ok) window.cachedCourts = await cRes.json();
+          }
+          if (window.cachedCourts && window.cachedCourts.length > 0) {
+            courtSelect.innerHTML = window.cachedCourts.map(c => `
+              <option value="${c.id}">${c.name || 'Cancha ' + (c.court_number || '')}</option>
+            `).join('');
+          }
+        } catch(e) {}
+      }
+
       modal.classList.add('active');
     };
 
@@ -11252,24 +11343,26 @@ Jugador: ${checkData.player_name}`);
       e.preventDefault();
       const title = document.getElementById('acad-new-title').value.trim();
       const level = document.getElementById('acad-new-level').value;
+      const target_age = document.getElementById('acad-new-target-age') ? document.getElementById('acad-new-target-age').value : 'ADULTOS';
       const coach = document.getElementById('acad-new-coach').value.trim();
       const date = document.getElementById('acad-new-date').value;
       const start_time = document.getElementById('acad-new-start').value;
       const end_time = document.getElementById('acad-new-end').value;
-      const court_id = parseInt(document.getElementById('acad-new-court').value) || 1;
+      const court_id = document.getElementById('acad-new-court').value;
       const max_students = parseInt(document.getElementById('acad-new-max').value) || 4;
-      const price_cop = parseInt(document.getElementById('acad-new-price').value) || 35000;
+      const price_per_student = parseInt(document.getElementById('acad-new-price').value) || 35000;
 
       const payload = {
         title,
         level,
-        coach,
+        target_age,
+        coach_name: coach,
         date,
         start_time,
         end_time,
-        court_id,
+        court_id: String(court_id),
         max_students,
-        price_cop
+        price_per_student
       };
 
       try {
@@ -11281,7 +11374,7 @@ Jugador: ${checkData.player_name}`);
         const data = await res.json();
         if (res.ok) {
           if (typeof window.showDarkToast === 'function') {
-            window.showDarkToast('🎓 Clase Programada', `Clase '${data.title}' guardada y pista ${court_id} bloqueada en el calendario.`);
+            window.showDarkToast('🎓 Clase Programada', `Clase '${data.title}' guardada y pista bloqueada en el calendario.`);
           } else {
             alert(`✅ Clase '${data.title}' programada y pista bloqueada con éxito.`);
           }
@@ -11342,11 +11435,29 @@ Jugador: ${checkData.player_name}`);
         dropdownEl.classList.add('hidden');
         dropdownEl.style.display = 'none';
 
-        // Validar beneficio de membresía
         const perkTitle = document.getElementById('acad-enroll-perk-title');
         const perkDesc = document.getElementById('acad-enroll-perk-desc');
         const priceDisp = document.getElementById('acad-enroll-price-display');
         const statusSelect = document.getElementById('acad-enroll-payment-status');
+
+        if (p.is_minor) {
+          const guardian = (window.cachedPlayers || []).find(g => g.id === p.guardian_id);
+          const gTier = guardian ? (guardian.membership_tier || '').toUpperCase() : '';
+          const gHasPerk = gTier === 'TAPIA' || gTier === 'COELLO';
+          if (guardian && gHasPerk) {
+            if (perkTitle) perkTitle.innerHTML = `<span class="text-indigo-700 font-bold">👦 Menor Apadrinado | Beneficio Acudiente Activo</span>`;
+            if (perkDesc) perkDesc.innerHTML = `Alumno: <strong>${p.name}</strong> | Acudiente: <strong>${guardian.name}</strong> (Plan ${gTier}). Cubierto por membresía del acudiente ($0 COP).`;
+            if (priceDisp) priceDisp.textContent = '$0 COP (Cubierto por Membresía de Acudiente)';
+            if (statusSelect) statusSelect.value = 'COMPLETED';
+            return;
+          } else {
+            if (perkTitle) perkTitle.innerHTML = `<span class="text-amber-800 font-bold">👦 Menor Apadrinado | Tarifa Regular</span>`;
+            if (perkDesc) perkDesc.innerHTML = `Alumno: <strong>${p.name}</strong> | Acudiente responsable: <strong>${p.guardian_name || 'Acudiente'}</strong> (${p.guardian_phone || p.phone}). Cobro pendiente asignado.`;
+            if (priceDisp) priceDisp.textContent = '$35.000 COP';
+            if (statusSelect) statusSelect.value = 'PENDING';
+            return;
+          }
+        }
 
         const tier = (p.membership_tier || '').toUpperCase();
         const hasPerk = tier === 'TAPIA' || tier === 'COELLO' || Boolean(p.includes_academy_classes);
@@ -11371,19 +11482,17 @@ Jugador: ${checkData.player_name}`);
 
     window.submitEnrollAcademy = async function(e) {
       e.preventDefault();
-      const class_id = parseInt(document.getElementById('acad-enroll-class-id').value);
+      const academy_class_id = parseInt(document.getElementById('acad-enroll-class-id').value);
       const player_id = parseInt(document.getElementById('acad-enroll-player-id').value);
-      const payment_status = document.getElementById('acad-enroll-payment-status').value;
 
-      if (!class_id || !player_id) {
+      if (!academy_class_id || !player_id) {
         alert('Por favor busca y selecciona un jugador del CRM.');
         return;
       }
 
       const payload = {
-        class_id,
-        player_id,
-        payment_status
+        academy_class_id,
+        player_id
       };
 
       try {
@@ -11395,12 +11504,13 @@ Jugador: ${checkData.player_name}`);
         const data = await res.json();
         if (res.ok) {
           if (typeof window.showDarkToast === 'function') {
-            window.showDarkToast('🎓 Alumno Inscrito', `Alumno inscrito exitosamente. Monto: $${data.amount_charged} COP.`);
+            window.showDarkToast('🎓 Alumno Inscrito', `${data.message} | Cobro: $${data.amount_charged} COP`);
           } else {
-            alert(`✅ Alumno inscrito con éxito en la clase. Tarifa cobrada: $${data.amount_charged} COP`);
+            alert(`✅ ${data.message}\nBeneficio: ${data.perk_message}\nTarifa aplicada: $${data.amount_charged} COP`);
           }
           window.closeEnrollAcademyModal();
           window.loadAcademyClasses(window.academySelectedDate);
+          if (typeof loadMembershipsData === 'function') loadMembershipsData();
         } else {
           alert(`⚠️ Error: ${data.detail || 'No se pudo inscribir al alumno'}`);
         }
@@ -11418,6 +11528,250 @@ Jugador: ${checkData.player_name}`);
     window.cachedMembersList = [];
     window.currentMembershipFilter = 'ALL';
     window.selectedMembershipPlayer = null;
+
+        // =========================================================================
+    // MODULO: 💎 FULL CRUD Y RENDERIZADO DINÁMICO DE TARJETAS VIBRANTES
+    // =========================================================================
+    window.renderMembershipCards = function(plans) {
+      const container = document.getElementById('membership-cards-container');
+      if (!container) return;
+      if (!plans || plans.length === 0) {
+        container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400">No hay planes de membresía configurados.</div>';
+        return;
+      }
+
+      function resolvePlanGradient(plan) {
+        const name = (plan.name || '').toUpperCase();
+        if (name.includes('TAPIA')) return 'linear-gradient(135deg, #d97706 0%, #a16207 100%)';
+        if (name.includes('COELLO')) return 'linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%)';
+        if (name.includes('GAL')) return 'linear-gradient(135deg, #2563eb 0%, #4338ca 100%)';
+        if (name.includes('CHINGOTTO')) return 'linear-gradient(135deg, #059669 0%, #0f766e 100%)';
+        if (name.includes('LEBR')) return 'linear-gradient(135deg, #334155 0%, #0f172a 100%)';
+
+        const g = (plan.card_gradient || '');
+        if (g.includes('amber') || g.includes('yellow')) return 'linear-gradient(135deg, #d97706 0%, #a16207 100%)';
+        if (g.includes('indigo') && g.includes('purple')) return 'linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%)';
+        if (g.includes('blue')) return 'linear-gradient(135deg, #2563eb 0%, #4338ca 100%)';
+        if (g.includes('emerald') || g.includes('teal')) return 'linear-gradient(135deg, #059669 0%, #0f766e 100%)';
+        if (g.includes('slate-700') || g.includes('slate-900')) return 'linear-gradient(135deg, #334155 0%, #0f172a 100%)';
+        return 'linear-gradient(135deg, #1e293b 0%, #312e81 100%)';
+      }
+
+      function resolvePlanBadge(plan) {
+        const name = (plan.name || '').toUpperCase();
+        if (plan.badge_label && plan.badge_label !== 'PLAN SOCIO') return plan.badge_label;
+        if (name.includes('TAPIA')) return 'VIP PLATINUM';
+        if (name.includes('COELLO')) return 'ALL ACCESS';
+        if (name.includes('GAL')) return 'PRIME PLAY';
+        if (name.includes('CHINGOTTO')) return 'OFF-PEAK MORNING';
+        if (name.includes('LEBR')) return 'DAYTIME PRO';
+        return plan.badge_label || 'PLAN SOCIO';
+      }
+
+      container.innerHTML = plans.map(p => {
+        const bgGrad = resolvePlanGradient(p);
+        const badge = resolvePlanBadge(p);
+        const activeCount = p.active_members_count || 0;
+        const priceStr = (p.monthly_price_cop || 0).toLocaleString('es-CO');
+
+        const startFmt = (p.start_time || '06:00').substring(0, 5);
+        const endFmt = (p.end_time || '23:59').substring(0, 5);
+
+        const drinksPerk = p.includes_beverage_perk ? 'Bebidas incluidas ($0)' : 'Sin bebidas de cortesía';
+        const classesPerk = p.includes_academy_classes ? `<strong>${p.monthly_classes_count || 0} clases</strong> academia/mes` : 'Sin clases incluidas';
+
+        return `
+          <div class="membership-card-vibrant rounded-2xl p-5 shadow-lg flex flex-col justify-between" style="min-height: 330px; background: ${bgGrad} !important;">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="badge-pill-vibrant px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider">
+                  ${badge}
+                </span>
+                <span class="text-xs font-bold shrink-0 whitespace-nowrap" style="color: rgba(255, 255, 255, 0.9) !important;">
+                  ${activeCount} socio${activeCount === 1 ? '' : 's'}
+                </span>
+              </div>
+              
+              <h3 class="text-xl font-black mb-1" style="color: #ffffff !important;">Plan ${p.name}</h3>
+              <p class="text-xs font-semibold mb-3" style="color: rgba(255, 255, 255, 0.85) !important;">
+                Horario: ${startFmt} - ${endFmt}
+              </p>
+              
+              <div class="space-y-2 py-3 card-divider-vibrant border-t border-b text-xs font-medium mb-4" style="border-color: rgba(255, 255, 255, 0.2) !important;">
+                <div class="flex items-center gap-2"><span>🎾</span> <span><strong>${p.americano_discount_pct || 0}% OFF</strong> en Torneos</span></div>
+                <div class="flex items-center gap-2"><span>🥤</span> <span>${drinksPerk}</span></div>
+                <div class="flex items-center gap-2"><span>🎓</span> <span>${classesPerk}</span></div>
+                <div class="flex items-center gap-2"><span>⏱️</span> <span>Reserva hasta ${p.max_daily_hours || 1.5}h/día</span></div>
+              </div>
+            </div>
+            
+            <div class="pt-2">
+              <div class="flex items-baseline justify-between mb-3">
+                <div>
+                  <span class="text-[10px] uppercase font-bold block" style="color: rgba(255, 255, 255, 0.7) !important;">Cuota Mensual</span>
+                  <span class="text-lg font-black" style="color: #ffffff !important;">$${priceStr} COP</span>
+                </div>
+                <button type="button" onclick="window.openAssignMembershipModal(null, '${p.name}')" class="card-action-btn card-action-btn-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+                  Asignar
+                </button>
+              </div>
+              <div class="flex items-center gap-2 pt-2 card-divider-vibrant border-t" style="border-color: rgba(255, 255, 255, 0.15) !important;">
+                <button type="button" onclick="window.openEditMembershipPlanModal(${p.id})" class="card-action-btn card-action-btn-outline flex-1 py-1 px-2 rounded-lg text-[11px] font-bold text-center transition flex items-center justify-center gap-1">
+                  <span>✏️</span> <span>Editar</span>
+                </button>
+                <button type="button" onclick="window.deleteMembershipPlan(${p.id}, '${p.name}')" class="card-action-btn card-action-btn-outline flex-1 py-1 px-2 rounded-lg text-[11px] font-bold text-center transition flex items-center justify-center gap-1 text-red-200 hover:text-red-100">
+                  <span>🗑️</span> <span>Eliminar</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    window.openCreateMembershipPlanModal = function() {
+      const modal = document.getElementById('modal-membership-plan');
+      if (!modal) return;
+      document.getElementById('modal-membership-plan-title').textContent = 'Crear Nuevo Tipo de Membresía';
+      document.getElementById('modal-membership-plan-submit-btn').textContent = 'Guardar Plan';
+      document.getElementById('mem-plan-edit-id').value = '';
+      document.getElementById('mem-plan-name').value = '';
+      document.getElementById('mem-plan-badge').value = 'PLAN SOCIO';
+      document.getElementById('mem-plan-gradient').value = 'from-indigo-600 to-purple-700';
+      document.getElementById('mem-plan-price').value = '250000';
+      document.getElementById('mem-plan-start-time').value = '06:00';
+      document.getElementById('mem-plan-end-time').value = '23:59';
+      document.getElementById('mem-plan-max-hours').value = '1.5';
+      document.getElementById('mem-plan-includes-academy').checked = false;
+      document.getElementById('mem-plan-classes-count-wrap').style.display = 'none';
+      document.getElementById('mem-plan-monthly-classes').value = '2';
+      document.getElementById('mem-plan-includes-drinks').checked = false;
+      document.getElementById('mem-plan-discount').value = '20';
+      modal.classList.add('active');
+    };
+
+    window.openEditMembershipPlanModal = function(planId) {
+      const modal = document.getElementById('modal-membership-plan');
+      if (!modal) return;
+      const plan = (window.cachedMembershipPlans || []).find(p => p.id === planId);
+      if (!plan) return;
+
+      document.getElementById('modal-membership-plan-title').textContent = `Editar Plan de Membresía: ${plan.name}`;
+      document.getElementById('modal-membership-plan-submit-btn').textContent = 'Actualizar Plan';
+      document.getElementById('mem-plan-edit-id').value = plan.id;
+      document.getElementById('mem-plan-name').value = plan.name || '';
+      document.getElementById('mem-plan-badge').value = plan.badge_label || 'PLAN SOCIO';
+      document.getElementById('mem-plan-gradient').value = plan.card_gradient || 'from-slate-800 to-indigo-900';
+      document.getElementById('mem-plan-price').value = plan.monthly_price_cop || 0;
+      document.getElementById('mem-plan-start-time').value = (plan.start_time || '06:00').substring(0, 5);
+      document.getElementById('mem-plan-end-time').value = (plan.end_time || '23:59').substring(0, 5);
+      document.getElementById('mem-plan-max-hours').value = plan.max_daily_hours || 1.5;
+      
+      const hasAcademy = Boolean(plan.includes_academy_classes);
+      document.getElementById('mem-plan-includes-academy').checked = hasAcademy;
+      document.getElementById('mem-plan-classes-count-wrap').style.display = hasAcademy ? 'block' : 'none';
+      document.getElementById('mem-plan-monthly-classes').value = plan.monthly_classes_count || 0;
+      document.getElementById('mem-plan-includes-drinks').checked = Boolean(plan.includes_beverage_perk);
+      document.getElementById('mem-plan-discount').value = plan.americano_discount_pct || 0;
+
+      modal.classList.add('active');
+    };
+
+    window.closeMembershipPlanModal = function() {
+      const modal = document.getElementById('modal-membership-plan');
+      if (modal) modal.classList.remove('active');
+    };
+
+    window.submitMembershipPlanForm = async function(e) {
+      e.preventDefault();
+      const planId = document.getElementById('mem-plan-edit-id').value;
+      const name = document.getElementById('mem-plan-name').value.trim();
+      const badge_label = document.getElementById('mem-plan-badge').value.trim() || 'PLAN SOCIO';
+      const card_gradient = document.getElementById('mem-plan-gradient').value;
+      const monthly_price_cop = parseInt(document.getElementById('mem-plan-price').value) || 0;
+      const start_time = document.getElementById('mem-plan-start-time').value + ':00';
+      const end_time = document.getElementById('mem-plan-end-time').value + ':00';
+      const max_daily_hours = parseFloat(document.getElementById('mem-plan-max-hours').value) || 1.5;
+      const includes_academy_classes = document.getElementById('mem-plan-includes-academy').checked;
+      const monthly_classes_count = includes_academy_classes ? (parseInt(document.getElementById('mem-plan-monthly-classes').value) || 0) : 0;
+      const includes_beverage_perk = document.getElementById('mem-plan-includes-drinks').checked;
+      const americano_discount_pct = parseInt(document.getElementById('mem-plan-discount').value) || 0;
+
+      const payload = {
+        name,
+        badge_label,
+        card_gradient,
+        monthly_price_cop,
+        start_time,
+        end_time,
+        max_daily_hours,
+        includes_academy_classes,
+        monthly_classes_count,
+        includes_beverage_perk,
+        americano_discount_pct,
+        is_active: true
+      };
+
+      try {
+        let url = `${API_BASE}/api/v1/memberships/`;
+        let method = 'POST';
+        if (planId) {
+          url = `${API_BASE}/api/v1/memberships/${planId}`;
+          method = 'PUT';
+        }
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast(
+              planId ? '✏️ Plan Actualizado' : '💎 Plan Creado',
+              `El plan '${data.name}' se guardó exitosamente.`
+            );
+          } else {
+            alert(`✅ Plan '${data.name}' guardado exitosamente.`);
+          }
+          window.closeMembershipPlanModal();
+          window.loadMembershipsData();
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo guardar el plan'}`);
+        }
+      } catch (err) {
+        console.error('Error guardando plan:', err);
+        alert('Fallo de red al guardar el plan de membresía.');
+      }
+    };
+
+    window.deleteMembershipPlan = async function(planId, planName) {
+      if (!confirm(`¿Estás seguro de que deseas eliminar o desactivar el plan '${planName}'?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/memberships/${planId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.status === 'deactivated') {
+            alert(`ℹ️ ${data.message}`);
+          } else {
+            alert(`🗑️ ${data.message}`);
+          }
+          window.loadMembershipsData();
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo eliminar el plan'}`);
+        }
+      } catch (err) {
+        console.error('Error eliminando plan:', err);
+        alert('Fallo de red al eliminar el plan.');
+      }
+    };
+
 
     window.loadMembershipsData = async function() {
       const tbody = document.getElementById('memberships-table-tbody');
@@ -11454,6 +11808,11 @@ Jugador: ${checkData.player_name}`);
         if (elChing) elChing.textContent = `${chingottoCount} socio${chingottoCount === 1 ? '' : 's'}`;
         const elLebron = document.getElementById('stat-mem-lebron');
         if (elLebron) elLebron.textContent = `${lebronCount} socio${lebronCount === 1 ? '' : 's'}`;
+
+        // Renderizar tarjetas dinámicas con paletas vibrantes y alto contraste
+        if (typeof window.renderMembershipCards === 'function') {
+          window.renderMembershipCards(plans);
+        }
 
         // Consultar clientes para listar socios
         let customers = window.cachedPlayers;
@@ -11724,6 +12083,60 @@ Jugador: ${checkData.player_name}`);
     // =========================================================================
     // MODULO: 👤 PERFILES ENRIQUECIDOS CRM (CREAR / EDITAR)
     // =========================================================================
+        // =========================================================================
+    // MODULO: 👦 HELPERS DE MENORES DE EDAD (KIDS) Y ACUDIENTES CRM
+    // =========================================================================
+    window.toggleMinorFields = function(isMinor) {
+      const container = document.getElementById('crm-minor-fields-container');
+      if (!container) return;
+      if (isMinor) {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+        window.clearSelectedGuardian();
+      }
+    };
+
+    window.handleGuardianSearch = function(e) {
+      const inputEl = document.getElementById('crm-guardian-search');
+      const dropdownEl = document.getElementById('crm-guardian-dropdown');
+      if (!inputEl || !dropdownEl) return;
+
+      window.renderCRMSearchDropdown(inputEl, dropdownEl, function(p) {
+        window.setSelectedGuardian(p.id, p.name, p.phone || '');
+        dropdownEl.classList.add('hidden');
+        dropdownEl.style.display = 'none';
+      });
+    };
+
+    window.setSelectedGuardian = function(id, name, phone) {
+      const idInput = document.getElementById('crm-player-guardian-id');
+      const badge = document.getElementById('crm-guardian-selected-badge');
+      const text = document.getElementById('crm-guardian-selected-text');
+      const searchInput = document.getElementById('crm-guardian-search');
+      const phoneInput = document.getElementById('crm-edit-phone');
+
+      if (idInput) idInput.value = id;
+      if (text) text.textContent = `Acudiente: ${name} (${phone})`;
+      if (badge) badge.classList.remove('hidden');
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.placeholder = `Acudiente: ${name}`;
+      }
+      if (phoneInput && !phoneInput.value.trim() && phone) {
+        phoneInput.value = phone;
+      }
+    };
+
+    window.clearSelectedGuardian = function() {
+      const idInput = document.getElementById('crm-player-guardian-id');
+      const badge = document.getElementById('crm-guardian-selected-badge');
+      const searchInput = document.getElementById('crm-guardian-search');
+      if (idInput) idInput.value = '';
+      if (badge) badge.classList.add('hidden');
+      if (searchInput) searchInput.placeholder = 'Buscar socio acudiente por nombre o teléfono...';
+    };
+
     window.openCustomerModal = function(mode, playerOrId) {
       const modal = document.getElementById('modal-crm-player') || document.getElementById('register-customer-modal');
       if (!modal) return;
@@ -11761,6 +12174,21 @@ Jugador: ${checkData.player_name}`);
         if (timeSelect) timeSelect.value = (p && p.preferred_play_time) ? p.preferred_play_time : 'Tarde/Noche (16:00 - 23:00)';
         if (tierSelect) tierSelect.value = (p && p.membership_tier) ? p.membership_tier : 'ESTANDAR';
         if (notesInput) notesInput.value = (p && p.notes) ? p.notes : '';
+
+        const isMinorCb = document.getElementById('crm-player-is-minor');
+        if (isMinorCb) {
+          isMinorCb.checked = Boolean(p && p.is_minor);
+          window.toggleMinorFields(isMinorCb.checked);
+        }
+        const bDateInput = document.getElementById('crm-player-birth-date');
+        if (bDateInput) bDateInput.value = (p && p.birth_date) ? p.birth_date : '';
+        const gRelSelect = document.getElementById('crm-player-guardian-relationship');
+        if (gRelSelect) gRelSelect.value = (p && p.guardian_relationship) ? p.guardian_relationship : 'HIJO';
+        if (p && p.guardian_id) {
+          window.setSelectedGuardian(p.guardian_id, p.guardian_name || 'Acudiente', p.guardian_phone || '');
+        } else {
+          window.clearSelectedGuardian();
+        }
       } else {
         if (titleEl) titleEl.textContent = 'Registrar Nuevo Jugador CRM';
         if (submitTextEl) submitTextEl.textContent = 'Guardar Jugador';
@@ -11774,6 +12202,13 @@ Jugador: ${checkData.player_name}`);
         if (timeSelect) timeSelect.value = 'Tarde/Noche (16:00 - 23:00)';
         if (tierSelect) tierSelect.value = 'ESTANDAR';
         if (notesInput) notesInput.value = '';
+
+        const isMinorCb = document.getElementById('crm-player-is-minor');
+        if (isMinorCb) {
+          isMinorCb.checked = false;
+          window.toggleMinorFields(false);
+        }
+        window.clearSelectedGuardian();
       }
 
       modal.classList.add('active');
@@ -11806,6 +12241,16 @@ Jugador: ${checkData.player_name}`);
       const membership_tier = (document.getElementById('crm-edit-tier') || document.getElementById('reg-cust-tier')).value;
       const notes = (document.getElementById('crm-edit-notes') || document.getElementById('reg-cust-notes')).value.trim();
 
+      const is_minor = document.getElementById('crm-player-is-minor') ? document.getElementById('crm-player-is-minor').checked : false;
+      const birth_date = document.getElementById('crm-player-birth-date') ? document.getElementById('crm-player-birth-date').value : null;
+      const guardian_id = document.getElementById('crm-player-guardian-id') && document.getElementById('crm-player-guardian-id').value ? parseInt(document.getElementById('crm-player-guardian-id').value) : null;
+      const guardian_relationship = document.getElementById('crm-player-guardian-relationship') ? document.getElementById('crm-player-guardian-relationship').value : null;
+
+      let client_type = membership_tier !== 'ESTANDAR' ? `Socio VIP (${membership_tier})` : 'Estándar';
+      if (is_minor) {
+        client_type = 'Semillero Kids';
+      }
+
       const payload = {
         name,
         phone,
@@ -11815,7 +12260,11 @@ Jugador: ${checkData.player_name}`);
         preferred_music: preferred_music || null,
         preferred_play_time: preferred_play_time || null,
         membership_tier,
-        client_type: membership_tier !== 'ESTANDAR' ? `Socio VIP (${membership_tier})` : 'Estándar',
+        client_type,
+        is_minor,
+        birth_date: birth_date || null,
+        guardian_id,
+        guardian_relationship: guardian_relationship || null,
         notes: notes || null
       };
 

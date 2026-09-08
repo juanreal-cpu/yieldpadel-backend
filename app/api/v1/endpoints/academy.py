@@ -1,18 +1,17 @@
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
-from decimal import Decimal
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select, func, or_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.academy import AcademyClass, AcademyEnrollment
 from app.models.customer import Customer
-from app.models.membership import MembershipPlan
 from app.models.court import Court
-from app.models.slot import TimeSlot, SlotMode, SlotStatus
+from app.services import academy as academy_service
 
 router = APIRouter()
 
@@ -22,6 +21,9 @@ class EnrollmentDetail(BaseModel):
     player_id: int
     player_name: str
     phone: str
+    is_minor: bool = False
+    guardian_name: Optional[str] = None
+    guardian_phone: Optional[str] = None
     payment_status: str
     amount_charged: int
     created_at: str
@@ -33,6 +35,7 @@ class AcademyClassResponse(BaseModel):
     id: int
     title: str
     level: str
+    target_age: str = "ADULTOS"
     date: str
     start_time: str
     end_time: str
@@ -50,7 +53,8 @@ class AcademyClassResponse(BaseModel):
 
 class CreateAcademyClassRequest(BaseModel):
     title: str
-    level: str  # INICIACION_6_7, MEDIO_4_5, AVANZADO
+    level: str  # KIDS_INICIACION, KIDS_INTERMEDIO, INICIACION_6_7, MEDIO_4_5, AVANZADO
+    target_age: str = "ADULTOS"  # ADULTOS, KIDS_SUB10, KIDS_SUB14, JUNIOR
     date: str  # YYYY-MM-DD
     start_time: str  # HH:MM or HH:MM:SS
     end_time: str  # HH:MM or HH:MM:SS
@@ -65,22 +69,22 @@ class EnrollStudentRequest(BaseModel):
     player_id: int
 
 
-def parse_time(t_str: str) -> time:
-    try:
-        parts = t_str.strip().split(":")
-        return time(int(parts[0]), int(parts[1]))
-    except Exception:
-        return time(8, 0)
-
-
 @router.get("/classes", response_model=List[AcademyClassResponse])
 async def list_academy_classes(
     date_query: Optional[str] = Query(None, alias="date", description="Filtrar por fecha YYYY-MM-DD"),
     level: Optional[str] = Query(None, description="Filtrar por nivel"),
+    target_age: Optional[str] = Query(None, description="Filtrar por edad o categoría (ADULTOS, KIDS_SUB10, KIDS_SUB14, JUNIOR)"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Lista las clases de academia con sus alumnos inscritos y cupos disponibles."""
-    stmt = select(AcademyClass).order_by(AcademyClass.date.asc(), AcademyClass.start_time.asc())
+    """Lista las clases de academia con sus alumnos inscritos, cupos disponibles y soporte de categorías Kids."""
+    stmt = (
+        select(AcademyClass)
+        .options(
+            selectinload(AcademyClass.court),
+            selectinload(AcademyClass.enrollments).selectinload(AcademyEnrollment.customer).selectinload(Customer.guardian),
+        )
+        .order_by(AcademyClass.date.asc(), AcademyClass.start_time.asc())
+    )
 
     if date_query:
         try:
@@ -92,12 +96,14 @@ async def list_academy_classes(
     if level and level.upper() not in ["ALL", "TODAS", ""]:
         stmt = stmt.where(AcademyClass.level == level)
 
+    if target_age and target_age.upper() not in ["ALL", "TODAS", ""]:
+        stmt = stmt.where(AcademyClass.target_age == target_age.upper())
+
     res = await db.execute(stmt)
     classes = res.scalars().all()
 
-    # Si no hay clases creadas, proveer clases demo para que la UI muestre contenido de inmediato
+    # Si no hay clases creadas, sembrar clases iniciales (incluyendo categoría Kids)
     if not classes:
-        # Buscar una cancha de pádel
         court_stmt = select(Court).where(Court.sport_type == "PADEL").limit(1)
         court_res = await db.execute(court_stmt)
         c = court_res.scalar_one_or_none()
@@ -105,44 +111,46 @@ async def list_academy_classes(
             today = date.today()
             demo_classes = [
                 AcademyClass(
-                    title="Clase Media - Estrategia & Paredes",
-                    level="MEDIO_4_5",
+                    title="Kids Semillero Sub-10 - Fundamentos & Psicomotricidad",
+                    level="KIDS_INICIACION",
+                    target_age="KIDS_SUB10",
                     date=today,
-                    start_time=time(8, 0),
-                    end_time=time(9, 30),
+                    start_time=time(15, 30),
+                    end_time=time(17, 0),
                     court_id=c.id,
                     coach_name="Coach Mateo Rivas",
                     max_students=4,
                     price_per_student=35000,
                 ),
                 AcademyClass(
-                    title="Iniciación Técnica y Empuñaduras",
-                    level="INICIACION_6_7",
+                    title="Junior Sub-14 - Transición y Voleas de Ataque",
+                    level="KIDS_INTERMEDIO",
+                    target_age="KIDS_SUB14",
                     date=today,
-                    start_time=time(10, 0),
-                    end_time=time(11, 30),
+                    start_time=time(17, 0),
+                    end_time=time(18, 30),
                     court_id=c.id,
                     coach_name="Coach Marcos Valdés",
                     max_students=4,
                     price_per_student=35000,
                 ),
                 AcademyClass(
-                    title="Entrenamiento Táctico Avanzado",
-                    level="AVANZADO",
-                    date=today + timedelta(days=1),
-                    start_time=time(18, 0),
-                    end_time=time(19, 30),
+                    title="Iniciación Adultos - Técnica y Empuñaduras",
+                    level="INICIACION_6_7",
+                    target_age="ADULTOS",
+                    date=today,
+                    start_time=time(18, 30),
+                    end_time=time(20, 0),
                     court_id=c.id,
                     coach_name="Coach Mateo Rivas",
                     max_students=4,
-                    price_per_student=45000,
+                    price_per_student=35000,
                 ),
             ]
             for demo in demo_classes:
                 db.add(demo)
             await db.commit()
 
-            # Re-consultar
             res = await db.execute(stmt)
             classes = res.scalars().all()
 
@@ -151,14 +159,22 @@ async def list_academy_classes(
         court_name = cls.court.name if cls.court else "Cancha Principal"
         enrollments_data = []
         for enr in cls.enrollments:
-            p_name = enr.customer.name if enr.customer else (enr.player.name if enr.player else f"Alumno #{enr.player_id}")
-            p_phone = enr.customer.phone if enr.customer else ""
+            student = enr.customer
+            p_name = student.name if student else f"Alumno #{enr.player_id}"
+            p_phone = student.phone if student else ""
+            is_minor = student.is_minor if student else False
+            g_name = student.guardian.name if (student and student.guardian) else None
+            g_phone = student.guardian.phone if (student and student.guardian) else None
+
             enrollments_data.append(
                 EnrollmentDetail(
                     id=enr.id,
                     player_id=enr.player_id,
                     player_name=p_name,
                     phone=p_phone,
+                    is_minor=is_minor,
+                    guardian_name=g_name,
+                    guardian_phone=g_phone,
                     payment_status=enr.payment_status,
                     amount_charged=enr.amount_charged,
                     created_at=enr.created_at.strftime("%Y-%m-%d %H:%M") if enr.created_at else "",
@@ -173,6 +189,7 @@ async def list_academy_classes(
                 id=cls.id,
                 title=cls.title,
                 level=cls.level,
+                target_age=cls.target_age or "ADULTOS",
                 date=cls.date.strftime("%Y-%m-%d"),
                 start_time=cls.start_time.strftime("%H:%M"),
                 end_time=cls.end_time.strftime("%H:%M"),
@@ -196,102 +213,33 @@ async def create_academy_class(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Crea una clase en la academia y bloquea/asigna automáticamente la cancha en la Matriz Calendario (slot_type='CLASS').
+    Crea una clase en la academia (adultos o kids) y bloquea automáticamente la cancha en el Calendario.
     """
     try:
-        class_date = datetime.strptime(payload.date.strip(), "%Y-%m-%d").date()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Formato de fecha inválido (debe ser YYYY-MM-DD)")
+        new_class = await academy_service.create_class(db, payload.model_dump())
+        court_stmt = select(Court.name).where(Court.id == new_class.court_id)
+        c_res = await db.execute(court_stmt)
+        c_name = c_res.scalar() or "Cancha"
 
-    start_t = parse_time(payload.start_time)
-    end_t = parse_time(payload.end_time)
-
-    # Validar que court_id sea UUID válido
-    try:
-        target_court_id = uuid.UUID(payload.court_id.strip())
-    except Exception:
-        # Fallback a buscar por nombre o primera cancha
-        c_stmt = select(Court).where(Court.id == payload.court_id).limit(1)
-        c_res = await db.execute(c_stmt)
-        court_obj = c_res.scalar_one_or_none()
-        if not court_obj:
-            c_first = await db.execute(select(Court).limit(1))
-            court_obj = c_first.scalar_one_or_none()
-        if not court_obj:
-            raise HTTPException(status_code=404, detail="Cancha no encontrada")
-        target_court_id = court_obj.id
-
-    new_class = AcademyClass(
-        title=payload.title.strip(),
-        level=payload.level.strip(),
-        date=class_date,
-        start_time=start_t,
-        end_time=end_t,
-        court_id=target_court_id,
-        coach_name=payload.coach_name.strip(),
-        max_students=payload.max_students,
-        price_per_student=payload.price_per_student,
-    )
-    db.add(new_class)
-    await db.flush()
-
-    # Generar / Sincronizar TimeSlot en la cancha para reflejar en el Calendario
-    slot_stmt = select(TimeSlot).where(
-        TimeSlot.court_id == target_court_id,
-        TimeSlot.date == class_date,
-        TimeSlot.start_time == start_t,
-    )
-    slot_res = await db.execute(slot_stmt)
-    slot = slot_res.scalar_one_or_none()
-
-    if slot:
-        slot.slot_type = "CLASS"
-        slot.instructor_name = payload.coach_name.strip()
-        slot.capacity = payload.max_students
-        slot.status = SlotStatus.BLOCKED
-        slot.category = payload.level.strip()
-    else:
-        new_slot = TimeSlot(
-            court_id=target_court_id,
-            date=class_date,
-            start_time=start_t,
-            end_time=end_t,
-            total_price=Decimal(str(payload.price_per_student * payload.max_students)),
-            mode=SlotMode.SPLIT_MATCH,
-            capacity=payload.max_students,
-            booked_spots=0,
-            status=SlotStatus.BLOCKED,
-            players_names=[],
-            category=payload.level.strip(),
-            slot_type="CLASS",
-            instructor_name=payload.coach_name.strip(),
-            sport_type="PADEL",
+        return AcademyClassResponse(
+            id=new_class.id,
+            title=new_class.title,
+            level=new_class.level,
+            target_age=new_class.target_age or "ADULTOS",
+            date=new_class.date.strftime("%Y-%m-%d"),
+            start_time=new_class.start_time.strftime("%H:%M"),
+            end_time=new_class.end_time.strftime("%H:%M"),
+            court_id=str(new_class.court_id),
+            court_name=c_name,
+            coach_name=new_class.coach_name,
+            max_students=new_class.max_students,
+            price_per_student=new_class.price_per_student,
+            enrolled_count=0,
+            available_spots=new_class.max_students,
+            enrollments=[],
         )
-        db.add(new_slot)
-
-    await db.commit()
-    await db.refresh(new_class)
-
-    court_name_stmt = select(Court.name).where(Court.id == target_court_id)
-    c_name_res = await db.execute(court_name_stmt)
-    court_name = c_name_res.scalar() or "Cancha"
-
-    return AcademyClassResponse(
-        id=new_class.id,
-        title=new_class.title,
-        level=new_class.level,
-        date=new_class.date.strftime("%Y-%m-%d"),
-        start_time=new_class.start_time.strftime("%H:%M"),
-        end_time=new_class.end_time.strftime("%H:%M"),
-        court_id=str(new_class.court_id),
-        court_name=court_name,
-        coach_name=new_class.coach_name,
-        max_students=new_class.max_students,
-        price_per_student=new_class.price_per_student,
-        enrolled_count=0,
-        available_spots=new_class.max_students,
-        enrollments=[],
-    )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/enroll")
@@ -300,98 +248,12 @@ async def enroll_student_in_class(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Inscribe a un socio a una clase de academia, validando aforo y si su membresía cubre la sesión ($0 COP) o genera pago pendiente.
+    Inscribe a un socio o kid apadrinado en una clase de academia.
+    Si el alumno es menor de edad apadrinado por un acudiente con membresía activa que incluye clases,
+    aplica el cupo del acudiente ($0 COP). Si no, genera cobro pendiente.
     """
-    cls_stmt = select(AcademyClass).where(AcademyClass.id == payload.academy_class_id)
-    cls_res = await db.execute(cls_stmt)
-    cls = cls_res.scalar_one_or_none()
-    if not cls:
-        raise HTTPException(status_code=404, detail="Clase de academia no encontrada")
-
-    cust_stmt = select(Customer).where(Customer.id == payload.player_id)
-    cust_res = await db.execute(cust_stmt)
-    customer = cust_res.scalar_one_or_none()
-    if not customer:
-        raise HTTPException(status_code=404, detail="Jugador no encontrado en CRM")
-
-    # Validar aforo
-    enr_count = len(cls.enrollments)
-    if enr_count >= cls.max_students:
-        raise HTTPException(status_code=400, detail="Aforo completo: la clase ya alcanzó el límite máximo de alumnos")
-
-    # Validar si ya está inscrito
-    if any(e.player_id == customer.id for e in cls.enrollments):
-        raise HTTPException(status_code=400, detail="El jugador ya está inscrito en esta clase")
-
-    # Validar membresía para cortesía de clase
-    today = date.today()
-    is_covered = False
-    perk_message = ""
-
-    # Comprobar si tiene plan activo
-    has_active_membership = customer.membership_end_date and customer.membership_end_date >= today
-    tier_upper = (customer.membership_tier or "").upper()
-
-    plan = customer.membership_plan
-    if not plan and tier_upper:
-        plan_stmt = select(MembershipPlan).where(MembershipPlan.name.ilike(tier_upper))
-        plan_res = await db.execute(plan_stmt)
-        plan = plan_res.scalar_one_or_none()
-
-    if has_active_membership and plan and plan.includes_academy_classes:
-        allowed_classes = plan.monthly_classes_count or 0
-        used_classes = customer.academy_classes_used or 0
-        if used_classes < allowed_classes:
-            is_covered = True
-            customer.academy_classes_used = used_classes + 1
-            perk_message = f"Clase incluida en Membresía {plan.name} ({customer.academy_classes_used}/{allowed_classes} usadas)"
-        else:
-            perk_message = f"Cupo de clases del mes completado ({used_classes}/{allowed_classes}). Tarifa regular."
-    elif tier_upper in ["TAPIA", "COELLO"]:
-        # Fallback de membresías VIP
-        used_classes = customer.academy_classes_used or 0
-        max_allowed = 4 if tier_upper == "TAPIA" else 2
-        if used_classes < max_allowed:
-            is_covered = True
-            customer.academy_classes_used = used_classes + 1
-            perk_message = f"Clase incluida en Membresía VIP ({customer.academy_classes_used}/{max_allowed} usadas)"
-
-    payment_status = "INCLUDED_IN_MEMBERSHIP" if is_covered else "PENDING"
-    amount_charged = 0 if is_covered else cls.price_per_student
-
-    enrollment = AcademyEnrollment(
-        academy_class_id=cls.id,
-        player_id=customer.id,
-        payment_status=payment_status,
-        amount_charged=amount_charged,
-    )
-    db.add(enrollment)
-
-    # Actualizar TimeSlot vinculado
-    slot_stmt = select(TimeSlot).where(
-        TimeSlot.court_id == cls.court_id,
-        TimeSlot.date == cls.date,
-        TimeSlot.start_time == cls.start_time,
-    )
-    slot_res = await db.execute(slot_stmt)
-    slot = slot_res.scalar_one_or_none()
-    if slot:
-        slot.booked_spots = enr_count + 1
-        current_names = list(slot.players_names or [])
-        if customer.name not in current_names:
-            current_names.append(customer.name)
-        slot.players_names = current_names
-
-    await db.commit()
-    await db.refresh(enrollment)
-
-    return {
-        "status": "success",
-        "message": f"Inscripción exitosa: {customer.name} a '{cls.title}'",
-        "enrollment_id": enrollment.id,
-        "is_covered_by_membership": is_covered,
-        "amount_charged": amount_charged,
-        "payment_status": payment_status,
-        "perk_message": perk_message,
-        "available_spots_left": cls.max_students - (enr_count + 1),
-    }
+    try:
+        res = await academy_service.enroll_student(db, payload.academy_class_id, payload.player_id)
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
