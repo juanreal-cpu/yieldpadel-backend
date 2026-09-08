@@ -4519,8 +4519,7 @@
   <script>
 
     // ========================================================
-    // 3. BLINDAJE DE NAVEGACIÓN GLOBAL (switchMainView)
-    // Declarado de forma aislada al inicio del bloque script principal
+    // 1. BLINDAR NAVEGACIÓN GLOBAL AL INICIO DEL <SCRIPT>
     // ========================================================
     window.switchMainView = function(viewName) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
@@ -4528,49 +4527,46 @@
       if (cleanName === 'matrix') cleanName = 'calendar';
       if (cleanName === 'indicators') cleanName = 'yield';
 
-      const target = document.getElementById('view-' + cleanName);
-      if (target) {
-        target.classList.remove('hidden');
-      }
+      const target = document.getElementById('view-' + cleanName) || document.getElementById('view-' + viewName);
+      if (target) target.classList.remove('hidden');
+
       document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
         btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
         btn.classList.add('text-slate-600');
       });
-      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('tab-' + cleanName);
+      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('btn-nav-' + viewName) || document.getElementById('tab-' + cleanName);
       if (activeBtn) {
         activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
         activeBtn.classList.remove('text-slate-600');
       }
 
-      // Disparadores secundarios con try...catch individuales para que ningún fallo impida cambiar de pestaña
-      try { if (cleanName === 'crm' && typeof loadCRMPlayers === 'function') loadCRMPlayers(); } catch (err) { console.warn('loadCRMPlayers error:', err); }
-      try { if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory(); } catch (err) { console.warn('loadCRMDirectory error:', err); }
-      try { if (cleanName === 'pos' && typeof loadPosData === 'function') loadPosData(); } catch (err) { console.warn('loadPosData error:', err); }
-      try { if (cleanName === 'pos' && typeof loadPOSData === 'function') loadPOSData(); } catch (err) { console.warn('loadPOSData error:', err); }
-      try { if (cleanName === 'access' && typeof loadAccessPresence === 'function') loadAccessPresence(); } catch (err) { console.warn('loadAccessPresence error:', err); }
-      try { if (cleanName === 'access' && typeof loadAccessData === 'function') loadAccessData(); } catch (err) { console.warn('loadAccessData error:', err); }
-      try { if (cleanName === 'audit' && typeof loadAuditLogs === 'function') loadAuditLogs(); } catch (err) { console.warn('loadAuditLogs error:', err); }
-      try { if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData(); } catch (err) { console.warn('loadAuditData error:', err); }
-      try { if (cleanName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments(); } catch (err) { console.warn('loadTournaments error:', err); }
-      try { if (cleanName === 'tournaments' && typeof loadTournamentsList === 'function') loadTournamentsList(); } catch (err) { console.warn('loadTournamentsList error:', err); }
-      try { if (cleanName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig(); } catch (err) { console.warn('loadClubCourtsConfig error:', err); }
-      try { if (cleanName === 'config' && typeof loadClubConfig === 'function') loadClubConfig(); } catch (err) { console.warn('loadClubConfig error:', err); }
-      try { if (cleanName === 'yield' && typeof loadYieldEngineStats === 'function') loadYieldEngineStats(); } catch (err) { console.warn('loadYieldEngineStats error:', err); }
-      try { if (cleanName === 'radar' && typeof initRadarMap === 'function') initRadarMap(); } catch (err) { console.warn('initRadarMap error:', err); }
-      try { if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots(); } catch (err) { console.warn('fetchSlots error:', err); }
+      // Disparadores diferidos envueltos en try/catch para que jamás bloqueen
+      try {
+        if (viewName === 'crm' && typeof loadCRMPlayers === 'function') loadCRMPlayers();
+        if (viewName === 'pos' && typeof loadPosData === 'function') loadPosData();
+        if (viewName === 'access' && typeof loadAccessPresence === 'function') loadAccessPresence();
+        if (viewName === 'audit' && typeof loadAuditLogs === 'function') loadAuditLogs();
+        if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
+        if (cleanName === 'pos' && typeof loadPOSData === 'function') loadPOSData();
+        if (cleanName === 'access' && typeof loadAccessData === 'function') loadAccessData();
+        if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
+        if (cleanName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments();
+        if (cleanName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
+        if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
+      } catch (err) {
+        console.warn('Carga diferida:', err);
+      }
     };
     function switchMainView(viewName) { window.switchMainView(viewName); }
 
-    // ========================================================
-    // DECLARACIONES GLOBALES EXPLÍCITAS & NAVEGACIÓN
-    // ========================================================
-    window.currentSportFilter = window.currentSportFilter || 'PADEL';
-    window.selectedCourtZoom = window.selectedCourtZoom || 'ALL';
-    window.currentSport = window.currentSport || 'PADEL';
-    window.currentStatusFilter = window.currentStatusFilter || 'ALL';
-    var currentStatusFilter = window.currentStatusFilter;
-    window.currentTimeFilter = window.currentTimeFilter || 'ALL';
-    var currentTimeFilter = window.currentTimeFilter;
+    window.currentSport = 'PADEL';
+    window.selectedCourtZoom = 'ALL';
+    window.currentSportFilter = 'PADEL';
+    var currentSportFilter = 'PADEL';
+    window.currentStatusFilter = 'ALL';
+    var currentStatusFilter = 'ALL';
+    window.currentTimeFilter = 'ALL';
+    var currentTimeFilter = 'ALL';
 
     window.openRegisterPlayerModal = function() {
       if (typeof openRegisterCustomerModal === 'function') openRegisterCustomerModal();
@@ -6109,14 +6105,15 @@ ${data.message}`);
         gridLoader.style.display = 'flex';
       }
 
-      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+      const dateInput = document.querySelector('input[type="date"]') || document.getElementById('selected-date');
+      const forcedDate = '2026-09-07';
       if (!window.currentDate || !window.currentDate.trim() || (dateInput && !dateInput.value)) {
-        window.currentDate = (dateInput && dateInput.value) ? dateInput.value : '2026-09-07';
+        window.currentDate = (dateInput && dateInput.value) ? dateInput.value : forcedDate;
         if (dateInput && !dateInput.value) {
           dateInput.value = window.currentDate;
         }
       }
-      const currentDate = window.currentDate || (dateInput && dateInput.value) || '2026-09-07';
+      const currentDate = window.currentDate || (dateInput && dateInput.value) || forcedDate;
       selectedDate = currentDate;
 
       const currentSport = (typeof currentSportFilter !== 'undefined' && currentSportFilter ? currentSportFilter : (window.currentSport || 'PADEL')).toUpperCase();
@@ -6146,7 +6143,7 @@ ${data.message}`);
         const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
         if (!allSlots || allSlots.length === 0) {
           if (container) {
-            container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa '+ Torneo Americano' o 'Programar Semana' para generarlos.</div>";
+            container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa 'Programar Semana' para crearlos.</div>";
           }
           const countEl = document.getElementById('slots-count');
           if (countEl) countEl.textContent = '0 turnos';
@@ -6160,7 +6157,7 @@ ${data.message}`);
         window.allSlots = [];
         const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
         if (container) {
-          container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa '+ Torneo Americano' o 'Programar Semana' para generarlos.</div>";
+          container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa 'Programar Semana' para crearlos.</div>";
         }
         if (typeof updateMetrics === 'function') updateMetrics();
       } finally {
@@ -6209,6 +6206,7 @@ ${data.message}`);
             { id: 'c5', court_number: 5, name: 'Pista 5 Pro', sport_type: 'PADEL', max_capacity: 4 }
           ];
         }
+      }
       // Deduplicación estricta por court.id único y nombre para garantizar que nunca se pinten dos columnas con el mismo nombre o ID
       const seenCourtIds = new Set();
       const seenCourtNames = new Set();
@@ -9796,16 +9794,14 @@ Jugador: ${checkData.player_name}`);
     window.submitClearDebtAndCheckout = submitClearDebtAndCheckout;
 
     function initOperationalDashboard() {
-      // 1. INICIALIZACIÓN OBLIGATORIA DE FECHA EN EL DOM
-      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+      // 2. AUTOCOMPLETADO ESTRICTO DE FECHA
+      const dateInput = document.querySelector('input[type="date"]') || document.getElementById('selected-date');
+      const today = '2026-09-07';
       if (dateInput && !dateInput.value) {
-        const today = new Date().toISOString().split('T')[0];
         dateInput.value = today;
-        window.currentDate = today;
       }
-      if (typeof selectedDate === 'undefined' || !selectedDate) {
-        selectedDate = (dateInput && dateInput.value) ? dateInput.value : (window.currentDate || '2026-09-07');
-      }
+      window.currentDate = dateInput ? dateInput.value : today;
+      selectedDate = window.currentDate;
       if (typeof updateDateUI === 'function') updateDateUI();
 
       // Cargar usuario y configuración de pistas
@@ -9829,21 +9825,21 @@ Jugador: ${checkData.player_name}`);
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
-        const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+        const dateInput = document.querySelector('input[type="date"]') || document.getElementById('selected-date');
+        const today = '2026-09-07';
         if (dateInput && !dateInput.value) {
-          const today = new Date().toISOString().split('T')[0];
           dateInput.value = today;
-          window.currentDate = today;
         }
+        window.currentDate = dateInput ? dateInput.value : today;
         initOperationalDashboard();
       });
     } else {
-      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+      const dateInput = document.querySelector('input[type="date"]') || document.getElementById('selected-date');
+      const today = '2026-09-07';
       if (dateInput && !dateInput.value) {
-        const today = new Date().toISOString().split('T')[0];
         dateInput.value = today;
-        window.currentDate = today;
       }
+      window.currentDate = dateInput ? dateInput.value : today;
       initOperationalDashboard();
     }
 
