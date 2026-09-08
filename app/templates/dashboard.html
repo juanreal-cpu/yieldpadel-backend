@@ -3832,14 +3832,24 @@
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Nombre del Jugador</label>
-          <input type="text" id="hold-client-name" class="form-control" required placeholder="Ej: Camilo Torres" />
+        <!-- Búsqueda dinámica CRM Autocompletado Reactivo en Hold -->
+        <div class="form-group relative" id="hold-player-search-group">
+          <label class="form-label font-bold text-slate-700 flex items-center justify-between">
+            <span>Nombre del Jugador</span>
+            <span class="text-[10px] text-slate-400 font-normal">Autocompleta desde CRM</span>
+          </label>
+          <div class="relative">
+            <input type="text" id="hold-player-search" data-alias="hold-client-name" class="form-control" placeholder="Escribe para buscar cliente (Juan, Camilo, David)..." autocomplete="off" oninput="window.handleHoldCRMSearch(event)" required>
+            <div id="hold-crm-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-44 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+          </div>
+          <input type="hidden" id="hold-player-name" />
+          <input type="hidden" id="hold-client-name" />
         </div>
 
         <div class="form-group">
           <label class="form-label font-bold text-slate-700">Teléfono WhatsApp</label>
-          <input type="tel" id="hold-client-phone" class="form-control" required placeholder="+57 300 1234567" />
+          <input type="tel" id="hold-player-phone" data-alias="hold-client-phone" class="form-control" required placeholder="+57 300 1234567" />
+          <input type="hidden" id="hold-client-phone" />
         </div>
 
         <div class="form-group">
@@ -7619,9 +7629,112 @@ ${data.message}`);
       }
     }
 
+    // =========================================================================
+    // BUSCADOR REACTIVO FLOTANTE CRM EN MODAL DE HOLD / APARTAR CUPO (#hold-modal)
+    // =========================================================================
+    window.handleHoldCRMSearch = async function(e) {
+      const query = (e && e.target ? e.target.value : (typeof e === 'string' ? e : '')).trim().toLowerCase();
+      const dropdown = document.getElementById('hold-crm-dropdown');
+      if (!dropdown) return;
+
+      if (!query) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      let players = (window.cachedPlayers && window.cachedPlayers.length > 0)
+        ? window.cachedPlayers
+        : ((window.allCRMCustomers && window.allCRMCustomers.length > 0) ? window.allCRMCustomers : (typeof DEFAULT_CRM_PLAYERS !== 'undefined' ? DEFAULT_CRM_PLAYERS : []));
+
+      let matches = players.filter(p => 
+        (p.name || '').toLowerCase().includes(query) ||
+        (p.phone || '').includes(query) ||
+        (p.category || '').toLowerCase().includes(query) ||
+        (p.membership_tier || '').toLowerCase().includes(query)
+      );
+
+      if (matches.length === 0 && query.length >= 2) {
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/customers/?query=${encodeURIComponent(query)}`);
+          if (res.ok) {
+            const remotePlayers = await res.json();
+            if (Array.isArray(remotePlayers) && remotePlayers.length > 0) {
+              matches = remotePlayers;
+              if (window.cachedPlayers) {
+                remotePlayers.forEach(rp => {
+                  if (!window.cachedPlayers.some(cp => cp.id === rp.id)) window.cachedPlayers.push(rp);
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Consulta reactiva CRM hold falló:", err);
+        }
+      }
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div class="px-4 py-2 text-xs text-slate-400">Sin resultados</div>';
+      } else {
+        dropdown.innerHTML = matches.slice(0, 10).map(p => {
+          const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const safePhone = (p.phone || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const safeTier = (p.membership_tier || p.client_type || 'ESTANDAR').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          return `<div onclick="window.selectPlayerForHold('${safeName}', '${safePhone}', '${safeTier}')" class="px-4 py-2.5 hover:bg-slate-50 cursor-pointer text-xs flex justify-between items-center"><span class="font-bold text-slate-800">${p.name}</span><span class="text-slate-500">${p.phone || ''} · <span class="text-emerald-600 font-semibold">${p.membership_tier || 'ESTANDAR'}</span></span></div>`;
+        }).join('');
+      }
+
+      dropdown.classList.remove('hidden');
+      dropdown.style.display = 'block';
+    };
+
+    window.selectPlayerForHold = function(name, phone, tier) {
+      const searchInput = document.getElementById('hold-player-search');
+      const nameInput = document.getElementById('hold-player-name');
+      const clientNameInput = document.getElementById('hold-client-name');
+      const phoneInput = document.getElementById('hold-player-phone');
+      const clientPhoneInput = document.getElementById('hold-client-phone');
+      const dropdown = document.getElementById('hold-crm-dropdown');
+
+      if (searchInput) searchInput.value = name || '';
+      if (nameInput) nameInput.value = name || '';
+      if (clientNameInput) clientNameInput.value = name || '';
+      if (phoneInput) phoneInput.value = phone || '';
+      if (clientPhoneInput) clientPhoneInput.value = phone || '';
+
+      const methodSelect = document.getElementById('hold-assignment-method');
+      const tierSelect = document.getElementById('hold-membership-tier');
+      const upperTier = (tier || '').toUpperCase();
+      const isMember = ['TAPIA', 'COELLO', 'GALAN', 'CHINGOTTO', 'LEBRON'].some(t => upperTier.includes(t));
+
+      if (isMember && methodSelect) {
+        methodSelect.value = 'MEMBERSHIP';
+        if (tierSelect) {
+          for (let i = 0; i < tierSelect.options.length; i++) {
+            if (upperTier.includes(tierSelect.options[i].value)) {
+              tierSelect.selectedIndex = i;
+              break;
+            }
+          }
+        }
+        if (typeof onHoldMethodChange === 'function') {
+          onHoldMethodChange('MEMBERSHIP');
+        }
+      }
+
+      if (dropdown) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
+        dropdown.style.display = 'none';
+      }
+    };
+
     // Modal Hold (Apartar Cupo)
     function openHoldModal(slotId) {
-      const slot = allSlots.find(s => s.id === slotId);
+      const targetId = parseInt(slotId, 10);
+      const slotList = (typeof allSlots !== 'undefined' && allSlots && allSlots.length > 0) ? allSlots : (window.allSlots || []);
+      const slot = slotList.find(s => s.id === slotId || s.id === targetId || String(s.id) === String(slotId));
       if (!slot) return;
 
       const { dateStr, timeStr } = getColombiaDateTime();
@@ -7632,15 +7745,41 @@ ${data.message}`);
       }
       const isPast = (slotDate < dateStr) || (slotDate === dateStr && slotEnd <= timeStr);
       if (isPast) {
-        showToast('No se pueden crear apartados ni reservas en turnos pasados.', 'error');
+        if (typeof window.showDarkToast === 'function') {
+          window.showDarkToast('Turno Pasado', 'No se pueden crear apartados ni reservas en turnos pasados.');
+        } else {
+          showToast('No se pueden crear apartados ni reservas en turnos pasados.', 'error');
+        }
         return;
       }
 
       selectedSlot = slot;
 
       document.getElementById('hold-slot-id').value = slot.id;
-      document.getElementById('hold-client-name').value = '';
-      document.getElementById('hold-client-phone').value = '';
+      const searchInput = document.getElementById('hold-player-search');
+      if (searchInput) searchInput.value = '';
+      const nameInput = document.getElementById('hold-player-name');
+      if (nameInput) nameInput.value = '';
+      const clientNameInput = document.getElementById('hold-client-name');
+      if (clientNameInput) clientNameInput.value = '';
+      const phoneInput = document.getElementById('hold-player-phone');
+      if (phoneInput) phoneInput.value = '';
+      const clientPhoneInput = document.getElementById('hold-client-phone');
+      if (clientPhoneInput) clientPhoneInput.value = '';
+
+      const dropdown = document.getElementById('hold-crm-dropdown');
+      if (dropdown) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
+        dropdown.style.display = 'none';
+      }
+
+      const methodSelect = document.getElementById('hold-assignment-method');
+      if (methodSelect) {
+        methodSelect.value = 'HOLD';
+        if (typeof onHoldMethodChange === 'function') onHoldMethodChange('HOLD');
+      }
+
       const spotsSelect = document.getElementById('hold-spots-count');
       if (spotsSelect) {
         spotsSelect.innerHTML = '';
@@ -7655,14 +7794,22 @@ ${data.message}`);
         spotsSelect.value = '1';
       }
 
-      const modal = document.getElementById('hold-modal');
+      const modal = document.getElementById('hold-modal') || document.getElementById('modal-hold');
       if (modal) modal.classList.add('active');
     }
+    window.openHoldModal = openHoldModal;
 
     function closeModal() {
-      const modal = document.getElementById('hold-modal');
+      const modal = document.getElementById('hold-modal') || document.getElementById('modal-hold');
       if (modal) modal.classList.remove('active');
+      const dropdown = document.getElementById('hold-crm-dropdown');
+      if (dropdown) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
+        dropdown.style.display = 'none';
+      }
     }
+    window.closeModal = closeModal;
 
     function onHoldMethodChange(method) {
       const group = document.getElementById('hold-membership-group');
@@ -7683,9 +7830,14 @@ ${data.message}`);
     async function handleHoldSubmit(e) {
       e.preventDefault();
       const slotId = document.getElementById('hold-slot-id').value;
-      const name = document.getElementById('hold-client-name').value.trim();
-      const phone = document.getElementById('hold-client-phone').value.trim();
-      const spots = parseInt(document.getElementById('hold-spots-count').value, 10);
+      const searchInput = document.getElementById('hold-player-search');
+      const nameInput = document.getElementById('hold-player-name') || document.getElementById('hold-client-name');
+      const name = (searchInput && searchInput.value ? searchInput.value : (nameInput ? nameInput.value : '')).trim();
+
+      const phoneInput = document.getElementById('hold-player-phone') || document.getElementById('hold-client-phone');
+      const phone = (phoneInput ? phoneInput.value : '').trim();
+
+      const spots = parseInt(document.getElementById('hold-spots-count').value, 10) || 1;
       const methodEl = document.getElementById('hold-assignment-method');
       const method = methodEl ? methodEl.value : 'HOLD';
       const tierEl = document.getElementById('hold-membership-tier');
@@ -7696,65 +7848,75 @@ ${data.message}`);
         return;
       }
 
-      if (method === 'HOLD') {
-        const payload = {
-          slot_id: parseInt(slotId, 10),
-          customer_name: name,
-          customer_phone: phone,
-          spots_held: spots,
-          client_tier: 'STANDARD'
-        };
+      const btn = document.getElementById('btn-submit-hold');
+      if (btn) {
+        btn.disabled = true;
+        btn.dataset.prevText = btn.textContent;
+        btn.textContent = 'Procesando...';
+      }
 
-        try {
-          const res = await fetch(`${API_BASE}/api/v1/holds/create`, {
+      const targetSlotId = parseInt(slotId, 10);
+      const payload = {
+        slot_id: targetSlotId,
+        player_name: name,
+        customer_name: name,
+        client_name: name,
+        phone: phone,
+        customer_phone: phone,
+        client_phone: phone,
+        spots_count: spots,
+        spots_held: spots,
+        payment_mode: method,
+        method: method,
+        client_tier: method === 'MEMBERSHIP' ? tier : (method === 'COUNTER' ? 'VIP_PAY_ON_SITE' : 'STANDARD')
+      };
+
+      try {
+        let endpoint = (method === 'HOLD') ? `${API_BASE}/api/v1/holds/create` : `${API_BASE}/api/v1/slots/assign-spot`;
+        let res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok && res.status === 404 && method === 'HOLD') {
+          endpoint = `${API_BASE}/api/v1/slots/hold`;
+          res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          const data = await res.json();
-          if (res.ok) {
-            addEvent('Hold Creado', `${name} apartó ${spots} cupo(s) (10 min TTL)`, 'green');
-            closeModal();
-            await fetchSlots();
-          } else {
-            alert(data.detail || 'Error al generar hold temporal');
-          }
-        } catch (err) {
-          console.error('Error in hold:', err);
-          alert('Fallo de red al generar hold temporal');
         }
-      } else {
-        // Direct assignment (Counter or Membership)
-        const payload = {
-          slot_id: parseInt(slotId, 10),
-          customer_name: name,
-          customer_phone: phone,
-          spots_count: spots,
-          method: method,
-          client_tier: method === 'MEMBERSHIP' ? tier : 'VIP_PAY_ON_SITE'
-        };
 
-        try {
-          const res = await fetch(`${API_BASE}/api/v1/slots/assign-spot`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json();
-          if (res.ok) {
-            const methodLabel = method === 'MEMBERSHIP' ? `Membresía (${tier})` : 'Counter / Efectivo-Datáfono';
-            addEvent('Cupo Asignado', `${name} confirmó ${spots} cupo(s) vía ${methodLabel}`, 'green');
-            closeModal();
-            await fetchSlots();
-          } else {
-            alert(data.detail || 'Error al asignar cupo');
+        const data = await res.json();
+        if (res.ok) {
+          const actionMsg = method === 'HOLD' 
+            ? `Hold Creado: ${name} apartó ${spots} cupo(s) (10 min TTL)` 
+            : (method === 'MEMBERSHIP' ? `Membresía (${tier}): ${name} confirmó ${spots} cupo(s)` : `Counter: ${name} confirmó ${spots} cupo(s)`);
+          
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('Cupo Asignado con Éxito', `✅ ${actionMsg}`);
+          } else if (typeof addEvent === 'function') {
+            addEvent('Cupo Asignado', actionMsg, 'green');
           }
-        } catch (err) {
-          console.error('Error in assign-spot:', err);
-          alert('Fallo de red al procesar asignación directa');
+
+          closeModal();
+          if (typeof fetchSlots === 'function') await fetchSlots();
+          if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
+        } else {
+          alert(`⚠️ Error al asignar cupo: ${data.detail || 'Fallo en la operación'}`);
+        }
+      } catch (err) {
+        console.error('Error in handleHoldSubmit:', err);
+        alert('Fallo de conexión al procesar el cupo');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = btn.dataset.prevText || 'Generar Hold (10 min)';
         }
       }
     }
+    window.handleHoldSubmit = handleHoldSubmit;
 
     // Modal Drop (Baja de Jugador)
     let dropSlotId = null;

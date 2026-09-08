@@ -17,12 +17,18 @@ class SlotHoldCreate(BaseModel):
     @classmethod
     def populate_aliases(cls, data):
         if isinstance(data, dict):
-            if "customer_phone" not in data and "client_phone" in data:
-                data["customer_phone"] = data["client_phone"]
-            if "customer_name" not in data and "client_name" in data:
-                data["customer_name"] = data["client_name"]
+            if "customer_phone" not in data:
+                data["customer_phone"] = data.get("phone") or data.get("client_phone")
+            if "customer_name" not in data:
+                data["customer_name"] = data.get("player_name") or data.get("client_name")
             if "spots_held" not in data and "spots_count" in data:
                 data["spots_held"] = data["spots_count"]
+            if "client_tier" not in data and "payment_mode" in data:
+                pm = str(data.get("payment_mode")).upper()
+                if pm == "MEMBERSHIP":
+                    data["client_tier"] = ClientTier.MEMBER
+                elif pm == "COUNTER":
+                    data["client_tier"] = ClientTier.VIP_PAY_ON_SITE
         return data
 
 

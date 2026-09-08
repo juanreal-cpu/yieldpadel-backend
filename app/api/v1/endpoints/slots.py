@@ -172,6 +172,18 @@ def compute_slot_response(slot: TimeSlot, now_utc: datetime) -> TimeSlotResponse
         dyn_status = SlotStatus.AVAILABLE
 
     participants_raw = to_participants_list(slot.players_names)
+    if hasattr(slot, "holds") and slot.holds:
+        for hold in slot.holds:
+            if hold.status == HoldStatus.ACTIVE and ensure_utc(hold.expires_at) > now_utc:
+                c_name = hold.customer_name or "Jugador (Hold)"
+                if not any((p.get("display_name") == c_name or p.get("phone") == hold.customer_phone) for p in participants_raw):
+                    participants_raw.append({
+                        "spot_index": len(participants_raw) + 1,
+                        "phone": hold.customer_phone,
+                        "display_name": f"{c_name} (Hold)",
+                        "client_tier": hold.client_tier.value if hasattr(hold.client_tier, "value") else str(hold.client_tier),
+                        "host_phone": None,
+                    })
     participants_objs = [SlotParticipant(**p) for p in participants_raw]
     display_names = [p.display_name for p in participants_objs]
 
@@ -1868,10 +1880,13 @@ class AssignSpotRequest(BaseModel):
     slot_id: int
     customer_name: Optional[str] = None
     client_name: Optional[str] = None
+    player_name: Optional[str] = None
     customer_phone: Optional[str] = None
     client_phone: Optional[str] = None
+    phone: Optional[str] = None
     spots_count: int = Field(default=1, ge=1, le=4)
     method: str = "COUNTER"  # "COUNTER", "MEMBERSHIP", "DIRECT"
+    payment_mode: Optional[str] = None
     client_tier: Optional[str] = None
 
 
@@ -1885,13 +1900,14 @@ async def assign_spot(
     - Método 'COUNTER' (Efectivo/Datáfono en counter): Confirma de una vez sin hold temporal.
     - Método 'MEMBERSHIP': Descuenta beneficio de membresía sin pasarela de pago.
     """
-    name = (payload.customer_name or payload.client_name or "").strip()
-    phone = (payload.customer_phone or payload.client_phone or "").strip()
+    name = (payload.player_name or payload.customer_name or payload.client_name or "").strip()
+    phone = (payload.phone or payload.customer_phone or payload.client_phone or "").strip()
     if not name or not phone:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Nombre y teléfono del jugador son requeridos.",
         )
+    method_upper = (payload.payment_mode or payload.method or "COUNTER").upper()
 
     stmt = (
         select(TimeSlot)
