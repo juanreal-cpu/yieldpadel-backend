@@ -49,13 +49,28 @@ class CreateProductRequest(BaseModel):
     is_membership_perk: bool = False
 
 
+class AddItemToSlotRequest(BaseModel):
+    slot_id: int
+    product_id: int
+    quantity: int = Field(default=1, ge=1)
+    is_membership_perk: bool = False
+    player_name: Optional[str] = None
+
+
+class CheckoutOrderRequest(BaseModel):
+    payment_method: str = "EFECTIVO"  # EFECTIVO, DATAFONO, BOLD_WOMPI, SALDO_A_FAVOR
+    discount_amount: float = 0.0
+
+
 class CheckoutResponse(BaseModel):
     order_id: int
     slot_id: Optional[int] = None
     customer_name: str
     court_price: float
     bar_total: float
+    membership_discount: float = 0.0
     total_to_pay: float
+    payment_method: str = "EFECTIVO"
     payment_status: str
 
 
@@ -198,31 +213,65 @@ async def get_active_slots(db: AsyncSession = Depends(get_db)):
             slots_by_court[c_id] = []
         slots_by_court[c_id].append(s)
 
-    active_courts_data = []
+    # Pre-identificar slot seleccionado para cada cancha
+    selected_slots_map: Dict[str, Optional[TimeSlot]] = {}
+    all_slot_ids = []
+    now_t = datetime.now().time()
 
     for court in courts:
         c_id = str(court.id)
         court_slots = slots_by_court.get(c_id, [])
-
-        # Buscar el turno actual o más relevante (confirmado, ocupado o próximo)
-        selected_slot: Optional[TimeSlot] = None
-        now_t = datetime.now().time()
-
-        # Priorizar slot en rango horario actual
+        sel: Optional[TimeSlot] = None
         for s in court_slots:
             if s.start_time <= now_t <= s.end_time:
-                selected_slot = s
+                sel = s
                 break
-
-        # Si no hay slot en este momento, tomar el primer ocupado/confirmado o el primero de hoy
-        if not selected_slot:
+        if not sel:
             occupied = [
                 s
                 for s in court_slots
                 if s.status in [SlotStatus.PARTIALLY_BOOKED, SlotStatus.FULLY_BOOKED]
                 or bool(s.players_names)
             ]
-            selected_slot = occupied[0] if occupied else (court_slots[0] if court_slots else None)
+            sel = occupied[0] if occupied else (court_slots[0] if court_slots else None)
+        selected_slots_map[c_id] = sel
+        if sel:
+            all_slot_ids.append(sel.id)
+
+    # 1. Cargar todas las órdenes PENDING en un solo query
+    orders_by_slot: Dict[int, Order] = {}
+    if all_slot_ids:
+        order_stmt = (
+            select(Order)
+            .options(selectinload(Order.items).selectinload(OrderItem.product))
+            .where(Order.slot_id.in_(all_slot_ids), Order.payment_status == "PENDING")
+            .order_by(desc(Order.created_at))
+        )
+        order_res = await db.execute(order_stmt)
+        for ord_item in order_res.scalars().all():
+            if ord_item.slot_id and ord_item.slot_id not in orders_by_slot:
+                orders_by_slot[ord_item.slot_id] = ord_item
+
+    # 2. Cargar clientes en un solo query para resolver membresías en memoria
+    cust_res = await db.execute(select(Customer))
+    all_customers = cust_res.scalars().all()
+
+    def find_customer_by_name(name_query: Optional[str]) -> Optional[Customer]:
+        if not name_query:
+            return None
+        nq = name_query.strip().lower()
+        # Coincidencia exacta o contenida
+        for cust in all_customers:
+            c_name = cust.name.strip().lower()
+            if nq == c_name or nq in c_name or c_name in nq:
+                return cust
+        return None
+
+    active_courts_data = []
+
+    for court in courts:
+        c_id = str(court.id)
+        selected_slot = selected_slots_map.get(c_id)
 
         court_data = {
             "court_id": c_id,
@@ -267,13 +316,36 @@ async def get_active_slots(db: AsyncSession = Depends(get_db)):
                     players_list.append(h.customer_phone)
 
             court_data["players"] = players_list
-            main_cust_name = players_list[0] if players_list else f"Cancha {court.name}"
-            court_data["main_customer"] = main_cust_name
+            titular = None
+            if selected_slot.players_names and len(selected_slot.players_names) > 0:
+                titular = selected_slot.players_names[0]
+            if not titular and selected_slot.bookings:
+                for b in selected_slot.bookings:
+                    if b.customer_name:
+                        titular = b.customer_name
+                        break
+            if not titular and selected_slot.holds:
+                for h in selected_slot.holds:
+                    if h.customer_phone:
+                        titular = h.customer_phone
+                        break
 
-            # Buscar membresía del jugador principal si existe en Customers
-            cust_stmt = select(Customer).where(Customer.name.ilike(f"%{main_cust_name}%"))
-            cust_res = await db.execute(cust_stmt)
-            customer = cust_res.scalars().first()
+            responsable = titular if titular else "Reserva Mostrador / Sin Titular"
+            court_data["main_customer"] = responsable
+
+            # Detalle de jugadores con membresías para selección individual en POS (en memoria)
+            players_details = []
+            for p_name in players_list:
+                p_cust = find_customer_by_name(p_name)
+                players_details.append({
+                    "name": p_name,
+                    "tier": p_cust.membership_tier if p_cust else "ESTANDAR",
+                    "customer_id": p_cust.id if p_cust else None,
+                })
+            court_data["players_details"] = players_details
+
+            # Buscar membresía del jugador titular
+            customer = find_customer_by_name(titular) if titular else None
             if customer:
                 court_data["customer_id"] = customer.id
                 court_data["membership_tier"] = customer.membership_tier
@@ -281,16 +353,8 @@ async def get_active_slots(db: AsyncSession = Depends(get_db)):
                 court_data["customer_id"] = None
                 court_data["membership_tier"] = "ESTANDAR"
 
-            # Buscar orden pendiente asociada a este slot
-            order_stmt = (
-                select(Order)
-                .options(selectinload(Order.items).selectinload(OrderItem.product))
-                .where(Order.slot_id == selected_slot.id, Order.payment_status == "PENDING")
-                .order_by(desc(Order.created_at))
-            )
-            order_res = await db.execute(order_stmt)
-            active_order = order_res.scalars().first()
-
+            # Orden pendiente desde memoria
+            active_order = orders_by_slot.get(selected_slot.id)
             if active_order:
                 court_data["pending_order"] = {
                     "order_id": active_order.id,
@@ -298,7 +362,7 @@ async def get_active_slots(db: AsyncSession = Depends(get_db)):
                     "items_count": sum(it.quantity for it in active_order.items),
                     "items": [
                         {
-                            "item_id": it.id,
+                            "id": it.id,
                             "product_id": it.product_id,
                             "product_name": it.product.name if it.product else "Producto",
                             "quantity": it.quantity,
@@ -416,12 +480,112 @@ async def create_or_add_order(
 
 
 @router.post(
+    "/orders/add-item",
+    status_code=status.HTTP_200_OK,
+    summary="Añadir consumo a la orden de una cancha/slot",
+)
+async def add_item_to_slot_order(
+    payload: AddItemToSlotRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    await ensure_seed_products(db)
+
+    # 1. Buscar o crear la orden PENDING para el slot_id
+    stmt_find = (
+        select(Order)
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
+        .where(Order.slot_id == payload.slot_id, Order.payment_status == "PENDING")
+        .order_by(desc(Order.created_at))
+    )
+    res_find = await db.execute(stmt_find)
+    order = res_find.scalars().first()
+
+    if not order:
+        cust_name = payload.player_name.strip() if payload.player_name else "Cliente Cancha"
+        order = Order(
+            slot_id=payload.slot_id,
+            customer_name=cust_name,
+            total_amount=Decimal("0.00"),
+            payment_status="PENDING",
+        )
+        db.add(order)
+        await db.flush()
+    elif payload.player_name and order.customer_name in ["Cliente Barra", "Cliente Cancha", "Reserva Mostrador / Sin Titular"]:
+        order.customer_name = payload.player_name.strip()
+
+    # 2. Buscar producto
+    prod_stmt = select(Product).where(Product.id == payload.product_id)
+    prod_res = await db.execute(prod_stmt)
+    product = prod_res.scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    qty = max(1, payload.quantity)
+    # Descontar stock
+    product.stock = max(0, product.stock - qty)
+
+    # Regla de cortesía por membresía ($0)
+    if payload.is_membership_perk:
+        unit_price = Decimal("0.00")
+        subtotal = Decimal("0.00")
+    else:
+        unit_price = product.price
+        subtotal = unit_price * qty
+
+    order_item = OrderItem(
+        order_id=order.id,
+        product_id=product.id,
+        quantity=qty,
+        unit_price=unit_price,
+        subtotal=subtotal,
+        is_perk=payload.is_membership_perk,
+    )
+    db.add(order_item)
+    order.total_amount += subtotal
+
+    await db.commit()
+    await db.refresh(order)
+
+    # Cargar relaciones completas para respuesta
+    stmt_full = (
+        select(Order)
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
+        .where(Order.id == order.id)
+    )
+    res_full = await db.execute(stmt_full)
+    order_full = res_full.scalar_one()
+
+    return {
+        "success": True,
+        "order_id": order_full.id,
+        "slot_id": order_full.slot_id,
+        "customer_name": order_full.customer_name,
+        "total_amount": float(order_full.total_amount),
+        "payment_status": order_full.payment_status,
+        "items_count": sum(it.quantity for it in order_full.items),
+        "items": [
+            {
+                "id": it.id,
+                "product_id": it.product_id,
+                "product_name": it.product.name if it.product else "Producto",
+                "quantity": it.quantity,
+                "unit_price": float(it.unit_price),
+                "subtotal": float(it.subtotal),
+                "is_perk": it.is_perk,
+            }
+            for it in order_full.items
+        ],
+    }
+
+
+@router.post(
     "/orders/{order_id}/checkout",
     response_model=CheckoutResponse,
     summary="Cerrar partido y liquidar consumos + cancha",
 )
 async def checkout_order(
     order_id: int,
+    payload: Optional[CheckoutOrderRequest] = None,
     db: AsyncSession = Depends(get_db),
 ):
     stmt = select(Order).options(selectinload(Order.items)).where(Order.id == order_id)
@@ -434,15 +598,25 @@ async def checkout_order(
     bar_total = float(order.total_amount)
     court_price = 0.0
 
+    discount = float(payload.discount_amount) if payload and payload.discount_amount else 0.0
+    payment_method = payload.payment_method if payload and payload.payment_method else "EFECTIVO"
+
     if order.slot_id:
-        slot_stmt = select(TimeSlot).where(TimeSlot.id == order.slot_id)
+        slot_stmt = (
+            select(TimeSlot)
+            .options(selectinload(TimeSlot.bookings))
+            .where(TimeSlot.id == order.slot_id)
+        )
         slot_res = await db.execute(slot_stmt)
         slot = slot_res.scalar_one_or_none()
         if slot:
             court_price = float(slot.total_price)
-            slot.status = SlotStatus.FULLY_BOOKED  # Garantizar estado confirmado/reservado
+            slot.status = SlotStatus.AVAILABLE  # Liberar la cancha según requerimiento
+            slot.closed_at = datetime.now(timezone.utc)
+            for b in slot.bookings or []:
+                b.payment_status = PaymentStatus.PAID
 
-    total_to_pay = court_price + bar_total
+    total_to_pay = max(0.0, (court_price + bar_total) - discount)
 
     order.payment_status = "PAID"
     await db.commit()
@@ -454,8 +628,74 @@ async def checkout_order(
         customer_name=order.customer_name,
         court_price=court_price,
         bar_total=bar_total,
+        membership_discount=discount,
         total_to_pay=total_to_pay,
+        payment_method=payment_method,
         payment_status=order.payment_status,
+    )
+
+
+@router.post(
+    "/slots/{slot_id}/checkout",
+    response_model=CheckoutResponse,
+    summary="Cerrar partido y liquidar directamente por slot",
+)
+async def checkout_slot(
+    slot_id: int,
+    payload: Optional[CheckoutOrderRequest] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = (
+        select(Order)
+        .options(selectinload(Order.items))
+        .where(Order.slot_id == slot_id, Order.payment_status == "PENDING")
+        .order_by(desc(Order.created_at))
+    )
+    res = await db.execute(stmt)
+    order = res.scalars().first()
+
+    court_price = 0.0
+    slot_stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.bookings))
+        .where(TimeSlot.id == slot_id)
+    )
+    slot_res = await db.execute(slot_stmt)
+    slot = slot_res.scalar_one_or_none()
+    if not slot:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+
+    court_price = float(slot.total_price)
+    slot.status = SlotStatus.AVAILABLE  # Liberar la cancha
+    slot.closed_at = datetime.now(timezone.utc)
+    for b in slot.bookings or []:
+        b.payment_status = PaymentStatus.PAID
+
+    bar_total = float(order.total_amount) if order else 0.0
+    discount = float(payload.discount_amount) if payload and payload.discount_amount else 0.0
+    payment_method = payload.payment_method if payload and payload.payment_method else "EFECTIVO"
+    total_to_pay = max(0.0, (court_price + bar_total) - discount)
+
+    if order:
+        order.payment_status = "PAID"
+        order_id = order.id
+        customer_name = order.customer_name
+    else:
+        order_id = 0
+        customer_name = "Cliente Cancha"
+
+    await db.commit()
+
+    return CheckoutResponse(
+        order_id=order_id,
+        slot_id=slot.id,
+        customer_name=customer_name,
+        court_price=court_price,
+        bar_total=bar_total,
+        membership_discount=discount,
+        total_to_pay=total_to_pay,
+        payment_method=payment_method,
+        payment_status="PAID",
     )
 
 
