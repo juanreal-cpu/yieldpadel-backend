@@ -2086,6 +2086,11 @@
             <span>Torneos Americanos</span>
           </button>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-crm" onclick="switchMainView('crm')">
+          <button id="btn-nav-pos" onclick="switchMainView('pos')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 w-full transition">
+            <span class="text-base">🛒</span>
+            <span>Tienda & Barra (POS)</span>
+          </button>
+
             <span class="text-base">👥</span>
             <span>CRM Jugadores</span>
           </button>
@@ -2524,6 +2529,7 @@
                       <th style="padding: 0.85rem 1rem;">Puntos Ranking</th>
                       <th style="padding: 0.85rem 1rem;">Torneos Ganados</th>
                       <th style="padding: 0.85rem 1rem;">Onboarding / Estado</th>
+                      <th style="padding: 0.85rem 1rem; text-align: center;">⚔️ Retos</th>
                     </tr>
                   </thead>
                   <tbody id="crm-table-body" data-alias="crm-ranking-tbody">
@@ -2905,7 +2911,232 @@
 
         </div>
 
+        
         <!-- ======================================================== -->
+        <!-- VISTA: 🛒 TIENDA, BARRA & INVENTARIO (#view-pos)       -->
+        <!-- ======================================================== -->
+        <div id="view-pos" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-6">
+          
+          <!-- Header de Control de Barra y Tienda -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">🛒</span>
+                <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Tienda, Barra & Inventario (POS)</h2>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">
+                Control de consumos por cancha en juego, venta rápida de mostrador y gestión de existencias.
+              </p>
+            </div>
+
+            <!-- Navegación de Subpestañas POS -->
+            <div class="flex items-center flex-wrap gap-2">
+              <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200" id="pos-tab-selector">
+                <button type="button" onclick="switchPOSTab('active')" id="btn-pos-tab-active" class="px-3 py-1.5 text-xs font-bold rounded-lg shadow-xs transition active" style="background-color: #0f172a; color: #ffffff; border: 1px solid #0f172a;">
+                  🎾 Turnos en Juego (Hora Activa)
+                </button>
+                <button type="button" onclick="switchPOSTab('quick')" id="btn-pos-tab-quick" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">
+                  ⚡ Venta Rápida / Externos
+                </button>
+                <button type="button" onclick="switchPOSTab('inventory')" id="btn-pos-tab-inventory" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-200 transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">
+                  📦 Inventario & Stock
+                </button>
+              </div>
+
+              <button type="button" onclick="loadPOSData()" class="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition inline-flex items-center gap-1.5 shadow-xs" title="Actualizar">
+                <span>🔄</span> <span>Actualizar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tarjetas Resumen Analítica POS -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="pos-summary-cards">
+            <!-- 1. Total Facturado en Barra Hoy -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Facturado en Barra Hoy</span>
+                <span class="text-lg">💵</span>
+              </div>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span id="pos-stat-revenue" class="text-3xl font-black text-emerald-700 font-mono">$0 COP</span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                <span>Ventas liquidadas hoy</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">En Vivo</span>
+              </div>
+            </div>
+
+            <!-- 2. Producto Más Vendido -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Producto Más Vendido</span>
+                <span class="text-lg">🔥</span>
+              </div>
+              <div class="mt-2">
+                <span id="pos-stat-top-product" class="text-xl font-black text-slate-900 truncate block">Cargando...</span>
+                <span id="pos-stat-top-units" class="text-xs text-slate-500 font-semibold">0 unidades vendidas</span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                <span>Mayor rotación hoy</span>
+                <span class="text-slate-400">📊 Top 1</span>
+              </div>
+            </div>
+
+            <!-- 3. Ticket Promedio por Jugador -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ticket Promedio por Jugador</span>
+                <span class="text-lg">🏷️</span>
+              </div>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span id="pos-stat-avg-ticket" class="text-3xl font-black text-indigo-700 font-mono">$0 COP</span>
+                <span id="pos-stat-total-orders" class="text-xs text-slate-500 font-semibold">(0 pedidos)</span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                <span>Gasto promedio por orden</span>
+                <span class="text-emerald-600 font-bold">Consumos Barra</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB-PESTAÑA 1: TURNOS EN JUEGO (HORA ACTIVA) -->
+          <div id="pos-subview-active" class="space-y-4">
+            <div class="flex items-center justify-between bg-slate-100 p-3 rounded-xl border border-slate-200">
+              <div class="flex items-center gap-2">
+                <span class="text-base">🎾</span>
+                <span class="text-xs font-bold text-slate-800">Canchas y Pistas de Hoy</span>
+                <span class="text-[11px] text-slate-500">(Selecciona una cancha para añadir consumos o liquidar el partido)</span>
+              </div>
+              <span id="pos-active-courts-count" class="text-xs font-extrabold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-200">0 pistas</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="pos-courts-grid">
+              <!-- Renderizado dinámico de tarjetas de canchas -->
+              <div class="col-span-full py-12 text-center text-slate-400 text-sm bg-white rounded-xl border border-dashed border-slate-200">
+                Cargando canchas activas y turnos en juego...
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB-PESTAÑA 2: VENTA RÁPIDA / EXTERNOS -->
+          <div id="pos-subview-quick" class="hidden space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- Columna Catálogo (2/3) -->
+              <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 class="text-sm font-extrabold text-slate-900">Catálogo de Productos</h3>
+                    <p class="text-xs text-slate-500">Haz clic en un producto para añadirlo al pedido.</p>
+                  </div>
+                  <!-- Filtro Categorías -->
+                  <div class="flex items-center gap-1 overflow-x-auto pb-1" id="quick-sale-category-pills">
+                    <button type="button" onclick="filterQuickSaleCategory('ALL')" class="pos-cat-pill px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-900 text-white transition active">Todas</button>
+                    <button type="button" onclick="filterQuickSaleCategory('BEBIDAS')" class="pos-cat-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Bebidas</button>
+                    <button type="button" onclick="filterQuickSaleCategory('SNACKS')" class="pos-cat-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Snacks</button>
+                    <button type="button" onclick="filterQuickSaleCategory('EQUIPAMIENTO')" class="pos-cat-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Equipamiento</button>
+                    <button type="button" onclick="filterQuickSaleCategory('ALQUILER')" class="pos-cat-pill px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Alquiler</button>
+                  </div>
+                </div>
+
+                <!-- Grid de productos -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="quick-sale-products-grid">
+                  <!-- Productos dinámicos -->
+                </div>
+              </div>
+
+              <!-- Columna Carrito / Cobro (1/3) -->
+              <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-4">
+                <div class="space-y-4">
+                  <div class="border-b border-slate-100 pb-3">
+                    <h3 class="text-sm font-extrabold text-slate-900 flex items-center justify-between">
+                      <span>🧾 Resumen de Venta</span>
+                      <button type="button" onclick="quickSaleClearCart()" class="text-xs font-semibold text-rose-600 hover:underline">Vaciar</button>
+                    </h3>
+                  </div>
+
+                  <!-- Datos de Cliente y Membresía -->
+                  <div class="space-y-3">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Cliente:</label>
+                      <input type="text" id="quick-sale-customer-name" value="Cliente Mostrador" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white" placeholder="Ej: Carlos Gómez" />
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700 mb-1">Membresía del Cliente:</label>
+                      <select id="quick-sale-membership-select" onchange="onQuickSaleMembershipChange()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white">
+                        <option value="ESTANDAR">Tarifa General (Sin Membresía)</option>
+                        <option value="TAPIA">👑 TAPIA (Cortesía Bebida $0)</option>
+                        <option value="COELLO">⚡ COELLO (Cortesía Bebida $0)</option>
+                        <option value="GALAN">🎾 GALÁN (Cortesía Bebida $0)</option>
+                        <option value="CHINGOTTO">🌅 CHINGOTTO (Cortesía Bebida $0)</option>
+                        <option value="LEBRON">🐺 LEBRÓN (Cortesía Bebida $0)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Lista de Productos en el Carrito -->
+                  <div class="space-y-2 border-t border-slate-100 pt-3">
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Productos Seleccionados:</div>
+                    <div id="quick-sale-cart-items" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      <div class="text-center py-6 text-slate-400 text-xs italic">
+                        El carrito está vacío. Añade productos desde el catálogo.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Footer Total y Cobro -->
+                <div class="pt-4 border-t border-slate-100 space-y-3">
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="font-bold text-slate-600">Total a Cobrar:</span>
+                    <span id="quick-sale-total-display" class="text-2xl font-black text-slate-900 font-mono">$0 COP</span>
+                  </div>
+
+                  <button type="button" onclick="submitQuickSale()" id="btn-submit-quick-sale" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                    <span>💳</span> <span>Cobrar y Registrar Pedido</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB-PESTAÑA 3: INVENTARIO & STOCK -->
+          <div id="pos-subview-inventory" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 class="text-sm font-extrabold text-slate-900">Existencias en Barra e Inventario</h3>
+                  <p class="text-xs text-slate-500">Control de stock de bebidas, snacks, alquiler de palas y accesorios.</p>
+                </div>
+                <button type="button" onclick="openNewProductModal()" class="px-3.5 py-1.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs transition flex items-center gap-1.5">
+                  <span>+</span> <span>Nuevo Producto</span>
+                </button>
+              </div>
+
+              <!-- Tabla de Inventario -->
+              <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-left text-xs" id="pos-inventory-table">
+                  <thead>
+                    <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
+                      <th class="p-3">PRODUCTO</th>
+                      <th class="p-3">CATEGORÍA</th>
+                      <th class="p-3">PRECIO VENTA</th>
+                      <th class="p-3 text-center">STOCK ACTUAL</th>
+                      <th class="p-3 text-center">CORTESÍA SOCIOS</th>
+                      <th class="p-3 text-center">ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pos-inventory-body" class="divide-y divide-slate-100">
+                    <!-- Filas dinámicas -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+<!-- ======================================================== -->
         <!-- VISTA 6: ⚙️ CONFIGURACIÓN DEL CLUB                      -->
         <!-- ======================================================== -->
         <div id="view-config" class="view-section hidden">
@@ -4188,6 +4419,8 @@
         try { if (typeof loadStaffUsers === 'function') loadStaffUsers(); } catch(e) { console.error(e); }
       } else if (cleanName === 'analytics') {
         try { if (typeof loadAnalyticsHeatmap === 'function') loadAnalyticsHeatmap(); } catch(e) { console.error(e); }
+      } else if (cleanName === 'pos') {
+        try { if (typeof loadPOSData === 'function') loadPOSData(); } catch(e) { console.error(e); }
       } else if (cleanName === 'calendar') {
         try { if (typeof fetchSlots === 'function') fetchSlots(); } catch(e) { console.error(e); }
       }
@@ -4982,6 +5215,11 @@ window.handleCRMSearch = window.filterCRMTable;
               </td>
               <td style="padding: 0.85rem 1rem;">
                 ${onboardingBadge}
+              </td>
+              <td style="padding: 0.85rem 1rem; text-align: center;">
+                <button onclick="openChallengeModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm inline-flex items-center gap-1 transition" title="Lanzar Reto Oficial">
+                  <span>⚔️</span> <span>Retar</span>
+                </button>
               </td>
             </tr>
           `;
@@ -7573,6 +7811,799 @@ ${data.message}`);
     }
     window.filterTournamentsSport = filterTournamentsSport;
 
+    
+    // ========================================================
+    // MÓDULO TIENDA & BARRA (POS) E INVENTARIO
+    // ========================================================
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    window.escapeHtml = escapeHtml;
+
+    window.posActiveTab = 'active';
+    window.posCourtsData = [];
+    window.posProducts = [];
+    window.posSelectedCategory = 'ALL';
+    window.quickSaleCart = [];
+    window.currentCRMPlayers = [];
+
+    function switchPOSTab(tab) {
+      window.posActiveTab = tab || 'active';
+      const tabs = ['active', 'quick', 'inventory'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('btn-pos-tab-' + t);
+        const sub = document.getElementById('pos-subview-' + t);
+        const isActive = (t === window.posActiveTab);
+        if (btn) {
+          btn.classList.toggle('active', isActive);
+          if (isActive) {
+            btn.style.setProperty('background-color', '#0f172a', 'important');
+            btn.style.setProperty('color', '#ffffff', 'important');
+            btn.style.setProperty('border', '1px solid #0f172a', 'important');
+          } else {
+            btn.style.setProperty('background-color', '#ffffff', 'important');
+            btn.style.setProperty('color', '#0f172a', 'important');
+            btn.style.setProperty('border', '1px solid #cbd5e1', 'important');
+          }
+        }
+        if (sub) {
+          sub.classList.toggle('hidden', !isActive);
+        }
+      });
+    }
+    window.switchPOSTab = switchPOSTab;
+
+    async function loadPOSData() {
+      try {
+        // 1. Fetch Analytics
+        fetch('/api/v1/pos/analytics/today')
+          .then(r => r.ok ? r.json() : null)
+          .then(an => { if (an) renderPOSAnalytics(an); })
+          .catch(e => console.error('Error fetching POS analytics:', e));
+
+        // 2. Fetch Products
+        fetch('/api/v1/pos/products')
+          .then(r => r.ok ? r.json() : [])
+          .then(prods => {
+            window.posProducts = prods;
+            renderInventoryPOS(prods);
+            renderQuickSaleCatalog(prods);
+          })
+          .catch(e => console.error('Error fetching POS products:', e));
+
+        // 3. Fetch Active Courts
+        fetch('/api/v1/pos/orders/active-slots')
+          .then(r => r.ok ? r.json() : [])
+          .then(courts => {
+            window.posCourtsData = courts;
+            renderActiveCourtsPOS(courts);
+          })
+          .catch(e => console.error('Error fetching POS active slots:', e));
+      } catch (err) {
+        console.error('Error in loadPOSData:', err);
+      }
+    }
+    window.loadPOSData = loadPOSData;
+
+    function renderPOSAnalytics(an) {
+      if (!an) return;
+      const revEl = document.getElementById('pos-stat-revenue');
+      const topProdEl = document.getElementById('pos-stat-top-product');
+      const topUnitsEl = document.getElementById('pos-stat-top-units');
+      const avgEl = document.getElementById('pos-stat-avg-ticket');
+      const ordersCountEl = document.getElementById('pos-stat-total-orders');
+
+      if (revEl) revEl.textContent = formatCOP(an.total_revenue_today || 0);
+      if (topProdEl) topProdEl.textContent = an.top_selling_product ? (an.top_selling_product.name || 'Sin ventas aún') : '—';
+      if (topUnitsEl) topUnitsEl.textContent = `${an.top_selling_product ? (an.top_selling_product.units || 0) : 0} unidades vendidas`;
+      if (avgEl) avgEl.textContent = formatCOP(an.average_ticket || 0);
+      if (ordersCountEl) ordersCountEl.textContent = `(${an.total_orders_today || 0} pedidos)`;
+    }
+    window.renderPOSAnalytics = renderPOSAnalytics;
+
+    function renderActiveCourtsPOS(courts) {
+      const grid = document.getElementById('pos-courts-grid');
+      const countEl = document.getElementById('pos-active-courts-count');
+      if (!grid) return;
+
+      if (!courts || courts.length === 0) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 text-sm bg-white rounded-xl border border-dashed border-slate-200">No hay pistas registradas activas en este momento.</div>';
+        if (countEl) countEl.textContent = '0 pistas';
+        return;
+      }
+
+      if (countEl) countEl.textContent = `${courts.length} pistas`;
+
+      let html = '';
+      courts.forEach(c => {
+        const sportIcons = { PADEL: '🎾', PICKLEBALL: '🏓', VOLLEYBALL: '🏐', PILATES: '🧘', CONSOLE: '🎮' };
+        const icon = sportIcons[c.sport_type] || '🎾';
+        const hasOrder = c.pending_order && c.pending_order.items && c.pending_order.items.length > 0;
+        const tier = c.membership_tier || 'ESTANDAR';
+        const isMember = tier !== 'ESTANDAR';
+
+        html += `
+          <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+            <!-- Header Pista -->
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between ${c.has_active_match ? 'bg-emerald-50/60' : 'bg-slate-50'}">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">${icon}</span>
+                <div>
+                  <h4 class="font-extrabold text-sm text-slate-900">${c.court_name}</h4>
+                  <span class="text-[11px] text-slate-500 font-semibold">${c.time_block || 'Horario Flexible'}</span>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${c.has_active_match ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">
+                ${c.has_active_match ? 'En Juego' : 'Esperando'}
+              </span>
+            </div>
+
+            <!-- Cuerpo Pista -->
+            <div class="p-4 space-y-3 flex-1">
+              <!-- Jugador Responsable -->
+              <div class="space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jugador / Responsable:</span>
+                <div class="flex items-center justify-between">
+                  <span class="font-black text-xs text-slate-900 truncate">${c.main_customer || 'Sin jugador asignado'}</span>
+                  ${isMember ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-purple-100 text-purple-800">👑 ${tier}</span>` : `<span class="text-[9px] text-slate-400">Estándar</span>`}
+                </div>
+                ${c.players && c.players.length > 1 ? `<div class="text-[10px] text-slate-500 truncate">+ ${c.players.slice(1).join(', ')}</div>` : ''}
+              </div>
+
+              <!-- Consumos de Barra -->
+              <div class="pt-2.5 border-t border-slate-100 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Consumos en Pista:</span>
+                  ${hasOrder ? `<span class="text-xs font-black text-emerald-700 font-mono">${formatCOP(c.pending_order.total_amount)}</span>` : '<span class="text-[10px] text-slate-400">Sin consumos</span>'}
+                </div>
+
+                ${hasOrder ? `
+                  <div class="bg-slate-50 p-2 rounded-lg space-y-1 text-xs border border-slate-100 max-h-24 overflow-y-auto">
+                    ${c.pending_order.items.map(it => `
+                      <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-slate-700 font-medium truncate">${it.quantity}x ${it.product_name} ${it.is_perk ? '<span class="text-[9px] font-bold text-purple-700 bg-purple-50 px-1 rounded">🎁 Cortesía</span>' : ''}</span>
+                        <span class="font-bold text-slate-900 font-mono">${it.is_perk ? '$0' : formatCOP(it.subtotal)}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : `
+                  <p class="text-[11px] text-slate-400 italic">No hay consumos abiertos para esta pista.</p>
+                `}
+              </div>
+            </div>
+
+            <!-- Footer Botones de Acción -->
+            <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+              <button type="button" onclick="openPOSAddOrderModal('${c.slot_id || ''}', '${escapeHtml(c.court_name)}', '${escapeHtml(c.main_customer || c.court_name)}', '${c.customer_id || ''}', '${c.membership_tier || 'ESTANDAR'}')" class="flex-1 py-1.5 px-2.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs transition flex items-center justify-center gap-1">
+                <span>🛒</span> <span>Añadir Consumo</span>
+              </button>
+              ${hasOrder ? `
+                <button type="button" onclick="openPOSCheckoutModal('${c.pending_order.order_id}', '${c.slot_id || ''}', '${escapeHtml(c.court_name)}', '${escapeHtml(c.main_customer || '')}', ${c.court_price || 0}, ${c.pending_order.total_amount || 0})" class="py-1.5 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs transition flex items-center justify-center gap-1" title="Cerrar Partido y Liquidar">
+                  <span>🧾</span> <span>Liquidar</span>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+      grid.innerHTML = html;
+    }
+    window.renderActiveCourtsPOS = renderActiveCourtsPOS;
+
+    function renderInventoryPOS(products) {
+      const tbody = document.getElementById('pos-inventory-body');
+      if (!tbody) return;
+
+      if (!products || products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">No hay productos en inventario.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      products.forEach(p => {
+        const isLowStock = p.stock <= 10;
+        const stockBadge = isLowStock
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-800">⚠️ ${p.stock} unid.</span>`
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">✓ ${p.stock} unid.</span>`;
+
+        const perkBadge = p.is_membership_perk
+          ? '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-100 text-purple-800">🎁 Sí ($0)</span>'
+          : '<span class="text-slate-400 text-xs">No</span>';
+
+        html += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-3 font-extrabold text-slate-900">${p.name}</td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${p.category}</span></td>
+            <td class="p-3 font-mono font-bold text-slate-800">${formatCOP(p.price)}</td>
+            <td class="p-3 text-center">${stockBadge}</td>
+            <td class="p-3 text-center">${perkBadge}</td>
+            <td class="p-3 text-center">
+              <button type="button" onclick="openPOSAddStockModal(${p.id}, '${escapeHtml(p.name)}', ${p.stock})" class="px-2.5 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg shadow-xs transition inline-flex items-center gap-1">
+                <span>➕</span> <span>Agregar Stock</span>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+    window.renderInventoryPOS = renderInventoryPOS;
+
+    // --- Modal Añadir Consumo a Cancha ---
+    window.currentPOSModalProduct = null;
+    function openPOSAddOrderModal(slotId, courtName, customerName, customerId, tier) {
+      document.getElementById('pos-modal-slot-id').value = slotId || '';
+      document.getElementById('pos-modal-customer-id').value = customerId || '';
+      document.getElementById('pos-modal-membership-tier').value = tier || 'ESTANDAR';
+      document.getElementById('modal-pos-title').textContent = `Añadir Consumos a ${courtName}`;
+      document.getElementById('modal-pos-player-name').textContent = customerName || courtName;
+      document.getElementById('modal-pos-player-tier').textContent = (tier && tier !== 'ESTANDAR') ? `👑 ${tier}` : 'Estándar';
+
+      // Poblar selector de productos
+      const sel = document.getElementById('pos-modal-product-select');
+      sel.innerHTML = window.posProducts.map(p => `
+        <option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}" data-perk="${p.is_membership_perk}">
+          ${p.name} (${formatCOP(p.price)}) - Stock: ${p.stock}
+        </option>
+      `).join('');
+
+      document.getElementById('pos-modal-quantity').value = '1';
+      window.isPerkAppliedInModal = false;
+      const perkBadge = document.getElementById('perk-applied-badge');
+      if (perkBadge) perkBadge.classList.add('hidden');
+
+      onPOSModalProductChange();
+      const modal = document.getElementById('modal-pos-add-order');
+      if (modal) { modal.style.display = 'flex'; modal.classList.remove('hidden'); }
+    }
+    window.openPOSAddOrderModal = openPOSAddOrderModal;
+
+    function closePOSAddOrderModal() {
+      const modal = document.getElementById('modal-pos-add-order');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closePOSAddOrderModal = closePOSAddOrderModal;
+
+    function onPOSModalProductChange() {
+      const sel = document.getElementById('pos-modal-product-select');
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt) return;
+
+      const price = parseFloat(opt.getAttribute('data-price') || '0');
+      const isPerkProd = opt.getAttribute('data-perk') === 'true';
+      const tier = document.getElementById('pos-modal-membership-tier').value;
+      const isMember = tier && tier !== 'ESTANDAR';
+
+      const btnPerk = document.getElementById('btn-apply-membership-perk');
+      const perkBadge = document.getElementById('perk-applied-badge');
+
+      if (isPerkProd && isMember && !window.isPerkAppliedInModal) {
+        btnPerk.classList.remove('hidden');
+      } else {
+        btnPerk.classList.add('hidden');
+      }
+
+      const qty = parseInt(document.getElementById('pos-modal-quantity').value || '1', 10);
+      const subtotal = window.isPerkAppliedInModal ? 0 : (price * qty);
+      document.getElementById('modal-pos-subtotal-display').textContent = formatCOP(subtotal);
+    }
+    window.onPOSModalProductChange = onPOSModalProductChange;
+
+    function applyMembershipPerkInModal() {
+      window.isPerkAppliedInModal = true;
+      document.getElementById('btn-apply-membership-perk').classList.add('hidden');
+      document.getElementById('perk-applied-badge').classList.remove('hidden');
+      document.getElementById('modal-pos-subtotal-display').textContent = '$0 COP (Cortesía Membresía)';
+    }
+    window.applyMembershipPerkInModal = applyMembershipPerkInModal;
+
+    async function handlePOSAddOrderSubmit(e) {
+      e.preventDefault();
+      const slotIdVal = document.getElementById('pos-modal-slot-id').value;
+      const customerIdVal = document.getElementById('pos-modal-customer-id').value;
+      const customerNameVal = document.getElementById('modal-pos-player-name').textContent;
+      const sel = document.getElementById('pos-modal-product-select');
+      const productId = parseInt(sel.value, 10);
+      const qty = parseInt(document.getElementById('pos-modal-quantity').value, 10);
+      const isPerk = Boolean(window.isPerkAppliedInModal);
+
+      try {
+        const payload = {
+          slot_id: slotIdVal ? parseInt(slotIdVal, 10) : null,
+          customer_id: customerIdVal ? parseInt(customerIdVal, 10) : null,
+          customer_name: customerNameVal,
+          items: [{ product_id: productId, quantity: qty, is_perk: isPerk }],
+          payment_status: 'PENDING'
+        };
+
+        const res = await fetch('/api/v1/pos/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          closePOSAddOrderModal();
+          loadPOSData();
+          alert('✅ Consumo cargado exitosamente a la pista.');
+        } else {
+          const err = await res.json();
+          alert('Error al registrar consumo: ' + (err.detail || 'Fallo en la operación'));
+        }
+      } catch (err) {
+        console.error('Error registrando consumo:', err);
+        alert('Fallo de conexión al cargar consumo.');
+      }
+    }
+    window.handlePOSAddOrderSubmit = handlePOSAddOrderSubmit;
+
+    // --- Modal Liquidación y Cierre de Partido ---
+    function openPOSCheckoutModal(orderId, slotId, courtName, customerName, courtPrice, barTotal) {
+      document.getElementById('checkout-order-id').value = orderId;
+      document.getElementById('checkout-slot-id').value = slotId || '';
+      document.getElementById('checkout-court-name').textContent = courtName;
+      document.getElementById('checkout-customer-name').textContent = customerName;
+      document.getElementById('checkout-court-price').textContent = formatCOP(courtPrice);
+      document.getElementById('checkout-bar-total').textContent = formatCOP(barTotal);
+      document.getElementById('checkout-total-to-pay').textContent = formatCOP(courtPrice + barTotal);
+
+      const modal = document.getElementById('modal-pos-checkout');
+      if (modal) { modal.style.display = 'flex'; modal.classList.remove('hidden'); }
+    }
+    window.openPOSCheckoutModal = openPOSCheckoutModal;
+
+    function closePOSCheckoutModal() {
+      const modal = document.getElementById('modal-pos-checkout');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closePOSCheckoutModal = closePOSCheckoutModal;
+
+    async function confirmPOSCheckout() {
+      const orderId = document.getElementById('checkout-order-id').value;
+      if (!orderId) return;
+
+      try {
+        const res = await fetch(`/api/v1/pos/orders/${orderId}/checkout`, { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          closePOSCheckoutModal();
+          loadPOSData();
+          alert(`🧾 ¡Partido cerrado y liquidado con éxito!\n\nTotal Cancha: ${formatCOP(data.court_price)}\nTotal Barra: ${formatCOP(data.bar_total)}\nTotal Pagado: ${formatCOP(data.total_to_pay)}`);
+        } else {
+          const err = await res.json();
+          alert('Error al liquidar: ' + (err.detail || 'No se pudo liquidar'));
+        }
+      } catch (err) {
+        console.error('Error en liquidación:', err);
+        alert('Fallo de conexión al liquidar orden.');
+      }
+    }
+    window.confirmPOSCheckout = confirmPOSCheckout;
+
+    // --- Modal Agregar Stock ---
+    function openPOSAddStockModal(productId, productName, currentStock) {
+      document.getElementById('pos-stock-product-id').value = productId;
+      document.getElementById('pos-stock-product-name').textContent = productName;
+      document.getElementById('pos-stock-current-val').textContent = currentStock;
+      document.getElementById('pos-stock-add-qty').value = '12';
+
+      const modal = document.getElementById('modal-pos-add-stock');
+      if (modal) { modal.style.display = 'flex'; modal.classList.remove('hidden'); }
+    }
+    window.openPOSAddStockModal = openPOSAddStockModal;
+
+    function closePOSAddStockModal() {
+      const modal = document.getElementById('modal-pos-add-stock');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closePOSAddStockModal = closePOSAddStockModal;
+
+    async function handlePOSAddStockSubmit(e) {
+      e.preventDefault();
+      const pId = document.getElementById('pos-stock-product-id').value;
+      const qty = parseInt(document.getElementById('pos-stock-add-qty').value, 10);
+      try {
+        const res = await fetch(`/api/v1/pos/products/${pId}/stock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quantity: qty })
+        });
+        if (res.ok) {
+          closePOSAddStockModal();
+          loadPOSData();
+          alert('✅ Stock actualizado correctamente.');
+        } else {
+          alert('Error al actualizar stock.');
+        }
+      } catch (err) {
+        alert('Fallo de conexión al actualizar stock.');
+      }
+    }
+    window.handlePOSAddStockSubmit = handlePOSAddStockSubmit;
+
+    // --- Modal Nuevo Producto ---
+    function openNewProductModal() {
+      const modal = document.getElementById('modal-pos-new-product');
+      if (modal) { modal.style.display = 'flex'; modal.classList.remove('hidden'); }
+    }
+    window.openNewProductModal = openNewProductModal;
+
+    function closeNewProductModal() {
+      const modal = document.getElementById('modal-pos-new-product');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeNewProductModal = closeNewProductModal;
+
+    async function handlePOSNewProductSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('new-prod-name').value,
+        category: document.getElementById('new-prod-category').value,
+        price: parseFloat(document.getElementById('new-prod-price').value),
+        stock: parseInt(document.getElementById('new-prod-stock').value, 10),
+        is_membership_perk: document.getElementById('new-prod-perk').checked
+      };
+      try {
+        const res = await fetch('/api/v1/pos/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          closeNewProductModal();
+          loadPOSData();
+          alert('✅ Producto creado con éxito en el catálogo.');
+        } else {
+          alert('Error al crear producto.');
+        }
+      } catch (err) {
+        alert('Fallo de conexión al crear producto.');
+      }
+    }
+    window.handlePOSNewProductSubmit = handlePOSNewProductSubmit;
+
+    // --- Venta Rápida de Mostrador (Quick Sale) ---
+    function filterQuickSaleCategory(cat) {
+      window.posSelectedCategory = cat || 'ALL';
+      const pills = document.querySelectorAll('#quick-sale-category-pills .pos-cat-pill');
+      pills.forEach(p => {
+        const matches = p.textContent.toUpperCase().includes(cat === 'ALL' ? 'TODAS' : cat);
+        p.classList.toggle('bg-slate-900', matches);
+        p.classList.toggle('text-white', matches);
+        p.classList.toggle('bg-slate-100', !matches);
+        p.classList.toggle('text-slate-700', !matches);
+      });
+      renderQuickSaleCatalog(window.posProducts);
+    }
+    window.filterQuickSaleCategory = filterQuickSaleCategory;
+
+    function renderQuickSaleCatalog(products) {
+      const grid = document.getElementById('quick-sale-products-grid');
+      if (!grid) return;
+
+      const filtered = (products || []).filter(p => {
+        if (!window.posSelectedCategory || window.posSelectedCategory === 'ALL') return true;
+        return p.category === window.posSelectedCategory;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400 text-xs">No hay productos en esta categoría.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(p => `
+        <div class="bg-slate-50 hover:bg-white p-3 rounded-xl border border-slate-200 shadow-2xs hover:shadow-xs transition flex flex-col justify-between space-y-2">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">${p.category}</span>
+              <span class="text-[10px] font-bold ${p.stock <= 5 ? 'text-rose-600' : 'text-slate-500'}">Stock: ${p.stock}</span>
+            </div>
+            <h5 class="text-xs font-black text-slate-900 line-clamp-2 mt-0.5">${p.name}</h5>
+            ${p.is_membership_perk ? '<span class="inline-block mt-0.5 px-1.5 py-0.2 text-[9px] font-extrabold text-purple-700 bg-purple-100 rounded">🎁 Cortesía Socios</span>' : ''}
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+            <span class="text-xs font-black text-slate-900 font-mono">${formatCOP(p.price)}</span>
+            <button type="button" onclick="quickSaleAddItem(${p.id})" class="px-2 py-1 text-xs font-extrabold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs transition">
+              + Añadir
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+    window.renderQuickSaleCatalog = renderQuickSaleCatalog;
+
+    function quickSaleAddItem(productId) {
+      const prod = window.posProducts.find(p => p.id === productId);
+      if (!prod) return;
+
+      const existing = window.quickSaleCart.find(it => it.product_id === productId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        window.quickSaleCart.push({
+          product_id: prod.id,
+          name: prod.name,
+          price: prod.price,
+          stock: prod.stock,
+          is_membership_perk: prod.is_membership_perk,
+          is_perk: false,
+          quantity: 1
+        });
+      }
+      renderQuickSaleCart();
+    }
+    window.quickSaleAddItem = quickSaleAddItem;
+
+    function quickSaleUpdateQty(productId, delta) {
+      const idx = window.quickSaleCart.findIndex(it => it.product_id === productId);
+      if (idx === -1) return;
+      window.quickSaleCart[idx].quantity += delta;
+      if (window.quickSaleCart[idx].quantity <= 0) {
+        window.quickSaleCart.splice(idx, 1);
+      }
+      renderQuickSaleCart();
+    }
+    window.quickSaleUpdateQty = quickSaleUpdateQty;
+
+    function quickSaleTogglePerk(productId) {
+      const it = window.quickSaleCart.find(i => i.product_id === productId);
+      if (it) {
+        it.is_perk = !it.is_perk;
+        renderQuickSaleCart();
+      }
+    }
+    window.quickSaleTogglePerk = quickSaleTogglePerk;
+
+    function quickSaleClearCart() {
+      window.quickSaleCart = [];
+      renderQuickSaleCart();
+    }
+    window.quickSaleClearCart = quickSaleClearCart;
+
+    function onQuickSaleMembershipChange() {
+      renderQuickSaleCart();
+    }
+    window.onQuickSaleMembershipChange = onQuickSaleMembershipChange;
+
+    function renderQuickSaleCart() {
+      const container = document.getElementById('quick-sale-cart-items');
+      const totalDisplay = document.getElementById('quick-sale-total-display');
+      const btnCobrar = document.getElementById('btn-submit-quick-sale');
+      if (!container) return;
+
+      if (window.quickSaleCart.length === 0) {
+        container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs italic">El carrito está vacío. Añade productos desde el catálogo.</div>';
+        if (totalDisplay) totalDisplay.textContent = '$0 COP';
+        if (btnCobrar) btnCobrar.disabled = true;
+        return;
+      }
+
+      if (btnCobrar) btnCobrar.disabled = false;
+
+      const memSelect = document.getElementById('quick-sale-membership-select');
+      const isMember = memSelect && memSelect.value !== 'ESTANDAR';
+
+      let total = 0;
+      let html = '';
+
+      window.quickSaleCart.forEach(it => {
+        const itemPrice = it.is_perk ? 0 : it.price;
+        const subtotal = itemPrice * it.quantity;
+        total += subtotal;
+
+        html += `
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900 truncate">${it.name}</span>
+              <span class="font-extrabold font-mono text-slate-800">${formatCOP(subtotal)}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="quickSaleUpdateQty(${it.product_id}, -1)" class="w-6 h-6 flex items-center justify-center bg-white border border-slate-300 rounded font-bold text-slate-700 hover:bg-slate-200">-</button>
+                <span class="font-black px-2">${it.quantity}</span>
+                <button type="button" onclick="quickSaleUpdateQty(${it.product_id}, 1)" class="w-6 h-6 flex items-center justify-center bg-white border border-slate-300 rounded font-bold text-slate-700 hover:bg-slate-200">+</button>
+              </div>
+
+              ${it.is_membership_perk && isMember ? `
+                <button type="button" onclick="quickSaleTogglePerk(${it.product_id})" class="px-2 py-0.5 text-[10px] font-bold rounded ${it.is_perk ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'}">
+                  ${it.is_perk ? '✓ Cortesía ($0)' : '🎁 Aplicar Cortesía'}
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      if (totalDisplay) totalDisplay.textContent = formatCOP(total);
+      if (btnCobrar) btnCobrar.innerHTML = `<span>💳</span> <span>Cobrar y Registrar (${formatCOP(total)})</span>`;
+    }
+    window.renderQuickSaleCart = renderQuickSaleCart;
+
+    async function submitQuickSale() {
+      if (window.quickSaleCart.length === 0) {
+        alert('El carrito está vacío.');
+        return;
+      }
+      const custName = document.getElementById('quick-sale-customer-name').value || 'Cliente Mostrador';
+      const items = window.quickSaleCart.map(it => ({
+        product_id: it.product_id,
+        quantity: it.quantity,
+        is_perk: Boolean(it.is_perk)
+      }));
+
+      try {
+        const res = await fetch('/api/v1/pos/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slot_id: null,
+            customer_name: custName,
+            items: items,
+            payment_status: 'PAID'
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          window.quickSaleCart = [];
+          renderQuickSaleCart();
+          loadPOSData();
+          alert(`✅ ¡Venta registrada y cobrada exitosamente!\n\nCliente: ${data.customer_name}\nTotal Cobrado: ${formatCOP(data.total_amount)}`);
+        } else {
+          const err = await res.json();
+          alert('Error al registrar venta rápida: ' + (err.detail || 'Fallo en la operación'));
+        }
+      } catch (err) {
+        console.error('Error registrando venta rápida:', err);
+        alert('Fallo de conexión al registrar venta rápida.');
+      }
+    }
+    window.submitQuickSale = submitQuickSale;
+
+    // ========================================================
+    // MÓDULO DE RETOS EN EL CRM JUGADORES
+    // ========================================================
+    window.currentChallengeChallenger = null;
+
+    async function openChallengeModal(playerId, playerName) {
+      window.currentChallengeChallenger = { id: playerId, name: playerName };
+      document.getElementById('challenge-challenger-id').value = playerId;
+      document.getElementById('challenge-challenger-display').textContent = playerName;
+
+      // Obtener lista de clientes para poblar rivales
+      const rivalSelect = document.getElementById('challenge-rival-select');
+      rivalSelect.innerHTML = '<option value="">Cargando rivales...</option>';
+
+      try {
+        const res = await fetch('/api/v1/customers/?limit=100');
+        if (res.ok) {
+          const players = await res.json();
+          window.currentCRMPlayers = players;
+          // Filtrar rivales diferentes al retador
+          const rivals = players.filter(p => String(p.id) !== String(playerId));
+          rivalSelect.innerHTML = rivals.map(r => `
+            <option value="${r.id}" data-name="${escapeHtml(r.name)}" data-cat="${r.category || '4ta'}">
+              ${r.name} (${r.category || '4ta'} • ${r.ranking_points || 0} pts)
+            </option>
+          `).join('');
+        } else {
+          rivalSelect.innerHTML = '<option value="">Error cargando rivales</option>';
+        }
+      } catch (e) {
+        console.error('Error fetching players for challenge:', e);
+        rivalSelect.innerHTML = '<option value="">Fallo de conexión</option>';
+      }
+
+      updateChallengeMessage();
+      const modal = document.getElementById('modal-challenge');
+      if (modal) { modal.style.display = 'flex'; modal.classList.remove('hidden'); }
+    }
+    window.openChallengeModal = openChallengeModal;
+
+    function closeChallengeModal() {
+      const modal = document.getElementById('modal-challenge');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeChallengeModal = closeChallengeModal;
+
+    function updateChallengeMessage() {
+      const challengerName = document.getElementById('challenge-challenger-display').textContent || 'Retador';
+      const rivalSelect = document.getElementById('challenge-rival-select');
+      const rivalOpt = rivalSelect.options[rivalSelect.selectedIndex];
+      const rivalName = rivalOpt ? (rivalOpt.getAttribute('data-name') || rivalOpt.textContent.trim().split('(')[0].trim()) : '[Rival]';
+      const betSelect = document.getElementById('challenge-bet-select');
+      const betVal = betSelect ? betSelect.value : '🍔 Tato Hamburguesa';
+
+      const msg = `🔥 ¡DESAFÍO YIELDPADEL! 🔥\n${challengerName} ha retado formalmente a ${rivalName} por: ${betVal}.\n🏆 +30 Puntos de Ranking en juego para el ganador. ¿Aceptas el reto?`;
+      const preview = document.getElementById('challenge-message-preview');
+      if (preview) preview.value = msg;
+
+      // Actualizar select de ganador
+      const winSel = document.getElementById('challenge-winner-select');
+      if (winSel) {
+        winSel.innerHTML = `
+          <option value="CHALLENGER">Retador: ${challengerName}</option>
+          <option value="RIVAL">Rival: ${rivalName}</option>
+        `;
+      }
+    }
+    window.updateChallengeMessage = updateChallengeMessage;
+
+    function copyChallengeWhatsApp() {
+      const text = document.getElementById('challenge-message-preview').value;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('📋 ¡Mensaje del reto copiado al portapapeles! Listo para enviar en WhatsApp.');
+      }).catch(() => {
+        alert('Copia el mensaje manualmente desde el cuadro de texto.');
+      });
+    }
+    window.copyChallengeWhatsApp = copyChallengeWhatsApp;
+
+    function openWhatsAppChallenge() {
+      const text = document.getElementById('challenge-message-preview').value;
+      if (!text) return;
+      const url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+    }
+    window.openWhatsAppChallenge = openWhatsAppChallenge;
+
+    async function submitChallengeWinner() {
+      const challengerName = document.getElementById('challenge-challenger-display').textContent;
+      const challengerId = document.getElementById('challenge-challenger-id').value;
+      const rivalSelect = document.getElementById('challenge-rival-select');
+      const rivalOpt = rivalSelect.options[rivalSelect.selectedIndex];
+      if (!rivalOpt) {
+        alert('Selecciona un rival válido.');
+        return;
+      }
+      const rivalId = rivalSelect.value;
+      const rivalName = rivalOpt.getAttribute('data-name') || rivalOpt.textContent.trim().split('(')[0].trim();
+      const betVal = document.getElementById('challenge-bet-select').value;
+      const winnerChoice = document.getElementById('challenge-winner-select').value;
+
+      const isChallengerWinner = (winnerChoice === 'CHALLENGER');
+      const winnerId = isChallengerWinner ? (challengerId ? parseInt(challengerId, 10) : null) : (rivalId ? parseInt(rivalId, 10) : null);
+      const winnerName = isChallengerWinner ? challengerName : rivalName;
+
+      try {
+        const payload = {
+          winner_id: winnerId,
+          winner_name: winnerName,
+          challenger_name: challengerName,
+          rival_name: rivalName,
+          bet: betVal
+        };
+
+        const res = await fetch('/api/v1/tournaments/record-challenge-winner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          closeChallengeModal();
+          if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
+          alert(`🏆 ¡Victoria por Reto Registrada!\n\n${data.message}\nApuesta: ${betVal}`);
+        } else {
+          const err = await res.json();
+          alert('Error al registrar ganador: ' + (err.detail || 'Fallo en la operación'));
+        }
+      } catch (err) {
+        console.error('Error registrando ganador de reto:', err);
+        alert('Fallo de conexión al registrar ganador del reto.');
+      }
+    }
+    window.submitChallengeWinner = submitChallengeWinner;
+
     function initOperationalDashboard() {
       // Inicializar fecha defensiva hoy si está vacío
       const dateInput = document.getElementById('selected-date') || document.getElementById('date-picker');
@@ -7762,6 +8793,310 @@ PARTIDO CERRADO</textarea>
           <button type="submit" class="btn-primary" style="padding: 0.5rem 1.2rem; background: #0F172A;">Guardar Operador</button>
         </div>
       </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL: AÑADIR CONSUMOS A CANCHA / TURNO -->
+  <div id="modal-pos-add-order" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 16px; width: 92%; max-width: 540px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+            <span>🛒</span> <span id="modal-pos-title">Añadir Consumos a Pista</span>
+          </h3>
+          <p id="modal-pos-subtitle" class="text-xs text-slate-500 mt-0.5">Selecciona el producto y la cantidad a cargar.</p>
+        </div>
+        <button type="button" onclick="closePOSAddOrderModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B; line-height: 1;">&times;</button>
+      </div>
+
+      <form id="pos-add-order-form" onsubmit="handlePOSAddOrderSubmit(event)" class="space-y-4">
+        <input type="hidden" id="pos-modal-slot-id" />
+        <input type="hidden" id="pos-modal-customer-id" />
+        <input type="hidden" id="pos-modal-membership-tier" value="ESTANDAR" />
+
+        <!-- Info del Jugador y Membresía -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex items-center justify-between">
+          <div>
+            <span class="text-slate-500 font-semibold">Jugador / Responsable:</span>
+            <div id="modal-pos-player-name" class="font-extrabold text-slate-900 text-sm">Alejandro Galán</div>
+          </div>
+          <div class="text-right">
+            <span class="text-slate-500 font-semibold">Membresía:</span>
+            <div id="modal-pos-player-tier" class="font-bold text-indigo-700">👑 TAPIA</div>
+          </div>
+        </div>
+
+        <!-- Selector de Producto -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Seleccionar Producto:</label>
+          <select id="pos-modal-product-select" onchange="onPOSModalProductChange()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white" required>
+            <!-- Opciones dinámicas -->
+          </select>
+        </div>
+
+        <!-- Cantidad y Botón Cortesía de Membresía -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Cantidad:</label>
+            <input type="number" id="pos-modal-quantity" min="1" max="99" value="1" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white font-bold" required />
+          </div>
+          <div class="flex flex-col justify-end">
+            <!-- Botón Aplicar Cortesía Membresía ($0) -->
+            <button type="button" id="btn-apply-membership-perk" onclick="applyMembershipPerkInModal()" class="w-full py-2 px-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg shadow-xs transition hidden flex items-center justify-center gap-1.5" title="Beneficio de Membresía sin costo">
+              <span>🎁</span> <span>Aplicar Cortesía ($0)</span>
+            </button>
+            <span id="perk-applied-badge" class="hidden text-xs font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-lg py-2 px-2 text-center">
+              ✓ Cortesía Aplicada ($0 COP)
+            </span>
+          </div>
+        </div>
+
+        <!-- Resumen del Item -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex justify-between items-center">
+          <span class="text-slate-600 font-bold">Subtotal a Cargar:</span>
+          <span id="modal-pos-subtotal-display" class="font-black text-slate-900 font-mono text-sm">$0 COP</span>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closePOSAddOrderModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs transition flex items-center gap-1.5">
+            <span>+</span> <span>Cargar a la Pista</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CERRAR PARTIDO Y LIQUIDAR (DESGLOSE CANCHA + BARRA) -->
+  <div id="modal-pos-checkout" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 16px; width: 92%; max-width: 480px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+            <span>🧾</span> <span>Cierre de Partido & Liquidación</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Liquidación final de pista y consumos de barra.</p>
+        </div>
+        <button type="button" onclick="closePOSCheckoutModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B; line-height: 1;">&times;</button>
+      </div>
+
+      <div class="space-y-4">
+        <input type="hidden" id="checkout-order-id" />
+        <input type="hidden" id="checkout-slot-id" />
+
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Cancha / Turno:</span>
+            <span id="checkout-court-name" class="font-extrabold text-slate-900">Pádel 1</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Responsable / Jugador:</span>
+            <span id="checkout-customer-name" class="font-bold text-slate-900">Juan Pérez</span>
+          </div>
+        </div>
+
+        <!-- Desglose de Cobro -->
+        <div class="bg-white p-4 rounded-xl border-2 border-slate-200 space-y-2.5">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-600 font-bold flex items-center gap-1.5">
+              <span>🎾</span> <span>Valor Turno Cancha:</span>
+            </span>
+            <span id="checkout-court-price" class="font-bold text-slate-800 font-mono">$0 COP</span>
+          </div>
+
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-600 font-bold flex items-center gap-1.5">
+              <span>🛒</span> <span>Consumos de Barra:</span>
+            </span>
+            <span id="checkout-bar-total" class="font-bold text-slate-800 font-mono">$0 COP</span>
+          </div>
+
+          <div class="pt-2 border-t-2 border-dashed border-slate-200 flex justify-between items-center">
+            <span class="text-sm font-black text-slate-900">Total a Pagar:</span>
+            <span id="checkout-total-to-pay" class="text-xl font-black text-emerald-700 font-mono">$0 COP</span>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closePOSCheckoutModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+          <button type="button" onclick="confirmPOSCheckout()" id="btn-confirm-checkout" class="px-5 py-2.5 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition flex items-center gap-1.5">
+            <span>✓</span> <span>Confirmar Pago y Liquidar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AGREGAR STOCK -->
+  <div id="modal-pos-add-stock" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 16px; width: 90%; max-width: 400px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+          <span>➕</span> <span>Agregar Stock</span>
+        </h3>
+        <button type="button" onclick="closePOSAddStockModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="pos-add-stock-form" onsubmit="handlePOSAddStockSubmit(event)" class="space-y-4">
+        <input type="hidden" id="pos-stock-product-id" />
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+          <span class="text-slate-500">Producto:</span>
+          <div id="pos-stock-product-name" class="font-bold text-slate-900 text-sm mt-0.5">Gatorade 500ml</div>
+          <div class="text-slate-500 mt-1">Stock Actual: <span id="pos-stock-current-val" class="font-extrabold text-slate-800">48</span></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Cantidad a Agregar:</label>
+          <input type="number" id="pos-stock-add-qty" min="1" max="500" value="12" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white font-bold" required />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closePOSAddStockModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs transition">Guardar Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVO PRODUCTO -->
+  <div id="modal-pos-new-product" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 16px; width: 90%; max-width: 440px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+          <span>📦</span> <span>Nuevo Producto para Tienda</span>
+        </h3>
+        <button type="button" onclick="closeNewProductModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="pos-new-product-form" onsubmit="handlePOSNewProductSubmit(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Producto:</label>
+          <input type="text" id="new-prod-name" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs" placeholder="Ej: Red Bull 250ml" required />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Categoría:</label>
+            <select id="new-prod-category" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs bg-white" required>
+              <option value="BEBIDAS">Bebidas</option>
+              <option value="SNACKS">Snacks</option>
+              <option value="EQUIPAMIENTO">Equipamiento</option>
+              <option value="ALQUILER">Alquiler</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Precio COP:</label>
+            <input type="number" id="new-prod-price" min="0" step="500" placeholder="7000" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs" required />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Stock Inicial:</label>
+            <input type="number" id="new-prod-stock" min="0" value="24" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs" required />
+          </div>
+          <div class="flex items-center pt-5">
+            <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+              <input type="checkbox" id="new-prod-perk" class="rounded text-purple-600 focus:ring-purple-500" />
+              <span>Cortesía Socios</span>
+            </label>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closeNewProductModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs transition">Crear Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ⚔️ LANZAR RETO OFICIAL CRM -->
+  <div id="modal-challenge" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 16px; width: 92%; max-width: 520px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+            <span>⚔️</span> <span>Lanzar Reto Oficial</span>
+          </h3>
+          <p class="text-xs text-amber-600 font-bold mt-0.5">🏆 +30 Puntos de Ranking en juego para el ganador.</p>
+        </div>
+        <button type="button" onclick="closeChallengeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B; line-height: 1;">&times;</button>
+      </div>
+
+      <div class="space-y-4">
+        <input type="hidden" id="challenge-challenger-id" />
+
+        <!-- 1. Jugador Retador (Precargado) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Jugador Retador:</label>
+          <div class="bg-slate-100 px-3 py-2 rounded-lg border border-slate-300 text-xs font-extrabold text-slate-900 flex items-center justify-between">
+            <span id="challenge-challenger-display">Martín Di Nenno</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900">Retador</span>
+          </div>
+        </div>
+
+        <!-- 2. Select de Rival (misma categoría o superior) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Seleccionar Rival (Misma Categoría o Superior):</label>
+          <select id="challenge-rival-select" onchange="updateChallengeMessage()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-amber-500 text-slate-900 bg-white" required>
+            <option value="">Cargando rivales disponibles...</option>
+          </select>
+        </div>
+
+        <!-- 3. Selector de Apuesta / Incentivo -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Apuesta / Incentivo en Juego:</label>
+          <select id="challenge-bet-select" onchange="updateChallengeMessage()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-amber-500 text-slate-900 bg-white">
+            <option value="🍔 Tato Hamburguesa" selected>🍔 Tato Hamburguesa</option>
+            <option value="💵 50K COP">💵 50K COP</option>
+            <option value="💵 20K COP">💵 20K COP</option>
+            <option value="🎾 Paga la Cancha">🎾 Paga la Cancha</option>
+            <option value="Puntos Simples">Puntos Simples (Solo Ranking)</option>
+          </select>
+        </div>
+
+        <!-- 4. Vista Previa del Mensaje WhatsApp -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Mensaje para Enviar al Grupo WhatsApp:</label>
+          <textarea id="challenge-message-preview" rows="4" class="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg bg-slate-50 text-slate-800 shadow-inner resize-none" readonly></textarea>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="copyChallengeWhatsApp()" class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center justify-center gap-1.5">
+            <span>📋</span> <span>Copiar Mensaje WhatsApp</span>
+          </button>
+          <button type="button" onclick="openWhatsAppChallenge()" class="py-2 px-3 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center justify-center gap-1" title="Abrir en WhatsApp">
+            <span>📲</span> <span>Enviar</span>
+          </button>
+        </div>
+
+        <!-- 5. Registrar Ganador del Reto -->
+        <div class="mt-4 pt-4 border-t-2 border-dashed border-amber-200 bg-amber-50/60 p-3.5 rounded-xl space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🏆</span>
+            <span class="text-xs font-extrabold text-amber-900">Registrar Ganador del Partido</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">¿Quién ganó el reto?:</label>
+              <select id="challenge-winner-select" class="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-lg bg-white font-bold text-slate-900">
+                <option value="CHALLENGER">Retador</option>
+                <option value="RIVAL">Rival</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button type="button" onclick="submitChallengeWinner()" class="w-full py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-lg shadow-xs transition flex items-center justify-center gap-1">
+                <span>🏆</span> <span>Registrar Ganador (+30 Pts)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2 border-t border-slate-100">
+          <button type="button" onclick="closeChallengeModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cerrar</button>
+        </div>
+      </div>
     </div>
   </div>
 

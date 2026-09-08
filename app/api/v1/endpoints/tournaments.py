@@ -648,3 +648,76 @@ async def create_tournament_endpoint(
     return await create_americano(payload=parsed, db=db)
 
 
+class RecordChallengeWinnerRequest(BaseModel):
+    winner_id: Optional[int] = None
+    winner_name: str
+    challenger_name: Optional[str] = None
+    rival_name: Optional[str] = None
+    bet: Optional[str] = None
+    slot_id: Optional[int] = None
+
+
+@router.post(
+    "/record-challenge-winner",
+    status_code=status.HTTP_200_OK,
+    summary="Registrar ganador de un partido de reto y otorgar +30 puntos de ranking",
+)
+async def record_challenge_winner(
+    payload: RecordChallengeWinnerRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.ranking_engine import find_or_create_player_by_name_or_phone
+
+    customer: Optional[Customer] = None
+    if payload.winner_id:
+        stmt = select(Customer).where(Customer.id == payload.winner_id)
+        res = await db.execute(stmt)
+        customer = res.scalar_one_or_none()
+
+    if not customer and payload.winner_name:
+        customer = await find_or_create_player_by_name_or_phone(db, payload.winner_name.strip())
+
+    if not customer:
+        raise HTTPException(status_code=404, detail="Jugador ganador no encontrado")
+
+    # Sumar +30 puntos de ranking directamente
+    customer.ranking_points += 30
+    customer.consecutive_wins = (customer.consecutive_wins or 0) + 1
+
+    await db.commit()
+    await db.refresh(customer)
+
+    try:
+        await log_activity(
+            db=db,
+            action="CHALLENGE_WINNER_RECORDED",
+            entity_name="customer",
+            entity_id=str(customer.id),
+            details={
+                "winner_name": customer.name,
+                "challenger": payload.challenger_name,
+                "rival": payload.rival_name,
+                "bet": payload.bet,
+                "points_awarded": 30,
+                "new_total_points": customer.ranking_points,
+            },
+        )
+    except Exception as e:
+        logger.warning(f"Error logging challenge activity: {e}")
+
+    return {
+        "success": True,
+        "message": f"¡Victoria registrada! Se sumaron +30 puntos a {customer.name} (Total: {customer.ranking_points} pts).",
+        "winner": {
+            "id": customer.id,
+            "name": customer.name,
+            "ranking_points": customer.ranking_points,
+            "category": customer.category,
+            "consecutive_wins": customer.consecutive_wins,
+        },
+        "points_awarded": 30,
+        "bet": payload.bet,
+    }
+
+
+

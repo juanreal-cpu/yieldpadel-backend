@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import slots, holds, webhooks, customers, tournaments, auth, audit, courts, admin, analytics
+from app.api.v1.endpoints import slots, holds, webhooks, customers, tournaments, auth, audit, courts, admin, analytics, pos
 
 api_router = APIRouter()
 api_router.include_router(slots.router, prefix="/slots", tags=["slots"])
@@ -12,4 +12,5 @@ api_router.include_router(audit.router, prefix="/audit", tags=["audit"])
 api_router.include_router(courts.router, prefix="/courts", tags=["courts"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+api_router.include_router(pos.router, prefix="/pos", tags=["pos"])
 
