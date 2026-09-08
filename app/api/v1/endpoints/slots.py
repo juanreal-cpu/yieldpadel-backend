@@ -261,16 +261,36 @@ async def list_slots(
 
 
 async def ensure_five_courts(db: AsyncSession) -> List[Court]:
-    """Garantiza la existencia y numeración de todas las canchas multideporte del club (Pádel, Pickleball, Vóley y Pilates)."""
+    """Garantiza la existencia y numeración de todas las canchas multideporte del club (Pádel, Pickleball, Vóley y Pilates) sin duplicados."""
     import uuid
-    res = await db.execute(select(Court).where(Court.is_active == True))
-    courts = list(res.scalars().all())
+    res = await db.execute(select(Court))
+    all_courts = list(res.scalars().all())
 
-    court_map = {c.name: c for c in courts}
-    num_map = {c.court_number: c for c in courts if getattr(c, "court_number", None) is not None}
+    # Deduplicar en BD: Agrupar por (nombre limpio, deporte)
+    seen_db_keys = set()
+    active_courts = []
+    changed = False
+
+    for c in all_courts:
+        st = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
+        name_clean = (c.name or "").strip().lower()
+        key = (name_clean, st)
+
+        if key in seen_db_keys:
+            # Pista duplicada en base de datos: desactivarla
+            if c.is_active:
+                c.is_active = False
+                changed = True
+        else:
+            seen_db_keys.add(key)
+            if c.is_active:
+                active_courts.append(c)
+
+    court_map = {c.name.strip().lower(): c for c in active_courts}
+    num_map = {c.court_number: c for c in active_courts if getattr(c, "court_number", None) is not None}
 
     sample_club_id = None
-    for c in courts:
+    for c in active_courts:
         if getattr(c, "club_id", None):
             sample_club_id = c.club_id
             break
@@ -290,9 +310,16 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
         (10, "Sala Gaming / Consola", "CONSOLE", 4),
     ]
 
-    changed = False
     for num, name, s_type, max_cap in court_definitions:
-        existing = num_map.get(num) or court_map.get(name)
+        existing = num_map.get(num) or court_map.get(name.strip().lower())
+        # Si no coincide exactamente pero ya existe pista de Pádel con número o nombre similar
+        if not existing:
+            for c in active_courts:
+                c_sport = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
+                if c_sport == s_type and (getattr(c, "court_number", None) == num or c.name.strip().lower() == name.strip().lower()):
+                    existing = c
+                    break
+
         if existing:
             if existing.name != name:
                 existing.name = name
@@ -306,7 +333,11 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
             if getattr(existing, "max_capacity", None) != max_cap:
                 existing.max_capacity = max_cap
                 changed = True
+            if not existing.is_active:
+                existing.is_active = True
+                changed = True
         else:
+            # Prohibir duplicados: Solo crear si NO existe pista para este deporte y número/nombre
             new_court = Court(
                 id=uuid.uuid4(),
                 club_id=sample_club_id,
@@ -317,15 +348,31 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
                 is_active=True,
             )
             db.add(new_court)
+            active_courts.append(new_court)
+            court_map[name.strip().lower()] = new_court
+            num_map[num] = new_court
             changed = True
 
     if changed:
         await db.commit()
         res = await db.execute(select(Court).where(Court.is_active == True))
-        courts = list(res.scalars().all())
+        all_active = list(res.scalars().all())
+    else:
+        all_active = active_courts
 
-    courts.sort(key=lambda c: (getattr(c, "court_number", None) or 99, c.name))
-    return courts
+    # Deduplicación final estricta por (nombre, deporte) y court_id único
+    final_seen = set()
+    final_courts = []
+    for c in all_active:
+        st = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
+        nm = (c.name or "").strip().lower()
+        key = (nm, st)
+        if key not in final_seen:
+            final_seen.add(key)
+            final_courts.append(c)
+
+    final_courts.sort(key=lambda c: (getattr(c, "court_number", None) or 99, c.name))
+    return final_courts
 
 ensure_multisport_courts = ensure_five_courts
 
@@ -335,11 +382,24 @@ async def get_courts(
     sport: Optional[str] = Query(None, description="Filtrar por deporte (PADEL, PICKLEBALL, VOLLEYBALL, PILATES, CONSOLE)"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Obtiene el listado ordenado de las canchas activas del club, con filtro opcional de deporte."""
+    """Obtiene el listado ordenado de las canchas activas del club, deduplicado y con filtro opcional de deporte."""
     courts = await ensure_five_courts(db)
-    if sport:
-        courts = [c for c in courts if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == sport.upper()]
-    return courts
+    if sport and sport.upper() not in ["ALL", "TODAS", ""]:
+        courts = [c for c in courts if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == sport.strip().upper()]
+    # Deduplicación por id y nombre+deporte
+    seen_ids = set()
+    seen_keys = set()
+    deduped = []
+    for c in courts:
+        cid = str(c.id)
+        st = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
+        nm = (c.name or "").strip().lower()
+        key = (nm, st)
+        if cid not in seen_ids and key not in seen_keys:
+            seen_ids.add(cid)
+            seen_keys.add(key)
+            deduped.append(c)
+    return deduped
 
 
 @router.post("/seed", status_code=status.HTTP_201_CREATED)
@@ -1110,7 +1170,12 @@ async def reserve_or_block_slot(
 
     # Operational Audit Trail
     try:
-        audit_action = "BLOCK_SLOT" if slot.status == SlotStatus.MAINTENANCE else ("RESERVE_SLOT" if slot.status == SlotStatus.FULLY_BOOKED else "UPDATE_SLOT")
+        if slot.status == SlotStatus.MAINTENANCE:
+            audit_action = "BLOCK_SLOT"
+        elif slot.status in (SlotStatus.FULLY_BOOKED, SlotStatus.PARTIALLY_BOOKED):
+            audit_action = "RESERVA_CREADA"
+        else:
+            audit_action = "RESERVA_MODIFICADA"
         court_name = slot.court.name if slot.court else f"Cancha #{slot.court_id}"
         details_msg = f"Asignación {assignment_type} en {court_name} ({slot.start_time.strftime('%H:%M')} - {slot.end_time.strftime('%H:%M')})"
         if payload.client_name:

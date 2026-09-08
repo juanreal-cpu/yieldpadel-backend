@@ -230,6 +230,19 @@ async def record_winners(
 
     await db.commit()
 
+    # Log de Auditoría Operativa
+    try:
+        await log_activity(
+            db=db,
+            action="TORNEO_GANADORES",
+            entity_name="TOURNAMENT",
+            entity_id=payload.tournament_name or "Torneo Americano",
+            details=f"Campeones: {win_str} | Subcampeones: {run_str or 'N/A'}",
+            username_snapshot="Camilo Real (Recepción)",
+        )
+    except Exception as e:
+        logger.warning(f"Error logging tournament winners audit: {e}")
+
     return {
         "status": "success",
         "message": f"🏆 Ganadores registrados exitosamente: {win_str}",

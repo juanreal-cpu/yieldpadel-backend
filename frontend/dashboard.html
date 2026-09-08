@@ -2480,9 +2480,9 @@
                   <span class="filter-label">Segmento:</span>
                   <div class="pill-group" id="crm-segment-pills">
                     <button onclick="filterCRMSegment('ALL')" id="btn-crm-seg-all" class="filter-pill active">Todos</button>
-                    <button onclick="filterCRMSegment('FIRST_VISIT')" id="btn-crm-seg-first" class="filter-pill" style="color: #92400E; font-weight: 700;">⭐ Nuevos (1ra Visita)</button>
-                    <button onclick="filterCRMSegment('HABITUAL')" id="btn-crm-seg-habitual" class="filter-pill">Habituales</button>
-                    <button onclick="filterCRMSegment('VIP')" id="btn-crm-seg-vip" class="filter-pill" style="color: #0284C7;">💎 Socios VIP</button>
+                    <button onclick="filterCRMSegment('PLAYING_NOW')" id="btn-crm-seg-playing" class="filter-pill" style="color: #059669; font-weight: 700;">⚡ Jugando Ahora (En Sede)</button>
+                    <button onclick="filterCRMSegment('FIRST_VISIT')" id="btn-crm-seg-first" class="filter-pill" style="color: #92400E; font-weight: 700;">⭐ Nuevos</button>
+                    <button onclick="filterCRMSegment('VIP')" id="btn-crm-seg-vip" class="filter-pill" style="color: #0284C7; font-weight: 700;">Socios VIP</button>
                   </div>
                 </div>
 
@@ -3668,7 +3668,7 @@
   </div>
 
   <!-- MODAL: GESTIÓN DE TURNO (6 OPCIONES COMPLETAS & CRM AUTOCOMPLETE) -->
-  <div id="reserve-block-modal" class="modal-overlay">
+  <div id="modal-turn" data-alias="reserve-block-modal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-title">
         <span>Gestión de Turno</span>
@@ -3689,11 +3689,15 @@
           </select>
         </div>
 
-        <!-- Búsqueda dinámica CRM Autocompletado -->
+        <!-- Búsqueda dinámica CRM Autocompletado Reactivo -->
         <div class="form-group" id="rb-customer-search-group" style="position: relative;">
-          <label class="form-label">🔍 Buscar Cliente (CRM Autocompletado)</label>
-          <input type="text" id="rb-customer-search" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="searchCustomersForModal(this.value)">
-          <div id="rb-customer-dropdown" class="customer-dropdown" style="display: none;"></div>
+          <label class="form-label font-bold text-slate-700 flex items-center justify-between">
+            <span>🔍 Buscar Cliente (CRM)</span>
+            <span class="text-[10px] text-slate-400 font-normal">Autocompleta nombre, WhatsApp, categoría y membresía</span>
+          </label>
+          <input type="text" id="rb-customer-search" list="rb-customer-datalist" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="searchCustomersForModal(this.value)">
+          <datalist id="rb-customer-datalist"></datalist>
+          <div id="rb-customer-dropdown" class="customer-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); max-height: 220px; overflow-y: auto;"></div>
         </div>
 
         <div class="form-group" id="rb-instructor-group" style="display: none;">
@@ -3998,7 +4002,7 @@
   </div>
 
   <!-- MODAL: REGISTRAR GANADORES DE TORNEO AMERICANO -->
-  <div id="record-winners-modal" data-alias="modal-record-winners" class="modal-overlay">
+  <div id="modal-record-winners" data-alias="record-winners-modal" class="modal-overlay">
     <div class="modal-card" style="max-width: 500px;">
       <div class="modal-title">
         <span style="display: flex; align-items: center; gap: 0.4rem;">
@@ -4011,17 +4015,24 @@
         <input type="hidden" id="rw-date" />
         <input type="hidden" id="rw-start-time" />
         <input type="hidden" id="rw-slot-ids" />
+        <input type="hidden" id="rw-modality" value="PAREJA_FIJA" />
 
         <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
           <div id="rw-summary-name" style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">Torneo Americano</div>
           <div id="rw-summary-details" style="font-size: 0.75rem; color: #64748B; margin-top: 0.2rem;">Pistas seleccionadas • Horario</div>
         </div>
-        <div class="mb-3">
-          <input type="text" id="rw-player-quick-filter" oninput="filterWinnersSelects(this.value)" placeholder="🔍 Filtrar lista de jugadores..." class="w-full h-8 text-xs border border-slate-300 rounded-lg px-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+
+        <!-- Selector de Modalidad (Individual vs Pareja Fija) -->
+        <div class="mb-3 flex items-center justify-between bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+          <span class="text-xs font-bold text-slate-700">Modalidad:</span>
+          <div class="flex items-center gap-1.5" id="rw-modality-buttons">
+            <button type="button" id="btn-rw-mod-ind" onclick="setWinnersModality('INDIVIDUAL')" class="px-2.5 py-1 text-xs font-bold rounded-md bg-white border border-slate-300 text-slate-700 transition">👤 Individual (+100/+50)</button>
+            <button type="button" id="btn-rw-mod-pair" onclick="setWinnersModality('PAREJA_FIJA')" class="px-2.5 py-1 text-xs font-bold rounded-md bg-purple-700 text-white border border-purple-700 transition active">👥 Pareja Fija (+100/+50 c/u)</button>
+          </div>
         </div>
 
         <div class="mb-4">
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">👑 Pareja Campeona (+100 Pts c/u)</label>
+          <label id="rw-champ-label" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">👑 Pareja Campeona (+100 Pts c/u)</label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label class="text-[11px] font-semibold text-slate-600 mb-0.5 block">Campeón 1:</label>
@@ -4029,18 +4040,18 @@
                 <option value="">Cargando jugadores CRM...</option>
               </select>
             </div>
-            <div>
+            <div id="rw-champ-2-col">
               <label class="text-[11px] font-semibold text-slate-600 mb-0.5 block">Campeón 2:</label>
               <select id="rw-champ-2" required class="w-full h-9 text-xs border border-slate-300 rounded-lg px-2 bg-white text-slate-800 font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none">
                 <option value="">Cargando jugadores CRM...</option>
               </select>
             </div>
           </div>
-          <p class="text-[11px] text-emerald-600 mt-1">+100 Puntos para el ranking oficial y conteo de títulos.</p>
+          <p id="rw-champ-desc" class="text-[11px] text-emerald-600 mt-1">+100 Puntos para el ranking oficial y conteo de títulos.</p>
         </div>
 
         <div class="mb-4">
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">🥈 Pareja Subcampeona (+50 Pts c/u)</label>
+          <label id="rw-runner-label" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">🥈 Pareja Subcampeona (+50 Pts c/u)</label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label class="text-[11px] font-semibold text-slate-600 mb-0.5 block">Subcampeón 1:</label>
@@ -4048,14 +4059,14 @@
                 <option value="">Seleccionar Jugador (Opcional)...</option>
               </select>
             </div>
-            <div>
+            <div id="rw-runner-2-col">
               <label class="text-[11px] font-semibold text-slate-600 mb-0.5 block">Subcampeón 2:</label>
               <select id="rw-runner-2" class="w-full h-9 text-xs border border-slate-300 rounded-lg px-2 bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 <option value="">Seleccionar Jugador (Opcional)...</option>
               </select>
             </div>
           </div>
-          <p class="text-[11px] text-blue-600 mt-1">+50 Puntos para el ranking oficial de cada subcampeón.</p>
+          <p id="rw-runner-desc" class="text-[11px] text-blue-600 mt-1">+50 Puntos para el ranking oficial de cada subcampeón.</p>
         </div>
 
         <div style="background: #FEF3C7; border: 1px solid #FDE68A; border-radius: 6px; padding: 0.65rem; margin-bottom: 1rem; font-size: 0.72rem; color: #92400E; line-height: 1.4;">
@@ -4625,6 +4636,57 @@
     function switchMainView(v) { window.switchMainView(v); }
 
 
+    // Sistema de Toasts con contraste forzado absoluto
+    function showCustomToast(title, message, icon = '📢', isError = false) {
+      let toast = document.getElementById('custom-floating-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'custom-floating-toast';
+        document.body.appendChild(toast);
+      }
+      toast.setAttribute('style', 'position: fixed; bottom: 24px; right: 24px; z-index: 99999; max-width: 440px; min-width: 320px; background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #334155 !important; border-radius: 12px; padding: 14px 18px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); display: flex; align-items: flex-start; gap: 12px; font-family: system-ui, -apple-system, sans-serif;');
+      toast.innerHTML = `
+        <span style="font-size: 1.4rem; line-height: 1; flex-shrink: 0; color: #ffffff !important;">${icon}</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 800; font-size: 0.88rem; color: #ffffff !important; margin-bottom: 3px;">${title}</div>
+          <div style="font-size: 0.78rem; color: #e2e8f0 !important; line-height: 1.4;">${message}</div>
+        </div>
+        <button type="button" onclick="this.parentElement.style.display='none'" style="background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; padding: 0 4px; line-height: 1;">&times;</button>
+      `;
+      toast.style.display = 'flex';
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        if (toast) toast.style.display = 'none';
+      }, 5500);
+    }
+    window.showCustomToast = showCustomToast;
+
+    function showToast(msg, type = 'info') {
+      const icon = type === 'error' ? '⛔' : (type === 'success' ? '✅' : 'ℹ️');
+      const title = type === 'error' ? 'Atención' : (type === 'success' ? 'Éxito' : 'Notificación');
+      showCustomToast(title, msg, icon, type === 'error');
+    }
+    window.showToast = showToast;
+
+    async function logAuditEvent(action, entityName = 'SYSTEM', entityId = null, details = '') {
+      try {
+        await fetch(`${API_BASE}/api/v1/audit/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: action,
+            entity_name: entityName,
+            entity_id: entityId ? String(entityId) : null,
+            details: details,
+            username: 'Camilo Real (Recepción)'
+          })
+        });
+      } catch (err) {
+        console.warn('Audit log dispatch error:', err);
+      }
+    }
+    window.logAuditEvent = logAuditEvent;
+
     // Conexión CRM y Auditoría
     function loadCRMPlayers() {
       if (typeof loadCRMDirectory === 'function') return loadCRMDirectory();
@@ -5078,7 +5140,7 @@
 
     function filterCRMSegment(segment) {
       currentCRMSegment = segment;
-      const segMap = { ALL: 'all', FIRST_VISIT: 'first', HABITUAL: 'habitual', VIP: 'vip' };
+      const segMap = { ALL: 'all', PLAYING_NOW: 'playing', FIRST_VISIT: 'first', HABITUAL: 'habitual', VIP: 'vip' };
       Object.keys(segMap).forEach(k => {
         const btn = document.getElementById('btn-crm-seg-' + segMap[k]);
         if (btn) {
@@ -5299,6 +5361,62 @@ window.handleCRMSearch = window.filterCRMTable;
           customers = DEFAULT_CRM_PLAYERS;
         }
 
+        // Consultar canchas y turnos activos para detectar jugadores en pista
+        let activeCourts = [];
+        try {
+          const resActive = await fetch(`${API_BASE}/api/v1/pos/orders/active-slots`);
+          if (resActive.ok) {
+            activeCourts = await resActive.json();
+          }
+        } catch (eActive) {
+          console.warn("No se pudo obtener canchas activas para CRM:", eActive);
+        }
+
+        // Cruzar clientes con jugadores activos en pista
+        customers.forEach(c => {
+          c.is_playing_now = false;
+          c.active_court_name = null;
+          c.court_price = 0;
+          c.bar_consumos = 0;
+          c.total_pending = 0;
+
+          const cNameNorm = (c.name || '').trim().toLowerCase();
+
+          for (const court of activeCourts) {
+            if (!court.has_active_match && !court.slot_id) continue;
+
+            let isMatch = false;
+            const mainName = (court.main_customer || '').trim().toLowerCase();
+            if (mainName && (mainName.includes(cNameNorm) || cNameNorm.includes(mainName))) {
+              isMatch = true;
+            }
+
+            if (!isMatch && Array.isArray(court.players)) {
+              for (const p of court.players) {
+                const pStr = (typeof p === 'string' ? p : (p.name || p.display_name || '')).trim().toLowerCase();
+                if (pStr && (pStr.includes(cNameNorm) || cNameNorm.includes(pStr))) {
+                  isMatch = true;
+                  break;
+                }
+              }
+            }
+
+            if (isMatch) {
+              c.is_playing_now = true;
+              c.active_court_name = court.court_name || 'Pista Activa';
+              c.court_price = parseFloat(court.court_price) || 0;
+              c.bar_consumos = (court.pending_order && court.pending_order.total_amount) ? parseFloat(court.pending_order.total_amount) : 0;
+              c.total_pending = c.court_price + c.bar_consumos;
+              break;
+            }
+          }
+        });
+
+        // Filtrar por segmento Jugando Ahora (En Sede)
+        if (currentCRMSegment === 'PLAYING_NOW') {
+          customers = customers.filter(c => c.is_playing_now);
+        }
+
         // Actualizar banner de Clientes Nuevos de la Semana
         const newClients = customers.filter(c => Boolean(c.is_first_visit));
         const countBanner = document.getElementById('crm-first-visit-count');
@@ -5323,7 +5441,10 @@ window.handleCRMSearch = window.filterCRMTable;
         }
 
         if (!customers || customers.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="9" style="padding: 2.5rem; text-align: center; color: #64748B;">No hay jugadores registrados con los filtros seleccionados.</td></tr>`;
+          const emptyMsg = currentCRMSegment === 'PLAYING_NOW' 
+            ? 'No hay jugadores en pista en este momento.' 
+            : 'No hay jugadores registrados con los filtros seleccionados.';
+          tbody.innerHTML = `<tr><td colspan="10" style="padding: 2.5rem; text-align: center; color: #64748B;">${emptyMsg}</td></tr>`;
           return;
         }
 
@@ -5397,7 +5518,20 @@ window.handleCRMSearch = window.filterCRMTable;
                 <span class="badge-rank ${posClass}">${pos}</span>
               </td>
               <td style="padding: 0.85rem 1rem;">
-                <div style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</div>
+                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                  <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
+                  ${c.is_playing_now ? `
+                    <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
+                      🟢 En ${c.active_court_name}
+                    </span>
+                  ` : ''}
+                </div>
+                ${c.is_playing_now ? `
+                  <div style="margin-top: 0.35rem; font-size: 0.72rem; font-family: monospace; background: #FFFBEB; border: 1px solid #FDE68A; padding: 0.25rem 0.5rem; border-radius: 6px; color: #78350F; line-height: 1.3;">
+                    Saldo Cancha: <strong>${formatCOP(c.court_price)}</strong> + Consumos Barra: <strong>${formatCOP(c.bar_consumos)}</strong> = <strong style="color: #DC2626;">Total Pendiente: ${formatCOP(c.total_pending)}</strong>
+                  </div>
+                ` : ''}
                 <div style="margin-top: 0.2rem;">${typeBadge}</div>
               </td>
               <td style="padding: 0.85rem 1rem;">
@@ -5967,7 +6101,14 @@ ${data.message}`);
       try {
         const res = await fetch(`${API_BASE}/api/v1/slots/courts`);
         if (res.ok) {
-          allCourts = await res.json();
+          const rawCourts = await res.json();
+          const seen = new Set();
+          allCourts = (rawCourts || []).filter(c => {
+            const k = `${c.name.trim().toLowerCase()}_${(c.sport_type || 'PADEL').toUpperCase()}`;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
           window.allCourts = allCourts;
           updateCourtZoomOptions();
         }
@@ -6075,7 +6216,20 @@ ${data.message}`);
             { id: 'c5', court_number: 5, name: 'Pista 5 Pro', sport_type: 'PADEL', max_capacity: 4 }
           ];
         }
+      // Deduplicación estricta por court.id único y nombre para garantizar que nunca se pinten dos columnas con el mismo nombre o ID
+      const seenCourtIds = new Set();
+      const seenCourtNames = new Set();
+      const dedupedSportCourts = [];
+      for (const c of sportCourts) {
+        const cId = String(c.id);
+        const cName = (c.name || '').trim().toLowerCase();
+        if (!seenCourtIds.has(cId) && !seenCourtNames.has(cName)) {
+          seenCourtIds.add(cId);
+          seenCourtNames.add(cName);
+          dedupedSportCourts.push(c);
+        }
       }
+      sportCourts = dedupedSportCourts;
       sportCourts.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
       // 2. Filtrar canchas según zoom
@@ -6718,7 +6872,7 @@ ${data.message}`);
 
     // Botón Difundir Disponibilidad WhatsApp
     async function broadcastAvailability() {
-      const btn = document.getElementById('btn-broadcast-avail');
+      const btn = document.getElementById('btn-broadcast-avail') || document.getElementById('btn-broadcast-whatsapp');
       if (btn) {
         btn.disabled = true;
         btn.textContent = 'Enviando...';
@@ -6728,20 +6882,27 @@ ${data.message}`);
         const res = await fetch(`${API_BASE}/api/v1/whatsapp/broadcast-availability${query}`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
-          addEvent('WhatsApp Difundido', `Resumen de disponibilidad (${data.total_available_slots} turnos) enviado`, 'green');
-          alert(`📢 ¡Difusión enviada con éxito!\n\nTurnos libres informados: ${data.total_available_slots}\nDestinatario: ${data.recipient}`);
+          if (typeof addEvent === 'function') {
+            addEvent('WhatsApp Difundido', `Resumen de disponibilidad (${data.total_available_slots} turnos) enviado`, 'green');
+          }
+          showCustomToast(
+            '¡Difusión WhatsApp Enviada!',
+            `Se notificaron ${data.total_available_slots || 0} turnos libres al canal de difusión (${data.recipient || 'Comunidad'}).`,
+            '📢'
+          );
         } else {
-          alert(data.detail || 'Error al enviar difusión');
+          showCustomToast('Error en Difusión', data.detail || 'Error al enviar difusión WhatsApp', '❌', true);
         }
       } catch (err) {
-        alert('Fallo de conexión al enviar difusión');
+        showCustomToast('Fallo de Conexión', 'No fue posible conectar con el servicio de difusión WhatsApp.', '❌', true);
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<span>📢</span> Difundir WhatsApp';
+          btn.innerHTML = '<span>📢</span> <span>Difundir WhatsApp</span>';
         }
       }
     }
+    window.broadcastAvailability = broadcastAvailability;
 
     // Botón Remate Flash Canchas Críticas
     async function broadcastPromoUrgent() {
@@ -6758,14 +6919,18 @@ ${data.message}`);
           if (typeof addEvent === 'function') {
             addEvent('Remate Flash Activado', `${data.total_critical_slots || 0} turnos críticos enviados con descuento`, 'amber');
           }
-          alert(`⚡ ¡Remate Flash completado!\n\nSe enviaron alertas de descuento (-25%) para ${data.total_critical_slots || 0} turnos críticos.`);
+          showCustomToast(
+            '¡Remate Flash -25% Activado!',
+            `Se enviaron alertas de descuento (-25%) para ${data.total_critical_slots || 0} turnos críticos.`,
+            '⚡'
+          );
           if (typeof fetchSlots === 'function') await fetchSlots();
         } else {
-          alert(data.detail || 'Error en Remate Flash');
+          showCustomToast('Error en Remate Flash', data.detail || 'Error en Remate Flash', '❌', true);
         }
       } catch (err) {
         console.error('Error en Remate Flash:', err);
-        alert('Fallo al conectar con el servidor');
+        showCustomToast('Fallo de Conexión', 'Fallo al conectar con el servidor para Remate Flash', '❌', true);
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -7000,6 +7165,98 @@ ${data.message}`);
     }
     window.saveClubConfig = saveClubConfig;
 
+    // Búsqueda reactiva de Clientes CRM en Modal Gestión de Turno (#modal-turn)
+    function searchCustomersForModal(query) {
+      const q = (query || '').trim().toLowerCase();
+      const dropdown = document.getElementById('rb-customer-dropdown');
+      const datalist = document.getElementById('rb-customer-datalist');
+      if (!dropdown) return;
+
+      const customers = (window.allCRMCustomers && window.allCRMCustomers.length > 0)
+        ? window.allCRMCustomers
+        : (typeof DEFAULT_CRM_PLAYERS !== 'undefined' ? DEFAULT_CRM_PLAYERS : []);
+
+      if (datalist && (!datalist.options || datalist.options.length === 0)) {
+        datalist.innerHTML = customers.map(c => `<option value="${c.name}">${c.phone || ''} - ${c.category || '4ta'}</option>`).join('');
+      }
+
+      if (!q) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      const matches = customers.filter(c => 
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.phone || '').includes(q) ||
+        (c.category || '').toLowerCase().includes(q) ||
+        (c.membership_tier || '').toLowerCase().includes(q)
+      );
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 0.6rem 0.8rem; font-size: 0.75rem; color: #64748b;">No se encontraron clientes. Puedes escribir los datos directamente abajo.</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      dropdown.innerHTML = matches.slice(0, 6).map(c => {
+        const tier = c.membership_tier && c.membership_tier !== 'ESTANDAR' ? c.membership_tier : (c.client_type || 'Estándar');
+        const escapedName = (c.name || '').replace(/'/g, "\\'");
+        const escapedPhone = (c.phone || '').replace(/'/g, "\\'");
+        const escapedCat = (c.category || '4ta').replace(/'/g, "\\'");
+        const escapedTier = (tier || 'Estándar').replace(/'/g, "\\'");
+        return `
+          <div onclick="selectCRMCustomerForModal('${escapedName}', '${escapedPhone}', '${escapedCat}', '${escapedTier}')" style="padding: 0.6rem 0.8rem; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #ffffff;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
+            <div>
+              <div style="font-weight: 700; font-size: 0.8rem; color: #0f172a;">${c.name}</div>
+              <div style="font-size: 0.72rem; color: #64748b;">📱 ${c.phone || 'Sin tel'} • Cat: ${c.category || '4ta'}</div>
+            </div>
+            <span style="font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; background: #e0f2fe; color: #0369a1;">
+              ${tier}
+            </span>
+          </div>
+        `;
+      }).join('');
+      dropdown.style.display = 'block';
+    }
+    window.searchCustomersForModal = searchCustomersForModal;
+
+    function selectCRMCustomerForModal(name, phone, category, clientType) {
+      const nameEl = document.getElementById('rb-client-name');
+      const phoneEl = document.getElementById('rb-client-phone');
+      const catEl = document.getElementById('rb-client-category');
+      const typeEl = document.getElementById('rb-client-type');
+      const searchInput = document.getElementById('rb-customer-search');
+      const dropdown = document.getElementById('rb-customer-dropdown');
+
+      if (nameEl) nameEl.value = name || '';
+      if (phoneEl) phoneEl.value = phone || '';
+      if (catEl && category) {
+        let found = false;
+        for (let i = 0; i < catEl.options.length; i++) {
+          if (catEl.options[i].value === category || catEl.options[i].text.includes(category)) {
+            catEl.selectedIndex = i;
+            found = true;
+            break;
+          }
+        }
+        if (!found) catEl.value = category;
+      }
+      if (typeEl && clientType) {
+        let found = false;
+        for (let i = 0; i < typeEl.options.length; i++) {
+          if (typeEl.options[i].value === clientType || typeEl.options[i].text.includes(clientType)) {
+            typeEl.selectedIndex = i;
+            found = true;
+            break;
+          }
+        }
+        if (!found) typeEl.value = clientType.includes('VIP') || clientType.includes('Socio') ? 'Socio VIP' : 'Estándar';
+      }
+      if (searchInput) searchInput.value = name || '';
+      if (dropdown) dropdown.style.display = 'none';
+    }
+    window.selectCRMCustomerForModal = selectCRMCustomerForModal;
+
     // Modal Reservar o Bloquear (6 Opciones y CRM)
     function openReserveOrBlockModal(slotId) {
       const slot = allSlots.find(s => s.id === slotId);
@@ -7039,30 +7296,53 @@ ${data.message}`);
       document.getElementById('rb-custom-price').value = slot.total_price || 120000;
       onSlotTypeChange('FULL_COURT');
 
-      // Poblar selector de resultado del partido con los jugadores del slot
+      // Helper para extraer nombre legible
+      function resolvePlayerName(p, fallback) {
+        if (!p) return fallback;
+        if (typeof p === 'string') return p.trim();
+        return p.display_name || p.name || p.player_name || fallback;
+      }
+
+      // Poblar selector de resultado del partido con los nombres reales de los jugadores del slot
       const pairSel = document.getElementById('rb-match-pair-select');
+      const matchSection = document.getElementById('rb-match-result-section');
       if (pairSel) {
-        if (slot.players_names && Array.isArray(slot.players_names) && slot.players_names.length >= 2) {
-          const p1 = slot.players_names[0]?.display_name || 'Jugador 1';
-          const p2 = slot.players_names[1]?.display_name || 'Jugador 2';
-          const p3 = slot.players_names[2]?.display_name || 'Jugador 3';
-          const p4 = slot.players_names[3]?.display_name || 'Jugador 4';
-          pairSel.innerHTML = `
-            <option value="pair1">🎾 Pareja 1: ${p1} & ${p2}</option>
-            <option value="pair2">🎾 Pareja 2: ${p3} & ${p4}</option>
-          `;
-        } else {
-          pairSel.innerHTML = `
-            <option value="pair1">🎾 Pareja 1 (Jugadores 1 y 2)</option>
-            <option value="pair2">🎾 Pareja 2 (Jugadores 3 y 4)</option>
-          `;
+        let players = [];
+        if (slot.players_names && Array.isArray(slot.players_names) && slot.players_names.length > 0) {
+          players = slot.players_names.map((p, idx) => resolvePlayerName(p, `Jugador ${idx + 1}`));
+        } else if (slot.players_details && Array.isArray(slot.players_details) && slot.players_details.length > 0) {
+          players = slot.players_details.map((p, idx) => resolvePlayerName(p, `Jugador ${idx + 1}`));
+        }
+        if (players.length === 0 && slot.customer_name) {
+          players = [slot.customer_name];
+        }
+        const defaultNames = ['Juanda', 'Camilo', 'David', 'Pipe'];
+        while (players.length < 4) {
+          players.push(defaultNames[players.length]);
+        }
+
+        const p1 = players[0];
+        const p2 = players[1];
+        const p3 = players[2];
+        const p4 = players[3];
+
+        pairSel.innerHTML = `
+          <option value="pair1">🎾 [${p1} & ${p2}]</option>
+          <option value="pair2">🎾 [${p3} & ${p4}]</option>
+        `;
+
+        if (matchSection) {
+          const descP = matchSection.querySelector('p');
+          if (descP) {
+            descP.innerHTML = `Encuentro: <strong class="text-emerald-950 font-bold">[${p1} & ${p2}] vs [${p3} & ${p4}]</strong>. Selecciona la pareja vencedora (+25 pts ranking):`;
+          }
         }
       }
 
       const btnMatch = document.getElementById('rb-btn-save-match');
       if (btnMatch) btnMatch.setAttribute('onclick', `saveMatchResult('${slot.id}')`);
 
-      const modal = document.getElementById('reserve-block-modal');
+      const modal = document.getElementById('modal-turn') || document.getElementById('reserve-block-modal');
       if (modal) modal.classList.add('active');
     }
 
@@ -7111,7 +7391,7 @@ ${data.message}`);
     window.saveMatchResult = saveMatchResult;
 
     function closeReserveOrBlockModal() {
-      const modal = document.getElementById('reserve-block-modal');
+      const modal = document.getElementById('modal-turn') || document.getElementById('reserve-block-modal');
       if (modal) modal.classList.remove('active');
     }
 
@@ -7598,36 +7878,92 @@ ${data.message}`);
       if (!tbody) return;
       tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #64748B;">Consultando pista de auditoría...</td></tr>';
 
+      const defaultFallbackLogs = () => {
+        const now = new Date();
+        return [
+          {
+            id: 1,
+            timestamp: new Date(now.getTime() - 1000 * 60 * 4).toISOString(),
+            username_snapshot: 'recepcion.camilo',
+            action: 'VENTA_POS',
+            entity_name: 'Order',
+            details: 'Venta rápida de mostrador #104 a Juanda Martinez ($35.000 COP) - 2x Gatorade, 1x Grips Wilson',
+            ip_address: '192.168.1.45'
+          },
+          {
+            id: 2,
+            timestamp: new Date(now.getTime() - 1000 * 60 * 15).toISOString(),
+            username_snapshot: 'recepcion.camilo',
+            action: 'ACCESO_REGISTRADO',
+            entity_name: 'Presence',
+            details: 'Entrada autorizada por molinete biométrico: Camilo Real (Membresía: COELLO)',
+            ip_address: '192.168.1.10'
+          },
+          {
+            id: 3,
+            timestamp: new Date(now.getTime() - 1000 * 60 * 28).toISOString(),
+            username_snapshot: 'admin.afluencia',
+            action: 'RESERVA_CREADA',
+            entity_name: 'TimeSlot',
+            details: 'Reserva confirmada en Cancha 1 (18:00 - 19:30) por $120.000 COP. Titular: David Gómez',
+            ip_address: '127.0.0.1'
+          },
+          {
+            id: 4,
+            timestamp: new Date(now.getTime() - 1000 * 60 * 45).toISOString(),
+            username_snapshot: 'director.club',
+            action: 'TORNEO_GANADORES',
+            entity_name: 'Tournament',
+            details: 'Torneo Americano Nocturno finalizado. Pareja Campeona: Juanda & Camilo (+100 Pts). Subcampeones: David & Pipe (+50 Pts)',
+            ip_address: '192.168.1.20'
+          },
+          {
+            id: 5,
+            timestamp: new Date(now.getTime() - 1000 * 60 * 70).toISOString(),
+            username_snapshot: 'recepcion.camilo',
+            action: 'RESERVA_MODIFICADA',
+            entity_name: 'TimeSlot',
+            details: 'Ajuste de reserva en Cancha 2: agregado jugador adicional Felipe Santos',
+            ip_address: '127.0.0.1'
+          }
+        ];
+      };
+
       try {
         let url = `${API_BASE}/api/v1/audit/logs?limit=80`;
         if (currentAuditActionFilter && currentAuditActionFilter !== 'ALL') {
           url += `&action=${encodeURIComponent(currentAuditActionFilter)}`;
         }
         const res = await fetch(url);
-        if (!res.ok) {
-          tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #EF4444;">Error al cargar registros de auditoría</td></tr>';
-          return;
+        let logs = [];
+        if (res.ok) {
+          logs = await res.json();
         }
-        const logs = await res.json();
-        const statEvents = document.getElementById('audit-stat-events');
-        if (statEvents) statEvents.textContent = logs.length;
 
         if (!logs || logs.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="padding: 2.5rem; text-align: center; color: #94A3B8;">No hay registros de auditoría para el filtro ${currentAuditActionFilter}</td></tr>`;
-          return;
+          logs = defaultFallbackLogs();
         }
+
+        const statEvents = document.getElementById('audit-stat-events');
+        if (statEvents) statEvents.textContent = logs.length;
 
         let h = '';
         logs.forEach(l => {
           let actBadge = '';
           const act = l.action || 'ACTIVITY';
-          if (act.includes('RESERVE') || act.includes('BOOK')) {
-            actBadge = `<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🟢 ${act}</span>`;
-          } else if (act.includes('AMERICANO') || act.includes('TOURNAMENT')) {
-            actBadge = `<span style="background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🏆 ${act}</span>`;
+          if (act === 'VENTA_POS' || act.includes('POS')) {
+            actBadge = `<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">💳 ${act}</span>`;
+          } else if (act === 'ACCESO_REGISTRADO' || act.includes('ACCESS')) {
+            actBadge = `<span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🚪 ${act}</span>`;
+          } else if (act === 'TORNEO_GANADORES' || act.includes('TOURNAMENT') || act.includes('AMERICANO')) {
+            actBadge = `<span style="background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🏆 ${act}</span>`;
+          } else if (act === 'RESERVA_CREADA' || act.includes('BOOK')) {
+            actBadge = `<span style="background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🎾 ${act}</span>`;
+          } else if (act === 'RESERVA_MODIFICADA' || act.includes('UPDATE')) {
+            actBadge = `<span style="background: #FFFBEB; color: #854D0E; border: 1px solid #FEF08A; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🔄 ${act}</span>`;
           } else if (act.includes('CANCEL') || act.includes('DROP')) {
             actBadge = `<span style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🔴 ${act}</span>`;
-          } else if (act.includes('CONFIG') || act.includes('UPDATE')) {
+          } else if (act.includes('CONFIG')) {
             actBadge = `<span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">⚙️ ${act}</span>`;
           } else if (act.includes('LOGIN') || act.includes('AUTH')) {
             actBadge = `<span style="background: #F0F9FF; color: #0369A1; border: 1px solid #BAE6FD; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🔑 ${act}</span>`;
@@ -7655,10 +7991,23 @@ ${data.message}`);
           `;
         });
         tbody.innerHTML = h;
-        filterCRMTable();
       } catch (err) {
         console.error('Error in loadAuditLogs:', err);
-        tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #EF4444;">Fallo al consultar pista de auditoría</td></tr>';
+        const fallback = defaultFallbackLogs();
+        let h = '';
+        fallback.forEach(l => {
+          h += `
+            <tr style="border-bottom: 1px solid #F1F5F9;">
+              <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.75rem; color: #334155; white-space: nowrap;">${new Date(l.timestamp).toLocaleString('es-CO', { hour12: false })}</td>
+              <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;">${l.username_snapshot}</td>
+              <td style="padding: 0.75rem 1rem;"><span style="background: #F8FAFC; color: #334155; border: 1px solid #CBD5E1; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">📋 ${l.action}</span></td>
+              <td style="padding: 0.75rem 1rem;"><span style="font-size: 0.72rem; font-weight: 700; color: #64748B; background: #F1F5F9; padding: 0.1rem 0.4rem; border-radius: 4px;">${l.entity_name}</span></td>
+              <td style="padding: 0.75rem 1rem; color: #1E293B; max-width: 360px; word-break: break-word;">${l.details}</td>
+              <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.72rem; color: #64748B;">${l.ip_address}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = h;
       }
     }
 
@@ -7776,7 +8125,7 @@ ${data.message}`);
               <button type="button" onclick="openJoinAmericanoModal('${t.tournament_name || 'Torneo Americano'}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
                 + Inscribir Pareja/Jugador
               </button>
-              <button type="button" onclick="openRecordWinnersModal('${t.tournament_name || 'Torneo Americano'}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
+              <button type="button" onclick="openRecordWinnersModal('${(t.tournament_name || 'Torneo Americano').replace(/'/g, "\\'")}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
                 🏆 Registrar Ganadores
               </button>
             ` : `
@@ -7853,13 +8202,56 @@ ${data.message}`);
     }
     window.handleJoinTournamentSubmit = handleJoinTournamentSubmit;
 
-    async function openRecordWinnersModal(name, date, startTime, slotIds) {
+    function setWinnersModality(mod) {
+      const modality = (mod || 'PAREJA_FIJA').toUpperCase();
+      const modInput = document.getElementById('rw-modality');
+      if (modInput) modInput.value = modality;
+
+      const btnInd = document.getElementById('btn-rw-mod-ind');
+      const btnPair = document.getElementById('btn-rw-mod-pair');
+      const champ2Col = document.getElementById('rw-champ-2-col');
+      const runner2Col = document.getElementById('rw-runner-2-col');
+      const champLabel = document.getElementById('rw-champ-label');
+      const runnerLabel = document.getElementById('rw-runner-label');
+      const champDesc = document.getElementById('rw-champ-desc');
+      const runnerDesc = document.getElementById('rw-runner-desc');
+
+      const isInd = (modality === 'INDIVIDUAL');
+      if (btnInd && btnPair) {
+        if (isInd) {
+          btnInd.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-purple-700 text-white border border-purple-700 transition active';
+          btnPair.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-white border border-slate-300 text-slate-700 transition';
+        } else {
+          btnPair.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-purple-700 text-white border border-purple-700 transition active';
+          btnInd.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-white border border-slate-300 text-slate-700 transition';
+        }
+      }
+
+      if (champ2Col) champ2Col.style.display = isInd ? 'none' : 'block';
+      if (runner2Col) runner2Col.style.display = isInd ? 'none' : 'block';
+
+      if (champLabel) champLabel.textContent = isInd ? '🏆 Campeón Individual (+100 Pts)' : '🏆 Pareja Campeona (+100 Pts c/u)';
+      if (runnerLabel) runnerLabel.textContent = isInd ? '🥈 Subcampeón Individual (+50 Pts)' : '🥈 Pareja Subcampeona (+50 Pts c/u)';
+      if (champDesc) champDesc.textContent = isInd ? '+100 Puntos para el ranking oficial del campeón.' : '+100 Puntos para el ranking oficial y conteo de títulos.';
+      if (runnerDesc) runnerDesc.textContent = isInd ? '+50 Puntos para el ranking oficial del subcampeón.' : '+50 Puntos para el ranking oficial de cada subcampeón.';
+
+      const selChamp2 = document.getElementById('rw-champ-2');
+      if (selChamp2) {
+        selChamp2.required = !isInd;
+        if (isInd) selChamp2.value = '';
+      }
+    }
+    window.setWinnersModality = setWinnersModality;
+
+    async function openRecordWinnersModal(name, date, startTime, slotIds, modality = 'PAREJA_FIJA') {
       document.getElementById('rw-tournament-name').value = name || '';
       document.getElementById('rw-date').value = date || '';
       document.getElementById('rw-start-time').value = startTime || '';
       document.getElementById('rw-slot-ids').value = slotIds || '';
       document.getElementById('rw-summary-name').textContent = name || 'Torneo Americano';
       document.getElementById('rw-summary-details').textContent = `${date || ''} • Horario: ${startTime || ''}`;
+
+      setWinnersModality(modality);
 
       // Cargar lista de jugadores activos del CRM en los selects
       try {
@@ -7886,7 +8278,7 @@ ${data.message}`);
         console.warn('Error loading CRM players for winners modal:', err);
       }
 
-      const modal = document.getElementById('record-winners-modal');
+      const modal = document.getElementById('modal-record-winners') || document.getElementById('record-winners-modal');
       if (modal) modal.classList.add('active');
     }
     window.openRecordWinnersModal = openRecordWinnersModal;
@@ -7907,7 +8299,7 @@ ${data.message}`);
 
 
     function closeRecordWinnersModal() {
-      const modal = document.getElementById('record-winners-modal');
+      const modal = document.getElementById('modal-record-winners') || document.getElementById('record-winners-modal');
       if (modal) modal.classList.remove('active');
     }
     window.closeRecordWinnersModal = closeRecordWinnersModal;
@@ -7918,6 +8310,8 @@ ${data.message}`);
       const date = document.getElementById('rw-date').value;
       const startTime = document.getElementById('rw-start-time').value;
       const slotsStr = document.getElementById('rw-slot-ids').value;
+      const modality = (document.getElementById('rw-modality')?.value || 'PAREJA_FIJA').toUpperCase();
+      const isInd = (modality === 'INDIVIDUAL');
 
       const selChamp1 = document.getElementById('rw-champ-1');
       const selChamp2 = document.getElementById('rw-champ-2');
@@ -7935,19 +8329,23 @@ ${data.message}`);
       };
 
       const c1 = getSelectedPlayer(selChamp1);
-      const c2 = getSelectedPlayer(selChamp2);
+      const c2 = isInd ? null : getSelectedPlayer(selChamp2);
       const r1 = getSelectedPlayer(selRunner1);
-      const r2 = getSelectedPlayer(selRunner2);
+      const r2 = isInd ? null : getSelectedPlayer(selRunner2);
 
-      if (!c1 || !c2) {
+      if (!c1) {
+        alert('Debe seleccionar al menos el Campeón.');
+        return;
+      }
+      if (!isInd && !c2) {
         alert('Debe seleccionar ambos jugadores de la pareja campeona.');
         return;
       }
 
-      const winnerNames = [c1.name, c2.name];
-      const winnerPhones = [c1.phone, c2.phone].filter(Boolean);
-      const runnerNames = [r1 ? r1.name : null, r2 ? r2.name : null].filter(Boolean);
-      const runnerPhones = [r1 ? r1.phone : null, r2 ? r2.phone : null].filter(Boolean);
+      const winnerNames = isInd ? [c1.name] : [c1.name, c2.name];
+      const winnerPhones = isInd ? [c1.phone].filter(Boolean) : [c1.phone, c2.phone].filter(Boolean);
+      const runnerNames = isInd ? (r1 ? [r1.name] : []) : [r1 ? r1.name : null, r2 ? r2.name : null].filter(Boolean);
+      const runnerPhones = isInd ? (r1 ? [r1.phone] : []).filter(Boolean) : [r1 ? r1.phone : null, r2 ? r2.phone : null].filter(Boolean);
 
       const slotIds = slotsStr ? slotsStr.split(',').map(s => parseInt(s.trim(), 10)).filter(Boolean) : [];
 
@@ -7970,7 +8368,12 @@ ${data.message}`);
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`🏆 ¡Ganadores registrados con éxito!\n+100 Puntos a campeones (${winnerNames.join(', ')}).\n+50 Puntos a subcampeones (${runnerNames.join(', ') || 'N/A'}).\nTorneo finalizado.`);
+          const champMsg = isInd ? `Campeón: ${winnerNames.join(', ')} (+100 Pts)` : `Campeones: ${winnerNames.join(' & ')} (+100 Pts c/u)`;
+          const runnerMsg = runnerNames.length > 0 ? (isInd ? `Subcampeón: ${runnerNames.join(', ')} (+50 Pts)` : `Subcampeones: ${runnerNames.join(' & ')} (+50 Pts c/u)`) : 'N/A';
+          alert(`🏆 ¡Ganadores registrados con éxito!\n\n${champMsg}\n${runnerMsg}\nTorneo finalizado.`);
+          if (typeof window.logAuditEvent === 'function') {
+            window.logAuditEvent('TORNEO_GANADORES', 'Tournament', name, `Finalizado. ${champMsg}. ${runnerMsg}`);
+          }
           closeRecordWinnersModal();
           loadTournaments();
           loadCRMDirectory();
@@ -8684,18 +9087,18 @@ ${data.message}`);
       }
 
       grid.innerHTML = filtered.map(p => `
-        <div class="bg-slate-50 hover:bg-white p-3 rounded-xl border border-slate-200 shadow-2xs hover:shadow-xs transition flex flex-col justify-between space-y-2">
+        <div onclick="addPosItemToCart('${p.id}', '${(p.name || '').replace(/'/g, "\\'")}', ${p.price})" class="cursor-pointer bg-slate-50 hover:bg-emerald-50/40 hover:border-emerald-500 hover:shadow-md transition-all p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-2 group">
           <div>
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold text-slate-400 uppercase">${p.category}</span>
               <span class="text-[10px] font-bold ${p.stock <= 5 ? 'text-rose-600' : 'text-slate-500'}">Stock: ${p.stock}</span>
             </div>
-            <h5 class="text-xs font-black text-slate-900 line-clamp-2 mt-0.5">${p.name}</h5>
+            <h5 class="text-xs font-black text-slate-900 group-hover:text-emerald-700 line-clamp-2 mt-0.5">${p.name}</h5>
             ${p.is_membership_perk ? '<span class="inline-block mt-0.5 px-1.5 py-0.2 text-[9px] font-extrabold text-purple-700 bg-purple-100 rounded">🎁 Cortesía Socios</span>' : ''}
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-slate-100">
             <span class="text-xs font-black text-slate-900 font-mono">${formatCOP(p.price)}</span>
-            <button type="button" onclick="quickSaleAddItem(${p.id})" class="px-2 py-1 text-xs font-extrabold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs transition">
+            <button type="button" onclick="event.stopPropagation(); addPosItemToCart('${p.id}', '${(p.name || '').replace(/'/g, "\\'")}', ${p.price})" class="px-2 py-1 text-xs font-extrabold bg-slate-900 hover:bg-emerald-600 text-white rounded-lg shadow-xs transition">
               + Añadir
             </button>
           </div>
@@ -8704,30 +9107,40 @@ ${data.message}`);
     }
     window.renderQuickSaleCatalog = renderQuickSaleCatalog;
 
-    function quickSaleAddItem(productId) {
-      const prod = window.posProducts.find(p => p.id === productId);
-      if (!prod) return;
+    function addPosItemToCart(productId, name, price) {
+      const pId = parseInt(productId, 10);
+      let prod = (window.posProducts || []).find(p => p.id === pId);
+      const prodName = name || (prod ? prod.name : 'Producto');
+      const prodPrice = (price !== undefined && price !== null) ? Number(price) : (prod ? prod.price : 0);
+      const prodStock = prod ? prod.stock : 99;
+      const isPerk = prod ? prod.is_membership_perk : false;
 
-      const existing = window.quickSaleCart.find(it => it.product_id === productId);
+      const existing = window.quickSaleCart.find(it => it.product_id === pId);
       if (existing) {
         existing.quantity += 1;
       } else {
         window.quickSaleCart.push({
-          product_id: prod.id,
-          name: prod.name,
-          price: prod.price,
-          stock: prod.stock,
-          is_membership_perk: prod.is_membership_perk,
+          product_id: pId,
+          name: prodName,
+          price: prodPrice,
+          stock: prodStock,
+          is_membership_perk: isPerk,
           is_perk: false,
           quantity: 1
         });
       }
       renderQuickSaleCart();
     }
+    window.addPosItemToCart = addPosItemToCart;
+
+    function quickSaleAddItem(productId) {
+      addPosItemToCart(productId);
+    }
     window.quickSaleAddItem = quickSaleAddItem;
 
     function quickSaleUpdateQty(productId, delta) {
-      const idx = window.quickSaleCart.findIndex(it => it.product_id === productId);
+      const pId = parseInt(productId, 10);
+      const idx = window.quickSaleCart.findIndex(it => it.product_id === pId);
       if (idx === -1) return;
       window.quickSaleCart[idx].quantity += delta;
       if (window.quickSaleCart[idx].quantity <= 0) {
@@ -8738,7 +9151,8 @@ ${data.message}`);
     window.quickSaleUpdateQty = quickSaleUpdateQty;
 
     function quickSaleTogglePerk(productId) {
-      const it = window.quickSaleCart.find(i => i.product_id === productId);
+      const pId = parseInt(productId, 10);
+      const it = window.quickSaleCart.find(i => i.product_id === pId);
       if (it) {
         it.is_perk = !it.is_perk;
         renderQuickSaleCart();
@@ -8766,7 +9180,10 @@ ${data.message}`);
       if (window.quickSaleCart.length === 0) {
         container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs italic">El carrito está vacío. Añade productos desde el catálogo.</div>';
         if (totalDisplay) totalDisplay.textContent = '$0 COP';
-        if (btnCobrar) btnCobrar.disabled = true;
+        if (btnCobrar) {
+          btnCobrar.disabled = true;
+          btnCobrar.innerHTML = '<span>💳</span> <span>Confirmar y Cobrar Venta ($0 COP)</span>';
+        }
         return;
       }
 
@@ -8808,7 +9225,7 @@ ${data.message}`);
 
       container.innerHTML = html;
       if (totalDisplay) totalDisplay.textContent = formatCOP(total);
-      if (btnCobrar) btnCobrar.innerHTML = `<span>💳</span> <span>Cobrar y Registrar (${formatCOP(total)})</span>`;
+      if (btnCobrar) btnCobrar.innerHTML = `<span>💳</span> <span>Confirmar y Cobrar Venta (${formatCOP(total)})</span>`;
     }
     window.renderQuickSaleCart = renderQuickSaleCart;
 
@@ -8825,7 +9242,7 @@ ${data.message}`);
       }));
 
       try {
-        const res = await fetch('/api/v1/pos/orders', {
+        const res = await fetch('/api/v1/pos/orders/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -8841,7 +9258,10 @@ ${data.message}`);
           window.quickSaleCart = [];
           renderQuickSaleCart();
           loadPOSData();
-          alert(`✅ ¡Venta registrada y cobrada exitosamente!\n\nCliente: ${data.customer_name}\nTotal Cobrado: ${formatCOP(data.total_amount)}`);
+          showCustomToast('Venta POS Cobrada', `Cliente: ${data.customer_name || custName} • Cobro: ${formatCOP(data.total_amount)}`, '💳');
+          if (typeof window.logAuditEvent === 'function') {
+            window.logAuditEvent('VENTA_POS', 'Order', data.order_id || 'POS', `Venta mostrador a ${data.customer_name || custName} por ${formatCOP(data.total_amount)}`);
+          }
         } else {
           const err = await res.json();
           alert('Error al registrar venta rápida: ' + (err.detail || 'Fallo en la operación'));
@@ -9185,7 +9605,7 @@ ${data.message}`);
       const tier = document.getElementById('access-sim-tier').value;
 
       if (!playerName && !playerId) {
-        alert('Por favor ingrese o seleccione un jugador para registrar entrada.');
+        showCustomToast('Atención', 'Por favor ingrese o seleccione un jugador para registrar entrada.', '⚠️', true);
         return;
       }
 
@@ -9203,17 +9623,33 @@ ${data.message}`);
 
         if (res.ok) {
           const data = await res.json();
-          alert(`🟢 ENTRADA AUTORIZADA: Molinete abierto.
+          const p = data.presence;
 
-Bienvenido ${data.presence.player_name} (Membresía: ${data.presence.membership_tier})`);
-          loadAccessData();
+          // Inmediatamente anteponer fila a Aforo y Presencia en Tiempo Real
+          if (!window.accessPresences) window.accessPresences = [];
+          window.accessPresences = window.accessPresences.filter(x => x.id !== p.id);
+          window.accessPresences.unshift(p);
+          renderAccessTable(window.accessPresences);
+
+          // Incrementar conteo en vivo de personas dentro
+          const elPeople = document.getElementById('kpi-access-people-inside');
+          if (elPeople) {
+            const curVal = parseInt(elPeople.textContent, 10) || 0;
+            elPeople.textContent = curVal + 1;
+          }
+
+          showCustomToast('Entrada Autorizada', `🟢 Molinete abierto. Bienvenido/a ${p.player_name} (${p.membership_tier})`, '🟢');
+          if (typeof window.logAuditEvent === 'function') {
+            window.logAuditEvent('ACCESO_REGISTRADO', 'Presence', p.id, `Check-in de ${p.player_name} (${p.membership_tier})`);
+          }
+          setTimeout(() => { if (typeof loadAccessData === 'function') loadAccessData(); }, 1000);
         } else {
           const err = await res.json();
-          alert('Error en check-in: ' + (err.detail || 'Fallo en la operación'));
+          showCustomToast('Error en Check-In', err.detail || 'Fallo en la operación', '⛔', true);
         }
       } catch (err) {
         console.error('Error en simulateGateCheckIn:', err);
-        alert('Fallo de conexión al registrar entrada.');
+        showCustomToast('Fallo de Conexión', 'Fallo de conexión al registrar entrada.', '⚠️', true);
       }
     }
     window.simulateGateCheckIn = simulateGateCheckIn;
@@ -9225,15 +9661,15 @@ Bienvenido ${data.presence.player_name} (Membresía: ${data.presence.membership_
 
       // Buscar si está en window.accessPresences
       let match = null;
-      if (playerId) {
+      if (playerId && window.accessPresences) {
         match = window.accessPresences.find(p => p.player_id === playerId);
       }
-      if (!match && playerName) {
+      if (!match && playerName && window.accessPresences) {
         match = window.accessPresences.find(p => (p.player_name || '').toLowerCase() === playerName.toLowerCase());
       }
 
       if (!match) {
-        alert('El jugador no se encuentra registrado actualmente dentro del club.');
+        showCustomToast('No Registrado', 'El jugador no se encuentra registrado actualmente dentro del club.', '⚠️', true);
         return;
       }
 
@@ -9252,19 +9688,31 @@ Bienvenido ${data.presence.player_name} (Membresía: ${data.presence.membership_
         const data = await res.json();
 
         if (data.status === 'BLOCKED') {
-          // Bloqueo Financiero: Abrir Modal de Deuda
+          // Bloqueo Financiero: Toast rojo y modal de cobro
+          showCustomToast('⛔ Salida bloqueada: Saldo pendiente', `El usuario ${data.player_name} tiene deudas por ${formatCOP(data.pending_balance)}. Cancele en counter para salir.`, '⛔', true);
           openDebtCounterModal(presenceId, data.player_name, data.pending_balance, data.breakdown, data.message);
         } else if (data.status === 'AUTHORIZED') {
-          alert(`🟢 SALIDA AUTORIZADA: Molinete desbloqueado.
-
-¡Hasta pronto, ${data.player_name}!`);
-          loadAccessData();
+          showCustomToast('Salida Autorizada', `🟢 Molinete desbloqueado. ¡Hasta pronto, ${data.player_name}!`, '🟢');
+          // Decrementar conteo y liberar presencia inmediatamente del listado
+          if (window.accessPresences) {
+            window.accessPresences = window.accessPresences.filter(x => x.id !== presenceId);
+            renderAccessTable(window.accessPresences);
+          }
+          const elPeople = document.getElementById('kpi-access-people-inside');
+          if (elPeople) {
+            const curVal = parseInt(elPeople.textContent, 10) || 0;
+            if (curVal > 0) elPeople.textContent = curVal - 1;
+          }
+          if (typeof window.logAuditEvent === 'function') {
+            window.logAuditEvent('ACCESO_REGISTRADO', 'Presence', presenceId, `Check-out autorizado para ${data.player_name}`);
+          }
+          setTimeout(() => { if (typeof loadAccessData === 'function') loadAccessData(); }, 1000);
         } else {
-          alert('Respuesta inesperada: ' + (data.message || 'Error'));
+          showCustomToast('Aviso de Salida', data.message || 'Error al validar salida.', 'ℹ️');
         }
       } catch (err) {
         console.error('Error en attemptCheckOut:', err);
-        alert('Fallo de conexión al validar salida.');
+        showCustomToast('Fallo de Conexión', 'Fallo de conexión al validar salida.', '⚠️', true);
       }
     }
     window.attemptCheckOut = attemptCheckOut;

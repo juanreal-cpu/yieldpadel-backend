@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.services.audit import log_activity
 from app.services.access import (
     clear_debt_in_counter,
     get_active_now_data,
@@ -51,6 +52,18 @@ async def check_in_endpoint(
             current_slot_id=payload.current_slot_id,
             membership_tier=payload.membership_tier,
         )
+        try:
+            await log_activity(
+                db=db,
+                action="ACCESO_REGISTRADO",
+                entity_name="ACCESS",
+                entity_id=str(presence.id),
+                details=f"Check-In de {presence.player_name} (Membresía: {presence.membership_tier})",
+                username_snapshot="Molinete de Entrada",
+            )
+        except Exception as log_err:
+            logger.warning(f"Error logging check-in audit: {log_err}")
+
         return {
             "success": True,
             "message": f"Entrada registrada para {presence.player_name}",
@@ -82,6 +95,18 @@ async def check_out_endpoint(
             player_id=payload.player_id,
             force_clear=payload.force_clear,
         )
+        try:
+            await log_activity(
+                db=db,
+                action="ACCESO_REGISTRADO",
+                entity_name="ACCESS",
+                entity_id=str(result.get("presence_id") or payload.presence_id or ""),
+                details=f"Check-Out {result.get('status')} para {result.get('player_name')}. Saldo pendiente: ${result.get('pending_balance', 0):,.0f} COP",
+                username_snapshot="Molinete de Salida",
+            )
+        except Exception as log_err:
+            logger.warning(f"Error logging check-out audit: {log_err}")
+
         return result
     except HTTPException:
         raise

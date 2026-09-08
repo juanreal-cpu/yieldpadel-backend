@@ -14,6 +14,7 @@ from app.models.court import Court
 from app.models.customer import Customer
 from app.models.product import INITIAL_DUMMY_PRODUCTS, Order, OrderItem, Product
 from app.models.slot import HoldStatus, SlotStatus, TimeSlot
+from app.services.audit import log_activity
 
 logger = logging.getLogger("yieldpadel.pos")
 
@@ -383,6 +384,7 @@ async def get_active_slots(db: AsyncSession = Depends(get_db)):
 # Endpoints de Órdenes y Consumos
 # ----------------------------------------------------
 @router.post("/orders", status_code=status.HTTP_201_CREATED, summary="Crear o agregar consumos a una orden")
+@router.post("/orders/create", status_code=status.HTTP_201_CREATED, summary="Crear o agregar consumos a una orden (alias)")
 async def create_or_add_order(
     payload: CreateOrderRequest,
     db: AsyncSession = Depends(get_db),
@@ -447,6 +449,19 @@ async def create_or_add_order(
     order.total_amount += total_added
     await db.commit()
     await db.refresh(order)
+
+    # Log de Auditoría Operativa
+    try:
+        await log_activity(
+            db=db,
+            action="VENTA_POS",
+            entity_name="ORDER",
+            entity_id=str(order.id),
+            details=f"Venta POS ({order.payment_status}) por ${float(order.total_amount):,.0f} COP para {order.customer_name}",
+            username_snapshot="Camilo Real (Recepción)",
+        )
+    except Exception as e:
+        logger.warning(f"Error logging POS order audit: {e}")
 
     # Cargar relaciones completas para respuesta
     stmt_full = (
@@ -685,6 +700,19 @@ async def checkout_slot(
         customer_name = "Cliente Cancha"
 
     await db.commit()
+
+    # Log de Auditoría Operativa
+    try:
+        await log_activity(
+            db=db,
+            action="VENTA_POS",
+            entity_name="ORDER",
+            entity_id=str(order_id),
+            details=f"Liquidación y Checkout Partido ({payment_method}). Total: ${total_to_pay:,.0f} COP para {customer_name}",
+            username_snapshot="Camilo Real (Recepción)",
+        )
+    except Exception as e:
+        logger.warning(f"Error logging POS checkout audit: {e}")
 
     return CheckoutResponse(
         order_id=order_id,

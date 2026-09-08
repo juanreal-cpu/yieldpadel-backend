@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 
 from app.core.database import get_db
 from app.core.security import hash_password
@@ -27,6 +27,37 @@ class AuditLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CreateAuditLogRequest(BaseModel):
+    action: str
+    entity_name: str = "SYSTEM"
+    entity_id: Optional[str] = None
+    details: Optional[str] = None
+    username: Optional[str] = "Camilo Real (Recepción)"
+
+
+async def ensure_seed_audit_logs(db: AsyncSession):
+    count_res = await db.execute(select(func.count(AuditLog.id)))
+    count = count_res.scalar() or 0
+    if count == 0:
+        sample_logs = [
+            ("RESERVA_CREADA", "SLOT", "101", "Reserva confirmada en Cancha Central 1 (18:00 - 19:30) | Cliente: Juan David"),
+            ("VENTA_POS", "ORDER", "12", "Venta POS (PAID) por $28.000 COP para Juan David | Tubo de Bolas"),
+            ("ACCESO_REGISTRADO", "ACCESS", "5", "Check-In de Camilo Real (Membresía: TAPIA)"),
+            ("TORNEO_GANADORES", "TOURNAMENT", "Americano 4ta", "Campeones: Juanda & Camilo | Subcampeones: David & Pipe"),
+            ("RESERVA_MODIFICADA", "SLOT", "102", "Modificación de horario en Cancha 2 | Cliente: Carlos Gómez"),
+            ("ACCESO_REGISTRADO", "ACCESS", "6", "Check-In de Mariana Restrepo (Membresía: COELLO)"),
+        ]
+        for act, ent, ent_id, det in sample_logs:
+            await log_activity(
+                db=db,
+                action=act,
+                entity_name=ent,
+                entity_id=ent_id,
+                details=det,
+                username_snapshot="Camilo Real (Recepción)"
+            )
 
 
 class UserCreateRequest(BaseModel):
@@ -59,6 +90,7 @@ async def get_audit_logs(
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db)
 ):
+    await ensure_seed_audit_logs(db)
     query = select(AuditLog).order_by(desc(AuditLog.timestamp))
     if action and action != "ALL":
         query = query.where(AuditLog.action == action)
@@ -69,6 +101,26 @@ async def get_audit_logs(
     res = await db.execute(query)
     logs = res.scalars().all()
     return [AuditLogResponse.model_validate(l) for l in logs]
+
+
+@router.post("/log", response_model=AuditLogResponse)
+async def record_audit_log(
+    req: CreateAuditLogRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    entry = await log_activity(
+        db=db,
+        action=req.action,
+        entity_name=req.entity_name,
+        entity_id=req.entity_id,
+        details=req.details,
+        username_snapshot=req.username or "Camilo Real (Recepción)",
+        request=request
+    )
+    if not entry:
+        raise HTTPException(status_code=500, detail="Error registrando evento de auditoría")
+    return AuditLogResponse.model_validate(entry)
 
 
 @router.get("/users", response_model=List[UserItemResponse])

@@ -40,7 +40,19 @@ async def get_courts(
             c for c in courts
             if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == sport.strip().upper()
         ]
-    return courts
+    seen_ids = set()
+    seen_keys = set()
+    deduped = []
+    for c in courts:
+        cid = str(c.id)
+        st = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
+        nm = (c.name or "").strip().lower()
+        key = (nm, st)
+        if cid not in seen_ids and key not in seen_keys:
+            seen_ids.add(cid)
+            seen_keys.add(key)
+            deduped.append(c)
+    return deduped
 
 
 @router.put("/{court_id}", response_model=CourtResponse)
