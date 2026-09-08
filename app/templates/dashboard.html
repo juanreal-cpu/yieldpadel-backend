@@ -2353,9 +2353,6 @@
                         No hay holds activos en este momento.
                       </div>
                     </div>
-        <div class="mb-3">
-          <input type="text" id="rw-player-quick-filter" oninput="filterWinnersSelects(this.value)" placeholder="🔍 Filtrar lista de jugadores..." class="w-full h-8 text-xs border border-slate-300 rounded-lg px-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
-        </div>
                   </div>
 
                   <!-- Card Eventos Recientes -->
@@ -3142,7 +3139,7 @@
         <!-- ======================================================== -->
         <!-- VISTA: 🚪 ACCESO, PRESENCIA & BLOQUEO FINANCIERO (#view-access) -->
         <!-- ======================================================== -->
-        <div id="view-access" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-6">
+        <div id="view-access" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-8 min-h-screen pb-32 overflow-y-auto">
 
           <!-- Header de Control de Acceso -->
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
@@ -3295,7 +3292,7 @@
               </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto min-h-[300px]">
               <table class="w-full text-left text-xs border-collapse">
                 <thead class="bg-slate-50 text-slate-600 font-extrabold text-[11px] border-b border-slate-200 uppercase tracking-wider">
                   <tr>
@@ -3957,9 +3954,6 @@
           <div id="join-tourn-title" style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">Torneo Americano</div>
           <div id="join-tourn-subtitle" style="font-size: 0.75rem; color: #64748B; margin-top: 0.2rem;">Pistas y horario</div>
         </div>
-        <div class="mb-3">
-          <input type="text" id="rw-player-quick-filter" oninput="filterWinnersSelects(this.value)" placeholder="🔍 Filtrar lista de jugadores..." class="w-full h-8 text-xs border border-slate-300 rounded-lg px-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
-        </div>
 
         <div class="form-group">
           <label class="form-label font-bold text-slate-700">Jugador 1 (Nombre Completo)</label>
@@ -4519,6 +4513,29 @@
   <script>
 
     // ========================================================
+    // 0. FECHA LOCAL COLOMBIA Y NAVEGACIÓN GLOBAL AL INICIO
+    // ========================================================
+    function getColombiaTodayString() {
+      try {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Bogota',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        return formatter.format(now);
+      } catch (e) {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    }
+    window.getColombiaTodayString = getColombiaTodayString;
+
+    // ========================================================
     // 1. BLINDAR NAVEGACIÓN GLOBAL AL INICIO DEL <SCRIPT>
     // ========================================================
     window.switchMainView = function(viewName) {
@@ -4617,7 +4634,7 @@
         toast.id = 'custom-floating-toast';
         document.body.appendChild(toast);
       }
-      toast.setAttribute('style', 'position: fixed; bottom: 24px; right: 24px; z-index: 99999; max-width: 440px; min-width: 320px; background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #334155 !important; border-radius: 12px; padding: 14px 18px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); display: flex; align-items: flex-start; gap: 12px; font-family: system-ui, -apple-system, sans-serif;');
+      toast.setAttribute('style', 'position: fixed; bottom: 24px; right: 24px; background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #334155; z-index: 9999; max-width: 440px; min-width: 320px; border-radius: 12px; padding: 14px 18px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); display: flex; align-items: flex-start; gap: 12px; font-family: system-ui, -apple-system, sans-serif;');
       toast.innerHTML = `
         <span style="font-size: 1.4rem; line-height: 1; flex-shrink: 0; color: #ffffff !important;">${icon}</span>
         <div style="flex: 1;">
@@ -4674,7 +4691,7 @@
     // ========================================================
     // TABLERO DE INDICADORES & HEATMAP (VISTA ANALYTICS)
     // ========================================================
-    window.analyticsCurrentDate = '2026-09-07';
+    window.analyticsCurrentDate = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
     window.analyticsSport = 'PADEL';
     window.analyticsData = null;
 
@@ -4716,14 +4733,15 @@
     window.nextAnalyticsWeek = nextAnalyticsWeek;
 
     function currentAnalyticsWeek() {
-      loadAnalyticsHeatmap(selectedDate || '2026-09-07');
+      const cur = window.currentDate || selectedDate || ((typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0]);
+      loadAnalyticsHeatmap(cur);
     }
     window.currentAnalyticsWeek = currentAnalyticsWeek;
 
     function renderAnalyticsHeatmap(data) {
       if (!data) return;
       window.analyticsData = data;
-      const qDate = window.analyticsCurrentDate || '2026-09-07';
+      const qDate = window.analyticsCurrentDate || window.currentDate || selectedDate || ((typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0]);
 
       // 1. Header Semana
       const weekLabelEl = document.getElementById('analytics-week-label');
@@ -4882,7 +4900,7 @@
     window.renderOccupancyMatrix = renderAnalyticsHeatmap;
 
     async function loadAnalyticsHeatmap(targetDate) {
-      const qDate = targetDate || window.analyticsCurrentDate || (typeof selectedDate !== 'undefined' && selectedDate ? selectedDate : '2026-09-07');
+      const qDate = targetDate || window.analyticsCurrentDate || window.currentDate || (typeof selectedDate !== 'undefined' && selectedDate ? selectedDate : ((typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0]));
       window.analyticsCurrentDate = qDate;
       const qSport = window.analyticsSport || 'PADEL';
 
@@ -5063,7 +5081,7 @@
     // Helpers de navegación temporal
     function shiftDay(delta) {
       const input = document.getElementById('selected-date');
-      const cur = (input && input.value) ? input.value : (selectedDate || '2026-09-07');
+      const cur = window.currentDate || (input && input.value) || selectedDate || getColombiaTodayString();
       const parts = cur.split('-').map(Number);
       const d = new Date(parts[0], parts[1] - 1, parts[2]);
       d.setDate(d.getDate() + delta);
@@ -5072,6 +5090,7 @@
       const day = String(d.getDate()).padStart(2, '0');
       const newDateStr = `${y}-${m}-${day}`;
       if (input) input.value = newDateStr;
+      window.currentDate = newDateStr;
       selectedDate = newDateStr;
       updateDateUI();
       fetchSlots();
@@ -5079,8 +5098,10 @@
 
     function goToToday() {
       const input = document.getElementById('selected-date');
-      selectedDate = getColombiaTodayString() || '2026-09-07';
-      if (input) input.value = selectedDate;
+      const today = getColombiaTodayString();
+      if (input) input.value = today;
+      window.currentDate = today;
+      selectedDate = today;
       updateDateUI();
       fetchSlots();
     }
@@ -5092,6 +5113,7 @@
 
     function onDateInputChange(val) {
       if (!val) return;
+      window.currentDate = val;
       selectedDate = val;
       updateDateUI();
       fetchSlots();
@@ -5779,9 +5801,6 @@ ${data.message}`);
                     <span style="font-weight: 700; color: #334155; font-family: monospace;">$${Math.round(c.price_valle).toLocaleString('es-CO')} / $${Math.round(c.price_pico).toLocaleString('es-CO')}</span>
                   </div>
                 </div>
-        <div class="mb-3">
-          <input type="text" id="rw-player-quick-filter" oninput="filterWinnersSelects(this.value)" placeholder="🔍 Filtrar lista de jugadores..." class="w-full h-8 text-xs border border-slate-300 rounded-lg px-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
-        </div>
                 <div style="font-size: 0.7rem; color: #059669; font-weight: 800; text-align: center; background: #DCFCE7; padding: 0.25rem; border-radius: 4px;">
                   ✓ Sede de Operación Activa (Yield Habilitado)
                 </div>
@@ -5822,9 +5841,6 @@ ${data.message}`);
                     <span style="font-family: monospace;">$${Math.round(c.price_valle).toLocaleString('es-CO')} / $${Math.round(c.price_pico).toLocaleString('es-CO')}</span>
                   </div>
                 </div>
-        <div class="mb-3">
-          <input type="text" id="rw-player-quick-filter" oninput="filterWinnersSelects(this.value)" placeholder="🔍 Filtrar lista de jugadores..." class="w-full h-8 text-xs border border-slate-300 rounded-lg px-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
-        </div>
                 <div style="font-size: 0.72rem; font-weight: 700; color: ${diffColor}; margin-bottom: 0.4rem; padding: 0.25rem; background: ${c.diff_cop >= 0 ? '#ECFDF5' : '#FEF2F2'}; border-radius: 4px; text-align: center;">
                   ${diffText}
                 </div>
@@ -5921,28 +5937,35 @@ ${data.message}`);
 
     function setDate(dateStr) {
       if (!dateStr) return;
+      window.currentDate = dateStr;
       selectedDate = dateStr;
       const picker = document.getElementById('selected-date') || document.getElementById('date-picker');
-      if (picker) picker.value = dateStr;
+      if (picker && picker.value !== dateStr) picker.value = dateStr;
       updateDateUI();
       fetchSlots();
     }
 
     function onDateInputChange(val) {
-      if (val) setDate(val);
+      if (!val) return;
+      window.currentDate = val;
+      setDate(val);
     }
 
     function setRelativeDate(offsetDays) {
       if (offsetDays === 0) {
-        setDate(getColombiaTodayString());
+        const today = getColombiaTodayString();
+        window.currentDate = today;
+        setDate(today);
         return;
       }
-      const base = selectedDate ? selectedDate.split('-').map(Number) : getColombiaTodayString().split('-').map(Number);
+      const base = (window.currentDate || selectedDate) ? (window.currentDate || selectedDate).split('-').map(Number) : getColombiaTodayString().split('-').map(Number);
       const d = new Date(base[0], base[1] - 1, base[2] + offsetDays);
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
-      setDate(`${year}-${month}-${day}`);
+      const newDate = `${year}-${month}-${day}`;
+      window.currentDate = newDate;
+      setDate(newDate);
     }
 
     function formatDateDisplay(dateStr) {
@@ -5956,8 +5979,13 @@ ${data.message}`);
       return `${days[d.getDay()]} ${dd}/${mm}/${year}`;
     }
 
+    function formatDateLabel(dateStr) {
+      return formatDateDisplay(dateStr);
+    }
+    window.formatDateLabel = formatDateLabel;
+
     function updateDateUI() {
-      const todayStr = getColombiaTodayString() || '2026-09-07';
+      const todayStr = getColombiaTodayString();
       const parts = todayStr.split('-').map(Number);
       const tomD = new Date(parts[0], parts[1] - 1, parts[2] + 1);
       const tomorrowStr = `${tomD.getFullYear()}-${String(tomD.getMonth() + 1).padStart(2, '0')}-${String(tomD.getDate()).padStart(2, '0')}`;
@@ -6105,20 +6133,22 @@ ${data.message}`);
         gridLoader.style.display = 'flex';
       }
 
-      const dateInput = document.querySelector('input[type="date"]') || document.getElementById('selected-date');
-      const forcedDate = '2026-09-07';
-      if (!window.currentDate || !window.currentDate.trim() || (dateInput && !dateInput.value)) {
-        window.currentDate = (dateInput && dateInput.value) ? dateInput.value : forcedDate;
-        if (dateInput && !dateInput.value) {
-          dateInput.value = window.currentDate;
-        }
+      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+      const queryDate = window.currentDate || (dateInput && dateInput.value) || ((typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0]);
+      window.currentDate = queryDate;
+      selectedDate = queryDate;
+      if (dateInput && dateInput.value !== queryDate) {
+        dateInput.value = queryDate;
       }
-      const currentDate = window.currentDate || (dateInput && dateInput.value) || forcedDate;
-      selectedDate = currentDate;
 
       const currentSport = (typeof currentSportFilter !== 'undefined' && currentSportFilter ? currentSportFilter : (window.currentSport || 'PADEL')).toUpperCase();
       window.currentSport = currentSport;
       currentSportFilter = currentSport;
+
+      const titleEl = document.getElementById('matrix-title-text');
+      const countEl = document.getElementById('slots-count');
+      const sportLabel = currentSport === 'PADEL' ? 'Pádel - 5 Canchas' : (currentSport === 'PICKLEBALL' ? 'Pickleball - 2 Pistas' : (currentSport === 'VOLLEYBALL' ? 'Vóley Playa - 1 Cancha' : (currentSport === 'PILATES' ? 'Pilates - Estudio' : 'Consola / Gaming - 1 Sala')));
+      const dateLabel = (typeof formatDateLabel === 'function') ? formatDateLabel(queryDate) : ((typeof formatDateDisplay === 'function') ? formatDateDisplay(queryDate) : queryDate);
 
       try {
         await fetch('/api/v1/holds/check-expirations', { method: 'POST' }).catch(() => {});
@@ -6126,7 +6156,7 @@ ${data.message}`);
           await fetchCourts();
         }
 
-        const slotsUrl = '/api/v1/slots/?date=' + encodeURIComponent(currentDate) + '&sport=' + encodeURIComponent(currentSport || 'PADEL');
+        const slotsUrl = '/api/v1/slots/?date=' + encodeURIComponent(queryDate) + '&sport=' + encodeURIComponent(currentSport || 'PADEL');
         const res = await fetch(slotsUrl);
 
         if (res.status === 404 || !res.ok) {
@@ -6140,13 +6170,18 @@ ${data.message}`);
           window.allSlots = allSlots;
         }
 
+        if (titleEl) {
+          titleEl.textContent = `Matriz Calendario Operativo (${sportLabel}) - ${allSlots.length} turnos (${dateLabel})`;
+        }
+        if (countEl) {
+          countEl.textContent = `${allSlots.length} turnos (${dateLabel})`;
+        }
+
         const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
         if (!allSlots || allSlots.length === 0) {
           if (container) {
             container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa 'Programar Semana' para crearlos.</div>";
           }
-          const countEl = document.getElementById('slots-count');
-          if (countEl) countEl.textContent = '0 turnos';
         } else {
           renderCalendarMatrix();
         }
@@ -6155,6 +6190,12 @@ ${data.message}`);
         console.warn('Error fetching slots:', err);
         allSlots = [];
         window.allSlots = [];
+        if (titleEl) {
+          titleEl.textContent = `Matriz Calendario Operativo (${sportLabel}) - 0 turnos (${dateLabel})`;
+        }
+        if (countEl) {
+          countEl.textContent = `0 turnos (${dateLabel})`;
+        }
         const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
         if (container) {
           container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa 'Programar Semana' para crearlos.</div>";
@@ -7250,7 +7291,9 @@ ${data.message}`);
 
     // Modal Reservar o Bloquear (6 Opciones y CRM)
     function openReserveOrBlockModal(slotId) {
-      const slot = allSlots.find(s => s.id === slotId);
+      const targetId = parseInt(slotId, 10);
+      const slotList = (typeof allSlots !== 'undefined' && allSlots && allSlots.length > 0) ? allSlots : (window.allSlots || []);
+      const slot = slotList.find(s => s.id === slotId || s.id === targetId || String(s.id) === String(slotId));
       if (!slot) return;
 
       const { dateStr, timeStr } = getColombiaDateTime();
@@ -7318,8 +7361,8 @@ ${data.message}`);
         const p4 = players[3];
 
         pairSel.innerHTML = `
-          <option value="pair1">🎾 [${p1} & ${p2}]</option>
-          <option value="pair2">🎾 [${p3} & ${p4}]</option>
+          <option value="pair1" data-p1="${p1}" data-p2="${p2}">🎾 [${p1} & ${p2}]</option>
+          <option value="pair2" data-p1="${p3}" data-p2="${p4}">🎾 [${p3} & ${p4}]</option>
         `;
 
         if (matchSection) {
@@ -7345,6 +7388,15 @@ ${data.message}`);
       }
       const pairSel = document.getElementById('rb-match-pair-select');
       const selectedTeam = pairSel ? pairSel.value : 'pair1';
+      const selectedOpt = pairSel ? pairSel.options[pairSel.selectedIndex] : null;
+      let winnerNames = [];
+      if (selectedOpt) {
+        const name1 = selectedOpt.getAttribute('data-p1');
+        const name2 = selectedOpt.getAttribute('data-p2');
+        if (name1 && name2) {
+          winnerNames = [name1, name2];
+        }
+      }
       const btn = document.getElementById('rb-btn-save-match');
       if (btn) {
         btn.disabled = true;
@@ -7357,6 +7409,7 @@ ${data.message}`);
           body: JSON.stringify({
             slot_id: parseInt(slotId, 10),
             winner_team: selectedTeam,
+            winner_names: winnerNames.length > 0 ? winnerNames : undefined,
             points: 25
           })
         });
@@ -8056,10 +8109,12 @@ ${data.message}`);
         if (typeof fetchCurrentUser === 'function') fetchCurrentUser();
         if (typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
         const picker = document.getElementById('selected-date') || document.getElementById('date-picker');
+        const today = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
         if (picker && (!picker.value || picker.value === '')) {
-          picker.value = '2026-09-07';
+          picker.value = today;
         }
-        selectedDate = (picker && picker.value) ? picker.value : '2026-09-07';
+        window.currentDate = (picker && picker.value) ? picker.value : today;
+        selectedDate = window.currentDate;
         updateDateUI();
         fetchCourts().then(() => {
           fetchSlots();
@@ -9441,13 +9496,7 @@ ${data.message}`);
       if (!tbody) return;
 
       if (!presences || presences.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="9" class="py-8 text-center text-slate-400 text-xs">
-              No hay personas registradas actualmente dentro del club.
-            </td>
-          </tr>
-        `;
+        tbody.innerHTML = "<tr><td colspan='8' class='py-16 text-center text-slate-400 font-medium'>No hay jugadores registrados en el club en este momento. Utiliza el simulador de arriba para registrar ingresos.</td></tr>";
         return;
       }
 
@@ -9795,12 +9844,12 @@ Jugador: ${checkData.player_name}`);
 
     function initOperationalDashboard() {
       // 2. AUTOCOMPLETADO ESTRICTO DE FECHA
-      const dateInput = document.querySelector('input[type="date"]') || document.getElementById('selected-date');
-      const today = '2026-09-07';
+      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+      const today = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
       if (dateInput && !dateInput.value) {
         dateInput.value = today;
       }
-      window.currentDate = dateInput ? dateInput.value : today;
+      window.currentDate = (dateInput && dateInput.value) ? dateInput.value : today;
       selectedDate = window.currentDate;
       if (typeof updateDateUI === 'function') updateDateUI();
 
@@ -9825,21 +9874,21 @@ Jugador: ${checkData.player_name}`);
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
-        const dateInput = document.querySelector('input[type="date"]') || document.getElementById('selected-date');
-        const today = '2026-09-07';
+        const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+        const today = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
         if (dateInput && !dateInput.value) {
           dateInput.value = today;
         }
-        window.currentDate = dateInput ? dateInput.value : today;
+        window.currentDate = (dateInput && dateInput.value) ? dateInput.value : today;
         initOperationalDashboard();
       });
     } else {
-      const dateInput = document.querySelector('input[type="date"]') || document.getElementById('selected-date');
-      const today = '2026-09-07';
+      const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
+      const today = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
       if (dateInput && !dateInput.value) {
         dateInput.value = today;
       }
-      window.currentDate = dateInput ? dateInput.value : today;
+      window.currentDate = (dateInput && dateInput.value) ? dateInput.value : today;
       initOperationalDashboard();
     }
 
