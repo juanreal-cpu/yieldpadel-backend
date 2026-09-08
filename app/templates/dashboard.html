@@ -3056,20 +3056,25 @@
 
                   <!-- Datos de Cliente y Membresía -->
                   <div class="space-y-3">
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Cliente:</label>
-                      <input type="text" id="quick-sale-customer-name" value="Cliente Mostrador" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white" placeholder="Ej: Carlos Gómez" />
+                    <div class="relative w-full">
+                      <label class="block text-xs font-bold text-slate-700 mb-1">Buscar Socio / Cliente CRM:</label>
+                      <input type="text" id="pos-customer-search" placeholder="Escribe nombre o celular..." autocomplete="off" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white" oninput="window.handlePosCRMSearch(event)" />
+                      <div id="pos-customer-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+                      <input type="hidden" id="quick-sale-customer-name" value="Cliente Mostrador" />
                     </div>
 
                     <div>
                       <label class="block text-xs font-bold text-slate-700 mb-1">Membresía del Cliente:</label>
-                      <select id="quick-sale-membership-select" onchange="onQuickSaleMembershipChange()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white">
+                      <select id="quick-sale-membership-select" data-alias="pos-customer-membership" onchange="onQuickSaleMembershipChange()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white">
                         <option value="ESTANDAR">Tarifa General (Sin Membresía)</option>
                         <option value="TAPIA">👑 TAPIA (Cortesía Bebida $0)</option>
                         <option value="COELLO">⚡ COELLO (Cortesía Bebida $0)</option>
                         <option value="GALAN">🎾 GALÁN (Cortesía Bebida $0)</option>
                         <option value="CHINGOTTO">🌅 CHINGOTTO (Cortesía Bebida $0)</option>
                         <option value="LEBRON">🐺 LEBRÓN (Cortesía Bebida $0)</option>
+                        <option value="ORO">🏆 ORO (Tarifa Preferente + Bebida)</option>
+                        <option value="PLATA">🥈 PLATA (Tarifa Preferente + Bebida)</option>
+                        <option value="BRONCE">🥉 BRONCE (Tarifa Preferente)</option>
                       </select>
                     </div>
                   </div>
@@ -3229,9 +3234,11 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <!-- Selector o búsqueda de jugador CRM -->
-              <div>
-                <label class="block text-[11px] font-bold text-slate-600 mb-1">Seleccionar Jugador (CRM):</label>
-                <select id="access-sim-player-select" onchange="onAccessSimPlayerSelect()" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg shadow-xs text-slate-900 bg-white">
+              <div class="relative">
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Buscar Jugador / Huellero (CRM):</label>
+                <input type="text" id="access-player-search" placeholder="Escribe nombre o celular..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg shadow-xs text-slate-900 bg-white" autocomplete="off" oninput="window.handleAccessCRMSearch(event)" />
+                <div id="access-player-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+                <select id="access-sim-player-select" onchange="onAccessSimPlayerSelect()" class="hidden">
                   <option value="">-- Jugador Rápido / Manual --</option>
                 </select>
               </div>
@@ -3258,6 +3265,9 @@
                   <option value="GALAN">GALAN (Sin restricción)</option>
                   <option value="CHINGOTTO">CHINGOTTO (Límite 15:00)</option>
                   <option value="LEBRON">LEBRON (Límite 18:00)</option>
+                  <option value="ORO">ORO (Sin restricción)</option>
+                  <option value="PLATA">PLATA (Límite 18:00)</option>
+                  <option value="BRONCE">BRONCE (Límite 15:00)</option>
                 </select>
               </div>
             </div>
@@ -4586,6 +4596,121 @@
       }
     };
     function switchMainView(viewName) { window.switchMainView(viewName); }
+
+    // =========================================================================
+    // COMPONENTE GLOBAL DE BÚSQUEDA REACTIVA DEL CRM (AUTOCOMPLETADO GLOBAL)
+    // Alias backward-compatible resolver for POS customer membership select
+    const _origGetElementById = document.getElementById.bind(document);
+    document.getElementById = function(id) {
+      const el = _origGetElementById(id);
+      if (!el && (id === 'pos-customer-membership' || id === 'quick-sale-membership-select')) {
+        return _origGetElementById('quick-sale-membership-select') || _origGetElementById('pos-customer-membership');
+      }
+      return el;
+    };
+
+    // =========================================================================
+    window.DEFAULT_CRM_PLAYERS = window.DEFAULT_CRM_PLAYERS || [
+      { id: 1, name: "Juan Real Florez", phone: "+573132058547", category: "4ta", client_type: "Socio VIP (Tapia)", membership_tier: "TAPIA", total_bookings_completed: 24, ranking_points: 1850, titles_count: 5, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 2, name: "Camilo Real", phone: "+573001234567", category: "4ta", client_type: "Socio VIP (Coello)", membership_tier: "COELLO", total_bookings_completed: 19, ranking_points: 1520, titles_count: 3, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 3, name: "David P", phone: "+573109876543", category: "3ra", client_type: "Socio VIP (Galán)", membership_tier: "GALAN", total_bookings_completed: 16, ranking_points: 1340, titles_count: 2, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 4, name: "Andrés Gómez", phone: "+573155551122", category: "4ta", client_type: "Socio Matutino (Chingotto)", membership_tier: "CHINGOTTO", total_bookings_completed: 12, ranking_points: 980, titles_count: 1, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 5, name: "Mateo Ruiz", phone: "+573174443322", category: "5ta", client_type: "Socio Diurno (Lebrón)", membership_tier: "LEBRON", total_bookings_completed: 8, ranking_points: 750, titles_count: 0, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 6, name: "Sofía Martínez", phone: "+573187778899", category: "6ta", client_type: "Estándar", membership_tier: "ESTANDAR", total_bookings_completed: 2, ranking_points: 210, titles_count: 0, is_first_visit: true, onboarding_status: "PENDING" }
+    ];
+    window.cachedPlayers = window.cachedPlayers || window.DEFAULT_CRM_PLAYERS;
+    window.allCRMCustomers = window.allCRMCustomers || window.DEFAULT_CRM_PLAYERS;
+
+    window.renderCRMSearchDropdown = function(inputEl, dropdownEl, onSelectCallback) {
+      if (!inputEl || !dropdownEl) return;
+      const query = inputEl.value.trim().toLowerCase();
+      if (query.length < 2) {
+        dropdownEl.innerHTML = '';
+        dropdownEl.classList.add('hidden');
+        dropdownEl.style.display = 'none';
+        return;
+      }
+      const players = (window.cachedPlayers && window.cachedPlayers.length > 0)
+        ? window.cachedPlayers
+        : ((window.allCRMCustomers && window.allCRMCustomers.length > 0) ? window.allCRMCustomers : (window.DEFAULT_CRM_PLAYERS || []));
+
+      const normalizeStr = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const cleanQuery = normalizeStr(query);
+
+      const matches = players.filter(p => 
+        normalizeStr(p.name).includes(cleanQuery) ||
+        (p.phone && p.phone.includes(query)) ||
+        normalizeStr(p.category).includes(cleanQuery) ||
+        normalizeStr(p.membership_tier).includes(cleanQuery)
+      ).slice(0, 8);
+
+      if (matches.length === 0) {
+        dropdownEl.innerHTML = '<div class="px-4 py-2.5 text-xs text-slate-400 font-medium">Sin coincidencias en CRM</div>';
+        dropdownEl.classList.remove('hidden');
+        dropdownEl.style.display = 'block';
+        return;
+      }
+
+      dropdownEl.innerHTML = matches.map(p => {
+        const tier = p.membership_tier || 'ESTANDAR';
+        const tierBadgeClass = (tier === 'ORO' || tier === 'TAPIA' || tier === 'COELLO' || tier === 'GALAN') ? 'bg-amber-100 text-amber-800' :
+                               (tier === 'PLATA' || tier === 'CHINGOTTO') ? 'bg-slate-200 text-slate-700' :
+                               'bg-emerald-100 text-emerald-800';
+        return `
+        <div class="crm-dropdown-item px-4 py-2.5 hover:bg-slate-50 cursor-pointer text-xs flex justify-between items-center transition-colors border-b border-slate-50 last:border-0"
+             data-name="${(p.name || '').replace(/"/g, '&quot;')}" data-phone="${(p.phone || '').replace(/"/g, '&quot;')}" data-tier="${tier.replace(/"/g, '&quot;')}" data-cat="${(p.category || '4ta').replace(/"/g, '&quot;')}">
+          <div>
+            <div class="font-bold text-slate-800">${p.name}</div>
+            <div class="text-[10px] text-slate-400 font-medium">${p.phone || 'Sin tel'} · Cat: ${p.category || '4ta'}</div>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${tierBadgeClass}">
+            ${tier}
+          </span>
+        </div>`;
+      }).join('');
+      dropdownEl.classList.remove('hidden');
+      dropdownEl.style.display = 'block';
+
+      // Bind item clicks
+      dropdownEl.querySelectorAll('.crm-dropdown-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const pData = {
+            name: item.getAttribute('data-name'),
+            phone: item.getAttribute('data-phone'),
+            tier: item.getAttribute('data-tier'),
+            category: item.getAttribute('data-cat')
+          };
+          dropdownEl.classList.add('hidden');
+          dropdownEl.style.display = 'none';
+          if (typeof onSelectCallback === 'function') {
+            onSelectCallback(pData);
+          }
+        });
+      });
+    };
+
+    window.setupCRMSearch = function(inputEl, dropdownEl, onSelectCallback) {
+      if (!inputEl || !dropdownEl) return;
+      inputEl.addEventListener('input', () => {
+        window.renderCRMSearchDropdown(inputEl, dropdownEl, onSelectCallback);
+      });
+      inputEl.addEventListener('focus', () => {
+        if (inputEl.value.trim().length >= 2) {
+          window.renderCRMSearchDropdown(inputEl, dropdownEl, onSelectCallback);
+        }
+      });
+    };
+
+    // Cerrar los dropdowns abiertos si el usuario hace clic afuera
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.relative')) {
+        document.querySelectorAll('#pos-customer-dropdown, #turn-crm-dropdown, #hold-crm-dropdown, #access-player-dropdown').forEach(d => {
+          d.classList.add('hidden');
+          d.style.display = 'none';
+        });
+      }
+    });
 
     window.currentSport = 'PADEL';
     window.selectedCourtZoom = 'ALL';
@@ -7234,63 +7359,13 @@ ${data.message}`);
     // =========================================================================
     // BUSCADOR REACTIVO FLOTANTE CRM EN MODAL DE TURNO (#modal-turn)
     // =========================================================================
-    window.handleTurnCRMSearch = async function(e) {
-      const query = (e && e.target ? e.target.value : (typeof e === 'string' ? e : '')).trim().toLowerCase();
+    window.handleTurnCRMSearch = function(e) {
+      const input = document.getElementById('turn-crm-search') || document.getElementById('rb-customer-search');
       const dropdown = document.getElementById('turn-crm-dropdown') || document.getElementById('rb-customer-dropdown');
-      if (!dropdown) return;
-
-      if (!query) {
-        dropdown.innerHTML = '';
-        dropdown.classList.add('hidden');
-        dropdown.style.display = 'none';
-        return;
-      }
-
-      let players = (window.cachedPlayers && window.cachedPlayers.length > 0)
-        ? window.cachedPlayers
-        : ((window.allCRMCustomers && window.allCRMCustomers.length > 0) ? window.allCRMCustomers : (typeof DEFAULT_CRM_PLAYERS !== 'undefined' ? DEFAULT_CRM_PLAYERS : []));
-
-      let matches = players.filter(p => 
-        (p.name || '').toLowerCase().includes(query) ||
-        (p.phone || '').includes(query) ||
-        (p.category || '').toLowerCase().includes(query) ||
-        (p.membership_tier || '').toLowerCase().includes(query)
-      );
-
-      // Si no hay coincidencias en memoria y se escribieron al menos 2 caracteres, consultar API
-      if (matches.length === 0 && query.length >= 2) {
-        try {
-          const res = await fetch(`${API_BASE}/api/v1/customers/?query=${encodeURIComponent(query)}`);
-          if (res.ok) {
-            const remotePlayers = await res.json();
-            if (Array.isArray(remotePlayers) && remotePlayers.length > 0) {
-              matches = remotePlayers;
-              if (window.cachedPlayers) {
-                remotePlayers.forEach(rp => {
-                  if (!window.cachedPlayers.some(cp => cp.id === rp.id)) window.cachedPlayers.push(rp);
-                });
-              }
-            }
-          }
-        } catch (err) {
-          console.warn("Consulta reactiva CRM falló:", err);
-        }
-      }
-
-      if (matches.length === 0) {
-        dropdown.innerHTML = '<div class="px-4 py-2 text-xs text-slate-400">Sin resultados</div>';
-      } else {
-        dropdown.innerHTML = matches.slice(0, 10).map(p => {
-          const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          const safePhone = (p.phone || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          const safeCat = (p.category || '4ta').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          const safeTier = (p.membership_tier || p.client_type || 'Estándar').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          return `<div onclick="window.selectPlayerForTurn('${safeName}', '${safePhone}', '${safeCat}', '${safeTier}')" class="px-4 py-2 hover:bg-slate-50 cursor-pointer text-xs flex justify-between font-semibold text-slate-800"><span>${p.name}</span><span class="text-slate-400">${p.phone || ''} · ${p.category || '4ta'}</span></div>`;
-        }).join('');
-      }
-
-      dropdown.classList.remove('hidden');
-      dropdown.style.display = 'block';
+      if (!input || !dropdown) return;
+      window.renderCRMSearchDropdown(input, dropdown, (player) => {
+        window.selectPlayerForTurn(player.name, player.phone, player.category, player.tier);
+      });
     };
 
     window.selectPlayerForTurn = function(name, phone, category, tier) {
@@ -7632,61 +7707,13 @@ ${data.message}`);
     // =========================================================================
     // BUSCADOR REACTIVO FLOTANTE CRM EN MODAL DE HOLD / APARTAR CUPO (#hold-modal)
     // =========================================================================
-    window.handleHoldCRMSearch = async function(e) {
-      const query = (e && e.target ? e.target.value : (typeof e === 'string' ? e : '')).trim().toLowerCase();
+    window.handleHoldCRMSearch = function(e) {
+      const input = document.getElementById('hold-player-search');
       const dropdown = document.getElementById('hold-crm-dropdown');
-      if (!dropdown) return;
-
-      if (!query) {
-        dropdown.innerHTML = '';
-        dropdown.classList.add('hidden');
-        dropdown.style.display = 'none';
-        return;
-      }
-
-      let players = (window.cachedPlayers && window.cachedPlayers.length > 0)
-        ? window.cachedPlayers
-        : ((window.allCRMCustomers && window.allCRMCustomers.length > 0) ? window.allCRMCustomers : (typeof DEFAULT_CRM_PLAYERS !== 'undefined' ? DEFAULT_CRM_PLAYERS : []));
-
-      let matches = players.filter(p => 
-        (p.name || '').toLowerCase().includes(query) ||
-        (p.phone || '').includes(query) ||
-        (p.category || '').toLowerCase().includes(query) ||
-        (p.membership_tier || '').toLowerCase().includes(query)
-      );
-
-      if (matches.length === 0 && query.length >= 2) {
-        try {
-          const res = await fetch(`${API_BASE}/api/v1/customers/?query=${encodeURIComponent(query)}`);
-          if (res.ok) {
-            const remotePlayers = await res.json();
-            if (Array.isArray(remotePlayers) && remotePlayers.length > 0) {
-              matches = remotePlayers;
-              if (window.cachedPlayers) {
-                remotePlayers.forEach(rp => {
-                  if (!window.cachedPlayers.some(cp => cp.id === rp.id)) window.cachedPlayers.push(rp);
-                });
-              }
-            }
-          }
-        } catch (err) {
-          console.warn("Consulta reactiva CRM hold falló:", err);
-        }
-      }
-
-      if (matches.length === 0) {
-        dropdown.innerHTML = '<div class="px-4 py-2 text-xs text-slate-400">Sin resultados</div>';
-      } else {
-        dropdown.innerHTML = matches.slice(0, 10).map(p => {
-          const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          const safePhone = (p.phone || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          const safeTier = (p.membership_tier || p.client_type || 'ESTANDAR').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          return `<div onclick="window.selectPlayerForHold('${safeName}', '${safePhone}', '${safeTier}')" class="px-4 py-2.5 hover:bg-slate-50 cursor-pointer text-xs flex justify-between items-center"><span class="font-bold text-slate-800">${p.name}</span><span class="text-slate-500">${p.phone || ''} · <span class="text-emerald-600 font-semibold">${p.membership_tier || 'ESTANDAR'}</span></span></div>`;
-        }).join('');
-      }
-
-      dropdown.classList.remove('hidden');
-      dropdown.style.display = 'block';
+      if (!input || !dropdown) return;
+      window.renderCRMSearchDropdown(input, dropdown, (player) => {
+        window.selectPlayerForHold(player.name, player.phone, player.tier);
+      });
     };
 
     window.selectPlayerForHold = function(name, phone, tier) {
@@ -9465,6 +9492,63 @@ ${data.message}`);
     }
     window.onQuickSaleMembershipChange = onQuickSaleMembershipChange;
 
+    window.checkMembershipPerks = function(tier) {
+      const isVipTier = tier && tier !== 'ESTANDAR';
+      if (window.quickSaleCart && window.quickSaleCart.length > 0) {
+        window.quickSaleCart.forEach(it => {
+          if (isVipTier && (it.category === 'BEBIDAS' || (it.name && it.name.toLowerCase().includes('agua')))) {
+            it.is_membership_perk = true;
+          }
+        });
+      }
+      if (typeof onQuickSaleMembershipChange === 'function') {
+        onQuickSaleMembershipChange();
+      }
+    };
+
+    window.handlePosCRMSearch = function(e) {
+      const inputEl = e && e.target ? e.target : (e || document.getElementById('pos-customer-search'));
+      const dropdownEl = document.getElementById('pos-customer-dropdown');
+      const hiddenName = document.getElementById('quick-sale-customer-name');
+      if (hiddenName && inputEl) {
+        hiddenName.value = inputEl.value.trim() || 'Cliente Mostrador';
+      }
+      if (!inputEl || !dropdownEl) return;
+      window.renderCRMSearchDropdown(inputEl, dropdownEl, (player) => {
+        inputEl.value = player.name;
+        if (hiddenName) hiddenName.value = player.name;
+        window.currentPosCustomer = player;
+        const tierSelect = document.getElementById('pos-customer-membership') || document.getElementById('quick-sale-membership-select');
+        if (tierSelect && tierSelect.options) {
+          const targetTier = player.tier || 'ESTANDAR';
+          let matched = false;
+          for (let i = 0; i < tierSelect.options.length; i++) {
+            if (tierSelect.options[i].value === targetTier || tierSelect.options[i].value.toLowerCase() === targetTier.toLowerCase()) {
+              tierSelect.selectedIndex = i;
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) {
+            for (let i = 0; i < tierSelect.options.length; i++) {
+              if (tierSelect.options[i].text.toLowerCase().includes(targetTier.toLowerCase())) {
+                tierSelect.selectedIndex = i;
+                matched = true;
+                break;
+              }
+            }
+          }
+          if (matched) {
+            tierSelect.value = tierSelect.options[tierSelect.selectedIndex].value;
+          } else {
+            tierSelect.value = targetTier;
+          }
+          tierSelect.dispatchEvent(new Event('change'));
+        }
+        if (window.checkMembershipPerks) window.checkMembershipPerks(player.tier);
+      });
+    };
+
     function renderQuickSaleCart() {
       const container = document.getElementById('quick-sale-cart-items');
       const totalDisplay = document.getElementById('quick-sale-total-display');
@@ -9528,7 +9612,10 @@ ${data.message}`);
         alert('El carrito está vacío.');
         return;
       }
-      const custName = document.getElementById('quick-sale-customer-name').value || 'Cliente Mostrador';
+      const searchEl = document.getElementById('pos-customer-search');
+      const custName = (searchEl && searchEl.value.trim()) ||
+                       (document.getElementById('quick-sale-customer-name') && document.getElementById('quick-sale-customer-name').value.trim()) ||
+                       'Cliente Mostrador';
       const items = window.quickSaleCart.map(it => ({
         product_id: it.product_id,
         quantity: it.quantity,
@@ -9884,6 +9971,74 @@ ${data.message}`);
       }
     }
     window.onAccessSimPlayerSelect = onAccessSimPlayerSelect;
+
+    window.checkAccessPlayerStatus = function(player) {
+      if (!player) return;
+      const presence = (window.accessPresences || []).find(p => 
+        (p.player_name && p.player_name.toLowerCase() === player.name.toLowerCase()) ||
+        (p.phone && player.phone && p.phone.includes(player.phone))
+      );
+      if (presence && presence.pending_balance > 0) {
+        if (typeof showCustomToast === 'function') {
+          showCustomToast('⚠️ Saldo Pendiente en Barra/Turnos', `${player.name} tiene un saldo pendiente de ${formatCOP(presence.pending_balance)}.`, '⚠️', true);
+        } else if (typeof window.showDarkToast === 'function') {
+          window.showDarkToast('⚠️ Saldo Pendiente', `${player.name} tiene un saldo de ${formatCOP(presence.pending_balance)}.`);
+        }
+      } else {
+        if (typeof showCustomToast === 'function') {
+          showCustomToast('Jugador CRM Seleccionado', `${player.name} (${player.tier || 'ESTÁNDAR'}) listo para registro.`, '🎾');
+        } else if (typeof window.showDarkToast === 'function') {
+          window.showDarkToast('Jugador Seleccionado', `${player.name} (${player.tier || 'ESTÁNDAR'})`);
+        }
+      }
+    };
+
+    window.handleAccessCRMSearch = function(e) {
+      const input = document.getElementById('access-player-search');
+      const dropdown = document.getElementById('access-player-dropdown');
+      if (!input || !dropdown) return;
+      window.renderCRMSearchDropdown(input, dropdown, (player) => {
+        input.value = player.name;
+        const nameEl = document.getElementById('access-sim-player-name');
+        const phoneEl = document.getElementById('access-sim-phone');
+        const tierEl = document.getElementById('access-sim-tier');
+        const selectEl = document.getElementById('access-sim-player-select');
+
+        if (nameEl) nameEl.value = player.name;
+        if (phoneEl) phoneEl.value = player.phone || '';
+        if (tierEl && player.tier) {
+          let found = false;
+          for (let i = 0; i < tierEl.options.length; i++) {
+            if (tierEl.options[i].value === player.tier || tierEl.options[i].value.toLowerCase() === player.tier.toLowerCase()) {
+              tierEl.selectedIndex = i;
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            for (let i = 0; i < tierEl.options.length; i++) {
+              if (tierEl.options[i].text.toLowerCase().includes(player.tier.toLowerCase())) {
+                tierEl.selectedIndex = i;
+                found = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (selectEl) {
+          for (let i = 0; i < selectEl.options.length; i++) {
+            const opt = selectEl.options[i];
+            if (opt.textContent.includes(player.name) || opt.getAttribute('data-name') === player.name) {
+              selectEl.selectedIndex = i;
+              break;
+            }
+          }
+        }
+
+        window.checkAccessPlayerStatus(player);
+      });
+    };
 
     async function simulateGateCheckIn() {
       const sel = document.getElementById('access-sim-player-select');
