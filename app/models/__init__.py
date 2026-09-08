@@ -1,6 +1,7 @@
 from app.models.membership import MembershipPlan
 from app.models.academy import AcademyClass, AcademyEnrollment
 from app.core.database import Base
+from app.models.club import Club
 from app.models.court import Court
 from app.models.slot import (
     TimeSlot,
@@ -21,6 +22,7 @@ from app.models.product import Product, Order, OrderItem, Sale
 from app.models.access import ClubPresence
 
 __all__ = [
+    "Club",
     "Player",
     "AcademyEnrollment",
     "AcademyClass",

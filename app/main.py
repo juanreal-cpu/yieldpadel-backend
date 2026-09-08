@@ -3,88 +3,77 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.database import engine, Base
 import app.models  # noqa: F401 - Register models with Base.metadata
 from app.api.v1.api import api_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Crear tablas al iniciar la aplicación
+    # Crear tablas al iniciar la aplicación garantizando que todos los modelos existan
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         try:
             from sqlalchemy import text
             if "sqlite" in str(engine.url):
-                for col_def in [
-                    "closed_at TIMESTAMP",
-                    "slot_type VARCHAR(50) DEFAULT 'MATCH'",
-                    "instructor_name VARCHAR(100)",
-                    "is_promo BOOLEAN DEFAULT FALSE",
-                    "tournament_type VARCHAR(50)",
-                    "prize_pool NUMERIC(10, 2)",
-                    "tournament_name VARCHAR(150)",
-                    "sport_type VARCHAR(50) DEFAULT 'PADEL'",
-                ]:
+                sqlite_statements = [
+                    "ALTER TABLE time_slots ADD COLUMN closed_at TIMESTAMP",
+                    "ALTER TABLE time_slots ADD COLUMN slot_type VARCHAR(50) DEFAULT 'MATCH'",
+                    "ALTER TABLE time_slots ADD COLUMN instructor_name VARCHAR(100)",
+                    "ALTER TABLE time_slots ADD COLUMN is_promo BOOLEAN DEFAULT FALSE",
+                    "ALTER TABLE time_slots ADD COLUMN tournament_type VARCHAR(50)",
+                    "ALTER TABLE time_slots ADD COLUMN prize_pool NUMERIC(10, 2)",
+                    "ALTER TABLE time_slots ADD COLUMN tournament_name VARCHAR(150)",
+                    "ALTER TABLE time_slots ADD COLUMN sport_type VARCHAR(50) DEFAULT 'PADEL'",
+                    "ALTER TABLE time_slots ADD COLUMN winners_names VARCHAR(255)",
+                    "ALTER TABLE time_slots ADD COLUMN runner_up_names VARCHAR(255)",
+                    "ALTER TABLE time_slots ADD COLUMN is_finished BOOLEAN DEFAULT 0",
+                    "ALTER TABLE time_slots ADD COLUMN club_id INTEGER DEFAULT 1",
+                    "ALTER TABLE time_slots ADD COLUMN price_total_cop NUMERIC(10, 2)",
+                    "ALTER TABLE time_slots ADD COLUMN price_per_player_cop NUMERIC(10, 2)",
+                    "ALTER TABLE time_slots ADD COLUMN price NUMERIC(10, 2)",
+                    "ALTER TABLE courts ADD COLUMN sport_type VARCHAR(50) DEFAULT 'PADEL'",
+                    "ALTER TABLE courts ADD COLUMN max_capacity INTEGER DEFAULT 4",
+                    "ALTER TABLE courts ADD COLUMN court_number INTEGER",
+                    "ALTER TABLE courts ADD COLUMN club_id VARCHAR(36)",
+                    "ALTER TABLE customers ADD COLUMN gender VARCHAR(20)",
+                    "ALTER TABLE customers ADD COLUMN preferred_music VARCHAR(100)",
+                    "ALTER TABLE customers ADD COLUMN preferred_play_time VARCHAR(100)",
+                    "ALTER TABLE customers ADD COLUMN membership_plan_id INTEGER",
+                    "ALTER TABLE customers ADD COLUMN membership_start_date DATE",
+                    "ALTER TABLE customers ADD COLUMN membership_end_date DATE",
+                    "ALTER TABLE customers ADD COLUMN academy_classes_used INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN is_minor BOOLEAN DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN birth_date DATE",
+                    "ALTER TABLE customers ADD COLUMN guardian_id INTEGER",
+                    "ALTER TABLE customers ADD COLUMN guardian_relationship VARCHAR(50)",
+                    "ALTER TABLE customers ADD COLUMN ranking_points INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN titles_count INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN category_wins INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN consecutive_wins INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN promotion_recommended BOOLEAN DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN recommended_category VARCHAR(50)",
+                    "ALTER TABLE customers ADD COLUMN total_bookings_completed INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN is_first_visit BOOLEAN DEFAULT 1",
+                    "ALTER TABLE customers ADD COLUMN onboarding_status VARCHAR(50) DEFAULT 'PENDING'",
+                    "ALTER TABLE academy_classes ADD COLUMN target_age VARCHAR(50) DEFAULT 'ADULTOS'",
+                    "ALTER TABLE membership_plans ADD COLUMN badge_label VARCHAR(50) DEFAULT 'PLAN SOCIO'",
+                    "ALTER TABLE membership_plans ADD COLUMN card_gradient VARCHAR(100) DEFAULT 'from-slate-800 to-indigo-900'",
+                    "ALTER TABLE membership_plans ADD COLUMN is_active BOOLEAN DEFAULT 1",
+                    "ALTER TABLE slot_holds ADD COLUMN client_tier VARCHAR(50) DEFAULT 'STANDARD'",
+                    "ALTER TABLE slot_holds ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PAID'",
+                    "ALTER TABLE yield_bookings ADD COLUMN client_tier VARCHAR(50) DEFAULT 'STANDARD'",
+                    "ALTER TABLE yield_bookings ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PAID'",
+                    "ALTER TABLE yield_bookings ADD COLUMN transaction_id VARCHAR(100)",
+                ]
+                for stmt in sqlite_statements:
                     try:
-                        await conn.execute(text(f"ALTER TABLE time_slots ADD COLUMN {col_def}"))
-                    except Exception:
-                        pass
-                for court_col in [
-                    "sport_type VARCHAR(50) DEFAULT 'PADEL'",
-                    "max_capacity INTEGER DEFAULT 4",
-                    "court_number INTEGER",
-                    "club_id VARCHAR(36)",
-                ]:
-                    try:
-                        await conn.execute(text(f"ALTER TABLE courts ADD COLUMN {court_col}"))
-                    except Exception:
-                        pass
-                for cust_col in [
-                    "gender VARCHAR(20)",
-                    "preferred_music VARCHAR(100)",
-                    "preferred_play_time VARCHAR(100)",
-                    "membership_plan_id INTEGER",
-                    "membership_start_date DATE",
-                    "membership_end_date DATE",
-                    "academy_classes_used INTEGER DEFAULT 0",
-                    "is_minor BOOLEAN DEFAULT 0",
-                    "birth_date DATE",
-                    "guardian_id INTEGER",
-                    "guardian_relationship VARCHAR(50)",
-                ]:
-                    try:
-                        await conn.execute(text(f"ALTER TABLE customers ADD COLUMN {cust_col}"))
-                    except Exception:
-                        pass
-                for acad_col in [
-                    "target_age VARCHAR(50) DEFAULT 'ADULTOS'",
-                ]:
-                    try:
-                        await conn.execute(text(f"ALTER TABLE academy_classes ADD COLUMN {acad_col}"))
-                    except Exception:
-                        pass
-                for slot_col in [
-                    "club_id INTEGER DEFAULT 1",
-                    "price_total_cop NUMERIC(10, 2)",
-                    "price_per_player_cop NUMERIC(10, 2)",
-                    "price NUMERIC(10, 2)",
-                ]:
-                    try:
-                        await conn.execute(text(f"ALTER TABLE time_slots ADD COLUMN {slot_col}"))
-                    except Exception:
-                        pass
-                for plan_col in [
-                    "badge_label VARCHAR(50) DEFAULT 'PLAN SOCIO'",
-                    "card_gradient VARCHAR(100) DEFAULT 'from-slate-800 to-indigo-900'",
-                    "is_active BOOLEAN DEFAULT 1",
-                ]:
-                    try:
-                        await conn.execute(text(f"ALTER TABLE membership_plans ADD COLUMN {plan_col}"))
+                        await conn.execute(text(stmt))
                     except Exception:
                         pass
             else:
                 pg_statements = [
+                    # time_slots
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS club_id INTEGER DEFAULT 1",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS price_total_cop NUMERIC(10, 2)",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS price_per_player_cop NUMERIC(10, 2)",
@@ -96,10 +85,17 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_type VARCHAR(50)",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS prize_pool NUMERIC(10, 2)",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_name VARCHAR(150)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS winners_names VARCHAR(255)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS runner_up_names VARCHAR(255)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_finished BOOLEAN DEFAULT FALSE",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS sport_type VARCHAR(50) DEFAULT 'PADEL'",
+                    # courts
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS sport_type VARCHAR(50) DEFAULT 'PADEL'",
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 4",
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS court_number INTEGER",
+                    "ALTER TABLE courts ADD COLUMN IF NOT EXISTS club_id UUID",
+                    "ALTER TABLE courts ADD COLUMN IF NOT EXISTS is_indoor BOOLEAN DEFAULT FALSE",
+                    # customers
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_tier VARCHAR(50) DEFAULT 'ESTANDAR'",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS gender VARCHAR(20)",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS preferred_music VARCHAR(100)",
@@ -112,10 +108,40 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS birth_date DATE",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS guardian_id INTEGER",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS guardian_relationship VARCHAR(50)",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS ranking_points INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS titles_count INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS category_wins INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS consecutive_wins INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS promotion_recommended BOOLEAN DEFAULT FALSE",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS recommended_category VARCHAR(50)",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS total_bookings_completed INTEGER DEFAULT 0",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_first_visit BOOLEAN DEFAULT TRUE",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS onboarding_status VARCHAR(50) DEFAULT 'PENDING'",
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS notes VARCHAR(500)",
+                    # academy_classes
                     "ALTER TABLE academy_classes ADD COLUMN IF NOT EXISTS target_age VARCHAR(50) DEFAULT 'ADULTOS'",
+                    # membership_plans
                     "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS badge_label VARCHAR(50) DEFAULT 'PLAN SOCIO'",
                     "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS card_gradient VARCHAR(100) DEFAULT 'from-slate-800 to-indigo-900'",
                     "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS start_time TIME WITHOUT TIME ZONE DEFAULT '06:00:00'",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS end_time TIME WITHOUT TIME ZONE DEFAULT '23:59:00'",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS max_daily_hours DOUBLE PRECISION DEFAULT 1.5",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS includes_academy_classes BOOLEAN DEFAULT FALSE",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS monthly_classes_count INTEGER DEFAULT 0",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS includes_beverage_perk BOOLEAN DEFAULT FALSE",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS americano_discount_pct INTEGER DEFAULT 0",
+                    "ALTER TABLE membership_plans ADD COLUMN IF NOT EXISTS monthly_price_cop INTEGER DEFAULT 0",
+                    # slot_holds
+                    "ALTER TABLE slot_holds ADD COLUMN IF NOT EXISTS client_tier VARCHAR(50) DEFAULT 'STANDARD'",
+                    "ALTER TABLE slot_holds ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'PAID'",
+                    # yield_bookings
+                    "ALTER TABLE yield_bookings ADD COLUMN IF NOT EXISTS client_tier VARCHAR(50) DEFAULT 'STANDARD'",
+                    "ALTER TABLE yield_bookings ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'PAID'",
+                    "ALTER TABLE yield_bookings ADD COLUMN IF NOT EXISTS transaction_id VARCHAR(100)",
+                    # club_presences
+                    "ALTER TABLE club_presences ADD COLUMN IF NOT EXISTS membership_tier VARCHAR(50) DEFAULT 'ESTANDAR'",
+                    "ALTER TABLE club_presences ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT ''",
                 ]
                 for stmt in pg_statements:
                     try:
