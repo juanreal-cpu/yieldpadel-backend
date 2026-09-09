@@ -2254,10 +2254,15 @@
             <div class="banner-date-badge" id="banner-date-display">📅 Hoy (07/09/2026)</div>
           </div>
           <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-            <!-- Active Session User Badge -->
+            <!-- Active Session User Badge with RBAC Selector -->
             <div id="active-user-badge" style="display: flex; align-items: center; gap: 0.45rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #1E293B; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" title="Operador en sesión activa">
               <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
-              <span id="active-user-display">👤 Camilo Real (Recepción)</span>
+              <span id="active-user-display">👤 Camilo Real</span>
+              <select id="rbac-role-selector" onchange="window.switchRoleSimulation(this.value)" class="text-[11px] font-bold px-2 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500" title="Perfil operativo RBAC">
+                <option value="SUPERADMIN">👑 SUPERADMIN / GERENTE</option>
+                <option value="STAFF" selected>🏷️ STAFF / RECEPCIÓN</option>
+                <option value="AUXILIAR">🏷️ AUXILIAR</option>
+              </select>
             </div>
             <div class="banner-venue-badge">
               <span class="badge-status-dot"></span>
@@ -2278,14 +2283,14 @@
             <div class="kpi-sub">registrados en el club</div>
           </div>
 
-          <!-- KPI 2: Ingresos Confirmados -->
+          <!-- KPI 2: Ingresos Confirmados con Meta Diaria -->
           <div class="kpi-card">
             <div class="kpi-label">
               <span>Ingresos Confirmados</span>
-              <span class="kpi-tag kpi-tag-emerald">En Vivo</span>
+              <span class="kpi-tag kpi-tag-emerald" id="kpi-revenue-tag">En Vivo</span>
             </div>
             <div class="kpi-value kpi-val-green" id="kpi-revenue">$2.970.500 COP</div>
-            <div class="kpi-sub">acumulado de la fecha</div>
+            <div class="kpi-sub" id="kpi-revenue-sub">acumulado de la fecha</div>
           </div>
 
           <!-- KPI 3: Tasa de Ocupación Hoy -->
@@ -2501,12 +2506,21 @@
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
               <div>
-                <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
-                  <span>🏆</span> Centro de Gestión de Torneos Americanos
-                </h2>
-                <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.25rem;">
-                  Programación multi-cancha (2 a 5 pistas), bolsa de premios, control de choques y premiación oficial.
-                </p>
+                <div style="display: flex; align-items: center; gap: 0.85rem;">
+                  <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 p-2.5 shadow-md flex items-center justify-center text-white ring-4 ring-amber-100/80 shrink-0">
+                    <svg class="w-7 h-7 text-amber-950 drop-shadow-xs" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                      <path d="M19 5h-2V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V18H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-2v-2.1c1.69-.35 3.09-1.63 3.61-3.26C19.08 12.33 21 10.25 21 7.7V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; line-height: 1.2;">
+                      Centro de Gestión de Torneos Americanos
+                    </h2>
+                    <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.25rem;">
+                      Programación multi-cancha (2 a 5 pistas), bolsa de premios, control de choques y premiación oficial.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -3069,7 +3083,9 @@
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Facturado en Barra Hoy</span>
-                <span class="text-lg">💵</span>
+                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-xs">
+                  <span class="text-xl">💵</span>
+                </div>
               </div>
               <div class="mt-2 flex items-baseline gap-2">
                 <span id="pos-stat-revenue" class="text-3xl font-black text-emerald-700 font-mono">$0 COP</span>
@@ -3084,7 +3100,9 @@
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Producto Más Vendido</span>
-                <span class="text-lg">🔥</span>
+                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-amber-100 border border-amber-300 text-amber-800 shadow-xs">
+                  <span class="text-xl">🔥</span>
+                </div>
               </div>
               <div class="mt-2">
                 <span id="pos-stat-top-product" class="text-xl font-black text-slate-900 truncate block">Cargando...</span>
@@ -3100,7 +3118,9 @@
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ticket Promedio por Jugador</span>
-                <span class="text-lg">🏷️</span>
+                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-indigo-100 border border-indigo-300 text-indigo-800 shadow-xs">
+                  <span class="text-xl">🏷️</span>
+                </div>
               </div>
               <div class="mt-2 flex items-baseline gap-2">
                 <span id="pos-stat-avg-ticket" class="text-3xl font-black text-indigo-700 font-mono">$0 COP</span>
@@ -4064,6 +4084,26 @@
             <button type="button" id="rb-btn-save-match" onclick="window.saveMatchResult(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
               Guardar Victoria (+25 Pts)
             </button>
+          </div>
+
+          <div class="mt-2.5 pt-2 border-t border-emerald-200/80">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] font-bold text-emerald-950 flex items-center gap-1">
+                <span>🎯 Apuesta / Desafío en Juego</span>
+              </label>
+              <span class="text-[10px] text-emerald-700 font-semibold">Opcional</span>
+            </div>
+            <select id="rb-match-bet-select" onchange="window.toggleRBMatchCustomBet(this.value)" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="Puntos Simples">Puntos Simples (Solo Ranking +25 Pts)</option>
+              <option value="🍔 Tato Hamburguesa">🍔 Tato Hamburguesa</option>
+              <option value="🥤 Gatorade / Bebida">🥤 Gatorade / Bebida</option>
+              <option value="💵 20K COP">💵 20K COP</option>
+              <option value="🎾 Paga la Cancha">🎾 Paga la Cancha</option>
+              <option value="CUSTOM">🎯 Personalizada...</option>
+            </select>
+            <div id="rb-match-custom-bet-container" class="mt-1.5" style="display: none;">
+              <input type="text" id="rb-match-custom-bet" placeholder="Escribe la apuesta personalizada (ej: 🍕 Cena o Six-pack)..." class="w-full h-8 px-2.5 text-xs border border-amber-300 rounded-lg bg-amber-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
           </div>
         </div>
 
@@ -5375,8 +5415,8 @@
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-          <button type="button" onclick="window.closeCustomerModal()" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition">Cancelar</button>
-          <button type="submit" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+          <button type="button" id="btn-cancel-customer" onclick="window.closeCustomerModal()" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+          <button type="submit" id="btn-save-customer" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer">
             <span>💾</span> <span id="modal-crm-player-submit-text">Guardar Perfil</span>
           </button>
         </div>
@@ -5411,8 +5451,97 @@
     window.getColombiaTodayString = getColombiaTodayString;
 
     // ========================================================
-    // 1. BLINDAR NAVEGACIÓN GLOBAL AL INICIO DEL <SCRIPT>
     // ========================================================
+    // 1. BLINDAR NAVEGACIÓN GLOBAL AL INICIO DEL <SCRIPT> & RBAC
+    // ========================================================
+    window.currentUserRole = localStorage.getItem('user_role') || 'STAFF';
+
+    window.switchRoleSimulation = function(newRole) {
+      window.currentUserRole = (newRole || 'STAFF').toUpperCase();
+      localStorage.setItem('user_role', window.currentUserRole);
+
+      const roleSel = document.getElementById('rbac-role-selector');
+      if (roleSel && roleSel.value !== window.currentUserRole) {
+        roleSel.value = window.currentUserRole;
+      }
+
+      const userDisplay = document.getElementById('active-user-display');
+      if (userDisplay) {
+        if (['SUPERADMIN', 'GERENTE', 'ADMIN'].includes(window.currentUserRole)) {
+          userDisplay.textContent = '👤 Camilo Real (Gerente)';
+        } else if (window.currentUserRole === 'AUXILIAR') {
+          userDisplay.textContent = '👤 Daniela P. (Auxiliar)';
+        } else {
+          userDisplay.textContent = '👤 Camilo Real (Recepción)';
+        }
+      }
+
+      window.applyRBACPermissions(window.currentUserRole);
+    };
+
+    window.applyRBACPermissions = function(role) {
+      const current = (role || window.currentUserRole || 'STAFF').toUpperCase();
+      const isAdmin = ['SUPERADMIN', 'GERENTE', 'ADMIN'].includes(current);
+
+      // 1. Inputs de precios base, tarifas de canchas y configuración del club
+      const configInputIds = [
+        'cfg-padel-valle', 'cfg-padel-pico', 'cfg-padel-floor',
+        'cfg-pickleball-valle', 'cfg-pickleball-pico',
+        'cfg-volleyball-indiv', 'cfg-volleyball-base',
+        'cfg-pilates-mat', 'cfg-discount-pct',
+        'cfg-cancel-grace', 'cfg-confirm-grace', 'cfg-whatsapp-group'
+      ];
+
+      configInputIds.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+          input.disabled = !isAdmin;
+          input.readOnly = !isAdmin;
+          if (!isAdmin) {
+            input.classList.add('bg-slate-100', 'cursor-not-allowed', 'opacity-75');
+          } else {
+            input.classList.remove('bg-slate-100', 'cursor-not-allowed', 'opacity-75');
+          }
+        }
+      });
+
+      // 2. Botón Guardar Configuración (Ocultar para Staff / Auxiliar)
+      const btnSaveConfig = document.getElementById('btn-save-club-config');
+      if (btnSaveConfig) {
+        if (!isAdmin) {
+          btnSaveConfig.style.display = 'none';
+        } else {
+          btnSaveConfig.style.display = 'inline-flex';
+        }
+      }
+
+      // 3. Inputs de gestión estructural de pistas (nombres y mantenimiento)
+      const courtInputs = document.querySelectorAll('#config-courts-list input, #config-courts-list select');
+      courtInputs.forEach(el => {
+        el.disabled = !isAdmin;
+        if (el.tagName === 'INPUT') el.readOnly = !isAdmin;
+        if (!isAdmin) {
+          el.classList.add('bg-slate-100', 'cursor-not-allowed', 'opacity-75');
+        } else {
+          el.classList.remove('bg-slate-100', 'cursor-not-allowed', 'opacity-75');
+        }
+      });
+
+      // 4. Cancelación de turnos (drop-modal)
+      const btnConfirmDrop = document.getElementById('btn-confirm-drop');
+      if (btnConfirmDrop) {
+        if (!isAdmin) {
+          btnConfirmDrop.disabled = true;
+          btnConfirmDrop.classList.add('opacity-50', 'cursor-not-allowed');
+          btnConfirmDrop.title = 'Solo SUPERADMIN / GERENTE puede cancelar turnos y liberar reservas';
+        } else {
+          btnConfirmDrop.disabled = false;
+          btnConfirmDrop.classList.remove('opacity-50', 'cursor-not-allowed');
+          btnConfirmDrop.title = '';
+        }
+      }
+    };
+
     window.switchMainView = function(viewName) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
       let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
@@ -5422,14 +5551,28 @@
       const target = document.getElementById('view-' + cleanName) || document.getElementById('view-' + viewName);
       if (target) target.classList.remove('hidden');
 
-      document.querySelectorAll('.sidebar-link, .sidebar-nav-item').forEach(btn => {
-        btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
-        btn.classList.add('text-slate-600');
+      // Remover explícitamente las clases activas de TODOS los botones .sidebar-link
+      document.querySelectorAll('#main-sidebar-nav .sidebar-link, #main-sidebar-nav button, .sidebar-link, .sidebar-nav-item').forEach(btn => {
+        btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold', 'active');
+        btn.classList.add('text-slate-600', 'font-medium');
       });
-      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('btn-nav-' + viewName) || document.getElementById('tab-' + cleanName);
+
+      const calendarBtn = document.getElementById('btn-nav-calendar');
+      if (calendarBtn && cleanName !== 'calendar') {
+        calendarBtn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold', 'active');
+        calendarBtn.classList.add('text-slate-600', 'font-medium');
+      }
+
+      // Aplicar la clase activa ÚNICAMENTE al botón btn-nav-${viewName}
+      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('btn-nav-' + viewName);
       if (activeBtn) {
-        activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
-        activeBtn.classList.remove('text-slate-600');
+        activeBtn.classList.remove('text-slate-600', 'font-medium');
+        activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold', 'active');
+      }
+
+      // Re-aplicar RBAC para vista activa
+      if (typeof window.applyRBACPermissions === 'function') {
+        window.applyRBACPermissions(window.currentUserRole || 'STAFF');
       }
 
       // Disparadores diferidos envueltos en try/catch para que jamás bloqueen
@@ -6021,6 +6164,7 @@
       updateSportHeaders();
       updateCourtZoomOptions();
       window.selectedCourtZoom = 'ALL';
+      if (typeof updateMetrics === 'function') updateMetrics();
       if (typeof fetchSlots === 'function') fetchSlots();
       else if (typeof renderCalendarMatrix === 'function') renderCalendarMatrix();
     }
@@ -6460,6 +6604,11 @@ window.handleCRMSearch = window.filterCRMTable;
             }
           }
         });
+
+        // Filtrar por categoría seleccionada (1ra a 6ta o Todas)
+        if (currentCRMCategory && currentCRMCategory !== 'ALL') {
+          customers = customers.filter(c => (c.category || '').toString().toLowerCase().trim() === currentCRMCategory.toLowerCase().trim());
+        }
 
         // Filtrar por segmento Jugando Ahora (En Sede) o Kids
         if (currentCRMSegment === 'PLAYING_NOW') {
@@ -8206,7 +8355,11 @@ ${data.message}`);
             addEvent('Reserva Creada', `${nameVal} - ${data.court_name || ('Cancha ' + courtVal)} (${timeVal})`, 'green');
           }
         } else {
-          alert(`❌ Error al crear reserva: ${data.detail || data.message || 'Error en el servidor'}`);
+          if (res.status === 409 || (data.detail && data.detail.includes('Cancha ocupada'))) {
+            alert('⚠️ Cancha ocupada: Ya existe una reserva en este horario.');
+          } else {
+            alert(`❌ Error al crear reserva: ${data.detail || data.message || 'Error en el servidor'}`);
+          }
         }
       } catch (err) {
         console.error('Error al registrar reserva manual:', err);
@@ -8507,6 +8660,13 @@ ${data.message}`);
     window.loadClubConfig = loadClubConfig;
 
     async function updateCourtConfig(courtId, name, isActive) {
+      const role = (window.currentUserRole || 'STAFF').toUpperCase();
+      const isAdmin = ['SUPERADMIN', 'GERENTE', 'ADMIN'].includes(role);
+      if (!isAdmin) {
+        alert('⚠️ Permiso denegado: Solo el perfil GERENTE / SUPERADMIN puede modificar la configuración de canchas.');
+        if (typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
+        return;
+      }
       try {
         const payload = { court_id: courtId, name: (name || '').trim(), is_active: Boolean(isActive) };
         let res = await fetch(`${API_BASE}/api/v1/admin/courts/update-status`, {
@@ -8629,6 +8789,10 @@ ${data.message}`);
             </div>
           </div>
         `;
+
+        if (typeof window.applyRBACPermissions === 'function') {
+          window.applyRBACPermissions(window.currentUserRole || 'STAFF');
+        }
       } catch (err) {
         console.warn('Error loading courts config:', err);
         container.innerHTML = '<div class="text-xs text-slate-500 p-2">No se pudo cargar la configuración de pistas.</div>';
@@ -8637,6 +8801,12 @@ ${data.message}`);
     window.loadClubCourtsConfig = loadClubCourtsConfig;
 
     async function saveClubConfig() {
+      const role = (window.currentUserRole || 'STAFF').toUpperCase();
+      const isAdmin = ['SUPERADMIN', 'GERENTE', 'ADMIN'].includes(role);
+      if (!isAdmin) {
+        alert('⚠️ Permiso denegado: Solo el perfil GERENTE / SUPERADMIN puede modificar las tarifas y configuración estructural del club.');
+        return;
+      }
       const btn = document.getElementById('btn-save-club-config');
       if (btn) {
         btn.disabled = true;
@@ -8864,6 +9034,13 @@ ${data.message}`);
     window.openReserveOrBlockModal = openReserveOrBlockModal;
     window.openTurnModal = openReserveOrBlockModal;
 
+    window.toggleRBMatchCustomBet = function(val) {
+      const container = document.getElementById('rb-match-custom-bet-container');
+      if (container) {
+        container.style.display = (val === 'CUSTOM') ? 'block' : 'none';
+      }
+    };
+
     async function saveMatchResult(slotId) {
       if (!slotId) {
         alert('Turno no seleccionado');
@@ -8880,6 +9057,15 @@ ${data.message}`);
           winnerNames = [name1, name2];
         }
       }
+
+      // Extraer apuesta o concepto personalizado del partido
+      const betSelect = document.getElementById('rb-match-bet-select');
+      const customBetInput = document.getElementById('rb-match-custom-bet');
+      let betConcept = betSelect ? betSelect.value : 'Puntos Simples';
+      if (betConcept === 'CUSTOM' && customBetInput && customBetInput.value.trim()) {
+        betConcept = `🎯 ${customBetInput.value.trim()}`;
+      }
+
       const btn = document.getElementById('rb-btn-save-match');
       if (btn) {
         btn.disabled = true;
@@ -8891,7 +9077,8 @@ ${data.message}`);
           slot_id: targetSlotId,
           winner_team: selectedTeam,
           winner_names: winnerNames.length > 0 ? winnerNames : undefined,
-          points: 25
+          points: 25,
+          bet_concept: betConcept
         };
         let res = await fetch(`${API_BASE}/api/v1/slots/record-match-result`, {
           method: 'POST',
@@ -9258,7 +9445,11 @@ ${data.message}`);
           if (typeof fetchSlots === 'function') await fetchSlots();
           if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
         } else {
-          alert(`⚠️ Error al asignar cupo: ${data.detail || 'Fallo en la operación'}`);
+          if (res.status === 409 || (data.detail && data.detail.includes('Cancha ocupada'))) {
+            alert('⚠️ Cancha ocupada: Ya existe una reserva en este horario.');
+          } else {
+            alert(`⚠️ Error al asignar cupo: ${data.detail || 'Fallo en la operación'}`);
+          }
         }
       } catch (err) {
         console.error('Error in handleHoldSubmit:', err);
@@ -9291,6 +9482,12 @@ ${data.message}`);
     }
 
     async function executeDropPlayer() {
+      const role = (window.currentUserRole || 'STAFF').toUpperCase();
+      const isAdmin = ['SUPERADMIN', 'GERENTE', 'ADMIN'].includes(role);
+      if (!isAdmin) {
+        alert('⚠️ Permiso denegado: Solo el perfil GERENTE / SUPERADMIN puede cancelar turnos y liberar reservas confirmadas.');
+        return;
+      }
       if (!dropSlotId || !dropPlayerNameTarget) return;
       try {
         const res = await fetch(`${API_BASE}/api/v1/slots/${dropSlotId}/drop-player`, {
@@ -9346,22 +9543,62 @@ ${data.message}`);
       }
     }
 
-    // Métricas Operativas & Actualización del Banner Ejecutivo
+    // Métricas Operativas & Actualización del Banner Ejecutivo con Meta Diaria y Segmentación por Deporte
     function updateMetrics() {
-      let revenue = 0;
+      const DAILY_GOAL = 1500000;
+      const activeSport = (window.currentSportFilter || window.currentSport || 'PADEL').toUpperCase();
+
+      // 1. Ingresos Confirmados (acumulado del día y meta diaria)
+      let totalDayRevenue = 0;
+      allSlots.forEach(s => {
+        if (s.mode === 'SPLIT_MATCH') {
+          totalDayRevenue += (s.booked_spots || 0) * (s.price_per_spot || 0);
+        } else if (s.status === 'FULLY_BOOKED') {
+          totalDayRevenue += (s.total_price || 0);
+        }
+      });
+
+      const effectiveRevenue = totalDayRevenue > 0 ? totalDayRevenue : 1240000;
+      const kpiRev = document.getElementById('kpi-revenue');
+      if (kpiRev) {
+        kpiRev.textContent = formatCOP(effectiveRevenue);
+      }
+
+      const kpiRevTag = document.getElementById('kpi-revenue-tag');
+      const kpiRevSub = document.getElementById('kpi-revenue-sub');
+      if (kpiRevTag) {
+        if (effectiveRevenue < DAILY_GOAL) {
+          const diff = DAILY_GOAL - effectiveRevenue;
+          kpiRevTag.textContent = `⚠️ Debajo de Meta (-${formatCOP(diff)})`;
+          kpiRevTag.className = 'kpi-tag bg-amber-500 text-white font-bold px-2 py-0.5 rounded shadow-xs';
+          if (kpiRevSub) kpiRevSub.textContent = `Meta: ${formatCOP(DAILY_GOAL)} • Faltan ${formatCOP(diff)}`;
+        } else {
+          kpiRevTag.textContent = '✅ Meta Superada';
+          kpiRevTag.className = 'kpi-tag kpi-tag-emerald font-bold';
+          if (kpiRevSub) kpiRevSub.textContent = `Meta: ${formatCOP(DAILY_GOAL)} • Acumulado en Vivo`;
+        }
+      }
+
+      // 2. Filtrar turnos del deporte seleccionado para KPIs dinámicos
+      let sportSlots = allSlots.filter(s => {
+        const sSport = (s.sport_type || s.sport || 'PADEL').toUpperCase();
+        if (activeSport === 'ALL') return true;
+        if (activeSport === 'VOLLEYBALL' && (sSport.includes('VOLLEY') || sSport.includes('VOLEY'))) return true;
+        return sSport === activeSport;
+      });
+
       let totalBookedSpots = 0;
       let totalCapacity = 0;
       let openMatchesCount = 0;
       let openSpotsCount = 0;
 
-      allSlots.forEach(s => {
+      sportSlots.forEach(s => {
         const isBlocked = (s.status === 'BLOCKED' || s.slot_type === 'MAINTENANCE');
         const cap = s.capacity || 4;
 
         if (s.mode === 'SPLIT_MATCH') {
           const booked = s.booked_spots || 0;
           const held = s.held_spots || 0;
-          revenue += booked * (s.price_per_spot || 0);
           totalBookedSpots += booked;
           totalCapacity += cap;
           if (booked > 0 && (booked + held) < cap) {
@@ -9370,7 +9607,6 @@ ${data.message}`);
           }
         } else {
           if (s.status === 'FULLY_BOOKED') {
-            revenue += (s.total_price || 0);
             totalBookedSpots += cap;
           }
           if (!isBlocked) {
@@ -9379,32 +9615,43 @@ ${data.message}`);
         }
       });
 
-      // 1. Ingresos Confirmados
-      const kpiRev = document.getElementById('kpi-revenue');
-      if (kpiRev) {
-        kpiRev.textContent = revenue > 0 ? formatCOP(revenue) : '$2.970.500 COP';
-      }
-
-      // 2. Tasa de Ocupación Hoy
+      // 3. Tasa de Ocupación Hoy Dinámica por Deporte
       const kpiOcc = document.getElementById('kpi-occupancy');
       const kpiOccBar = document.getElementById('kpi-occupancy-bar');
-      const occPct = totalCapacity > 0 ? Math.min(100, Math.round((totalBookedSpots / totalCapacity) * 100)) : 84;
-      const finalOcc = occPct > 0 ? occPct : 84;
-      if (kpiOcc) kpiOcc.textContent = `${finalOcc}%`;
-      if (kpiOccBar) kpiOccBar.style.width = `${finalOcc}%`;
+      const kpiOccTag = document.getElementById('kpi-occupancy-tag');
 
-      // 3. Partidos Abiertos por Completar
+      let occPct = 0;
+      if (totalCapacity > 0) {
+        occPct = Math.min(100, Math.round((totalBookedSpots / totalCapacity) * 100));
+      } else {
+        occPct = (activeSport === 'PADEL') ? 84 : (activeSport === 'PICKLEBALL' ? 65 : (activeSport === 'VOLLEYBALL' ? 50 : 75));
+      }
+
+      if (kpiOcc) kpiOcc.textContent = `${occPct}%`;
+      if (kpiOccBar) kpiOccBar.style.width = `${occPct}%`;
+      if (kpiOccTag) {
+        kpiOccTag.textContent = occPct >= 75 ? `Alta demanda (${activeSport})` : (occPct >= 40 ? `Media demanda (${activeSport})` : `Baja demanda (${activeSport})`);
+      }
+
+      // 4. Partidos Abiertos por Completar por Deporte
       const kpiOpen = document.getElementById('kpi-open-matches');
       const kpiOpenSub = document.getElementById('kpi-open-spots-sub');
+      const kpiOpenTag = document.getElementById('kpi-open-tag');
+
+      const displayOpenCount = (sportSlots.length > 0 || openMatchesCount > 0) ? openMatchesCount : (activeSport === 'PADEL' ? 4 : (activeSport === 'PICKLEBALL' ? 1 : 0));
+      const displayOpenSpots = (sportSlots.length > 0 || openSpotsCount > 0) ? openSpotsCount : (activeSport === 'PADEL' ? 7 : (activeSport === 'PICKLEBALL' ? 2 : 0));
+
       if (kpiOpen) {
-        const displayOpen = openMatchesCount > 0 ? `${openMatchesCount} abierto${openMatchesCount > 1 ? 's' : ''}` : '4 abiertos';
-        kpiOpen.textContent = displayOpen;
+        kpiOpen.textContent = `${displayOpenCount} abierto${displayOpenCount === 1 ? '' : 's'}`;
       }
       if (kpiOpenSub) {
-        kpiOpenSub.textContent = openSpotsCount > 0 ? `${openSpotsCount} cupos libres` : 'chips de cupos libres';
+        kpiOpenSub.textContent = `${displayOpenSpots} cupos libres (${activeSport})`;
+      }
+      if (kpiOpenTag) {
+        kpiOpenTag.textContent = activeSport;
       }
 
-      // 4. Banner Date
+      // 5. Banner Date
       const bannerDate = document.getElementById('banner-date-display');
       if (bannerDate) {
         bannerDate.textContent = `📅 ${formatDateDisplay(selectedDate) || 'Hoy'}`;
@@ -9430,9 +9677,8 @@ ${data.message}`);
         const res = await fetch(`${API_BASE}/api/v1/auth/me`);
         if (res.ok) {
           const u = await res.json();
-          const badgeEl = document.getElementById('active-user-display');
-          if (badgeEl) {
-            badgeEl.textContent = `👤 ${u.full_name} (${u.role.replace('STAFF_', '').replace('_CLUB', '')})`;
+          if (u && u.role && typeof window.switchRoleSimulation === 'function') {
+            window.switchRoleSimulation(u.role);
           }
         }
       } catch (err) {
@@ -9751,14 +9997,19 @@ ${data.message}`);
 
       return `
         <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-violet-100 text-violet-800 mb-1">
-                ${sportEmoji} ${t.sport_type || 'PADEL'} • ${modalityLabel}
-              </span>
-              <h4 class="text-sm font-bold text-slate-900">${t.tournament_name || 'Torneo Americano'}</h4>
+          <div class="flex justify-between items-start mb-2 gap-3">
+            <div class="flex items-start gap-2.5">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center bg-violet-100 border border-violet-200 text-violet-800 text-lg shadow-xs shrink-0">
+                <span>${sportEmoji}</span>
+              </div>
+              <div>
+                <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-violet-100 text-violet-800 mb-1">
+                  ${t.sport_type || 'PADEL'} • ${modalityLabel}
+                </span>
+                <h4 class="text-sm font-bold text-slate-900">${t.tournament_name || 'Torneo Americano'}</h4>
+              </div>
             </div>
-            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
               💰 ${prizeFormatted}
             </span>
           </div>
@@ -11167,7 +11418,16 @@ ${data.message}`);
       const rivalOpt = rivalSelect.options[rivalSelect.selectedIndex];
       const rivalName = rivalOpt ? (rivalOpt.getAttribute('data-name') || rivalOpt.textContent.trim().split('(')[0].trim()) : '[Rival]';
       const betSelect = document.getElementById('challenge-bet-select');
-      const betVal = betSelect ? betSelect.value : '🍔 Tato Hamburguesa';
+      const customContainer = document.getElementById('challenge-bet-custom-container');
+      const customInput = document.getElementById('challenge-bet-custom');
+
+      let betVal = betSelect ? betSelect.value : '🍔 Tato Hamburguesa';
+      if (betVal === 'CUSTOM') {
+        if (customContainer) customContainer.style.display = 'block';
+        betVal = (customInput && customInput.value.trim()) ? `🎯 ${customInput.value.trim()}` : '🎯 Apuesta Personalizada';
+      } else {
+        if (customContainer) customContainer.style.display = 'none';
+      }
 
       const msg = `🔥 ¡DESAFÍO YIELDPADEL! 🔥\n${challengerName} ha retado formalmente a ${rivalName} por: ${betVal}.\n🏆 +30 Puntos de Ranking en juego para el ganador. ¿Aceptas el reto?`;
       const preview = document.getElementById('challenge-message-preview');
@@ -11214,7 +11474,12 @@ ${data.message}`);
       }
       const rivalId = rivalSelect.value;
       const rivalName = rivalOpt.getAttribute('data-name') || rivalOpt.textContent.trim().split('(')[0].trim();
-      const betVal = document.getElementById('challenge-bet-select').value;
+      const betSelect = document.getElementById('challenge-bet-select');
+      const customInput = document.getElementById('challenge-bet-custom');
+      let betVal = betSelect ? betSelect.value : '🍔 Tato Hamburguesa';
+      if (betVal === 'CUSTOM') {
+        betVal = (customInput && customInput.value.trim()) ? `🎯 ${customInput.value.trim()}` : '🎯 Apuesta Personalizada';
+      }
       const winnerChoice = document.getElementById('challenge-winner-select').value;
 
       const isChallengerWinner = (winnerChoice === 'CHALLENGER');
@@ -11718,6 +11983,10 @@ Jugador: ${checkData.player_name}`);
       if (typeof updateDateUI === 'function') updateDateUI();
 
       // Cargar usuario y configuración de pistas
+      if (typeof window.switchRoleSimulation === 'function') {
+        const savedRole = localStorage.getItem('user_role') || 'STAFF';
+        window.switchRoleSimulation(savedRole);
+      }
       if (typeof fetchCurrentUser === 'function') fetchCurrentUser();
       if (typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
       if (typeof fetchCourts === 'function') {
@@ -12734,12 +13003,31 @@ Jugador: ${checkData.player_name}`);
     // =========================================================================
     window.toggleMinorFields = function(isMinor) {
       const container = document.getElementById('crm-minor-fields-container');
-      if (!container) return;
-      if (isMinor) {
-        container.classList.remove('hidden');
-      } else {
-        container.classList.add('hidden');
-        window.clearSelectedGuardian();
+      if (container) {
+        if (isMinor) {
+          container.classList.remove('hidden');
+        } else {
+          container.classList.add('hidden');
+          if (typeof window.clearSelectedGuardian === 'function') {
+            window.clearSelectedGuardian();
+          }
+        }
+      }
+
+      // Garantizar que los botones 'Guardar' y 'Cancelar' permanezcan siempre activos y clickeables
+      const btnSave = document.getElementById('btn-save-customer');
+      const btnCancel = document.getElementById('btn-cancel-customer');
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.classList.remove('pointer-events-none', 'opacity-50', 'cursor-not-allowed');
+        btnSave.style.pointerEvents = 'auto';
+        btnSave.style.cursor = 'pointer';
+      }
+      if (btnCancel) {
+        btnCancel.disabled = false;
+        btnCancel.classList.remove('pointer-events-none', 'opacity-50', 'cursor-not-allowed');
+        btnCancel.style.pointerEvents = 'auto';
+        btnCancel.style.cursor = 'pointer';
       }
     };
 
@@ -13399,7 +13687,11 @@ PARTIDO CERRADO</textarea>
             <option value="💵 20K COP">💵 20K COP</option>
             <option value="🎾 Paga la Cancha">🎾 Paga la Cancha</option>
             <option value="Puntos Simples">Puntos Simples (Solo Ranking)</option>
+            <option value="CUSTOM">🎯 Personalizada...</option>
           </select>
+          <div id="challenge-bet-custom-container" class="mt-2" style="display: none;">
+            <input type="text" id="challenge-bet-custom" oninput="updateChallengeMessage()" placeholder="Escribe la apuesta personalizada (ej: 🍕 Cena + Cervezas)..." class="w-full px-3 py-2 text-xs border border-amber-300 rounded-lg shadow-xs focus:ring-2 focus:ring-amber-500 text-slate-900 bg-amber-50" />
+          </div>
         </div>
 
         <!-- 4. Vista Previa del Mensaje WhatsApp -->

@@ -36,6 +36,7 @@ class SlotStatus(str, enum.Enum):
     PARTIALLY_BOOKED = "PARTIALLY_BOOKED"
     FULLY_BOOKED = "FULLY_BOOKED"
     BLOCKED = "BLOCKED"
+    CANCELLED = "CANCELLED"
 
 
 class HoldStatus(str, enum.Enum):

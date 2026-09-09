@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 
 if sys.platform == "win32":
@@ -30,9 +30,12 @@ def test_membership_perks_and_autodetection():
         courts = res_courts.json() if res_courts.status_code == 200 else []
         court_id = courts[0]["id"] if courts else 1
 
+        import time as _time
+        unique_date = f"2026-11-{int(_time.time() % 25) + 1:02d}"
+
         booking_payload = {
             "court_id": court_id,
-            "date": "2026-09-18",
+            "date": unique_date,
             "start_time": "11:00",
             "duration_minutes": 90,
             "mode": "FULL_COURT",
@@ -47,6 +50,21 @@ def test_membership_perks_and_autodetection():
         b_data = res_booking.json()
         assert b_data.get("status") in ("ok", "success")
         print(f"[OK] Manual booking with VIP tier TAPIA succeeded: {b_data.get('message')}")
+
+        # Test collision guard: booking the same slot again must return 409 Conflict
+        res_collision = client.post("/api/v1/slots/manual-booking", json={
+            "court_id": court_id,
+            "date": unique_date,
+            "start_time": "11:00",
+            "duration_minutes": 90,
+            "mode": "FULL_COURT",
+            "client_name": "Juan Perez",
+            "client_phone": "+573009998877",
+            "price": 100000.0,
+        })
+        assert res_collision.status_code == 409
+        assert "Cancha ocupada" in res_collision.json().get("detail", "")
+        print("[OK] Collision Guard anti-overbooking verified: HTTP 409 Conflict returned on occupied court.")
 
         # 3. Tournament registration with auto-detected membership discount
         res_t_list = client.get("/api/v1/tournaments/?sport=PADEL")

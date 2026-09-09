@@ -1145,18 +1145,57 @@ async def create_manual_booking(
             "customer_id": customer.id,
         }
 
-        # 5. Buscar si ya existe slot en esa cancha, fecha y hora
-        slot_res = await db.execute(
+        mode_enum = SlotMode.FULL_COURT if (payload.mode or "FULL_COURT").upper() == "FULL_COURT" else SlotMode.SPLIT_MATCH
+
+        # 5. Collision Guard: Buscar turnos solapados en la misma cancha y fecha
+        overlap_stmt = (
             select(TimeSlot)
             .where(
                 TimeSlot.court_id == target_court.id,
                 TimeSlot.date == b_date,
-                TimeSlot.start_time == start_t,
+                TimeSlot.start_time < end_t,
+                TimeSlot.end_time > start_t,
+                TimeSlot.status != SlotStatus.CANCELLED,
             )
         )
-        slot = slot_res.scalars().first()
+        overlap_res = await db.execute(overlap_stmt)
+        overlapping_slots = overlap_res.scalars().all()
 
-        mode_enum = SlotMode.FULL_COURT if (payload.mode or "FULL_COURT").upper() == "FULL_COURT" else SlotMode.SPLIT_MATCH
+        slot = None
+        for s in overlapping_slots:
+            if s.status == SlotStatus.BLOCKED or s.slot_type == "MAINTENANCE":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
+                )
+
+            if s.start_time == start_t:
+                slot = s
+                if mode_enum == SlotMode.FULL_COURT:
+                    curr_p = list(s.players_names or [])
+                    other_players = [p for p in curr_p if isinstance(p, dict) and p.get("phone") != client_phone]
+                    if s.status == SlotStatus.FULLY_BOOKED or len(other_players) > 0 or (s.booked_spots and s.booked_spots >= s.capacity):
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
+                        )
+                else:
+                    if s.mode == SlotMode.FULL_COURT and s.booked_spots > 0:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
+                        )
+                    if s.status == SlotStatus.FULLY_BOOKED or (s.booked_spots and s.booked_spots >= (s.capacity or cap)):
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
+                        )
+            else:
+                if s.status in (SlotStatus.FULLY_BOOKED, SlotStatus.PARTIALLY_BOOKED) or (s.booked_spots and s.booked_spots > 0):
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
+                    )
 
         if slot:
             # Slot existente -> actualizar
@@ -1227,6 +1266,8 @@ async def create_manual_booking(
             "status_slot": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
         }
 
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.error(f"Error en create_manual_booking: {traceback.format_exc()}")
         await db.rollback()
@@ -1285,6 +1326,11 @@ async def reserve_or_block_slot(
     validate_slot_not_past(slot)
 
     stype = (payload.slot_type or "MATCH").upper()
+    if slot.status == SlotStatus.BLOCKED and stype != "MAINTENANCE":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
+        )
     slot.slot_type = stype
 
     if payload.instructor_name:
@@ -2254,8 +2300,8 @@ async def assign_spot(
 
     if slot.status == SlotStatus.BLOCKED:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El slot se encuentra bloqueado para reservas.",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
         )
 
     now_utc = datetime.now(timezone.utc)
@@ -2268,10 +2314,10 @@ async def assign_spot(
     )
     available_spots = slot.capacity - slot.booked_spots - active_holds_spots
 
-    if payload.spots_count > available_spots:
+    if payload.spots_count > available_spots or slot.status == SlotStatus.FULLY_BOOKED:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"No hay suficientes cupos disponibles. Cupos disponibles: {available_spots}.",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
         )
 
     method_upper = payload.method.upper()

@@ -61,8 +61,8 @@ async def create_hold(
 
     if slot.status == SlotStatus.BLOCKED:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El slot se encuentra bloqueado para reservas",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
         )
 
     now_utc = datetime.now(timezone.utc)
@@ -83,17 +83,17 @@ async def create_hold(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Para modalidad Cancha Completa (FULL_COURT) se deben reservar exactamente {slot.capacity} cupos.",
             )
-        if available_spots < slot.capacity:
+        if available_spots < slot.capacity or slot.status == SlotStatus.FULLY_BOOKED:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="La cancha completa ya no se encuentra disponible.",
+                status_code=status.HTTP_409_CONFLICT,
+                detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
             )
         amount_to_pay = slot.total_price
     else:  # SPLIT_MATCH
-        if payload.spots_held > available_spots:
+        if payload.spots_held > available_spots or available_spots <= 0 or slot.status == SlotStatus.FULLY_BOOKED:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No hay suficientes cupos disponibles. Cupos restantes: {available_spots}.",
+                status_code=status.HTTP_409_CONFLICT,
+                detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
             )
         price_per_spot = slot.total_price / Decimal(slot.capacity)
         amount_to_pay = (price_per_spot * Decimal(payload.spots_held)).quantize(Decimal("0.01"))

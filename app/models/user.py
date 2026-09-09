@@ -9,7 +9,12 @@ BOGOTA_TZ = ZoneInfo("America/Bogota")
 
 class UserRole(str, enum.Enum):
     SUPERADMIN = "SUPERADMIN"
+    GERENTE = "GERENTE"
+    ADMIN = "ADMIN"
     ADMIN_CLUB = "ADMIN_CLUB"
+    STAFF = "STAFF"
+    RECEPCION = "RECEPCION"
+    AUXILIAR = "AUXILIAR"
     STAFF_RECEPCION = "STAFF_RECEPCION"
 
 
