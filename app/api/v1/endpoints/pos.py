@@ -34,6 +34,8 @@ class CreateOrderRequest(BaseModel):
     slot_id: Optional[int] = None
     customer_id: Optional[int] = None
     customer_name: str = "Cliente Mostrador"
+    customer_phone: Optional[str] = None
+    customer_tier: Optional[str] = None
     items: List[ProductItemCreate] = Field(default_factory=list)
     payment_status: str = "PENDING"  # 'PENDING', 'PAID'
 
@@ -415,6 +417,25 @@ async def create_or_add_order(
 
     total_added = Decimal("0.00")
 
+    # Detectar cortesía por membresía del cliente
+    target_cust = None
+    if payload.customer_id:
+        c_res = await db.execute(select(Customer).options(selectinload(Customer.membership_plan)).where(Customer.id == payload.customer_id))
+        target_cust = c_res.scalars().first()
+    elif payload.customer_phone:
+        c_res = await db.execute(select(Customer).options(selectinload(Customer.membership_plan)).where(Customer.phone == payload.customer_phone.strip()))
+        target_cust = c_res.scalars().first()
+    elif payload.customer_name and payload.customer_name.strip() not in ("Cliente Mostrador", "Cliente Barra"):
+        c_res = await db.execute(select(Customer).options(selectinload(Customer.membership_plan)).where(Customer.name.ilike(payload.customer_name.strip())))
+        target_cust = c_res.scalars().first()
+
+    customer_has_beverage_perk = False
+    effective_tier = (payload.customer_tier or (target_cust.membership_tier if target_cust else "") or "").strip().upper()
+    if effective_tier in ("TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON", "ORO", "PLATA"):
+        customer_has_beverage_perk = True
+    elif target_cust and target_cust.membership_plan and target_cust.membership_plan.includes_beverage_perk:
+        customer_has_beverage_perk = True
+
     for item in payload.items:
         prod_stmt = select(Product).where(Product.id == item.product_id)
         prod_res = await db.execute(prod_stmt)
@@ -427,7 +448,8 @@ async def create_or_add_order(
         product.stock = max(0, product.stock - qty)
 
         # Regla de Membresías: cortesía a $0 COP si es perk
-        if item.is_perk:
+        is_perk_effective = bool(item.is_perk or (customer_has_beverage_perk and product.is_membership_perk))
+        if is_perk_effective:
             unit_price = Decimal("0.00")
             subtotal = Decimal("0.00")
         else:
@@ -442,7 +464,7 @@ async def create_or_add_order(
             quantity=qty,
             unit_price=unit_price,
             subtotal=subtotal,
-            is_perk=item.is_perk,
+            is_perk=is_perk_effective,
         )
         db.add(order_item)
 
@@ -539,8 +561,25 @@ async def add_item_to_slot_order(
     # Descontar stock
     product.stock = max(0, product.stock - qty)
 
+    # Detectar cortesía de bebida por membresía
+    player_has_beverage_perk = False
+    if payload.player_name:
+        p_res = await db.execute(
+            select(Customer)
+            .options(selectinload(Customer.membership_plan))
+            .where(Customer.name.ilike(payload.player_name.strip()))
+        )
+        target_p = p_res.scalars().first()
+        if target_p:
+            if target_p.membership_plan and target_p.membership_plan.includes_beverage_perk:
+                player_has_beverage_perk = True
+            elif target_p.membership_tier and target_p.membership_tier.upper() in ("TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON", "ORO", "PLATA"):
+                player_has_beverage_perk = True
+
+    is_perk_effective = bool(payload.is_membership_perk or (player_has_beverage_perk and product.is_membership_perk))
+
     # Regla de cortesía por membresía ($0)
-    if payload.is_membership_perk:
+    if is_perk_effective:
         unit_price = Decimal("0.00")
         subtotal = Decimal("0.00")
     else:
@@ -553,7 +592,7 @@ async def add_item_to_slot_order(
         quantity=qty,
         unit_price=unit_price,
         subtotal=subtotal,
-        is_perk=payload.is_membership_perk,
+        is_perk=is_perk_effective,
     )
     db.add(order_item)
     order.total_amount += subtotal

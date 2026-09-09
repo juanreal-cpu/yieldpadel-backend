@@ -3177,8 +3177,11 @@
                       <input type="hidden" id="quick-sale-customer-name" value="Cliente Mostrador" />
                     </div>
 
+                    <!-- Badge informativo de Socio Detectado -->
+                    <div id="pos-customer-badge" class="hidden" style="display: none;"></div>
+
                     <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1">Membresía del Cliente:</label>
+                      <label class="block text-xs font-bold text-slate-700 mb-1">Membresía Aplicada:</label>
                       <select id="quick-sale-membership-select" data-alias="pos-customer-membership" onchange="onQuickSaleMembershipChange()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg shadow-xs focus:ring-2 focus:ring-slate-900 text-slate-900 bg-white">
                         <option value="ESTANDAR">Tarifa General (Sin Membresía)</option>
                         <option value="TAPIA">👑 TAPIA (Cortesía Bebida $0)</option>
@@ -3190,6 +3193,7 @@
                         <option value="PLATA">🥈 PLATA (Tarifa Preferente + Bebida)</option>
                         <option value="BRONCE">🥉 BRONCE (Tarifa Preferente)</option>
                       </select>
+                      <span class="text-[10px] text-slate-400 font-medium mt-0.5 block">Se asigna automáticamente al seleccionar un socio del CRM.</span>
                     </div>
                   </div>
 
@@ -4228,9 +4232,10 @@
           <div id="join-tourn-subtitle" style="font-size: 0.75rem; color: #64748B; margin-top: 0.2rem;">Pistas y horario</div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Jugador 1 (Nombre Completo)</label>
-          <input type="text" id="join-p1-name" class="form-control font-bold" required placeholder="Ej: Juan Real" />
+        <div class="form-group relative">
+          <label class="form-label font-bold text-slate-700">Jugador 1 (Nombre Completo - Buscar en CRM)</label>
+          <input type="text" id="join-p1-name" class="form-control font-bold" required placeholder="Escribe para buscar cliente..." autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 1)" />
+          <div id="join-p1-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
         </div>
 
         <div class="form-group">
@@ -4238,9 +4243,10 @@
           <input type="tel" id="join-p1-phone" class="form-control" required placeholder="+57 313 2058547" />
         </div>
 
-        <div class="form-group">
+        <div class="form-group relative">
           <label class="form-label font-bold text-slate-700">Jugador 2 (Pareja - Opcional)</label>
-          <input type="text" id="join-p2-name" class="form-control" placeholder="Ej: Camilo Real (o dejar vacío para sorteo)" />
+          <input type="text" id="join-p2-name" class="form-control" placeholder="Escribe para buscar o dejar vacío para sorteo" autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 2)" />
+          <div id="join-p2-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
         </div>
 
         <div class="form-group">
@@ -4250,15 +4256,20 @@
 
         <div class="form-group">
           <label class="form-label font-bold text-slate-700">Membresía Aplicable (Descuento Automático)</label>
-          <select id="join-membership-tier" class="form-control font-bold text-indigo-700">
+          <select id="join-membership-tier" class="form-control font-bold text-indigo-700 bg-slate-50 cursor-not-allowed" disabled>
             <option value="ESTANDAR">ESTÁNDAR (Tarifa normal $45.000 COP)</option>
             <option value="TAPIA">👑 TAPIA (40% desc - Paga $27.000 COP)</option>
             <option value="COELLO">⚡ COELLO (30% desc - Paga $31.500 COP)</option>
             <option value="GALAN">🎾 GALÁN (20% desc - Paga $36.000 COP)</option>
             <option value="CHINGOTTO">🌅 CHINGOTTO (10% desc - Paga $40.500 COP)</option>
             <option value="LEBRON">🐺 LEBRÓN (20% desc - Paga $36.000 COP)</option>
+            <option value="ORO">🏆 ORO (40% desc - Paga $27.000 COP)</option>
+            <option value="PLATA">🥈 PLATA (30% desc - Paga $31.500 COP)</option>
           </select>
         </div>
+
+        <!-- Banner reactivo de descuento de torneo -->
+        <div id="join-discount-notice" class="hidden" style="display: none; background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; color: #6B21A8; font-weight: 700;"></div>
 
         <div class="modal-actions">
           <button type="button" onclick="closeJoinAmericanoModal()" class="btn-secondary">Cancelar</button>
@@ -4849,9 +4860,10 @@
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Nombre del Cliente</label>
-            <input type="text" id="mb-client-name" class="form-control" placeholder="Ej: Juan Pérez" required style="font-weight: 600;" />
+          <div class="form-group relative" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Cliente (Buscar en CRM)</label>
+            <input type="text" id="mb-client-name" class="form-control" placeholder="Escribe para buscar cliente..." autocomplete="off" required style="font-weight: 600;" oninput="window.handleManualBookingCRMSearch(event)" />
+            <div id="mb-client-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
           </div>
           <div class="form-group" style="margin-bottom: 0;">
             <label class="form-label" style="font-weight: 700; color: #475569;">Teléfono / WhatsApp</label>
@@ -4859,21 +4871,46 @@
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
           <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Precio Acordado (COP)</label>
-            <input type="number" id="mb-price" class="form-control" placeholder="80000" value="80000" step="1000" min="0" required style="font-weight: 700; color: #047857;" />
+            <label class="form-label" style="font-weight: 700; color: #475569;">Membresía / Tipo Socio</label>
+            <select id="mb-membership-tier" class="form-control bg-slate-50 cursor-not-allowed" disabled style="font-weight: 700; color: #4338CA;">
+              <option value="ESTANDAR">Tarifa General (Sin Membresía)</option>
+              <option value="TAPIA">👑 TAPIA (Socio VIP)</option>
+              <option value="COELLO">⚡ COELLO (Socio VIP)</option>
+              <option value="GALAN">🎾 GALÁN (Socio VIP)</option>
+              <option value="CHINGOTTO">🌅 CHINGOTTO (Socio Matutino)</option>
+              <option value="LEBRON">🐺 LEBRÓN (Socio Diurno)</option>
+              <option value="ORO">🏆 ORO (Socio VIP)</option>
+              <option value="PLATA">🥈 PLATA (Socio)</option>
+            </select>
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Nivel / Categoría (Opcional)</label>
+            <label class="form-label" style="font-weight: 700; color: #475569;">Nivel / Categoría</label>
             <select id="mb-category" class="form-control" style="font-weight: 600;">
               <option value="4ta">4ta Categoría (Intermedio)</option>
               <option value="5ta">5ta Categoría (Iniciación)</option>
               <option value="3ra">3ra Categoría (Avanzado)</option>
               <option value="2da">2da Categoría</option>
               <option value="1ra">1ra Categoría (Pro)</option>
+              <option value="6ta">6ta Categoría</option>
               <option value="Open">Abierto</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Banner reactivo de beneficio de socio -->
+        <div id="mb-member-benefit-alert" class="hidden" style="display: none; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; color: #065F46; font-weight: 600;">
+          👑 <strong>Socio Activo:</strong> Exención de pago aplicada ($0 COP) por membresía activa.
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 700; color: #475569;">Precio Acordado (COP)</label>
+            <input type="number" id="mb-price" class="form-control" placeholder="80000" value="80000" step="1000" min="0" required style="font-weight: 700; color: #047857;" />
+          </div>
+          <div class="form-group flex items-end" style="margin-bottom: 0;">
+            <span id="mb-price-hint" class="text-[11px] text-slate-500 font-medium pb-2">Tarifa general calculada</span>
           </div>
         </div>
 
@@ -5431,12 +5468,12 @@
 
     // =========================================================================
     window.DEFAULT_CRM_PLAYERS = window.DEFAULT_CRM_PLAYERS || [
-      { id: 1, name: "Juan Real Florez", phone: "+573132058547", email: "juan@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Reggaeton / Urbano", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Tapia)", membership_tier: "TAPIA", membership_plan_id: 1, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 1, total_bookings_completed: 24, ranking_points: 1850, titles_count: 5, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 2, name: "Camilo Real", phone: "+573001234567", email: "camilo@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Rock / Clásico", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Coello)", membership_tier: "COELLO", membership_plan_id: 2, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 19, ranking_points: 1520, titles_count: 3, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 3, name: "David P", phone: "+573109876543", email: "david@yieldpadel.com", category: "3ra", gender: "Masculino", preferred_music: "Electrónica / House", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Galán)", membership_tier: "GALAN", membership_plan_id: 3, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 16, ranking_points: 1340, titles_count: 2, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 4, name: "Andrés Gómez", phone: "+573155551122", email: "andres@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Pop / Top Hits", preferred_play_time: "Mañana (06:00 - 10:00)", client_type: "Socio Matutino (Chingotto)", membership_tier: "CHINGOTTO", membership_plan_id: 4, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 12, ranking_points: 980, titles_count: 1, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 5, name: "Mateo Ruiz", phone: "+573174443322", email: "mateo@yieldpadel.com", category: "5ta", gender: "Masculino", preferred_music: "Salsa / Crossover", preferred_play_time: "Mediodía (10:00 - 16:00)", client_type: "Socio Diurno (Lebrón)", membership_tier: "LEBRON", membership_plan_id: 5, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 8, ranking_points: 750, titles_count: 0, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 6, name: "Sofía Martínez", phone: "+573187778899", email: "sofia@yieldpadel.com", category: "6ta", gender: "Femenino", preferred_music: "Pop / Top Hits", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Estándar", membership_tier: "ESTANDAR", membership_plan_id: null, membership_start_date: null, membership_end_date: null, academy_classes_used: 0, total_bookings_completed: 2, ranking_points: 210, titles_count: 0, is_first_visit: true, onboarding_status: "PENDING" }
+      { id: 1, name: "Juan Real Florez", phone: "+573132058547", email: "juan@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Reggaeton / Urbano", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Tapia)", membership_tier: "TAPIA", membership_plan_id: 1, plan_name: "TAPIA", americano_discount_pct: 40, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 1, total_bookings_completed: 24, ranking_points: 1850, titles_count: 5, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 2, name: "Camilo Real", phone: "+573001234567", email: "camilo@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Rock / Clásico", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Coello)", membership_tier: "COELLO", membership_plan_id: 2, plan_name: "COELLO", americano_discount_pct: 30, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 19, ranking_points: 1520, titles_count: 3, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 3, name: "David P", phone: "+573109876543", email: "david@yieldpadel.com", category: "3ra", gender: "Masculino", preferred_music: "Electrónica / House", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Galán)", membership_tier: "GALAN", membership_plan_id: 3, plan_name: "GALAN", americano_discount_pct: 20, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 16, ranking_points: 1340, titles_count: 2, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 4, name: "Andrés Gómez", phone: "+573155551122", email: "andres@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Pop / Top Hits", preferred_play_time: "Mañana (06:00 - 10:00)", client_type: "Socio Matutino (Chingotto)", membership_tier: "CHINGOTTO", membership_plan_id: 4, plan_name: "CHINGOTTO", americano_discount_pct: 10, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 12, ranking_points: 980, titles_count: 1, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 5, name: "Mateo Ruiz", phone: "+573174443322", email: "mateo@yieldpadel.com", category: "5ta", gender: "Masculino", preferred_music: "Salsa / Crossover", preferred_play_time: "Mediodía (10:00 - 16:00)", client_type: "Socio Diurno (Lebrón)", membership_tier: "LEBRON", membership_plan_id: 5, plan_name: "LEBRON", americano_discount_pct: 20, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 8, ranking_points: 750, titles_count: 0, is_first_visit: false, onboarding_status: "WELCOMED" },
+      { id: 6, name: "Sofía Martínez", phone: "+573187778899", email: "sofia@yieldpadel.com", category: "6ta", gender: "Femenino", preferred_music: "Pop / Top Hits", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Estándar", membership_tier: "ESTANDAR", membership_plan_id: null, plan_name: null, americano_discount_pct: 0, includes_beverage_perk: false, membership_start_date: null, membership_end_date: null, academy_classes_used: 0, total_bookings_completed: 2, ranking_points: 210, titles_count: 0, is_first_visit: true, onboarding_status: "PENDING" }
     ];
     window.cachedPlayers = window.cachedPlayers || window.DEFAULT_CRM_PLAYERS;
     window.allCRMCustomers = window.allCRMCustomers || window.DEFAULT_CRM_PLAYERS;
@@ -5461,7 +5498,8 @@
         normalizeStr(p.name).includes(cleanQuery) ||
         (p.phone && p.phone.includes(query)) ||
         normalizeStr(p.category).includes(cleanQuery) ||
-        normalizeStr(p.membership_tier).includes(cleanQuery)
+        normalizeStr(p.membership_tier).includes(cleanQuery) ||
+        normalizeStr(p.plan_name).includes(cleanQuery)
       ).slice(0, 8);
 
       if (matches.length === 0) {
@@ -5472,9 +5510,10 @@
       }
 
       dropdownEl.innerHTML = matches.map((p, mIdx) => {
-        const tier = p.membership_tier || 'ESTANDAR';
+        const tier = p.membership_tier || p.tier || 'ESTANDAR';
         const tierBadgeClass = (tier === 'ORO' || tier === 'TAPIA' || tier === 'COELLO' || tier === 'GALAN') ? 'bg-amber-100 text-amber-800' :
                                (tier === 'PLATA' || tier === 'CHINGOTTO') ? 'bg-slate-200 text-slate-700' :
+                               (tier === 'BRONCE' || tier === 'LEBRON') ? 'bg-indigo-100 text-indigo-800' :
                                'bg-emerald-100 text-emerald-800';
         return `
         <div class="crm-dropdown-item px-4 py-2.5 hover:bg-slate-50 cursor-pointer text-xs flex justify-between items-center transition-colors border-b border-slate-50 last:border-0"
@@ -5495,16 +5534,31 @@
       dropdownEl.querySelectorAll('.crm-dropdown-item').forEach(item => {
         item.addEventListener('click', (e) => {
           e.stopPropagation();
-          const mIdx = parseInt(item.getAttribute('data-match-idx'));
+          const mIdx = parseInt(item.getAttribute('data-match-idx'), 10);
           const matchObj = matches[mIdx] || {};
+          const selectedTier = (matchObj.membership_tier || item.getAttribute('data-tier') || 'ESTANDAR').toUpperCase();
           const pData = {
             ...matchObj,
             id: matchObj.id || item.getAttribute('data-id'),
             name: item.getAttribute('data-name'),
             phone: item.getAttribute('data-phone'),
-            tier: item.getAttribute('data-tier'),
-            membership_tier: matchObj.membership_tier || item.getAttribute('data-tier'),
-            category: item.getAttribute('data-cat')
+            tier: selectedTier,
+            membership_tier: selectedTier,
+            category: item.getAttribute('data-cat'),
+            membership_plan_id: matchObj.membership_plan_id || null,
+            plan_name: matchObj.plan_name || (selectedTier !== 'ESTANDAR' ? selectedTier : null),
+            americano_discount_pct: matchObj.americano_discount_pct !== undefined ? matchObj.americano_discount_pct : (
+              selectedTier === 'TAPIA' ? 40 :
+              selectedTier === 'COELLO' ? 30 :
+              selectedTier === 'GALAN' ? 20 :
+              selectedTier === 'CHINGOTTO' ? 10 :
+              selectedTier === 'LEBRON' ? 20 :
+              selectedTier === 'ORO' ? 40 :
+              selectedTier === 'PLATA' ? 30 : 0
+            ),
+            includes_beverage_perk: matchObj.includes_beverage_perk !== undefined ? Boolean(matchObj.includes_beverage_perk) : (
+              ['TAPIA', 'COELLO', 'GALAN', 'CHINGOTTO', 'LEBRON', 'ORO', 'PLATA'].includes(selectedTier)
+            )
           };
           dropdownEl.classList.add('hidden');
           dropdownEl.style.display = 'none';
@@ -5530,7 +5584,7 @@
     // Cerrar los dropdowns abiertos si el usuario hace clic afuera
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.relative')) {
-        document.querySelectorAll('#pos-customer-dropdown, #turn-crm-dropdown, #hold-crm-dropdown, #access-player-dropdown').forEach(d => {
+        document.querySelectorAll('#pos-customer-dropdown, #turn-crm-dropdown, #hold-crm-dropdown, #access-player-dropdown, #mb-client-dropdown, #join-p1-dropdown, #join-p2-dropdown').forEach(d => {
           d.classList.add('hidden');
           d.style.display = 'none';
         });
@@ -7915,6 +7969,31 @@ ${data.message}`);
         dateInput.value = (typeof selectedDate !== 'undefined' && selectedDate) ? selectedDate : getColombiaTodayString();
       }
 
+      // Reset campos CRM y alertas
+      const nameInp = document.getElementById('mb-client-name');
+      if (nameInp) nameInp.value = '';
+      const phoneInp = document.getElementById('mb-client-phone');
+      if (phoneInp) phoneInp.value = '';
+      const tierSelect = document.getElementById('mb-membership-tier');
+      if (tierSelect) {
+        tierSelect.value = 'ESTANDAR';
+        tierSelect.disabled = true;
+      }
+      const catSelect = document.getElementById('mb-category');
+      if (catSelect) catSelect.value = '4ta';
+      const benefitAlert = document.getElementById('mb-member-benefit-alert');
+      if (benefitAlert) {
+        benefitAlert.classList.add('hidden');
+        benefitAlert.style.display = 'none';
+      }
+      const priceHint = document.getElementById('mb-price-hint');
+      if (priceHint) priceHint.textContent = 'Tarifa general calculada';
+      const dropDown = document.getElementById('mb-client-dropdown');
+      if (dropDown) {
+        dropDown.classList.add('hidden');
+        dropDown.style.display = 'none';
+      }
+
       // Pre-seleccionar deporte activo
       const sportSelect = document.getElementById('mb-sport');
       if (sportSelect) {
@@ -7955,6 +8034,52 @@ ${data.message}`);
       modal.style.display = 'flex';
     }
     window.openManualBookingModal = openManualBookingModal;
+
+    window.handleManualBookingCRMSearch = function(e) {
+      const input = e && e.target ? e.target : document.getElementById('mb-client-name');
+      const dropdown = document.getElementById('mb-client-dropdown');
+      if (!input || !dropdown) return;
+
+      window.renderCRMSearchDropdown(input, dropdown, (player) => {
+        input.value = player.name;
+        const phoneEl = document.getElementById('mb-client-phone');
+        if (phoneEl && player.phone) phoneEl.value = player.phone;
+
+        const catEl = document.getElementById('mb-category');
+        if (catEl && player.category) catEl.value = player.category;
+
+        const targetTier = (player.membership_tier || player.tier || 'ESTANDAR').toUpperCase();
+        const tierSelect = document.getElementById('mb-membership-tier');
+        if (tierSelect) {
+          tierSelect.value = targetTier;
+          tierSelect.disabled = true;
+          tierSelect.classList.add('bg-slate-50', 'cursor-not-allowed');
+        }
+
+        const isMember = targetTier !== 'ESTANDAR';
+        const priceInput = document.getElementById('mb-price');
+        const priceHint = document.getElementById('mb-price-hint');
+        const benefitAlert = document.getElementById('mb-member-benefit-alert');
+
+        if (isMember) {
+          if (priceInput) priceInput.value = '0';
+          if (benefitAlert) {
+            benefitAlert.classList.remove('hidden');
+            benefitAlert.style.display = 'block';
+            benefitAlert.innerHTML = `👑 <strong>Socio Activo (${targetTier}):</strong> Exención de pago previa aplicada ($0 COP) por beneficio de membresía.`;
+          }
+          if (priceHint) priceHint.textContent = `👑 Socio ${targetTier} ($0 COP exento)`;
+        } else {
+          if (benefitAlert) {
+            benefitAlert.classList.add('hidden');
+            benefitAlert.style.display = 'none';
+          }
+          const sportVal = document.getElementById('mb-sport') ? document.getElementById('mb-sport').value : 'PADEL';
+          onManualBookingSportChange(sportVal);
+          if (priceHint) priceHint.textContent = 'Tarifa general calculada';
+        }
+      });
+    };
 
     function closeManualBookingModal() {
       const modal = document.getElementById('modal-manual-booking');
@@ -8020,6 +8145,7 @@ ${data.message}`);
       const phoneVal = document.getElementById('mb-client-phone').value.trim();
       const priceVal = parseFloat(document.getElementById('mb-price').value || '0');
       const catVal = document.getElementById('mb-category').value;
+      const tierVal = (document.getElementById('mb-membership-tier') ? document.getElementById('mb-membership-tier').value : 'ESTANDAR');
 
       if (!nameVal || !phoneVal || !dateVal || !timeVal) {
         alert('Por favor completa todos los campos requeridos.');
@@ -8036,7 +8162,8 @@ ${data.message}`);
         client_name: nameVal,
         client_phone: phoneVal,
         price: priceVal,
-        category: catVal
+        category: catVal,
+        client_tier: tierVal
       };
 
       const origHtml = btn ? btn.innerHTML : '<span>➕</span> <span>Confirmar Reserva</span>';
@@ -9573,10 +9700,91 @@ ${data.message}`);
       document.getElementById('join-tourn-slots').value = slotIds || '';
       document.getElementById('join-tourn-title').textContent = name || 'Torneo Americano';
       document.getElementById('join-tourn-subtitle').textContent = `${date || ''} • Horario: ${startTime || ''}`;
+
+      // Reset inputs & perks
+      const p1Inp = document.getElementById('join-p1-name');
+      if (p1Inp) p1Inp.value = '';
+      const p1Phone = document.getElementById('join-p1-phone');
+      if (p1Phone) p1Phone.value = '';
+      const p2Inp = document.getElementById('join-p2-name');
+      if (p2Inp) p2Inp.value = '';
+      const p2Phone = document.getElementById('join-p2-phone');
+      if (p2Phone) p2Phone.value = '';
+
+      const tierSelect = document.getElementById('join-membership-tier');
+      if (tierSelect) {
+        tierSelect.value = 'ESTANDAR';
+        tierSelect.disabled = true;
+      }
+      const discNotice = document.getElementById('join-discount-notice');
+      if (discNotice) {
+        discNotice.classList.add('hidden');
+        discNotice.style.display = 'none';
+        discNotice.innerHTML = '';
+      }
+      const p1Drop = document.getElementById('join-p1-dropdown');
+      if (p1Drop) {
+        p1Drop.classList.add('hidden');
+        p1Drop.style.display = 'none';
+      }
+      const p2Drop = document.getElementById('join-p2-dropdown');
+      if (p2Drop) {
+        p2Drop.classList.add('hidden');
+        p2Drop.style.display = 'none';
+      }
+
       const modal = document.getElementById('join-tournament-modal');
       if (modal) modal.classList.add('active');
     }
     window.openJoinAmericanoModal = openJoinAmericanoModal;
+
+    window.handleJoinTournCRMSearch = function(e, playerNum) {
+      const input = e && e.target ? e.target : document.getElementById(playerNum === 1 ? 'join-p1-name' : 'join-p2-name');
+      const dropdown = document.getElementById(playerNum === 1 ? 'join-p1-dropdown' : 'join-p2-dropdown');
+      if (!input || !dropdown) return;
+
+      window.renderCRMSearchDropdown(input, dropdown, (player) => {
+        input.value = player.name;
+        const phoneEl = document.getElementById(playerNum === 1 ? 'join-p1-phone' : 'join-p2-phone');
+        if (phoneEl && player.phone) phoneEl.value = player.phone;
+
+        if (playerNum === 1) {
+          const targetTier = (player.membership_tier || player.tier || 'ESTANDAR').toUpperCase();
+          const tierSelect = document.getElementById('join-membership-tier');
+          if (tierSelect) {
+            tierSelect.value = targetTier;
+            tierSelect.disabled = true;
+            tierSelect.classList.add('bg-slate-50', 'cursor-not-allowed');
+          }
+
+          const discNotice = document.getElementById('join-discount-notice');
+          const basePrice = 45000;
+          let discPct = player.americano_discount_pct || 0;
+          if (!discPct) {
+            if (targetTier === 'TAPIA' || targetTier === 'ORO') discPct = 40;
+            else if (targetTier === 'COELLO' || targetTier === 'PLATA') discPct = 30;
+            else if (targetTier === 'GALAN' || targetTier === 'LEBRON') discPct = 20;
+            else if (targetTier === 'CHINGOTTO') discPct = 10;
+          }
+
+          if (discPct > 0) {
+            const savings = Math.round(basePrice * (discPct / 100));
+            const finalFee = basePrice - savings;
+            if (discNotice) {
+              discNotice.classList.remove('hidden');
+              discNotice.style.display = 'block';
+              discNotice.innerHTML = `🎉 <strong>Membresía ${targetTier} detectada (-${discPct}%):</strong> Tarifa final ${formatCOP(finalFee)} (Ahorro: ${formatCOP(savings)} COP).`;
+            }
+          } else {
+            if (discNotice) {
+              discNotice.classList.add('hidden');
+              discNotice.style.display = 'none';
+              discNotice.innerHTML = '';
+            }
+          }
+        }
+      });
+    };
 
     function closeJoinAmericanoModal() {
       const modal = document.getElementById('join-tournament-modal');
@@ -9594,7 +9802,7 @@ ${data.message}`);
       const p1Phone = document.getElementById('join-p1-phone').value.trim();
       const p2Name = document.getElementById('join-p2-name').value.trim();
       const p2Phone = document.getElementById('join-p2-phone').value.trim();
-      const membership = document.getElementById('join-membership-tier').value;
+      const membership = (document.getElementById('join-membership-tier') ? document.getElementById('join-membership-tier').value : 'ESTANDAR');
 
       const slotIds = slotsStr ? slotsStr.split(',').map(s => parseInt(s.trim(), 10)).filter(Boolean) : [];
 
@@ -10543,19 +10751,30 @@ ${data.message}`);
       const prodName = name || (prod ? prod.name : 'Producto');
       const prodPrice = (price !== undefined && price !== null) ? Number(price) : (prod ? prod.price : 0);
       const prodStock = prod ? prod.stock : 99;
-      const isPerk = prod ? prod.is_membership_perk : false;
+      const isPerkProd = prod ? Boolean(prod.is_membership_perk) : false;
+
+      // Detectar si el cliente actual seleccionado tiene cortesía de bebidas activa
+      const cust = window.currentPosCustomer;
+      const tierSelect = document.getElementById('quick-sale-membership-select') || document.getElementById('pos-customer-membership');
+      const tierVal = (cust && (cust.membership_tier || cust.tier)) ? (cust.membership_tier || cust.tier) : (tierSelect ? tierSelect.value : 'ESTANDAR');
+      const hasPerkCovered = Boolean(
+        (cust && cust.includes_beverage_perk) ||
+        ['TAPIA', 'COELLO', 'GALAN', 'CHINGOTTO', 'LEBRON', 'ORO', 'PLATA'].includes(String(tierVal).toUpperCase())
+      );
+      const shouldBePerk = isPerkProd && hasPerkCovered;
 
       const existing = window.quickSaleCart.find(it => it.product_id === pId);
       if (existing) {
         existing.quantity += 1;
+        if (shouldBePerk) existing.is_perk = true;
       } else {
         window.quickSaleCart.push({
           product_id: pId,
           name: prodName,
           price: prodPrice,
           stock: prodStock,
-          is_membership_perk: isPerk,
-          is_perk: false,
+          is_membership_perk: isPerkProd,
+          is_perk: shouldBePerk,
           quantity: 1
         });
       }
@@ -10601,24 +10820,49 @@ ${data.message}`);
     }
     window.onQuickSaleMembershipChange = onQuickSaleMembershipChange;
 
+    window.clearPosCustomer = function() {
+      window.currentPosCustomer = null;
+      const inputEl = document.getElementById('pos-customer-search');
+      if (inputEl) inputEl.value = '';
+      const hiddenName = document.getElementById('quick-sale-customer-name');
+      if (hiddenName) hiddenName.value = 'Cliente Mostrador';
+      const badgeEl = document.getElementById('pos-customer-badge');
+      if (badgeEl) {
+        badgeEl.classList.add('hidden');
+        badgeEl.style.display = 'none';
+        badgeEl.innerHTML = '';
+      }
+      const tierSelect = document.getElementById('pos-customer-membership') || document.getElementById('quick-sale-membership-select');
+      if (tierSelect) {
+        tierSelect.value = 'ESTANDAR';
+        tierSelect.disabled = false;
+        tierSelect.classList.remove('bg-slate-100', 'cursor-not-allowed');
+      }
+      if (window.quickSaleCart && window.quickSaleCart.length > 0) {
+        window.quickSaleCart.forEach(it => {
+          it.is_perk = false;
+        });
+      }
+      renderQuickSaleCart();
+    };
+
     window.checkMembershipPerks = function(tier) {
       const isVipTier = tier && tier !== 'ESTANDAR';
       if (window.quickSaleCart && window.quickSaleCart.length > 0) {
         window.quickSaleCart.forEach(it => {
-          if (isVipTier && (it.category === 'BEBIDAS' || (it.name && it.name.toLowerCase().includes('agua')))) {
-            it.is_membership_perk = true;
+          if (isVipTier && it.is_membership_perk) {
+            it.is_perk = true;
           }
         });
       }
-      if (typeof onQuickSaleMembershipChange === 'function') {
-        onQuickSaleMembershipChange();
-      }
+      renderQuickSaleCart();
     };
 
     window.handlePosCRMSearch = function(e) {
       const inputEl = e && e.target ? e.target : (e || document.getElementById('pos-customer-search'));
       const dropdownEl = document.getElementById('pos-customer-dropdown');
       const hiddenName = document.getElementById('quick-sale-customer-name');
+      const badgeEl = document.getElementById('pos-customer-badge');
       if (hiddenName && inputEl) {
         hiddenName.value = inputEl.value.trim() || 'Cliente Mostrador';
       }
@@ -10627,34 +10871,47 @@ ${data.message}`);
         inputEl.value = player.name;
         if (hiddenName) hiddenName.value = player.name;
         window.currentPosCustomer = player;
+
         const tierSelect = document.getElementById('pos-customer-membership') || document.getElementById('quick-sale-membership-select');
-        if (tierSelect && tierSelect.options) {
-          const targetTier = player.tier || 'ESTANDAR';
-          let matched = false;
-          for (let i = 0; i < tierSelect.options.length; i++) {
-            if (tierSelect.options[i].value === targetTier || tierSelect.options[i].value.toLowerCase() === targetTier.toLowerCase()) {
-              tierSelect.selectedIndex = i;
-              matched = true;
-              break;
-            }
-          }
-          if (!matched) {
-            for (let i = 0; i < tierSelect.options.length; i++) {
-              if (tierSelect.options[i].text.toLowerCase().includes(targetTier.toLowerCase())) {
-                tierSelect.selectedIndex = i;
-                matched = true;
-                break;
-              }
-            }
-          }
-          if (matched) {
-            tierSelect.value = tierSelect.options[tierSelect.selectedIndex].value;
-          } else {
-            tierSelect.value = targetTier;
-          }
-          tierSelect.dispatchEvent(new Event('change'));
+        const targetTier = (player.membership_tier || player.tier || 'ESTANDAR').toUpperCase();
+
+        if (tierSelect) {
+          tierSelect.value = targetTier;
+          tierSelect.disabled = true; // Bloqueado/readonly para evitar error humano
+          tierSelect.classList.add('bg-slate-100', 'cursor-not-allowed');
         }
-        if (window.checkMembershipPerks) window.checkMembershipPerks(player.tier);
+
+        // Mostrar badge informativo bloqueado
+        if (badgeEl) {
+          badgeEl.classList.remove('hidden');
+          badgeEl.style.display = 'block';
+          const isVip = targetTier !== 'ESTANDAR';
+          const perkLabel = player.includes_beverage_perk ? '🥤 Cortesía Bebida Incluida ($0 COP)' : 'Sin cortesía de bebidas';
+          badgeEl.innerHTML = `
+            <div class="flex items-center justify-between w-full bg-purple-50 border border-purple-200 rounded-lg p-2 text-xs">
+              <div>
+                <span class="font-black text-purple-900">${isVip ? '👑 Socio Activo' : '👤 Cliente'}: ${escapeHtml(player.name)} (${targetTier})</span>
+                <span class="block text-[10px] text-purple-700 font-bold">${perkLabel}</span>
+              </div>
+              <button type="button" onclick="window.clearPosCustomer()" class="text-[11px] text-rose-600 font-bold hover:underline ml-2">Desvincular</button>
+            </div>
+          `;
+        }
+
+        // Auto-aplicar cortesía al 100% ($0) si el producto tiene is_membership_perk y el plan lo cubre
+        const hasBeveragePerk = Boolean(
+          player.includes_beverage_perk ||
+          ['TAPIA', 'COELLO', 'GALAN', 'CHINGOTTO', 'LEBRON', 'ORO', 'PLATA'].includes(targetTier)
+        );
+
+        if (hasBeveragePerk && window.quickSaleCart && window.quickSaleCart.length > 0) {
+          window.quickSaleCart.forEach(it => {
+            if (it.is_membership_perk) {
+              it.is_perk = true;
+            }
+          });
+        }
+        renderQuickSaleCart();
       });
     };
 
@@ -10676,7 +10933,7 @@ ${data.message}`);
 
       if (btnCobrar) btnCobrar.disabled = false;
 
-      const memSelect = document.getElementById('quick-sale-membership-select');
+      const memSelect = document.getElementById('quick-sale-membership-select') || document.getElementById('pos-customer-membership');
       const isMember = memSelect && memSelect.value !== 'ESTANDAR';
 
       let total = 0;
@@ -10690,7 +10947,7 @@ ${data.message}`);
         html += `
           <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs space-y-1.5">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-slate-900 truncate">${it.name}</span>
+              <span class="font-bold text-slate-900 truncate">${escapeHtml(it.name)}</span>
               <span class="font-extrabold font-mono text-slate-800">${formatCOP(subtotal)}</span>
             </div>
             <div class="flex items-center justify-between">
@@ -10700,11 +10957,15 @@ ${data.message}`);
                 <button type="button" onclick="quickSaleUpdateQty(${it.product_id}, 1)" class="w-6 h-6 flex items-center justify-center bg-white border border-slate-300 rounded font-bold text-slate-700 hover:bg-slate-200">+</button>
               </div>
 
-              ${it.is_membership_perk && isMember ? `
-                <button type="button" onclick="quickSaleTogglePerk(${it.product_id})" class="px-2 py-0.5 text-[10px] font-bold rounded ${it.is_perk ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'}">
-                  ${it.is_perk ? '✓ Cortesía ($0)' : '🎁 Aplicar Cortesía'}
+              ${it.is_perk ? `
+                <span class="px-2 py-0.5 text-[10px] font-extrabold rounded bg-emerald-600 text-white shadow-xs">
+                  🎁 Cortesía Membresía ($0 COP)
+                </span>
+              ` : (it.is_membership_perk && isMember ? `
+                <button type="button" onclick="quickSaleTogglePerk(${it.product_id})" class="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-100 text-purple-800 hover:bg-purple-200">
+                  🎁 Aplicar Cortesía
                 </button>
-              ` : ''}
+              ` : '')}
             </div>
           </div>
         `;

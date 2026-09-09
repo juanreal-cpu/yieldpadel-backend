@@ -558,12 +558,28 @@ async def register_player_to_tournament(
 
     # 2. Descuento según membresía
     membership = (payload.membership_tier or "ESTANDAR").upper()
+    if membership == "ESTANDAR":
+        c_res_p1 = await db.execute(
+            select(Customer)
+            .options(selectinload(Customer.membership_plan))
+            .where(or_(Customer.phone == p1_phone, Customer.name.ilike(p1_name)))
+        )
+        c_p1 = c_res_p1.scalars().first()
+        if c_p1:
+            if c_p1.membership_plan and c_p1.membership_plan.name:
+                membership = c_p1.membership_plan.name.upper()
+            elif c_p1.membership_tier and c_p1.membership_tier.upper() != "ESTANDAR":
+                membership = c_p1.membership_tier.upper()
+
     discount_map = {
         "TAPIA": 40,
         "COELLO": 30,
         "GALAN": 20,
         "CHINGOTTO": 10,
         "LEBRON": 20,
+        "ORO": 40,
+        "PLATA": 30,
+        "BRONCE": 20,
         "ESTANDAR": 0,
     }
     discount_pct = discount_map.get(membership, 0)
@@ -602,7 +618,7 @@ async def register_player_to_tournament(
     # 4. Asegurar o actualizar los jugadores en la tabla de Customer
     for p in players_to_register:
         c_res = await db.execute(select(Customer).where(Customer.phone == p["phone"]))
-        cust = c_res.scalar_one_or_none()
+        cust = c_res.scalars().first()
         if not cust:
             cust = Customer(
                 name=p["name"],

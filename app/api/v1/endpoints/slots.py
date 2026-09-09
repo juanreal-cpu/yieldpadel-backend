@@ -1096,12 +1096,14 @@ async def create_manual_booking(
         client_phone = payload.client_phone.strip()
         cust_res = await db.execute(select(Customer).where(Customer.phone == client_phone))
         customer = cust_res.scalars().first()
+        tier_candidate = (payload.client_tier or "ESTANDAR").upper()
         if not customer:
             customer = Customer(
                 name=client_name,
                 phone=client_phone,
                 category=payload.category or "4ta",
-                membership_tier="ESTANDAR",
+                membership_tier=tier_candidate,
+                client_type="Socio VIP" if tier_candidate != "ESTANDAR" else "Estándar",
             )
             db.add(customer)
             await db.flush()
@@ -1109,13 +1111,25 @@ async def create_manual_booking(
             if not customer.name and client_name:
                 customer.name = client_name
             customer.total_bookings_completed = (customer.total_bookings_completed or 0) + 1
+            if tier_candidate != "ESTANDAR":
+                customer.membership_tier = tier_candidate
+                customer.client_type = "Socio VIP"
 
-        # 4. Determinar precio y deporte
+        # 4. Determinar precio, deporte y membresía
+        if customer and customer.membership_tier and customer.membership_tier.upper() != "ESTANDAR":
+            final_tier = customer.membership_tier.upper()
+        else:
+            final_tier = tier_candidate
+
+        is_member_exempt = final_tier in ("TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON", "ORO", "PLATA")
+
         sport = (payload.sport_type or getattr(target_court, "sport_type", "PADEL") or "PADEL").upper()
         cap = 4 if sport in ("PADEL", "PICKLEBALL", "VOLLEYBALL") else 2
         is_pico = b_date.weekday() in (5, 6) or (start_t.hour >= 18)
-        if payload.price is not None and payload.price > 0:
+        if payload.price is not None:
             total_price = Decimal(str(payload.price))
+        elif is_member_exempt:
+            total_price = Decimal("0.00")
         else:
             total_price = Decimal("120000.00") if is_pico else Decimal("80000.00")
 
@@ -1123,7 +1137,8 @@ async def create_manual_booking(
             "spot_index": 1,
             "phone": client_phone,
             "display_name": client_name,
-            "client_tier": getattr(customer, "membership_tier", "STANDARD") or "STANDARD",
+            "client_tier": final_tier,
+            "payment_status": "MEMBER_EXEMPT" if is_member_exempt else "CONFIRMED",
             "host_phone": None,
             "is_first_visit": False,
             "onboarding_status": "CONFIRMED",

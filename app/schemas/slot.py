@@ -210,4 +210,5 @@ class ManualBookingRequest(BaseModel):
     client_name: str
     client_phone: str
     price: Optional[Decimal] = None
-    category: Optional[str] = "4ta"
+    category: Optional[str] = "4ta"
+    client_tier: Optional[str] = "ESTANDAR"

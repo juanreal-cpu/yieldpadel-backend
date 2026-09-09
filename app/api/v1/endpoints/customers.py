@@ -44,6 +44,9 @@ class CustomerResponse(BaseModel):
     guardian_relationship: Optional[str] = None
     guardian_name: Optional[str] = None
     guardian_phone: Optional[str] = None
+    plan_name: Optional[str] = None
+    americano_discount_pct: int = 0
+    includes_beverage_perk: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -99,6 +102,31 @@ def format_customer_response(c: Customer) -> CustomerResponse:
     guardian_name = c.guardian.name if (c.guardian is not None) else None
     guardian_phone = c.guardian.phone if (c.guardian is not None) else None
 
+    plan_name = None
+    americano_discount_pct = 0
+    includes_beverage_perk = False
+
+    tier_upper = (c.membership_tier or "ESTANDAR").upper()
+
+    if getattr(c, "membership_plan", None) is not None:
+        plan_name = c.membership_plan.name
+        americano_discount_pct = c.membership_plan.americano_discount_pct or 0
+        includes_beverage_perk = bool(c.membership_plan.includes_beverage_perk)
+    elif tier_upper != "ESTANDAR":
+        plan_name = tier_upper
+        tier_discounts = {
+            "TAPIA": 40,
+            "COELLO": 30,
+            "GALAN": 20,
+            "CHINGOTTO": 10,
+            "LEBRON": 20,
+            "ORO": 40,
+            "PLATA": 30,
+            "BRONCE": 20,
+        }
+        americano_discount_pct = tier_discounts.get(tier_upper, 0)
+        includes_beverage_perk = tier_upper in ["TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON", "ORO", "PLATA"]
+
     return CustomerResponse(
         id=c.id,
         name=c.name,
@@ -130,6 +158,9 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         guardian_relationship=c.guardian_relationship,
         guardian_name=guardian_name,
         guardian_phone=guardian_phone,
+        plan_name=plan_name,
+        americano_discount_pct=americano_discount_pct,
+        includes_beverage_perk=includes_beverage_perk,
     )
 
 
@@ -266,6 +297,24 @@ async def ensure_initial_customers(db: AsyncSession):
             kid.guardian_relationship = "HIJO"
             await db.commit()
 
+    # Vincular clientes con sus planes de membresía según membership_tier si membership_plan_id es None
+    unlinked_stmt = select(Customer).where(
+        Customer.membership_plan_id.is_(None),
+        Customer.membership_tier.isnot(None),
+        Customer.membership_tier != "ESTANDAR"
+    )
+    unlinked_res = await db.execute(unlinked_stmt)
+    unlinked_custs = unlinked_res.scalars().all()
+    if unlinked_custs:
+        plans_res = await db.execute(select(MembershipPlan))
+        all_plans = plans_res.scalars().all()
+        plan_map = {p.name.upper(): p.id for p in all_plans}
+        for uc in unlinked_custs:
+            tier_key = uc.membership_tier.upper()
+            if tier_key in plan_map:
+                uc.membership_plan_id = plan_map[tier_key]
+        await db.commit()
+
 
 @router.get("/search", response_model=List[CustomerResponse])
 async def search_customers(
@@ -279,7 +328,7 @@ async def search_customers(
     if not term:
         stmt = (
             select(Customer)
-            .options(selectinload(Customer.guardian))
+            .options(selectinload(Customer.guardian), selectinload(Customer.membership_plan))
             .order_by(Customer.name.asc())
             .limit(20)
         )
@@ -289,7 +338,7 @@ async def search_customers(
     pattern = f"%{term}%"
     stmt = (
         select(Customer)
-        .options(selectinload(Customer.guardian))
+        .options(selectinload(Customer.guardian), selectinload(Customer.membership_plan))
         .where(
             or_(
                 Customer.name.ilike(pattern),
@@ -317,7 +366,7 @@ async def list_all_customers(
 ):
     """Retorna el listado completo de clientes del club con perfiles enriquecidos y soporte Kids."""
     await ensure_initial_customers(db)
-    stmt = select(Customer).options(selectinload(Customer.guardian))
+    stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan))
 
     if category and category.upper() not in ["TODAS", "ALL", ""]:
         stmt = stmt.where(Customer.category.ilike(f"%{category.strip()}%"))
@@ -457,8 +506,8 @@ async def register_customer(
         db.add(customer)
 
     await db.commit()
-    # Reconsultar con guardian cargado
-    re_stmt = select(Customer).options(selectinload(Customer.guardian)).where(Customer.id == customer.id)
+    # Reconsultar con guardian y membership_plan cargados
+    re_stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(Customer.id == customer.id)
     re_res = await db.execute(re_stmt)
     customer = re_res.scalar_one()
 
@@ -472,7 +521,7 @@ async def update_customer_profile(
     db: AsyncSession = Depends(get_db),
 ):
     """Actualiza la información y perfil de cualquier socio o menor en el CRM."""
-    stmt = select(Customer).options(selectinload(Customer.guardian)).where(Customer.id == player_id)
+    stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(Customer.id == player_id)
     res = await db.execute(stmt)
     customer = res.scalar_one_or_none()
     if not customer:
@@ -525,7 +574,7 @@ async def update_customer_profile(
             pass
 
     await db.commit()
-    re_stmt = select(Customer).options(selectinload(Customer.guardian)).where(Customer.id == customer.id)
+    re_stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(Customer.id == customer.id)
     re_res = await db.execute(re_stmt)
     customer = re_res.scalar_one()
 
