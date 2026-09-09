@@ -25,9 +25,11 @@ cloudflared.log
 *.log
 
 # Scratch / Temporary test scripts
-test_*.py
-verify_*.py
+/test_*.py
+/verify_*.py
 payload.json
+scratch/
+!tests/test_*.py
 
 # IDE / OS
 .idea/
