@@ -107,23 +107,31 @@ class ReserveOrBlockRequest(BaseModel):
 class CreateAmericanoRequest(BaseModel):
     name: Optional[str] = None
     tournament_name: Optional[str] = None
+    nombre: Optional[str] = None
     modality: Optional[str] = None
     tournament_type: Optional[str] = "PAREJA_FIJA"
+    modalidad: Optional[str] = None
+    sport_type: Optional[str] = None
+    sport: Optional[str] = None
     date: date
     start_time: time
     duration_hours: Optional[float] = None
     duration_minutes: Optional[int] = None
-    court_ids: List[str]  # 2 a 5 canchas
+    court_ids: List[Union[str, int, uuid.UUID]]  # 2 a 5 canchas (UUID, str, o int)
     price_per_player: Optional[Decimal] = None
     price_per_participant: Optional[Decimal] = None
     price_per_spot: Optional[Decimal] = None
-    prize_pool: Optional[Decimal] = Decimal("300000.00")
+    price: Optional[Decimal] = None
+    precio_inscripcion: Optional[Decimal] = None
+    price_total_cop: Optional[Decimal] = None
+    prize_pool: Optional[Decimal] = None
+    bolsa_premio: Optional[Decimal] = None
 
     def get_name(self) -> str:
-        return self.tournament_name or self.name or "Torneo Americano"
+        return self.tournament_name or self.name or self.nombre or "Torneo Americano"
 
     def get_modality(self) -> str:
-        return self.modality or self.tournament_type or "PAREJA_FIJA"
+        return self.modality or self.tournament_type or self.modalidad or "PAREJA_FIJA"
 
     def get_duration_minutes(self) -> int:
         if self.duration_minutes is not None:
@@ -133,7 +141,25 @@ class CreateAmericanoRequest(BaseModel):
         return 120
 
     def get_price(self) -> Decimal:
-        return self.price_per_player or self.price_per_spot or self.price_per_participant or Decimal("45000.00")
+        return (
+            self.price_per_player
+            or self.price_per_spot
+            or self.price_per_participant
+            or self.price
+            or self.precio_inscripcion
+            or self.price_total_cop
+            or Decimal("45000.00")
+        )
+
+    def get_prize_pool(self) -> Decimal:
+        return self.prize_pool or self.bolsa_premio or Decimal("250000.00")
+
+    def get_sport_type(self) -> Optional[str]:
+        if self.sport_type and self.sport_type.strip():
+            return self.sport_type.strip().upper()
+        if self.sport and self.sport.strip():
+            return self.sport.strip().upper()
+        return None
 
 
 class ClubConfigRequest(BaseModel):

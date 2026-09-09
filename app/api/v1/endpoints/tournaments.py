@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional, Union
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status, Request
 from pydantic import BaseModel, Field
 from app.services.audit import log_activity
 from sqlalchemy import func, or_, select
@@ -23,6 +23,7 @@ from app.schemas.tournament import (
     TournamentListResponse,
 )
 from app.services.ranking_engine import award_tournament_points
+from app.schemas.slot import CreateAmericanoRequest
 from app.api.v1.endpoints.slots import to_participants_list
 
 
@@ -65,7 +66,7 @@ async def list_tournaments(
     stmt = (
         select(TimeSlot)
         .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
-        .where(TimeSlot.slot_type == "AMERICANO")
+        .where(TimeSlot.slot_type.in_(["AMERICANO", "TOURNAMENT"]))
         .order_by(TimeSlot.date.desc(), TimeSlot.start_time.asc())
     )
     res = await db.execute(stmt)
@@ -74,7 +75,7 @@ async def list_tournaments(
     # Agrupar por (tournament_name, date, start_time)
     grouped = {}
     for s in slots:
-        c_sport = (s.sport_type or (s.court.sport_type if s.court else "PADEL") or "PADEL").upper()
+        c_sport = ((s.court.sport_type if s.court else None) or s.sport_type or "PADEL").upper()
         if sport.upper() != "ALL" and c_sport != sport.upper():
             continue
 
@@ -346,14 +347,11 @@ async def add_court_to_tournament(
     """
     Agrega una pista adicional al torneo americano tras validar que no haya colisión.
     """
-    try:
-        c_uuid = uuid.UUID(payload.court_id)
-    except Exception:
-        court_res = await db.execute(select(Court).where(Court.name.ilike(f"%{payload.court_id}%")))
-        c_obj = court_res.scalars().first()
-        if not c_obj:
-            raise HTTPException(status_code=404, detail="Pista no encontrada.")
-        c_uuid = c_obj.id
+    from app.api.v1.endpoints.slots import resolve_court
+    court = await resolve_court(payload.court_id, db)
+    if not court:
+        raise HTTPException(status_code=404, detail=f"Pista '{payload.court_id}' no encontrada.")
+    c_uuid = court.id
 
     target_date = to_date_obj(payload.date)
     target_start_time = to_time_obj(payload.start_time)
@@ -391,38 +389,49 @@ async def add_court_to_tournament(
                 detail=f"Colisión: {c_name} ya tiene una reserva activa ({s.start_time}-{s.end_time}).",
             )
 
+    c_cap = court.max_capacity or 4
+    c_sport = (court.sport_type or ref_slot.sport_type or "PADEL").upper()
+
     if overlaps:
         target_slot = overlaps[0]
+        target_slot.court_id = c_uuid
+        target_slot.club_id = 1
         target_slot.start_time = target_start_time
         target_slot.end_time = ref_slot.end_time
-        target_slot.slot_type = "AMERICANO"
+        target_slot.slot_type = "TOURNAMENT"
         target_slot.tournament_type = ref_slot.tournament_type
         target_slot.tournament_name = ref_slot.tournament_name
         target_slot.prize_pool = ref_slot.prize_pool
+        target_slot.price_total_cop = ref_slot.price_total_cop or ref_slot.total_price
         target_slot.category = ref_slot.category
-        target_slot.status = SlotStatus.FULLY_BOOKED
-        target_slot.booked_spots = 4
+        target_slot.status = SlotStatus.BLOCKED
+        target_slot.capacity = c_cap
+        target_slot.booked_spots = c_cap
         target_slot.players_names = ref_slot.players_names
+        target_slot.sport_type = c_sport
         for extra in overlaps[1:]:
             await db.delete(extra)
     else:
         new_slot = TimeSlot(
             court_id=c_uuid,
+            club_id=1,
             date=target_date,
             start_time=target_start_time,
             end_time=ref_slot.end_time,
             total_price=ref_slot.total_price,
-            mode=SlotMode.SPLIT_MATCH,
-            capacity=4,
-            booked_spots=4,
-            status=SlotStatus.FULLY_BOOKED,
+            price_total_cop=ref_slot.price_total_cop or ref_slot.total_price,
+            price=ref_slot.price,
+            mode=SlotMode.FULL_COURT,
+            capacity=c_cap,
+            booked_spots=c_cap,
+            status=SlotStatus.BLOCKED,
             category=ref_slot.category,
-            slot_type="AMERICANO",
+            slot_type="TOURNAMENT",
             tournament_type=ref_slot.tournament_type,
             tournament_name=ref_slot.tournament_name,
             prize_pool=ref_slot.prize_pool,
             players_names=ref_slot.players_names,
-            sport_type=ref_slot.sport_type,
+            sport_type=c_sport,
         )
         db.add(new_slot)
 
@@ -666,15 +675,13 @@ async def register_player_to_tournament(
 @router.post("/create", status_code=status.HTTP_201_CREATED)
 @router.post("/create-americano", status_code=status.HTTP_201_CREATED)
 async def create_tournament_endpoint(
-    payload: dict,
+    payload: CreateAmericanoRequest = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
     """Crea un Torneo Americano delegando en la lógica de creación multicancha."""
-    from app.schemas.slot import CreateAmericanoRequest
     from app.api.v1.endpoints.slots import create_americano
 
-    parsed = CreateAmericanoRequest(**payload)
-    return await create_americano(payload=parsed, db=db)
+    return await create_americano(payload=payload, db=db)
 
 
 class RecordChallengeWinnerRequest(BaseModel):

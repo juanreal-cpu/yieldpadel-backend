@@ -3871,12 +3871,22 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
+            <label class="form-label">Disciplina / Deporte</label>
+            <select id="am-sport" class="form-control" onchange="renderAmericanoCourtsSelector(this.value)">
+              <option value="PADEL" selected>🎾 Pádel</option>
+              <option value="PICKLEBALL">🏓 Pickleball</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label class="form-label">Modalidad</label>
             <select id="am-type" class="form-control">
               <option value="PAREJA_FIJA">Pareja Fija</option>
               <option value="INDIVIDUAL">Individual (Rotativo)</option>
             </select>
           </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
             <label class="form-label">Duración Continua</label>
             <select id="am-duration" class="form-control">
@@ -3885,17 +3895,15 @@
               <option value="180">3 Horas (180 min)</option>
             </select>
           </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
             <label class="form-label">Hora de Inicio</label>
             <input type="time" id="am-start-time" class="form-control" value="18:00" required>
           </div>
-          <div class="form-group">
-            <label class="form-label">Fecha del Torneo</label>
-            <input type="date" id="am-date" class="form-control" required>
-          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fecha del Torneo</label>
+          <input type="date" id="am-date" class="form-control" required>
         </div>
 
         <!-- Selección Multi-Cancha (2 a 5 Pistas) -->
@@ -7589,7 +7597,7 @@ ${data.message}`);
         const sportIcon = slotSport === 'VOLLEYBALL' ? '🏐' : (slotSport === 'PICKLEBALL' ? '🏓' : (slotSport === 'PILATES' ? '🧘' : (slotSport === 'CONSOLE' ? '🎮' : '🎾')));
 
         const catLower = (slot.category || '').toLowerCase();
-        const isTournament = slot.slot_type === 'AMERICANO' || catLower.includes('americano') || catLower.includes('torneo');
+        const isTournament = slot.slot_type === 'AMERICANO' || slot.slot_type === 'TOURNAMENT' || catLower.includes('americano') || catLower.includes('torneo') || Boolean(slot.tournament_name);
         const isClass = (slot.slot_type === 'CLASS' || slot.slot_type === 'ACADEMY');
         const isBlocked = slot.status === 'BLOCKED' || slot.slot_type === 'MAINTENANCE';
         const hasBookings = Boolean(
@@ -7646,12 +7654,12 @@ ${data.message}`);
         let themeClass = 'card-theme-gray';
         let statusBadge = `<span class="card-badge-status badge-status-free">⚪ LIBRE</span>`;
 
-        if (isBlocked) {
-          themeClass = 'card-theme-blocked';
-          statusBadge = `<span class="card-badge-status badge-status-blocked">🚫 BLOQUEADO</span>`;
-        } else if (isTournament) {
+        if (isTournament) {
           themeClass = 'card-theme-purple';
           statusBadge = `<span class="card-badge-status badge-status-tournament">🏆 AMERICANO</span>`;
+        } else if (isBlocked) {
+          themeClass = 'card-theme-blocked';
+          statusBadge = `<span class="card-badge-status badge-status-blocked">🚫 BLOQUEADO</span>`;
         } else if (slotSport === 'VOLLEYBALL') {
           if (isFull) {
             themeClass = 'card-theme-emerald';
@@ -8214,38 +8222,77 @@ ${data.message}`);
 
 
     // Modal Crear Torneo Americano
+    function renderAmericanoCourtsSelector(sport = 'PADEL') {
+      const container = document.getElementById('am-courts-selector');
+      if (!container) return;
+      const targetSport = (sport || 'PADEL').toUpperCase();
+      const courtsList = (window.allCourts && window.allCourts.length > 0) ? window.allCourts : (typeof allCourts !== 'undefined' && allCourts ? allCourts : []);
+      
+      let filtered = courtsList.filter(c => ((c.sport_type || 'PADEL').toUpperCase() === targetSport) && c.is_active !== false);
+      if (filtered.length === 0) {
+        if (targetSport === 'PICKLEBALL') {
+          filtered = [
+            { id: 'd8d342c4-a99d-4fc8-a038-3117357ccd7f', name: 'Pista Pickleball 1', sport_type: 'PICKLEBALL' },
+            { id: '3ef6543f-bffc-40dd-ae7a-a757819d88e4', name: 'Pista Pickleball 2', sport_type: 'PICKLEBALL' }
+          ];
+        } else {
+          filtered = [
+            { id: 'fd789df0-a503-4612-8fe2-f4e691df36a0', name: 'Cancha Central 1', sport_type: 'PADEL' },
+            { id: '7887da3c-30e2-4329-9abc-e7dd8d3a256b', name: 'Cancha 2', sport_type: 'PADEL' },
+            { id: 'e46f79a1-12c9-4215-b14e-2e3b06596ff9', name: 'Cancha 3', sport_type: 'PADEL' },
+            { id: 'd998c611-12d3-496b-83b0-12451d0eaa05', name: 'Cancha 4', sport_type: 'PADEL' },
+            { id: '1bf6e270-c684-4ecd-80f9-62b9439a41b9', name: 'Cancha 5', sport_type: 'PADEL' }
+          ];
+        }
+      }
+
+      let courtsHtml = '';
+      const sportEmoji = targetSport === 'PICKLEBALL' ? '🏓' : '🎾';
+      filtered.forEach((c, idx) => {
+        const checked = (idx < 3) ? 'checked' : '';
+        courtsHtml += `
+          <label style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.75rem; color: #0F172A; cursor: pointer; padding: 4px 6px; border-radius: 4px; background: white; border: 1px solid #E2E8F0;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" name="am-court" value="${c.id}" ${checked} style="cursor: pointer;" />
+              <span style="font-weight: 600;">${sportEmoji} ${c.name}</span>
+            </div>
+            <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: #EEF2FF; color: #4F46E5; font-weight: 700;">${targetSport}</span>
+          </label>
+        `;
+      });
+      container.innerHTML = courtsHtml;
+    }
+    window.renderAmericanoCourtsSelector = renderAmericanoCourtsSelector;
+
     function openCreateAmericanoModal() {
       const dateInput = document.getElementById('am-date');
-      if (dateInput) dateInput.value = selectedDate;
+      if (dateInput) dateInput.value = selectedDate || (typeof getTodayStr === 'function' ? getTodayStr() : new Date().toISOString().split('T')[0]);
 
-      // Populate court checkboxes
-      const container = document.getElementById('am-courts-selector');
-      if (container && allCourts.length > 0) {
-        let courtsHtml = '';
-        allCourts.forEach((c, idx) => {
-          const checked = idx < 3 ? 'checked' : '';
-          courtsHtml += `
-            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #0F172A; cursor: pointer;">
-              <input type="checkbox" name="am-court" value="${c.id}" ${checked} style="cursor: pointer;" />
-              <span>📍 ${c.name}</span>
-            </label>
-          `;
-        });
-        container.innerHTML = courtsHtml;
+      const sportSelect = document.getElementById('am-sport');
+      const currentActiveSport = (window.currentSportFilter || (typeof currentSportFilter !== 'undefined' && currentSportFilter) || window.currentSport || 'PADEL').toUpperCase();
+      const defaultSport = (currentActiveSport === 'PICKLEBALL') ? 'PICKLEBALL' : 'PADEL';
+      if (sportSelect) {
+        sportSelect.value = defaultSport;
       }
+
+      renderAmericanoCourtsSelector(defaultSport);
 
       const modal = document.getElementById('create-americano-modal');
       if (modal) modal.classList.add('active');
     }
+    window.openCreateAmericanoModal = openCreateAmericanoModal;
 
     function closeCreateAmericanoModal() {
       const modal = document.getElementById('create-americano-modal');
       if (modal) modal.classList.remove('active');
     }
+    window.closeCreateAmericanoModal = closeCreateAmericanoModal;
 
     async function handleCreateAmericanoSubmit(e) {
       e.preventDefault();
       const name = document.getElementById('am-name').value.trim();
+      const sportSelect = document.getElementById('am-sport');
+      const sport = sportSelect ? sportSelect.value : 'PADEL';
       const type = document.getElementById('am-type').value;
       const duration = parseInt(document.getElementById('am-duration').value, 10);
       const startTime = document.getElementById('am-start-time').value;
@@ -8264,14 +8311,23 @@ ${data.message}`);
       }
 
       const payload = {
+        name: name,
         tournament_name: name,
+        nombre: name,
+        modality: type,
         tournament_type: type,
+        modalidad: type,
+        sport_type: sport,
+        sport: sport,
         court_ids: checkedCourts,
         date: date,
         start_time: startTime,
         duration_minutes: duration,
         price_per_player: price,
-        prize_pool: prize
+        precio_inscripcion: price,
+        price_total_cop: price,
+        prize_pool: prize,
+        bolsa_premio: prize
       };
 
       const btn = document.getElementById('btn-submit-americano');
@@ -8280,23 +8336,57 @@ ${data.message}`);
         btn.textContent = 'Bloqueando Pistas...';
       }
 
+      let res;
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/create-americano`, {
+        res = await fetch(`${API_BASE}/api/v1/slots/create-americano`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        if (res.ok) {
-          addEvent('Torneo Americano Creado', `${name} • ${checkedCourts.length} pistas reservadas`, 'purple');
-          closeCreateAmericanoModal();
-          alert(`🏆 ¡Torneo Americano '${payload.tournament_name}' creado con éxito!\n\nSe bloquearon ${checkedCourts.length} pistas en color púrpura durante ${payload.duration_minutes / 60} horas.`);
-          await fetchSlots();
-        } else {
-          alert(data.detail || 'Error al crear Torneo Americano');
+      } catch (networkErr) {
+        console.error('Error de red al crear torneo americano:', networkErr);
+        alert('❌ Error de conexión al registrar Torneo Americano: No se pudo conectar con el servidor.');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '🏆 Confirmar y Bloquear Pistas';
         }
-      } catch (err) {
-        alert('Error de conexión al registrar Torneo Americano');
+        return;
+      }
+
+      try {
+        let errDetail = null;
+        let data = null;
+        try {
+          data = await res.json();
+          if (data && data.detail) {
+            errDetail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+          } else if (data && data.message) {
+            errDetail = data.message;
+          }
+        } catch (jsonErr) {
+          errDetail = await res.text();
+        }
+
+        if (res.ok) {
+          if (typeof addEvent === 'function') {
+            addEvent('Torneo Americano Creado', `${name} (${sport}) • ${checkedCourts.length} pistas reservadas`, 'purple');
+          }
+          closeCreateAmericanoModal();
+          alert(`🏆 ¡Torneo Americano '${payload.tournament_name}' (${sport}) creado con éxito!\n\nSe bloquearon ${checkedCourts.length} pistas en color púrpura durante ${payload.duration_minutes / 60} horas.`);
+          
+          if (typeof fetchSlots === 'function') {
+            await fetchSlots();
+          }
+          if (typeof loadTournaments === 'function') {
+            await loadTournaments();
+          }
+        } else {
+          console.error('Respuesta no exitosa al crear torneo americano:', res.status, errDetail);
+          alert(`❌ Error al crear Torneo Americano (${res.status}): ${errDetail || 'Error en el servidor'}`);
+        }
+      } catch (procErr) {
+        console.error('Error procesando respuesta del torneo:', procErr);
+        alert(`❌ Error al procesar respuesta del servidor: ${procErr.message || procErr}`);
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -8304,6 +8394,7 @@ ${data.message}`);
         }
       }
     }
+    window.handleCreateAmericanoSubmit = handleCreateAmericanoSubmit;
 
     // Botón Difundir Disponibilidad WhatsApp
     async function broadcastAvailability() {

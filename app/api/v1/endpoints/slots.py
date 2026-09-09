@@ -1465,6 +1465,62 @@ async def reserve_or_block_slot(
     return compute_slot_response(slot, now_utc)
 
 
+async def resolve_court(court_val: Union[str, int, uuid.UUID], db: AsyncSession) -> Optional[Court]:
+    """Resuelve un objeto Court a partir de un UUID, int, alias o nombre."""
+    if court_val is None:
+        return None
+    if isinstance(court_val, uuid.UUID):
+        res = await db.execute(select(Court).where(Court.id == court_val))
+        c = res.scalars().first()
+        if c:
+            return c
+
+    val_str = str(court_val).strip()
+    try:
+        u = uuid.UUID(val_str)
+        res = await db.execute(select(Court).where(Court.id == u))
+        c = res.scalars().first()
+        if c:
+            return c
+    except (ValueError, AttributeError):
+        pass
+
+    if isinstance(court_val, int) or val_str.isdigit():
+        num = int(court_val)
+        res = await db.execute(select(Court).where(Court.court_number == num))
+        c = res.scalars().first()
+        if c:
+            return c
+
+    lower_val = val_str.lower()
+    alias_map = {
+        "pb1": ("PICKLEBALL", 1),
+        "pb2": ("PICKLEBALL", 2),
+        "c1": ("PADEL", 1),
+        "c2": ("PADEL", 2),
+        "c3": ("PADEL", 3),
+        "c4": ("PADEL", 4),
+        "c5": ("PADEL", 5),
+    }
+    if lower_val in alias_map:
+        sport, num = alias_map[lower_val]
+        res = await db.execute(select(Court).where(Court.sport_type == sport, Court.name.ilike(f"%{num}%")))
+        c = res.scalars().first()
+        if c:
+            return c
+        res = await db.execute(select(Court).where(Court.court_number == num))
+        c = res.scalars().first()
+        if c:
+            return c
+
+    res = await db.execute(select(Court).where(Court.name.ilike(f"%{val_str}%")))
+    c = res.scalars().first()
+    if c:
+        return c
+
+    return None
+
+
 @router.post("/create-americano", response_model=List[TimeSlotResponse])
 @router.post("/tournaments/americano", response_model=List[TimeSlotResponse])
 async def create_americano(
@@ -1474,43 +1530,42 @@ async def create_americano(
     """
     Crea un evento Torneo Americano bloqueando simultáneamente de 2 a 5 canchas
     durante 2h, 2.5h o 3h continuas, con bolsa de premios y modalidad PAREJA_FIJA o INDIVIDUAL.
-    Soporta rutas POST /api/v1/slots/create-americano y POST /api/v1/slots/tournaments/americano.
+    Soporta multideporte (PADEL, PICKLEBALL, etc.) con identificadores flexibles (UUID, int, alias).
     """
     if len(payload.court_ids) < 2:
         raise HTTPException(status_code=400, detail="Un torneo americano requiere seleccionar al menos 2 canchas.")
     if len(payload.court_ids) > 5:
         raise HTTPException(status_code=400, detail="No se pueden seleccionar más de 5 canchas para un americano.")
 
-    t_name = payload.get_name() if hasattr(payload, "get_name") else (payload.tournament_name or getattr(payload, "name", "Torneo Americano") or "Torneo Americano")
-    t_type = getattr(payload, "modality", None) or payload.tournament_type or "PAREJA_FIJA"
-    duration_mins = payload.get_duration_minutes() if hasattr(payload, "get_duration_minutes") else (
-        int(payload.duration_hours * 60) if getattr(payload, "duration_hours", None) else (payload.duration_minutes or 120)
-    )
+    t_name = payload.get_name()
+    t_type = payload.get_modality()
+    duration_mins = payload.get_duration_minutes()
+    price_val = payload.get_price()
+    prize_val = payload.get_prize_pool()
+    requested_sport = payload.get_sport_type()
 
     start_dt = datetime.combine(payload.date, payload.start_time)
     end_dt = start_dt + timedelta(minutes=duration_mins)
     end_time_val = time(23, 59) if (end_dt.time() == time(0, 0) or end_dt.date() > payload.date) else end_dt.time()
 
-    # 1. Validación Estricta Anti-Choques en todas las canchas seleccionadas
-    import uuid
-    for court_id_str in payload.court_ids:
-        c_uuid = None
-        try:
-            c_uuid = uuid.UUID(court_id_str)
-        except Exception:
-            court_res = await db.execute(select(Court).where(Court.name.ilike(f"%{court_id_str}%")))
-            c_obj = court_res.scalars().first()
-            if c_obj:
-                c_uuid = c_obj.id
+    # 1. Resolución estricta de canchas
+    resolved_courts: List[Court] = []
+    for court_val in payload.court_ids:
+        c_obj = await resolve_court(court_val, db)
+        if not c_obj:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No se encontró la cancha con identificador '{court_val}'. Por favor verifica las pistas seleccionadas."
+            )
+        resolved_courts.append(c_obj)
 
-        if not c_uuid:
-            continue
-
+    # 2. Validación Anti-Choques en las canchas seleccionadas
+    for court in resolved_courts:
         chk_stmt = (
             select(TimeSlot)
             .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
             .where(
-                TimeSlot.court_id == c_uuid,
+                TimeSlot.court_id == court.id,
                 TimeSlot.date == payload.date,
                 TimeSlot.start_time < end_time_val,
                 TimeSlot.end_time > payload.start_time,
@@ -1519,11 +1574,14 @@ async def create_americano(
         chk_res = await db.execute(chk_stmt)
         for s in chk_res.scalars().all():
             has_active_holds = any(h.status == HoldStatus.ACTIVE for h in s.holds)
-            is_booked = s.status in [SlotStatus.FULLY_BOOKED, SlotStatus.PARTIALLY_BOOKED]
             is_class = s.slot_type in ["CLASS", "ACADEMY"]
-            has_players = s.booked_spots > 0 or len(s.players_names or []) > 0
-            if is_booked or has_active_holds or is_class or has_players:
-                c_name = s.court.name if s.court else f"Pista {court_id_str}"
+            has_real_players = False
+            if s.booked_spots > 0:
+                p_list = to_participants_list(s.players_names)
+                if any(p.get("phone") and not str(p.get("phone")).startswith("+57-AMERICANO") for p in p_list):
+                    has_real_players = True
+            if is_class or has_active_holds or has_real_players:
+                c_name = court.name
                 raise HTTPException(
                     status_code=400,
                     detail=(
@@ -1535,86 +1593,99 @@ async def create_americano(
 
     created_slots = []
     now_utc = datetime.now(timezone.utc)
-    prize_val = payload.prize_pool or Decimal("300000.00")
+    prize_str = f"${int(prize_val):,} COP"
+    label_t = "Pareja Fija" if t_type == "PAREJA_FIJA" else "Individual"
+    cat_label = f"Americano ({label_t})"
 
-    for court_id_str in payload.court_ids:
-        try:
-            c_uuid = uuid.UUID(court_id_str)
-        except Exception:
-            court_res = await db.execute(select(Court).where(Court.name.like(f"%{court_id_str}%")))
-            c_obj = court_res.scalars().first()
-            if not c_obj:
-                continue
-            c_uuid = c_obj.id
+    player_entry = [{
+        "spot_index": 1,
+        "phone": "+57-AMERICANO",
+        "display_name": f"🏆 {t_name} ({prize_str})",
+        "client_tier": "VIP_PAY_ON_SITE",
+        "host_phone": None,
+    }]
 
-        # Buscar slots de esta cancha que se solapen con el horario del torneo
-        overlap_stmt = (
-            select(TimeSlot)
-            .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
-            .where(
-                TimeSlot.court_id == c_uuid,
-                TimeSlot.date == payload.date,
-                TimeSlot.start_time < end_time_val,
-                TimeSlot.end_time > payload.start_time,
+    try:
+        for court in resolved_courts:
+            court_sport = (court.sport_type or requested_sport or "PADEL").upper()
+            court_cap = court.max_capacity or 4
+
+            # Buscar slots de esta cancha que se solapen con el horario del torneo
+            overlap_stmt = (
+                select(TimeSlot)
+                .options(selectinload(TimeSlot.court), selectinload(TimeSlot.holds))
+                .where(
+                    TimeSlot.court_id == court.id,
+                    TimeSlot.date == payload.date,
+                    TimeSlot.start_time < end_time_val,
+                    TimeSlot.end_time > payload.start_time,
+                )
             )
+            res_overlap = await db.execute(overlap_stmt)
+            overlap_slots = list(res_overlap.scalars().all())
+
+            if overlap_slots:
+                main_slot = overlap_slots[0]
+                main_slot.court_id = court.id
+                main_slot.club_id = 1
+                main_slot.start_time = payload.start_time
+                main_slot.end_time = end_time_val
+                main_slot.slot_type = "TOURNAMENT"
+                main_slot.tournament_type = t_type
+                main_slot.tournament_name = t_name
+                main_slot.sport_type = court_sport
+                main_slot.prize_pool = prize_val
+                main_slot.price_total_cop = price_val
+                main_slot.total_price = price_val
+                main_slot.price = price_val
+                main_slot.category = cat_label
+                main_slot.status = SlotStatus.BLOCKED
+                main_slot.capacity = court_cap
+                main_slot.booked_spots = court_cap
+                main_slot.players_names = player_entry
+
+                for extra in overlap_slots[1:]:
+                    await db.delete(extra)
+
+                created_slots.append(main_slot)
+            else:
+                new_slot = TimeSlot(
+                    court_id=court.id,
+                    club_id=1,
+                    date=payload.date,
+                    start_time=payload.start_time,
+                    end_time=end_time_val,
+                    total_price=price_val,
+                    price_total_cop=price_val,
+                    price=price_val,
+                    mode=SlotMode.FULL_COURT,
+                    capacity=court_cap,
+                    booked_spots=court_cap,
+                    category=cat_label,
+                    status=SlotStatus.BLOCKED,
+                    slot_type="TOURNAMENT",
+                    tournament_type=t_type,
+                    tournament_name=t_name,
+                    prize_pool=prize_val,
+                    sport_type=court_sport,
+                    players_names=player_entry,
+                    is_promo=False,
+                )
+                db.add(new_slot)
+                created_slots.append(new_slot)
+
+        await db.commit()
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.exception(f"Error creating americano tournament: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error interno al registrar el Torneo Americano: {str(e)}"
         )
-        res_overlap = await db.execute(overlap_stmt)
-        overlap_slots = list(res_overlap.scalars().all())
 
-        prize_val = payload.prize_pool or Decimal("300000.00")
-        prize_str = f"${int(prize_val):,} COP"
-        label_t = "Pareja Fija" if t_type == "PAREJA_FIJA" else "Individual"
-        cat_label = f"Americano ({label_t})"
-
-        player_entry = [{
-            "spot_index": 1,
-            "phone": "+57-AMERICANO",
-            "display_name": f"🏆 {t_name} ({prize_str})",
-            "client_tier": "VIP_PAY_ON_SITE",
-            "host_phone": None,
-        }]
-
-        if overlap_slots:
-            main_slot = overlap_slots[0]
-            main_slot.start_time = payload.start_time
-            main_slot.end_time = end_time_val
-            main_slot.slot_type = "AMERICANO"
-            main_slot.tournament_type = t_type
-            main_slot.tournament_name = t_name
-            main_slot.prize_pool = prize_val
-            main_slot.category = cat_label
-            main_slot.status = SlotStatus.FULLY_BOOKED
-            main_slot.booked_spots = 4
-            main_slot.total_price = prize_val
-            main_slot.players_names = player_entry
-
-            for extra in overlap_slots[1:]:
-                await db.delete(extra)
-
-            created_slots.append(main_slot)
-        else:
-            new_slot = TimeSlot(
-                court_id=c_uuid,
-                date=payload.date,
-                start_time=payload.start_time,
-                end_time=end_time_val,
-                total_price=prize_val,
-                mode=SlotMode.FULL_COURT,
-                capacity=4,
-                booked_spots=4,
-                category=cat_label,
-                status=SlotStatus.FULLY_BOOKED,
-                slot_type="AMERICANO",
-                tournament_type=t_type,
-                tournament_name=t_name,
-                prize_pool=prize_val,
-                players_names=player_entry,
-                is_promo=False,
-            )
-            db.add(new_slot)
-            created_slots.append(new_slot)
-
-    await db.commit()
     created_ids = [s.id for s in created_slots]
     res_loaded = await db.execute(
         select(TimeSlot)
