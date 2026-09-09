@@ -1,4 +1,12 @@
 from datetime import datetime
+
+from typing import Optional, List
+from sqlalchemy import text
+
+
+
+
+
 import os
 import re
 from typing import List, Optional
@@ -231,3 +239,103 @@ async def get_radar_clubs(
         total_national_clubs=len(all_db_clubs),
         clubs=club_items,
     )
+
+
+# ==========================================
+# INTELIGENCIA DE MERCADO (RADAR & PROSPECCIÓN)
+# ==========================================
+
+@router.get("/market-rates")
+async def get_market_rates(
+    is_weekend: Optional[bool] = Query(None, description="Filtrar por fin de semana (true) o entre semana (false)"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Retorna precios promedio y tasa de ocupación de competidores por franja horaria estándar.
+    """
+    base_query = """
+        SELECT 
+            standard_time_slot,
+            is_weekend,
+            ROUND(AVG(price_per_player), 0) AS avg_price_per_player,
+            COUNT(*) AS total_matches,
+            SUM(CASE WHEN is_closed THEN 1 ELSE 0 END) AS closed_matches,
+            ROUND((SUM(CASE WHEN is_closed THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0)) * 100, 1) AS occupancy_rate_pct
+        FROM v_competitor_market_clean
+        WHERE standard_time_slot != 'Otra Franja' AND price_per_player > 0
+    """
+    params = {}
+    if is_weekend is not None:
+        base_query += " AND is_weekend = :is_weekend"
+        params["is_weekend"] = is_weekend
+
+    base_query += """
+        GROUP BY standard_time_slot, is_weekend
+        ORDER BY standard_time_slot ASC
+    """
+
+    res = await db.execute(text(base_query), params)
+    rows = res.fetchall()
+
+    return [
+        {
+            "time_slot": r[0],
+            "is_weekend": r[1],
+            "avg_price_per_player": float(r[2] or 0),
+            "total_matches": r[3],
+            "closed_matches": r[4],
+            "occupancy_rate_pct": float(r[5] or 0),
+        }
+        for r in rows
+    ]
+
+
+@router.get("/prospects")
+async def get_market_prospects(
+    category: Optional[str] = Query(None, description="Ejemplo: 3ra, 4ta, 5ta"),
+    time_slot: Optional[str] = Query(None, description="Texto aproximado de la franja horaria"),
+    limit: int = Query(25, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Consulta prospectos del CRM detectados en otros clubes para llenar huecos de reserva.
+    """
+    query = """
+        SELECT 
+            player_name, 
+            frequent_club, 
+            detected_category, 
+            preferred_time_slot, 
+            total_matches_played, 
+            last_active_date
+        FROM market_player_profiles
+        WHERE 1=1
+    """
+    params = {"limit": limit}
+    
+    if category:
+        query += " AND detected_category ILIKE :cat"
+        params["cat"] = f"%{category}%"
+        
+    if time_slot:
+        query += " AND preferred_time_slot ILIKE :slot"
+        params["slot"] = f"%{time_slot}%"
+
+    query += " ORDER BY total_matches_played DESC LIMIT :limit"
+
+    res = await db.execute(text(query), params)
+    rows = res.fetchall()
+
+    return [
+        {
+            "player_name": r[0],
+            "frequent_club": r[1],
+            "category": r[2],
+            "preferred_slot": r[3],
+            "matches_played": r[4],
+            "last_active": r[5]
+        }
+        for r in rows
+    ]
+
+
