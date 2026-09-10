@@ -2335,12 +2335,15 @@ async def assign_spot(
 
         stmt = (
             select(TimeSlot)
-            .options(selectinload(TimeSlot.holds))
+            .options(
+                selectinload(TimeSlot.court),
+                selectinload(TimeSlot.holds),
+            )
             .where(TimeSlot.id == slot_id)
             .with_for_update()
         )
         result = await db.execute(stmt)
-        slot = result.scalar_one_or_none()
+        slot = result.scalars().first()
 
         if not slot:
             raise HTTPException(
@@ -2439,7 +2442,7 @@ async def assign_spot(
 
         cust_stmt = select(Customer).where(Customer.phone == phone)
         cust_res = await db.execute(cust_stmt)
-        cust = cust_res.scalar_one_or_none()
+        cust = cust_res.scalars().first()
         if cust:
             cust.total_bookings_completed += spots_requested
             cust.is_first_visit = False
@@ -2475,13 +2478,10 @@ async def assign_spot(
             print(f"[AUDIT LOG WARNING] Error in assign_spot: {e}")
 
         return {
-            "status": "success",
-            "message": f"Cupo(s) asignados y confirmados con éxito para {name} ({method_upper}).",
-            "slot_id": slot.id,
-            "booked_spots": slot.booked_spots,
-            "available_spots": max(0, slot.capacity - slot.booked_spots),
-            "slot_status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
-            "booking_reference": booking_ref,
+            "status": "ok",
+            "message": "Cupo asignado exitosamente",
+            "slot_id": slot_id,
+            "player_name": payload.player_name or payload.customer_name or payload.client_name,
         }
     except HTTPException:
         raise
