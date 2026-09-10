@@ -382,7 +382,10 @@ async def get_clubs_list(db: AsyncSession = Depends(get_db)):
         """
         SELECT DISTINCT club_name 
         FROM competitor_market_slots 
-        WHERE club_name IS NOT NULL AND TRIM(club_name) != ''
+        WHERE club_name IS NOT NULL 
+          AND club_name NOT ILIKE '%convocatoria%' 
+          AND club_name NOT ILIKE '%categoría%'
+          AND club_name NOT ILIKE '%chat%'
         ORDER BY club_name ASC
         """
     )
@@ -466,18 +469,16 @@ async def get_club_benchmark(
         # 3. Consulta de Jugadores (market_player_profiles)
         q_players = text("""
             SELECT 
-                player_name, 
-                COALESCE(detected_category, 'General') AS detected_category, 
-                COALESCE(player_phone, '') AS phone, 
-                total_matches_played 
-            FROM market_player_profiles 
-            WHERE frequent_club = :club_name 
-               OR frequent_club ILIKE :club_name
-               OR REPLACE(LOWER(frequent_club), ' ', '_') = :club_name
-            ORDER BY total_matches_played DESC 
-            LIMIT 25
+                p.player_name,
+                COALESCE(NULLIF(p.player_phone, ''), NULLIF(p.phone, ''), 'No disponible') AS phone,
+                COALESCE(p.detected_category, '4ta') AS category,
+                p.total_matches_played
+            FROM market_player_profiles p
+            WHERE p.frequent_club ILIKE :club_pattern
+               OR REPLACE(LOWER(p.frequent_club), ' ', '_') = LOWER(:club_name)
+            ORDER BY p.total_matches_played DESC LIMIT 25
         """)
-        player_rows = [dict(r) for r in (await db.execute(q_players, {"club_name": raw_name})).mappings().all()]
+        player_rows = [dict(r) for r in (await db.execute(q_players, {"club_name": raw_name, "club_pattern": f"%{raw_name}%"})).mappings().all()]
 
         # 4. Historial de torneos / americanos
         q_tournaments = text("""

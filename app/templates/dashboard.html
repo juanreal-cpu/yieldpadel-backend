@@ -3173,7 +3173,7 @@
                 </div>
 
                 <!-- Grid contenedor con scroll horizontal limpio -->
-                <div class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl text-slate-200 overflow-x-auto">
+                <div style="background-color: #020617 !important; border-color: #1e293b !important;" class="w-full border rounded-2xl p-4 shadow-xl overflow-x-auto text-slate-200">
                   <table class="w-full text-left border-collapse min-w-[700px]" id="benchmark-heatmap-table">
                     <thead>
                       <tr class="border-b border-slate-800">
@@ -7930,24 +7930,22 @@ ${data.message}`);
                   const precio = Number(match.precio || match.precio_competidor || 0);
                   const cellDiff = precio - 45000;
 
-                  let badgeClass = "";
+                  let bg = "#1e293b", textCol = "#f8fafc", borderCol = "#334155";
                   if (cellDiff >= 10000) {
-                    badgeClass = "bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/20";
-                  } else if (cellDiff > 0 && cellDiff < 10000) {
-                    badgeClass = "bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold";
-                  } else if (cellDiff === 0) {
-                    badgeClass = "bg-slate-800 text-slate-300 border border-slate-700 font-medium";
-                  } else if (cellDiff < 0 && cellDiff > -15000) {
-                    badgeClass = "bg-amber-950/80 text-amber-300 border border-amber-500/40 font-bold";
+                    bg = "#059669"; textCol = "#ffffff"; borderCol = "#10b981";
+                  } else if (cellDiff > 0) {
+                    bg = "#064e3b"; textCol = "#6ee7b7"; borderCol = "#059669";
                   } else if (cellDiff <= -15000) {
-                    badgeClass = "bg-rose-600 text-white font-black shadow-lg shadow-rose-600/30";
+                    bg = "#e11d48"; textCol = "#ffffff"; borderCol = "#f43f5e";
+                  } else if (cellDiff < 0) {
+                    bg = "#7c2d12"; textCol = "#fdba74"; borderCol = "#ea580c";
                   }
 
                   rowHtml += `
                     <td class="py-2 px-1 text-center">
-                      <div class="flex flex-col items-center justify-center p-1.5 rounded-xl ${badgeClass} transition transform hover:scale-105 cursor-pointer">
-                        <span class="text-[11px] leading-tight">$${precio.toLocaleString('es-CO')}</span>
-                        <span class="text-[9px] opacity-90 font-bold">${cellDiff >= 0 ? '+' : ''}$${cellDiff.toLocaleString('es-CO')}</span>
+                      <div style="background-color: ${bg} !important; color: ${textCol} !important; border: 1px solid ${borderCol} !important;" class="flex flex-col items-center justify-center p-2 rounded-xl shadow-md min-w-[70px] transition transform hover:scale-105 cursor-pointer">
+                        <span style="color: ${textCol} !important;" class="text-xs font-black">$${precio.toLocaleString('es-CO')}</span>
+                        <span style="color: ${textCol} !important; opacity: 0.9;" class="text-[10px] font-bold">${cellDiff >= 0 ? '+' : ''}$${cellDiff.toLocaleString('es-CO')}</span>
                       </div>
                     </td>`;
                 } else {
