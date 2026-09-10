@@ -6755,33 +6755,26 @@ async function loadCRMDirectory() {
                 <span class="badge-rank ${posClass}">${pos}</span>
               </td>
               <td style="padding: 0.85rem 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.8rem;">
-                  <div class="relative group flex-shrink-0" style="position: relative; flex-shrink: 0;">
-                    <img src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : diceBearFallback}" 
-                         alt="${(c.name || 'Jugador').replace(/"/g, '&quot;')}" 
-                         class="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover border-2 border-emerald-500 shadow-md bg-slate-900 cursor-pointer hover:opacity-90 transition" 
-                         style="width: 3.5rem; height: 3.5rem; border-radius: 1rem; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12); background: #0F172A;"
-                         onerror="this.src='${diceBearFallback}'">
-                    <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" title="Cambiar foto" 
-                            class="absolute -bottom-1 -right-1 bg-slate-900 text-white p-1 rounded-full shadow border border-slate-700 text-[10px] hover:bg-emerald-600 transition" 
-                            style="position: absolute; right: -0.25rem; bottom: -0.25rem; background: #0F172A; color: #fff; border: 1px solid #334155; border-radius: 9999px; padding: 0.25rem; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18); font-size: 10px; line-height: 1;">
-                      📷
-                    </button>
-                  </div>
-                  <div style="display: flex; flex-direction: column; min-width: 0;">
-                    <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                      <span style="font-weight: 900; color: #0F172A; font-size: 1rem; line-height: 1.2;">${c.name}</span>
+                <div class="flex items-start gap-3 flex-shrink-0" style="display: flex; align-items: flex-start; gap: 0.75rem; flex-shrink: 0;">
+                  <img src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : diceBearFallback}" 
+                       alt="${(c.name || 'Jugador').replace(/"/g, '&quot;')}" 
+                       onclick="window.openCustomerModal('edit', ${c.id})" 
+                       class="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-sm bg-slate-900 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition flex-shrink-0" 
+                       style="width: 3rem; height: 3rem; border-radius: 9999px; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12); background: #0F172A; flex-shrink: 0;"
+                       onerror="this.src='${diceBearFallback}'">
+                  <div class="flex flex-col items-start min-w-0" style="display: flex; flex-direction: column; align-items: flex-start; min-width: 0;">
+                    <div class="flex items-center gap-2 flex-wrap" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                      <span class="font-extrabold text-slate-900 text-sm leading-tight hover:text-emerald-600 cursor-pointer" onclick="window.openCustomerModal('edit', ${c.id})" style="font-weight: 800; color: #0F172A; font-size: 0.875rem; line-height: 1.25; cursor: pointer;">${c.name}</span>
+                      ${playerRoleBadge}
                       ${c.is_playing_now ? `
                         <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
                           <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
-                          🟢 En ${c.active_court_name}
+                          En ${c.active_court_name}
                         </span>
                       ` : ''}
                     </div>
-                    <div style="margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                      ${playerRoleBadge}
-                    </div>
-                    <div style="margin-top: 0.22rem; font-size: 0.72rem; color: #64748B; letter-spacing: 0.01em;">📱 ${c.phone || '-'}</div>
+                    <span class="text-xs text-slate-500 font-medium leading-normal" style="font-size: 0.75rem; color: #64748B; font-weight: 500; line-height: 1.4;">${c.phone || '-'}</span>
+                    ${typeBadge ? `<div style="margin-top: 0.2rem;">${typeBadge}</div>` : ''}
                   </div>
                 </div>
               </td>
@@ -6903,33 +6896,26 @@ async function loadCRMDirectory() {
                   <span class="badge-rank ${posClass}">${pos}</span>
                 </td>
                 <td style="padding: 0.85rem 1rem;">
-                  <div style="display: flex; align-items: center; gap: 0.8rem;">
-                    <div class="relative group flex-shrink-0" style="position: relative; flex-shrink: 0;">
-                      <img src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : diceBearFallback}" 
-                           alt="${(c.name || 'Jugador').replace(/"/g, '&quot;')}" 
-                           class="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover border-2 border-emerald-500 shadow-md bg-slate-900 cursor-pointer hover:opacity-90 transition" 
-                           style="width: 3.5rem; height: 3.5rem; border-radius: 1rem; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12); background: #0F172A;"
-                           onerror="this.src='${diceBearFallback}'">
-                      <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" title="Cambiar foto" 
-                              class="absolute -bottom-1 -right-1 bg-slate-900 text-white p-1 rounded-full shadow border border-slate-700 text-[10px] hover:bg-emerald-600 transition" 
-                              style="position: absolute; right: -0.25rem; bottom: -0.25rem; background: #0F172A; color: #fff; border: 1px solid #334155; border-radius: 9999px; padding: 0.25rem; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18); font-size: 10px; line-height: 1;">
-                        📷
-                      </button>
-                    </div>
-                    <div style="display: flex; flex-direction: column; min-width: 0;">
-                      <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                        <span style="font-weight: 900; color: #0F172A; font-size: 1rem; line-height: 1.2;">${c.name}</span>
+                  <div class="flex items-start gap-3 flex-shrink-0" style="display: flex; align-items: flex-start; gap: 0.75rem; flex-shrink: 0;">
+                    <img src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : diceBearFallback}" 
+                         alt="${(c.name || 'Jugador').replace(/"/g, '&quot;')}" 
+                         onclick="window.openCustomerModal('edit', ${c.id})" 
+                         class="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-sm bg-slate-900 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition flex-shrink-0" 
+                         style="width: 3rem; height: 3rem; border-radius: 9999px; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12); background: #0F172A; flex-shrink: 0;"
+                         onerror="this.src='${diceBearFallback}'">
+                    <div class="flex flex-col items-start min-w-0" style="display: flex; flex-direction: column; align-items: flex-start; min-width: 0;">
+                      <div class="flex items-center gap-2 flex-wrap" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span class="font-extrabold text-slate-900 text-sm leading-tight hover:text-emerald-600 cursor-pointer" onclick="window.openCustomerModal('edit', ${c.id})" style="font-weight: 800; color: #0F172A; font-size: 0.875rem; line-height: 1.25; cursor: pointer;">${c.name}</span>
+                        ${playerRoleBadge}
                         ${c.is_playing_now ? `
                           <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
                             <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
-                            🟢 En ${c.active_court_name}
+                            En ${c.active_court_name}
                           </span>
                         ` : ''}
                       </div>
-                      <div style="margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                        ${playerRoleBadge}
-                      </div>
-                      <div style="margin-top: 0.22rem; font-size: 0.72rem; color: #64748B; letter-spacing: 0.01em;">📱 ${c.phone || '-'}</div>
+                      <span class="text-xs text-slate-500 font-medium leading-normal" style="font-size: 0.75rem; color: #64748B; font-weight: 500; line-height: 1.4;">${c.phone || '-'}</span>
+                      ${typeBadge ? `<div style="margin-top: 0.2rem;">${typeBadge}</div>` : ''}
                     </div>
                   </div>
                 </td>
