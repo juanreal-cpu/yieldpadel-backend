@@ -11,9 +11,6 @@ from fastapi.staticfiles import StaticFiles
 
 # Crear la carpeta de avatares si no existe
 os.makedirs("app/static/uploads/avatars", exist_ok=True)
-# Montar carpeta static
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
 
 
 @asynccontextmanager
@@ -171,6 +168,9 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan,
 )
+
+# Montar carpeta static
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
