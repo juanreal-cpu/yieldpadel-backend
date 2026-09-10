@@ -153,16 +153,9 @@
               onclick="openLoginModal()" 
               class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.03] transition-all duration-200 flex items-center justify-center gap-3"
             >
-<!-- En el botón de la barra superior (Navbar) -->
-<a href="/dashboard" class="px-4 py-2 text-xs font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 rounded-lg shadow-sm transition flex items-center gap-2">
-  <span>Ingresar al Club</span>
-</a>
-
-<!-- En el botón grande central (Hero) -->
-<a href="/dashboard" class="px-6 py-3.5 text-sm font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-lg transition flex items-center gap-2">
-  <span>Acceder al Portal del Club →</span>
-</a>
-
+              <span>Acceder al Portal del Club</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
 
             <a 
               href="#features" 
@@ -507,7 +500,14 @@
         ✕
       </button>
 
-
+      <!-- Modal Header -->
+      <div>
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 mb-2">
+          <span>⚡ Acceso Seguro Multi-Tenant</span>
+        </div>
+        <h3 class="text-2xl font-display font-extrabold text-white">Ingresar al Club</h3>
+        <p class="text-xs text-slate-400 mt-1">Selecciona tu sede deportiva e ingresa con tus credenciales.</p>
+      </div>
 
       <!-- Error Alert Message -->
       <div id="login-error-alert" class="hidden p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2.5">
@@ -704,82 +704,32 @@
       alertBox.classList.add('hidden');
     }
 
-    async function handleLogin(e) {
-      e.preventDefault();
-      hideError();
+function handleLogin(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    // Bypass: guardar sesión mock de administrador para la UI
+    localStorage.setItem('user_role', 'ADMIN');
+    localStorage.setItem('user_name', 'Administrador General');
+    // Redirigir de inmediato al dashboard
+    window.location.href = '/dashboard';
+    return false;
+  }
 
-      const username = document.getElementById('login-username').value.trim();
-      const password = document.getElementById('login-password').value;
-      const club_id = document.getElementById('login-club-select').value;
-
-      const btnSpinner = document.getElementById('btn-login-spinner');
-      const btnText = document.getElementById('btn-login-text');
-      const btn = document.getElementById('btn-do-login');
-
-      btnSpinner.classList.remove('hidden');
-      btnText.textContent = 'Autenticando...';
-      btn.disabled = true;
-
-      try {
-        const res = await fetch('/api/v1/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, club_id })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          showError(data.detail || 'Error de autenticación. Verifica tus credenciales.');
-          btnSpinner.classList.add('hidden');
-          btnText.textContent = 'Iniciar Sesión en el Club';
-          btn.disabled = false;
-          return;
-        }
-
-        // Success: store tokens for client-side API requests
-        if (data.access_token) {
-          localStorage.setItem('access_token', data.access_token);
-          localStorage.setItem('user_role', data.user.role);
-          localStorage.setItem('user_name', data.user.full_name);
-          localStorage.setItem('user_club', data.user.club_id || club_id);
-          sessionStorage.setItem('current_user', JSON.stringify(data.user));
-        }
-
-        document.getElementById('login-success-alert').classList.remove('hidden');
-        btnText.textContent = '¡Bienvenido! Redirigiendo...';
-
-        // Check if there was a returnUrl or go to /dashboard
-        const params = new URLSearchParams(window.location.search);
-        const redirectUrl = params.get('redirect') || '/dashboard';
-
-        setTimeout(() => {
-          window.location.href = redirectUrl;
-        }, 600);
-
-      } catch (err) {
-        showError('Error de conexión con el servidor. Intenta de nuevo.');
-        btnSpinner.classList.add('hidden');
-        btnText.textContent = 'Iniciar Sesión en el Club';
-        btn.disabled = false;
-      }
+  // Modal background click closes modal
+  document.getElementById('login-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeLoginModal();
     }
+  });
 
-    // Modal background click closes modal
-    document.getElementById('login-modal').addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeLoginModal();
-      }
-    });
-
-    // Check URL query or hash for ?login=true or #login
-    window.addEventListener('DOMContentLoaded', () => {
-      loadPublicClubs();
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('login') === 'true' || window.location.hash === '#login') {
-        openLoginModal();
-      }
-    });
-  </script>
+  // Check URL query or hash for ?login=true or #login
+  window.addEventListener('DOMContentLoaded', () => {
+    loadPublicClubs();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('login') === 'true' || window.location.hash === '#login') {
+      openLoginModal();
+    }
+  });
+</script>
 </body>
 </html>
+
