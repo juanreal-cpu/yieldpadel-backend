@@ -2173,11 +2173,11 @@
   <!-- ======================================================== -->
   <!-- LAYOUT SAAS PROFESIONAL: SIDEBAR FIJO + CONTENIDO        -->
   <!-- ======================================================== -->
-  <div id="app-container" class="saas-layout flex w-full min-h-screen bg-slate-50">
+  <div id="app-container" class="flex h-screen bg-slate-50 overflow-hidden w-full">
 
     <!-- 1. SIDEBAR FIJO A LA IZQUIERDA (w-64) -->
-    <aside id="sidebar" class="saas-sidebar w-64 min-w-[16rem] h-screen fixed top-0 left-0 bg-[#0b1329] border-r border-slate-800/80 flex flex-col justify-between z-50 shadow-xl p-3 overflow-y-auto">
-      <div>
+    <aside id="sidebar" class="w-64 h-screen bg-slate-900 border-r border-slate-800 flex flex-col justify-between overflow-y-auto text-slate-300 shrink-0">
+      <div class="p-3">
         <!-- Logo & Marca -->
         <div class="sidebar-brand mb-3 p-2">
           <a href="/dashboard" class="brand-title flex items-center gap-2 text-white font-extrabold text-base">
@@ -2193,82 +2193,82 @@
         <!-- Menú Vertical de Navegación -->
         <nav class="space-y-1" id="main-sidebar-nav">
           <!-- GRUPO 1: OPERACIÓN EN SEDE -->
-          <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none">Operación en Sede</div>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-all cursor-pointer active" id="btn-nav-calendar" onclick="switchMainView('calendar')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">📅</span>
+          <div class="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Operación en Sede</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-sm transition active" id="btn-nav-calendar" onclick="switchMainView('calendar')">
+            <span class="w-5 text-center text-xs">📅</span>
             <span>Matriz Calendario</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-tournaments" onclick="switchMainView('tournaments')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🏆</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-tournaments" onclick="switchMainView('tournaments')">
+            <span class="w-5 text-center text-xs">🏆</span>
             <span>Torneos Americanos</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-pos" onclick="switchMainView('pos')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🛒</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-pos" onclick="switchMainView('pos')">
+            <span class="w-5 text-center text-xs">🛒</span>
             <span>Tienda & Barra (POS)</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-access" onclick="switchMainView('access')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🚪</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-access" onclick="switchMainView('access')">
+            <span class="w-5 text-center text-xs">🚪</span>
             <span>Acceso & Presencia en Club</span>
           </button>
 
           <!-- GRUPO 2: CLIENTES & FIDELIZACIÓN -->
-          <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none">Clientes & Fidelización</div>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-crm" onclick="switchMainView('crm')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">👥</span>
+          <div class="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Clientes & Fidelización</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-crm" onclick="switchMainView('crm')">
+            <span class="w-5 text-center text-xs">👥</span>
             <span>CRM Jugadores</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-wallet-ledger" onclick="switchMainView('view-wallet-ledger')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🪙</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-wallet-ledger" onclick="switchMainView('view-wallet-ledger')">
+            <span class="w-5 text-center text-xs">🪙</span>
             <span>Auditoría Capital Points</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-memberships" onclick="switchMainView('memberships')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">💎</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-memberships" onclick="switchMainView('memberships')">
+            <span class="w-5 text-center text-xs">💎</span>
             <span>Membresías del Club</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-academy" onclick="switchMainView('academy')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🎓</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-academy" onclick="switchMainView('academy')">
+            <span class="w-5 text-center text-xs">🎓</span>
             <span>Academia de Pádel</span>
           </button>
 
           <!-- GRUPO 3: INTELIGENCIA & MERCADO -->
-          <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none">Inteligencia & Mercado</div>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-radar" onclick="switchMainView('radar')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">📈</span>
+          <div class="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Inteligencia & Mercado</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-radar" onclick="switchMainView('radar')">
+            <span class="w-5 text-center text-xs">📈</span>
             <span>Radar de Precios</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-competitors" onclick="switchMainView('competitors')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🏢</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-competitors" onclick="switchMainView('competitors')">
+            <span class="w-5 text-center text-xs">🏢</span>
             <span>Benchmark Competencia</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-yield" onclick="switchMainView('yield')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">💡</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-yield" onclick="switchMainView('yield')">
+            <span class="w-5 text-center text-xs">💡</span>
             <span>Motor de Yield</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-analytics" onclick="switchMainView('analytics')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">📊</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-analytics" onclick="switchMainView('analytics')">
+            <span class="w-5 text-center text-xs">📊</span>
             <span>Métricas & Ocupación</span>
           </button>
 
           <!-- GRUPO 4: ADMINISTRACIÓN -->
-          <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none">Administración</div>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-config" onclick="switchMainView('config')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">⚙️</span>
+          <div class="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Administración</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-config" onclick="switchMainView('config')">
+            <span class="w-5 text-center text-xs">⚙️</span>
             <span>Configuración del Club</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-audit" onclick="switchMainView('audit')">
-            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🛡️</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-audit" onclick="switchMainView('audit')">
+            <span class="w-5 text-center text-xs">🛡️</span>
             <span>Auditoría & Usuarios</span>
           </button>
         </nav>
       </div>
 
       <!-- Pie del Sidebar -->
-      <div class="sidebar-footer pt-4 mt-4 border-t border-slate-800">
+      <div class="sidebar-footer p-3 pt-4 mt-4 border-t border-slate-800">
         <div class="api-live-badge mb-2">
           <span class="live-dot"></span>
           <span class="text-xs text-slate-300 font-medium">🟢 API Live (Bogotá)</span>
         </div>
-        <button onclick="fetchSlots()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition" title="Refrescar turnos en vivo">
+        <button onclick="fetchSlots()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Refrescar turnos en vivo">
           ↻ Refrescar Datos
         </button>
         <button onclick="window.logoutSession()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg text-rose-400 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-900/50 transition mt-2" title="Cerrar sesión segura">
@@ -2276,12 +2276,9 @@
         </button>
       </div>
     </aside>
-        </button>
-      </div>
-    </aside>
 
     <!-- 2. CONTENIDO PRINCIPAL SAAS -->
-    <div class="saas-main-content ml-64 flex-1 min-h-screen flex flex-col bg-slate-50 overflow-x-hidden w-full" style="background-color: #f8fafc;">
+    <main id="main-content" class="flex-1 overflow-y-auto p-6 bg-slate-50">
 
       <!-- ======================================================== -->
       <!-- 2. BANNER EJECUTIVO SUPERIOR (HEADER OSCURO #0F172A)     -->
@@ -4195,11 +4192,9 @@
           </div>
         </div>
 
-
+    </main>
   </div>
-      </div>
-    </div>
-    <!-- CLOSE WORK-AREA AND MAIN CONTENT AFTER VIEW-AUDIT -->
+  <!-- CLOSE MAIN CONTENT AND APP CONTAINER -->
 
   <!-- MODAL: CREAR TORNEO AMERICANO MULTI-PISTA                -->
   <!-- ======================================================== -->
@@ -5891,60 +5886,70 @@
       }
     };
 
-    window.switchMainView = function(viewName) {
-      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-      let cleanName = (viewName || 'calendar').toString().trim().replace(/^view-/, '');
-      if (cleanName === 'matrix') cleanName = 'calendar';
-      if (cleanName === 'indicators') cleanName = 'yield';
+    window.switchMainView = function(viewId) {
+      const rawId = (viewId || 'view-calendar').toString().trim();
+      let cleanId = rawId;
+      if (cleanId === 'matrix') cleanId = 'calendar';
+      if (cleanId === 'indicators') cleanId = 'yield';
 
-      const target = document.getElementById('view-' + cleanName) || document.getElementById('view-' + viewName);
-      if (target) target.classList.remove('hidden');
+      // 1. Ocultar todas las vistas en main
+      document.querySelectorAll('main > div[id^="view-"], div[id^="view-"], .view-section').forEach(el => el.classList.add('hidden'));
 
-      // Remover explícitamente las clases activas de TODOS los botones .sidebar-link / .nav-item
-      document.querySelectorAll('#main-sidebar-nav .sidebar-link, #main-sidebar-nav button, .sidebar-link, .sidebar-nav-item, .nav-item').forEach(btn => {
-        btn.classList.remove('bg-blue-600/20', 'text-blue-400', 'border', 'border-blue-500/30', 'font-bold', 'active', 'bg-slate-100', 'text-slate-900');
-        btn.classList.add('text-slate-300', 'font-semibold');
+      // 2. Buscar elemento por id exacto o prefijando 'view-'
+      let target = document.getElementById(cleanId);
+      if (!target && !cleanId.startsWith('view-')) {
+        target = document.getElementById('view-' + cleanId);
+      }
+      if (!target && cleanId.startsWith('view-')) {
+        target = document.getElementById(cleanId.replace(/^view-/, ''));
+      }
+
+      if (target) {
+        target.classList.remove('hidden');
+      } else {
+        console.warn("Vista no encontrada:", viewId);
+      }
+
+      const activeName = target ? target.id.replace(/^view-/, '') : cleanId.replace(/^view-/, '');
+
+      // 3. Actualizar estado activo en botones del sidebar
+      document.querySelectorAll('#main-sidebar-nav .nav-item, #main-sidebar-nav button, .sidebar-link, .sidebar-nav-item').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white', 'font-semibold', 'shadow-sm', 'active', 'bg-slate-100', 'text-slate-900', 'bg-blue-600/20', 'text-blue-400');
+        btn.classList.add('text-slate-300', 'font-medium');
       });
 
-      const calendarBtn = document.getElementById('btn-nav-calendar');
-      if (calendarBtn && cleanName !== 'calendar') {
-        calendarBtn.classList.remove('bg-blue-600/20', 'text-blue-400', 'border', 'border-blue-500/30', 'font-bold', 'active');
-        calendarBtn.classList.add('text-slate-300', 'font-semibold');
-      }
-
-      // Aplicar la clase activa ÚNICAMENTE al botón btn-nav-${viewName}
-      const activeBtn = document.getElementById('btn-nav-' + cleanName) || document.getElementById('btn-nav-' + viewName);
+      const activeBtn = document.getElementById('btn-nav-' + activeName) || document.getElementById('btn-nav-' + rawId);
       if (activeBtn) {
-        activeBtn.classList.remove('text-slate-300', 'font-semibold', 'font-medium');
-        activeBtn.classList.add('bg-blue-600/20', 'text-blue-400', 'border', 'border-blue-500/30', 'font-bold', 'active');
+        activeBtn.classList.remove('text-slate-300', 'font-medium');
+        activeBtn.classList.add('bg-blue-600', 'text-white', 'font-semibold', 'shadow-sm', 'active');
       }
 
-      // Re-aplicar RBAC para vista activa
+      // 4. Re-aplicar RBAC para vista activa
       if (typeof window.applyRBACPermissions === 'function') {
         window.applyRBACPermissions(window.currentUserRole || 'STAFF');
       }
 
-      // Disparadores diferidos envueltos en try/catch para que jamás bloqueen
+      // 5. Disparadores diferidos envueltos en try/catch
       try {
-        if (viewName === 'crm' && typeof loadCRMPlayers === 'function') loadCRMPlayers();
-        if (viewName === 'pos' && typeof loadPosData === 'function') loadPosData();
-        if (viewName === 'access' && typeof loadAccessPresence === 'function') loadAccessPresence();
-        if (viewName === 'audit' && typeof loadAuditLogs === 'function') loadAuditLogs();
-        if (cleanName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
-        if (cleanName === 'pos' && typeof loadPOSData === 'function') loadPOSData();
-        if (cleanName === 'access' && typeof loadAccessData === 'function') loadAccessData();
-        if (cleanName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
-        if (cleanName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments();
-        if ((cleanName === 'academy' || viewName === 'academy') && typeof loadAcademyClasses === 'function') loadAcademyClasses();
-        if ((cleanName === 'memberships' || viewName === 'memberships') && typeof loadMembershipsData === 'function') loadMembershipsData();
-        if (cleanName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
-        if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
-        if (cleanName === 'wallet-ledger' || viewName === 'wallet-ledger' || viewName === 'view-wallet-ledger') {
+        if ((activeName === 'crm' || rawId === 'crm') && typeof loadCRMPlayers === 'function') loadCRMPlayers();
+        if ((activeName === 'pos' || rawId === 'pos') && typeof loadPosData === 'function') loadPosData();
+        if ((activeName === 'access' || rawId === 'access') && typeof loadAccessPresence === 'function') loadAccessPresence();
+        if ((activeName === 'audit' || rawId === 'audit') && typeof loadAuditLogs === 'function') loadAuditLogs();
+        if (activeName === 'crm' && typeof loadCRMDirectory === 'function') loadCRMDirectory();
+        if (activeName === 'pos' && typeof loadPOSData === 'function') loadPOSData();
+        if (activeName === 'access' && typeof loadAccessData === 'function') loadAccessData();
+        if (activeName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
+        if (activeName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments();
+        if ((activeName === 'academy' || rawId === 'academy') && typeof loadAcademyClasses === 'function') loadAcademyClasses();
+        if ((activeName === 'memberships' || rawId === 'memberships') && typeof loadMembershipsData === 'function') loadMembershipsData();
+        if (activeName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
+        if (activeName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
+        if (activeName === 'wallet-ledger' || rawId === 'wallet-ledger' || rawId === 'view-wallet-ledger') {
           if (typeof window.loadWalletLedger === 'function') {
             window.loadWalletLedger();
           }
         }
-        if (cleanName === 'radar' || viewName === 'radar') {
+        if (activeName === 'radar' || rawId === 'radar') {
           if (typeof window.loadRadarAnalytics === 'function') {
             window.loadRadarAnalytics();
           }
@@ -5955,6 +5960,12 @@
               window.radarMapInstance.invalidateSize();
             }
           }, 200);
+        }
+        if (activeName === 'competitors' || rawId === 'competitors') {
+          if (typeof window.loadCompetitorBenchmark === 'function') {
+            const select = document.getElementById('competitor-select');
+            window.loadCompetitorBenchmark(select ? select.value : '');
+          }
         }
       } catch (err) {
         console.warn('Carga diferida:', err);
@@ -13161,6 +13172,11 @@ Jugador: ${checkData.player_name}`);
           const gl = document.getElementById('grid-loader');
           if (gl) gl.classList.add('hidden');
         });
+      }
+
+      // Asegurar vista activa inicial (Matriz Calendario)
+      if (typeof window.switchMainView === 'function') {
+        window.switchMainView('view-calendar');
       }
     }
 
