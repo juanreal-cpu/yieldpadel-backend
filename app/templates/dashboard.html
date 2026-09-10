@@ -6537,7 +6537,8 @@ window.handleCRMSearch = window.filterCRMTable;
     window.cachedPlayers = window.cachedPlayers || DEFAULT_CRM_PLAYERS;
     window.allCRMCustomers = window.allCRMCustomers || DEFAULT_CRM_PLAYERS;
 
-    async function loadCRMDirectory() {
+
+async function loadCRMDirectory() {
       const tbody = document.getElementById('crm-table-body') || document.getElementById('crm-ranking-tbody');
       if (!tbody) return;
 
@@ -6739,22 +6740,33 @@ window.handleCRMSearch = window.filterCRMTable;
                 <span class="badge-rank ${posClass}">${pos}</span>
               </td>
               <td style="padding: 0.85rem 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                  <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
-                  ${c.is_minor ? `
-                    <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-2xs">
-                      <span>👦</span> Kid${c.guardian_name ? ` (Hijo de ${c.guardian_name})` : ''}
-                    </span>
-                  ` : ''}
-                  ${c.is_playing_now ? `
-                    <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
-                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
-                      🟢 En ${c.active_court_name}
-                    </span>
-                  ` : ''}
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <!-- Avatar con Foto Real o Iniciales Dinámicas -->
+                  <img 
+                    src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'Padel') + '&backgroundColor=0f172a,10b981,6366f1&textColor=ffffff'}" 
+                    alt="Avatar" 
+                    style="width: 2.3rem; height: 2.3rem; border-radius: 9999px; border: 1.5px solid #CBD5E1; object-fit: cover; flex-shrink: 0; background: #0F172A;"
+                    onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Padel&backgroundColor=0f172a&textColor=ffffff'"
+                  />
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                      <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
+                      ${c.is_minor ? `
+                        <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-2xs">
+                          <span>👦</span> Kid${c.guardian_name ? ` (Hijo de ${c.guardian_name})` : ''}
+                        </span>
+                      ` : ''}
+                      ${c.is_playing_now ? `
+                        <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
+                          <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
+                          🟢 En ${c.active_court_name}
+                        </span>
+                      ` : ''}
+                    </div>
+                    <div style="font-size: 0.75rem; font-family: monospace; color: #64748B; margin-top: 0.15rem;">${c.phone || '-'}</div>
+                    <div style="margin-top: 0.2rem;">${typeBadge}</div>
+                  </div>
                 </div>
-                <div style="font-size: 0.75rem; font-family: monospace; color: #64748B; margin-top: 0.15rem;">${c.phone || '-'}</div>
-                <div style="margin-top: 0.2rem;">${typeBadge}</div>
               </td>
               <td style="padding: 0.85rem 1rem;">
                 ${genderBadge}
@@ -6793,7 +6805,7 @@ window.handleCRMSearch = window.filterCRMTable;
               </td>
             </tr>
           `;
-});
+        });
         tbody.innerHTML = h;
         filterCRMTable();
       } catch (err) {
@@ -6801,128 +6813,138 @@ window.handleCRMSearch = window.filterCRMTable;
         try {
           let h = '';
           DEFAULT_CRM_PLAYERS.forEach((c, idx) => {
-          const pos = idx + 1;
-          let posClass = 'badge-rank-other';
-          if (pos === 1) posClass = 'badge-rank-1';
-          else if (pos === 2) posClass = 'badge-rank-2';
-          else if (pos === 3) posClass = 'badge-rank-3';
+            const pos = idx + 1;
+            let posClass = 'badge-rank-other';
+            if (pos === 1) posClass = 'badge-rank-1';
+            else if (pos === 2) posClass = 'badge-rank-2';
+            else if (pos === 3) posClass = 'badge-rank-3';
 
-          const isVip = (c.client_type || '').toLowerCase().includes('vip') || (c.client_type || '').toLowerCase().includes('socio');
-          const typeBadge = isVip
-            ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
-            : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
+            const isVip = (c.client_type || '').toLowerCase().includes('vip') || (c.client_type || '').toLowerCase().includes('socio');
+            const typeBadge = isVip
+              ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
+              : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
 
-          // Membresía y Vigencia
-          const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
-          let memValidityBadge = '';
-          if (tier === 'ESTANDAR') {
-            memValidityBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-100 text-slate-500 border border-slate-200">Estándar</span>`;
-          } else {
-            let daysLeft = 30;
-            let statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-            let statusText = '🟢 Activa';
-            if (c.membership_end_date) {
-              const today = new Date();
-              const end = new Date(c.membership_end_date);
-              daysLeft = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-              if (daysLeft < 0) {
-                statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
-                statusText = '🔴 Vencida';
-              } else if (daysLeft <= 5) {
-                statusBadge = 'bg-amber-100 text-amber-800 border-amber-300';
-                statusText = `🟠 Expira en ${daysLeft}d`;
-              } else {
-                statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-                statusText = `🟢 ${daysLeft}d`;
+            // Membresía y Vigencia
+            const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
+            let memValidityBadge = '';
+            if (tier === 'ESTANDAR') {
+              memValidityBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-100 text-slate-500 border border-slate-200">Estándar</span>`;
+            } else {
+              let daysLeft = 30;
+              let statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+              let statusText = '🟢 Activa';
+              if (c.membership_end_date) {
+                const today = new Date();
+                const end = new Date(c.membership_end_date);
+                daysLeft = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                if (daysLeft < 0) {
+                  statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+                  statusText = '🔴 Vencida';
+                } else if (daysLeft <= 5) {
+                  statusBadge = 'bg-amber-100 text-amber-800 border-amber-300';
+                  statusText = `🟠 Expira en ${daysLeft}d`;
+                } else {
+                  statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                  statusText = `🟢 ${daysLeft}d`;
+                }
               }
+              memValidityBadge = `
+                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">${tier}</span>
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${statusBadge}">${statusText}</span>
+                </div>
+              `;
             }
-            memValidityBadge = `
-              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">${tier}</span>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${statusBadge}">${statusText}</span>
-              </div>
+
+            // Género
+            const gender = c.gender || 'No especificado';
+            const genderBadge = (gender === 'Femenino')
+              ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-pink-50 text-pink-700 border border-pink-200">👩 F</span>'
+              : ((gender === 'Masculino')
+                ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-50 text-blue-700 border border-blue-200">👨 M</span>'
+                : `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-50 text-slate-600 border border-slate-200">🧑 ${gender}</span>`);
+
+            // Música y Horario Chips
+            const musicChip = c.preferred_music
+              ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">🎵 ${c.preferred_music}</span>`
+              : '<span class="text-slate-400 text-xs">-</span>';
+
+            const timeChip = c.preferred_play_time
+              ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">⏰ ${c.preferred_play_time}</span>`
+              : '<span class="text-slate-400 text-xs">-</span>';
+
+            h += `
+              <tr style="border-bottom: 1px solid #F1F5F9;">
+                <td style="padding: 0.85rem 1rem;">
+                  <span class="badge-rank ${posClass}">${pos}</span>
+                </td>
+                <td style="padding: 0.85rem 1rem;">
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <!-- Avatar con Foto Real o Iniciales Dinámicas -->
+                    <img 
+                      src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'Padel') + '&backgroundColor=0f172a,10b981,6366f1&textColor=ffffff'}" 
+                      alt="Avatar" 
+                      style="width: 2.3rem; height: 2.3rem; border-radius: 9999px; border: 1.5px solid #CBD5E1; object-fit: cover; flex-shrink: 0; background: #0F172A;"
+                      onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Padel&backgroundColor=0f172a&textColor=ffffff'"
+                    />
+                    <div>
+                      <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                        <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
+                        ${c.is_minor ? `
+                          <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-2xs">
+                            <span>👦</span> Kid${c.guardian_name ? ` (Hijo de ${c.guardian_name})` : ''}
+                          </span>
+                        ` : ''}
+                        ${c.is_playing_now ? `
+                          <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
+                            🟢 En ${c.active_court_name}
+                          </span>
+                        ` : ''}
+                      </div>
+                      <div style="font-size: 0.75rem; font-family: monospace; color: #64748B; margin-top: 0.15rem;">${c.phone || '-'}</div>
+                      <div style="margin-top: 0.2rem;">${typeBadge}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding: 0.85rem 1rem;">
+                  ${genderBadge}
+                </td>
+                <td style="padding: 0.85rem 1rem;">
+                  ${musicChip}
+                </td>
+                <td style="padding: 0.85rem 1rem;">
+                  ${timeChip}
+                </td>
+                <td style="padding: 0.85rem 1rem;">
+                  ${memValidityBadge}
+                </td>
+                <td style="padding: 0.85rem 1rem;">
+                  <span style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
+                    ${c.category || '4ta'}
+                  </span>
+                </td>
+                <td style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: #0F172A;">
+                  ${c.total_bookings_completed || 0} turnos
+                </td>
+                <td style="padding: 0.85rem 1rem;">
+                  <span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">
+                    ${c.ranking_points || 0} pts
+                  </span>
+                </td>
+                <td style="padding: 0.85rem 1rem; text-align: center;">
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                    <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; border-radius: 0.5rem; cursor: pointer;" title="Editar Perfil CRM">
+                      ✏️ Editar
+                    </button>
+                    <button type="button" onclick="openChallengeModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: #F59E0B; color: #FFFFFF; border: none; border-radius: 0.5rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.2rem;" title="Lanzar Reto Oficial">
+                      <span>⚔️</span> <span>Retar</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
             `;
-          }
-
-          // Género
-          const gender = c.gender || 'No especificado';
-          const genderBadge = (gender === 'Femenino')
-            ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-pink-50 text-pink-700 border border-pink-200">👩 F</span>'
-            : ((gender === 'Masculino')
-              ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-50 text-blue-700 border border-blue-200">👨 M</span>'
-              : `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-50 text-slate-600 border border-slate-200">🧑 ${gender}</span>`);
-
-          // Música y Horario Chips
-          const musicChip = c.preferred_music
-            ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">🎵 ${c.preferred_music}</span>`
-            : '<span class="text-slate-400 text-xs">-</span>';
-
-          const timeChip = c.preferred_play_time
-            ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">⏰ ${c.preferred_play_time}</span>`
-            : '<span class="text-slate-400 text-xs">-</span>';
-
-          h += `
-            <tr style="border-bottom: 1px solid #F1F5F9;">
-              <td style="padding: 0.85rem 1rem;">
-                <span class="badge-rank ${posClass}">${pos}</span>
-              </td>
-              <td style="padding: 0.85rem 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                  <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
-                  ${c.is_minor ? `
-                    <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-2xs">
-                      <span>👦</span> Kid${c.guardian_name ? ` (Hijo de ${c.guardian_name})` : ''}
-                    </span>
-                  ` : ''}
-                  ${c.is_playing_now ? `
-                    <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
-                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
-                      🟢 En ${c.active_court_name}
-                    </span>
-                  ` : ''}
-                </div>
-                <div style="font-size: 0.75rem; font-family: monospace; color: #64748B; margin-top: 0.15rem;">${c.phone || '-'}</div>
-                <div style="margin-top: 0.2rem;">${typeBadge}</div>
-              </td>
-              <td style="padding: 0.85rem 1rem;">
-                ${genderBadge}
-              </td>
-              <td style="padding: 0.85rem 1rem;">
-                ${musicChip}
-              </td>
-              <td style="padding: 0.85rem 1rem;">
-                ${timeChip}
-              </td>
-              <td style="padding: 0.85rem 1rem;">
-                ${memValidityBadge}
-              </td>
-              <td style="padding: 0.85rem 1rem;">
-                <span style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
-                  ${c.category || '4ta'}
-                </span>
-              </td>
-              <td style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: #0F172A;">
-                ${c.total_bookings_completed || 0} turnos
-              </td>
-              <td style="padding: 0.85rem 1rem;">
-                <span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">
-                  ${c.ranking_points || 0} pts
-                </span>
-              </td>
-              <td style="padding: 0.85rem 1rem; text-align: center;">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-                  <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; border-radius: 0.5rem; cursor: pointer;" title="Editar Perfil CRM">
-                    ✏️ Editar
-                  </button>
-                  <button type="button" onclick="openChallengeModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: #F59E0B; color: #FFFFFF; border: none; border-radius: 0.5rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.2rem;" title="Lanzar Reto Oficial">
-                    <span>⚔️</span> <span>Retar</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `;
-
-        });
+          });
           tbody.innerHTML = h;
         } catch (e) {
           tbody.innerHTML = '<tr><td colspan="10" style="padding: 2rem; text-align: center; color: #64748B;">No hay datos de jugadores disponibles.</td></tr>';
