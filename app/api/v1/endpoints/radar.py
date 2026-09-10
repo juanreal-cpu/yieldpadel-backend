@@ -375,6 +375,134 @@ async def get_clubs_occupancy(
     ]
 
 
+@router.get("/clubs-list")
+async def get_clubs_list(db: AsyncSession = Depends(get_db)):
+    """Devuelve la lista única de clubes competidores presentes en la vista de mercado."""
+    query = text(
+        """
+        SELECT DISTINCT club_name
+        FROM v_competitor_market_clean
+        WHERE club_name IS NOT NULL AND TRIM(club_name) <> ''
+        ORDER BY club_name ASC
+        """
+    )
+    res = await db.execute(query)
+    rows = res.fetchall()
+    return [{"club_name": row[0]} for row in rows]
+
+
+@router.get("/club-benchmark")
+async def get_club_benchmark(
+    club_name: str = Query(..., description="Nombre del club competidor a analizar"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Compara precios, jugadores recurentes y torneos de un club competidor frente a Capital Pádel."""
+    club_norm = (club_name or '').strip()
+    if not club_norm:
+        raise HTTPException(status_code=400, detail="Debe indicar un club_name válido.")
+
+    pricing_query = text(
+        """
+        WITH capital AS (
+            SELECT standard_time_slot, is_weekend,
+                   AVG(CASE WHEN LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%' THEN price_per_player END) AS capital_price
+            FROM v_competitor_market_clean
+            WHERE price_per_player IS NOT NULL AND price_per_player > 0
+            GROUP BY standard_time_slot, is_weekend
+        ),
+        club AS (
+            SELECT standard_time_slot, is_weekend,
+                   AVG(price_per_player) AS club_price
+            FROM v_competitor_market_clean
+            WHERE LOWER(CAST(club_name AS TEXT)) = LOWER(CAST(:club_name AS TEXT))
+              AND price_per_player IS NOT NULL AND price_per_player > 0
+            GROUP BY standard_time_slot, is_weekend
+        )
+        SELECT c.standard_time_slot, c.is_weekend,
+               COALESCE(cap.capital_price, 0) AS capital_price,
+               COALESCE(c.club_price, 0) AS club_price,
+               COALESCE(c.club_price, 0) - COALESCE(cap.capital_price, 0) AS gap_cop
+        FROM club c
+        LEFT JOIN capital cap ON cap.standard_time_slot = c.standard_time_slot AND cap.is_weekend = c.is_weekend
+        ORDER BY c.standard_time_slot ASC, c.is_weekend ASC
+        """
+    )
+
+    players_query = text(
+        """
+        SELECT
+            player_name,
+            detected_category,
+            COALESCE(phone, player_phone, 'Sin teléfono') AS phone,
+            COUNT(*) AS matches_played
+        FROM v_competitor_market_clean
+        WHERE LOWER(CAST(club_name AS TEXT)) = LOWER(CAST(:club_name AS TEXT))
+          AND player_name IS NOT NULL
+        GROUP BY player_name, detected_category, COALESCE(phone, player_phone, 'Sin teléfono')
+        ORDER BY matches_played DESC, player_name ASC
+        LIMIT 20
+        """
+    )
+
+    tournaments_query = text(
+        """
+        SELECT
+            event_date AS date,
+            start_time,
+            match_type,
+            price_per_player,
+            is_complete_4_4 AS is_complete_4_4
+        FROM v_competitor_market_clean
+        WHERE LOWER(CAST(club_name AS TEXT)) = LOWER(CAST(:club_name AS TEXT))
+          AND (
+              is_tournament = TRUE
+              OR LOWER(CAST(match_type AS TEXT)) LIKE '%americano%'
+              OR LOWER(CAST(match_type AS TEXT)) LIKE '%torneo%'
+          )
+        ORDER BY event_date DESC, start_time DESC
+        LIMIT 20
+        """
+    )
+
+    pricing_rows = (await db.execute(pricing_query, {"club_name": club_norm})).mappings().all()
+    players_rows = (await db.execute(players_query, {"club_name": club_norm})).mappings().all()
+    tournaments_rows = (await db.execute(tournaments_query, {"club_name": club_norm})).mappings().all()
+
+    return {
+        "status": "ok",
+        "club": club_norm,
+        "pricing": [
+            {
+                "standard_time_slot": row["standard_time_slot"],
+                "is_weekend": bool(row["is_weekend"]),
+                "capital_price": float(row["capital_price"] or 0),
+                "club_price": float(row["club_price"] or 0),
+                "gap_cop": float(row["gap_cop"] or 0),
+            }
+            for row in pricing_rows
+        ],
+        "players": [
+            {
+                "player_name": row["player_name"],
+                "detected_category": row["detected_category"],
+                "phone": row["phone"],
+                "matches_played": int(row["matches_played"] or 0),
+            }
+            for row in players_rows
+        ],
+        "tournaments": [
+            {
+                "event_date": row["date"],
+                "start_time": row["start_time"],
+                "match_type": row["match_type"],
+                "price_per_player": float(row["price_per_player"] or 0),
+                "is_complete_4_4": bool(row["is_complete_4_4"]),
+            }
+            for row in tournaments_rows
+        ],
+    }
+
+
 @router.get("/top-recurring-players")
 async def get_top_recurring_players(
     category: Optional[str] = Query(default=None, description="Ejemplo: 4ta, 3ra, 5ta"),
@@ -418,6 +546,7 @@ async def get_top_recurring_players(
                     mp.player_name,
                     mp.frequent_club,
                     mp.detected_category,
+                    COALESCE(mp.phone, mp.player_phone, 'Sin teléfono') AS phone,
                     mp.total_matches_played,
                     COUNT(DISTINCT LOWER(TRIM(CAST(v.club_name AS TEXT)))) AS total_clubes_distintos
                 FROM market_player_profiles mp
@@ -447,6 +576,7 @@ async def get_top_recurring_players(
             SELECT
                 player_name,
                 frequent_club,
+                phone,
                 total_matches_played,
                 COALESCE(total_clubes_distintos, 1) AS total_clubes_distintos,
                 CASE
@@ -466,6 +596,7 @@ async def get_top_recurring_players(
             {
                 "player_name": row["player_name"],
                 "frequent_club": row["frequent_club"],
+                "phone": row.get("phone") or "Sin teléfono",
                 "total_matches_played": int(row["total_matches_played"] or 0),
                 "total_clubes_distintos": int(row["total_clubes_distintos"] or 0),
                 "perfil_comportamiento": row["perfil_comportamiento"],
@@ -491,6 +622,7 @@ async def get_market_prospects(
             player_name, 
             frequent_club, 
             detected_category, 
+            COALESCE(phone, player_phone, 'Sin teléfono') AS phone,
             preferred_time_slot, 
             total_matches_played, 
             last_active_date
@@ -551,9 +683,10 @@ async def get_market_prospects(
             "player_name": r[0],
             "frequent_club": r[1],
             "category": r[2],
-            "preferred_slot": r[3],
-            "matches_played": r[4],
-            "last_active": r[5]
+            "phone": r[3],
+            "preferred_slot": r[4],
+            "matches_played": r[5],
+            "last_active": r[6]
         }
         for r in rows
     ]

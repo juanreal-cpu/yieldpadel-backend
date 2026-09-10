@@ -2225,6 +2225,9 @@
             <span class="text-base">📈</span>
             <span>Radar de Precios</span>
           </button>
+          <button onclick="switchMainView('competitors')" class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition" id="btn-nav-competitors">
+            <span>🏢</span> <span>Benchmark Competencia</span>
+          </button>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-yield" onclick="switchMainView('yield')">
             <span class="text-base">💡</span>
             <span>Motor de Yield</span>
@@ -2929,6 +2932,108 @@
               </div>
             </div>
 
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VISTA 4B: 🏢 INTELIGENCIA COMPETITIVA                   -->
+        <!-- ======================================================== -->
+        <div id="view-competitors" class="view-section hidden w-full px-6 py-6 space-y-6">
+          <div style="max-width: 1280px; margin: 0 auto; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%); border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.2rem 1.4rem; box-shadow: 0 16px 28px rgba(15, 23, 42, 0.06);">
+              <div>
+                <h2 style="font-size: 1.4rem; font-weight: 900; color: #0F172A; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span>🏢</span> Inteligencia Competitiva
+                </h2>
+                <p style="font-size: 0.75rem; color: #64748B; margin-top: 0.35rem;">Benchmark por club competidor: tarifas, jugadores recurrentes y torneos.</p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                <select id="competitor-select" style="padding: 0.52rem 0.8rem; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 0.8rem; font-weight: 700; min-width: 220px;">
+                  <option value="">Cargando clubes...</option>
+                </select>
+                <button onclick="window.loadCompetitorBenchmark && window.loadCompetitorBenchmark(document.getElementById('competitor-select')?.value || '')" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; border: none; border-radius: 10px; padding: 0.62rem 1rem; font-size: 0.78rem; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);">Analizar</button>
+              </div>
+            </div>
+
+            <div id="competitor-kpis" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
+                <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Tarifa Media vs Maloka</div>
+                <div id="competitor-kpi-price-gap" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">—</div>
+                <div id="competitor-kpi-price-gap-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Comparación por franja horaria.</div>
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
+                <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Partidos Monitoreados</div>
+                <div id="competitor-kpi-matches" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">0</div>
+                <div id="competitor-kpi-matches-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Registros en la vista de mercado.</div>
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
+                <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Jugadores Detectados</div>
+                <div id="competitor-kpi-players" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">0</div>
+                <div id="competitor-kpi-players-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Perfiles con recurrencia y teléfono.</div>
+              </div>
+            </div>
+
+            <div style="display: grid; gap: 1.25rem; margin-top: 1.5rem;">
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
+                <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0 0 0.9rem;">A. Comparativa de Tarifas por Franja</h3>
+                <div style="overflow-x: auto;">
+                  <table style="width: 100%; min-width: 680px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                    <thead>
+                      <tr style="background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%); border-bottom: 2px solid #E2E8F0; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <th style="padding: 0.8rem 0.7rem;">Franja</th>
+                        <th style="padding: 0.8rem 0.7rem;">Tipo Día</th>
+                        <th style="padding: 0.8rem 0.7rem; text-align: right;">Capital</th>
+                        <th style="padding: 0.8rem 0.7rem; text-align: right;">Club</th>
+                        <th style="padding: 0.8rem 0.7rem; text-align: right;">Brecha</th>
+                      </tr>
+                    </thead>
+                    <tbody id="competitor-pricing-body">
+                      <tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Selecciona un club para analizar su benchmark.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
+                <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0 0 0.9rem;">B. Directorio de Jugadores Exclusivos del Club</h3>
+                <div style="overflow-x: auto;">
+                  <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                    <thead>
+                      <tr style="background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%); border-bottom: 2px solid #E2E8F0; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <th style="padding: 0.8rem 0.7rem;">Jugador</th>
+                        <th style="padding: 0.8rem 0.7rem;">Categoría</th>
+                        <th style="padding: 0.8rem 0.7rem;">Teléfono</th>
+                        <th style="padding: 0.8rem 0.7rem; text-align: right;">Partidos en Club</th>
+                        <th style="padding: 0.8rem 0.7rem; text-align: center;">WhatsApp</th>
+                      </tr>
+                    </thead>
+                    <tbody id="competitor-players-body">
+                      <tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Cargando jugadores exclusivos...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
+                <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0 0 0.9rem;">C. Historial de Torneos Americanos</h3>
+                <div style="overflow-x: auto;">
+                  <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                    <thead>
+                      <tr style="background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%); border-bottom: 2px solid #E2E8F0; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <th style="padding: 0.8rem 0.7rem;">Fecha</th>
+                        <th style="padding: 0.8rem 0.7rem;">Hora</th>
+                        <th style="padding: 0.8rem 0.7rem;">Tipo</th>
+                        <th style="padding: 0.8rem 0.7rem; text-align: right;">Precio</th>
+                        <th style="padding: 0.8rem 0.7rem; text-align: center;">4/4</th>
+                      </tr>
+                    </thead>
+                    <tbody id="competitor-tournaments-body">
+                      <tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin eventos de torneos registrados.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -7248,6 +7353,8 @@ ${data.message}`);
         const categoryName = player.detected_category || player.category || '4ta';
         const preferred = player.preferred_time_slot || player.preferredSlot || 'N/A';
         const profile = player.perfil_comportamiento || player.profile || 'Ocasional / Híbrido';
+        const playerPhone = player.phone || player.player_phone || 'Sin WhatsApp';
+        const cleanedPhone = (playerPhone || '').toString().replace(/[^0-9]/g, '');
         const profileColors = {
           'Fiel (Mono-club)': 'background: #DCFCE7; color: #166534; border: 1px solid #86EFAC;',
           'Cazador de Precios / Multiclub': 'background: #F5F3FF; color: #6D28D9; border: 1px solid #C4B5FD;',
@@ -7256,7 +7363,12 @@ ${data.message}`);
 
         return `
           <tr style="border-bottom: 1px solid #E2E8F0;">
-            <td style="padding: 0.8rem 0.7rem; font-weight: 700; color: #0F172A;">${player.player_name || 'Jugador'}</td>
+            <td style="padding: 0.8rem 0.7rem; font-weight: 700; color: #0F172A;">
+              <div style="display: flex; flex-direction: column; gap: 0.18rem;">
+                <span>${player.player_name || 'Jugador'}</span>
+                <span class="text-xs font-semibold text-slate-500">${playerPhone || 'Sin WhatsApp'}</span>
+              </div>
+            </td>
             <td style="padding: 0.8rem 0.7rem; color: #334155;">${player.frequent_club || 'Club no identificado'}</td>
             <td style="padding: 0.8rem 0.7rem; color: #334155;">${categoryName}</td>
             <td style="padding: 0.8rem 0.7rem; color: #334155;">${preferred}</td>
@@ -7267,7 +7379,7 @@ ${data.message}`);
               </span>
             </td>
             <td style="padding: 0.8rem 0.7rem; text-align: center;">
-              <button type="button" onclick="window.openRadarLeadWhatsApp && window.openRadarLeadWhatsApp('${(player.player_name || 'Jugador').replace(/'/g, "\\'")}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(5, 150, 105, 0.8); color: #FFFFFF; border-radius: 8px; padding: 0.38rem 0.7rem; font-size: 0.7rem; font-weight: 800; cursor: pointer; box-shadow: 0 6px 14px rgba(16, 185, 129, 0.15);">
+              <button type="button" onclick="window.openRadarLeadWhatsApp && window.openRadarLeadWhatsApp('${(player.player_name || 'Jugador').replace(/'/g, "\\'")}', '${(playerPhone || '').replace(/'/g, "\\'")}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(5, 150, 105, 0.8); color: #FFFFFF; border-radius: 8px; padding: 0.38rem 0.7rem; font-size: 0.7rem; font-weight: 800; cursor: pointer; box-shadow: 0 6px 14px rgba(16, 185, 129, 0.15);">
                 💬 Conectar WhatsApp
               </button>
             </td>
@@ -7276,10 +7388,106 @@ ${data.message}`);
       }).join('');
     }
 
-    window.openRadarLeadWhatsApp = function(playerName) {
-      const safeName = encodeURIComponent((playerName || 'jugador').trim());
-      const message = encodeURIComponent(`Hola ${playerName || 'jugador'}, vi tu perfil en el radar de prospección de YieldPadel y me gustaría conversar sobre cupos libres.`);
-      window.open(`https://wa.me/?text=${message}`, '_blank');
+    window.openRadarLeadWhatsApp = function(playerName, playerPhone) {
+      const safePhone = String(playerPhone || '').replace(/[^0-9]/g, '');
+      const targetPhone = safePhone || '';
+      const message = encodeURIComponent(`Hola ${playerName || 'jugador'}, te escribimos de Capital Pádel Club`);
+      const baseUrl = targetPhone ? `https://wa.me/${targetPhone}?text=${message}` : `https://wa.me/?text=${message}`;
+      window.open(baseUrl, '_blank');
+    };
+
+    window.loadCompetitorBenchmark = async function(clubName) {
+      const select = document.getElementById('competitor-select');
+      const targetClub = (clubName || (select && select.value) || '').toString().trim();
+      if (!targetClub) {
+        const clubsRes = await fetch(`${API_BASE}/api/v1/radar/clubs-list`);
+        if (!clubsRes.ok) return;
+        const clubs = await clubsRes.json();
+        const first = Array.isArray(clubs) ? (clubs[0]?.club_name || clubs[0]?.name || '') : '';
+        if (first && select) {
+          select.value = first;
+          window.loadCompetitorBenchmark(first);
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/radar/club-benchmark?club_name=${encodeURIComponent(targetClub)}`);
+        if (!res.ok) throw new Error(`Benchmark failed: ${res.status}`);
+        const data = await res.json();
+        const pricingBody = document.getElementById('competitor-pricing-body');
+        const playersBody = document.getElementById('competitor-players-body');
+        const tournamentsBody = document.getElementById('competitor-tournaments-body');
+
+        const pricing = Array.isArray(data.pricing) ? data.pricing : [];
+        const players = Array.isArray(data.players) ? data.players : [];
+        const tournaments = Array.isArray(data.tournaments) ? data.tournaments : [];
+
+        const avgCapital = pricing.filter(r => Number(r.capital_price) > 0).reduce((sum, row) => sum + Number(row.capital_price || 0), 0) / Math.max(1, pricing.filter(r => Number(r.capital_price) > 0).length);
+        const avgClub = pricing.filter(r => Number(r.club_price) > 0).reduce((sum, row) => sum + Number(row.club_price || 0), 0) / Math.max(1, pricing.filter(r => Number(r.club_price) > 0).length);
+        const diff = avgClub ? avgClub - avgCapital : 0;
+        const gapEl = document.getElementById('competitor-kpi-price-gap');
+        const gapSubEl = document.getElementById('competitor-kpi-price-gap-sub');
+        if (gapEl) gapEl.textContent = `${diff >= 0 ? '+' : '-'}$${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP`;
+        if (gapSubEl) gapSubEl.textContent = diff >= 0 ? `El club cobra ${Math.abs(Math.round(diff))} COP más que Capital Pádel en promedio.` : `El club cobra ${Math.abs(Math.round(diff))} COP menos que Capital Pádel en promedio.`;
+
+        const matchesEl = document.getElementById('competitor-kpi-matches');
+        if (matchesEl) matchesEl.textContent = String(pricing.length || 0);
+
+        const playersEl = document.getElementById('competitor-kpi-players');
+        if (playersEl) playersEl.textContent = String(players.length || 0);
+
+        if (pricingBody) {
+          pricingBody.innerHTML = pricing.length ? pricing.map(r => {
+            const capital = Number(r.capital_price || 0);
+            const club = Number(r.club_price || 0);
+            const gap = Number(r.gap_cop || 0);
+            const sign = gap >= 0 ? '+' : '-';
+            return `
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${r.standard_time_slot || 'N/A'}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${r.is_weekend ? 'Fin de Semana' : 'Semana'}</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${capital ? capital.toLocaleString('es-CO') : '0'} COP</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155;">$${club ? club.toLocaleString('es-CO') : '0'} COP</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: ${gap >= 0 ? '#991B1B' : '#166534'}; font-weight: 800;">${sign}$${Math.abs(gap).toLocaleString('es-CO')} COP</td>
+              </tr>
+            `;
+          }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">No hay datos comparativos para este club.</td></tr>';
+        }
+
+        if (playersBody) {
+          playersBody.innerHTML = players.length ? players.map(p => {
+            const phone = p.phone || 'Sin teléfono';
+            const digits = String(phone).replace(/[^0-9]/g, '');
+            const waLink = digits ? `https://wa.me/${digits}?text=${encodeURIComponent(`Hola ${p.player_name || 'jugador'}, te escribimos de Capital Pádel Club`)}` : 'https://wa.me/?text=' + encodeURIComponent(`Hola ${p.player_name || 'jugador'}, te escribimos de Capital Pádel Club`);
+            return `
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${p.player_name || 'Jugador'}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${p.detected_category || 'Sin categoría'}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${phone}</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155; font-weight: 700;">${p.matches_played || 0}</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: center;">
+                  <a href="${waLink}" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(5, 150, 105, 0.8); color: #FFFFFF; border-radius: 8px; padding: 0.38rem 0.7rem; font-size: 0.7rem; font-weight: 800; text-decoration: none; box-shadow: 0 6px 14px rgba(16, 185, 129, 0.15);">💬 WhatsApp</a>
+                </td>
+              </tr>
+            `;
+          }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">No hay jugadores recurrentes para este club.</td></tr>';
+        }
+
+        if (tournamentsBody) {
+          tournamentsBody.innerHTML = tournaments.length ? tournaments.map(t => `
+            <tr style="border-bottom: 1px solid #E2E8F0;">
+              <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${t.event_date || 'N/A'}</td>
+              <td style="padding: 0.8rem 0.7rem; color: #334155;">${t.start_time || 'N/A'}</td>
+              <td style="padding: 0.8rem 0.7rem; color: #334155;">${t.match_type || 'Americano'}</td>
+              <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${Number(t.price_per_player || 0).toLocaleString('es-CO')} COP</td>
+              <td style="padding: 0.8rem 0.7rem; text-align: center;">${t.is_complete_4_4 ? '✅' : '—'}</td>
+            </tr>
+          `).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin torneos registrados para este club.</td></tr>';
+        }
+      } catch (err) {
+        console.error('Error loading competitor benchmark:', err);
+      }
     };
 
     window.loadRadarAnalytics = async function() {
