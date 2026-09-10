@@ -653,11 +653,11 @@ async def upload_customer_avatar(
             detail="Debe adjuntar un archivo de imagen válido.",
         )
 
-    upload_dir = os.path.join("app", "static", "uploads", "avatars")
-    os.makedirs(upload_dir, exist_ok=True)
+    target_dir = os.path.join("app", "static", "uploads", "avatars")
+    os.makedirs(target_dir, exist_ok=True)
 
     filename = f"avatar_{customer_id}_{int(time.time())}.{ext}"
-    file_path = os.path.join(upload_dir, filename)
+    file_path = os.path.normpath(os.path.join(target_dir, filename))
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)

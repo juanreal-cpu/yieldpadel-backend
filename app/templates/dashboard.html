@@ -7396,18 +7396,42 @@ ${data.message}`);
       window.open(baseUrl, '_blank');
     };
 
+    async function populateCompetitorSelect() {
+      const select = document.getElementById('competitor-select');
+      if (!select) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/radar/clubs-list`);
+        if (!res.ok) throw new Error(`clubs-list failed: ${res.status}`);
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.clubs || data.data || []);
+
+        select.innerHTML = '<option value="">Selecciona un club</option>';
+
+        list.forEach(item => {
+          const clubName = typeof item === 'string' ? item : (item.club_name || item.name || '');
+          if (!clubName) return;
+          const option = document.createElement('option');
+          option.value = clubName;
+          option.textContent = clubName;
+          select.appendChild(option);
+        });
+
+        if (select.options.length > 1) {
+          select.value = select.options[1].value;
+          window.loadCompetitorBenchmark(select.value);
+        }
+      } catch (err) {
+        console.warn('Error loading competitor clubs:', err);
+        select.innerHTML = '<option value="">No disponible</option>';
+      }
+    }
+
     window.loadCompetitorBenchmark = async function(clubName) {
       const select = document.getElementById('competitor-select');
       const targetClub = (clubName || (select && select.value) || '').toString().trim();
       if (!targetClub) {
-        const clubsRes = await fetch(`${API_BASE}/api/v1/radar/clubs-list`);
-        if (!clubsRes.ok) return;
-        const clubs = await clubsRes.json();
-        const first = Array.isArray(clubs) ? (clubs[0]?.club_name || clubs[0]?.name || '') : '';
-        if (first && select) {
-          select.value = first;
-          window.loadCompetitorBenchmark(first);
-        }
+        await populateCompetitorSelect();
         return;
       }
 

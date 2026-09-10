@@ -381,14 +381,13 @@ async def get_clubs_list(db: AsyncSession = Depends(get_db)):
     query = text(
         """
         SELECT DISTINCT club_name
-        FROM v_competitor_market_clean
+        FROM competitor_market_slots
         WHERE club_name IS NOT NULL AND TRIM(club_name) <> ''
         ORDER BY club_name ASC
         """
     )
     res = await db.execute(query)
-    rows = res.fetchall()
-    return [{"club_name": row[0]} for row in rows]
+    return {"status": "ok", "clubs": [r[0] for r in res.fetchall() if r[0]]}
 
 
 @router.get("/club-benchmark")
