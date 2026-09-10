@@ -1,5 +1,6 @@
 import os
 import shutil
+import time
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
@@ -19,6 +20,7 @@ class CustomerResponse(BaseModel):
     id: int
     name: str
     phone: str
+    avatar_url: Optional[str] = None
     category: str
     client_type: str
     membership_tier: str = "ESTANDAR"
@@ -133,6 +135,7 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         id=c.id,
         name=c.name,
         phone=c.phone,
+        avatar_url=c.avatar_url,
         category=c.category or "4ta",
         client_type=c.client_type or "Estándar",
         membership_tier=c.membership_tier or "ESTANDAR",
@@ -629,37 +632,44 @@ async def upload_customer_avatar(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Sube y almacena la foto de perfil del jugador, actualizando el campo avatar_url
-    en PostgreSQL / Supabase para el CRM y la visualización de turnos.
-    """
-    ext = file.filename.split(".")[-1].lower() if "." in file.filename else "jpg"
-    if ext not in ["jpg", "jpeg", "png", "webp"]:
+    """Sube y almacena la foto de perfil del jugador en la carpeta estática local."""
+    allowed_types = {"image/jpeg", "image/png", "image/webp"}
+    content_type = (file.content_type or "").lower()
+    if content_type not in allowed_types:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Formato de imagen inválido. Solo se admiten JPG, PNG o WebP."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Formato de imagen inválido. Solo se admiten JPG, PNG o WebP.",
         )
 
-    # Carpeta estática física
+    ext_map = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+    }
+    ext = ext_map.get(content_type, "jpg")
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debe adjuntar un archivo de imagen válido.",
+        )
+
     upload_dir = os.path.join("app", "static", "uploads", "avatars")
     os.makedirs(upload_dir, exist_ok=True)
-    
-    file_name = f"avatar_player_{customer_id}.{ext}"
-    file_path = os.path.join(upload_dir, file_name)
 
-    # Guardar archivo en disco
+    filename = f"avatar_{customer_id}_{int(time.time())}.{ext}"
+    file_path = os.path.join(upload_dir, filename)
+
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    avatar_url = f"/static/uploads/avatars/{file_name}"
+    avatar_url = f"/static/uploads/avatars/{filename}"
 
-    # Actualizar registro en base de datos
     res = await db.execute(select(Customer).where(Customer.id == customer_id))
     customer = res.scalars().first()
     if not customer:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Cliente con ID {customer_id} no encontrado."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Cliente con ID {customer_id} no encontrado.",
         )
 
     customer.avatar_url = avatar_url
@@ -667,9 +677,9 @@ async def upload_customer_avatar(
     await db.refresh(customer)
 
     return {
-        "status": "ok", 
-        "message": "Foto de perfil actualizada exitosamente",
-        "avatar_url": avatar_url
+        "status": "ok",
+        "avatar_url": avatar_url,
+        "message": "Foto actualizada correctamente",
     }
 
 

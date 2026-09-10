@@ -5300,6 +5300,14 @@
       <form id="form-crm-player" onsubmit="window.submitCustomerForm(event)" class="space-y-4 text-xs">
         <input type="hidden" id="crm-edit-player-id" value="">
 
+        <div class="flex justify-center mb-3">
+          <div class="relative">
+            <img id="customer-modal-avatar-preview" src="https://api.dicebear.com/7.x/initials/svg?seed=Padel&backgroundColor=0f172a,10b981&textColor=ffffff" alt="Avatar del jugador" class="w-20 h-20 rounded-full object-cover border-2 border-emerald-500 shadow bg-slate-900">
+            <label for="customer-avatar-input" class="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg border-2 border-white cursor-pointer">📷</label>
+            <input type="file" id="customer-avatar-input" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="window.handleAvatarUpload(event)">
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div class="col-span-2">
             <label class="block font-bold text-slate-700 mb-1">Nombre Completo</label>
@@ -6743,10 +6751,10 @@ async function loadCRMDirectory() {
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                   <!-- Avatar con Foto Real o Iniciales Dinámicas -->
                   <img 
-                    src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'Padel') + '&backgroundColor=0f172a,10b981,6366f1&textColor=ffffff'}" 
+                    src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'Padel') + '&backgroundColor=0f172a,10b981&textColor=ffffff'}" 
                     alt="Avatar" 
                     style="width: 2.3rem; height: 2.3rem; border-radius: 9999px; border: 1.5px solid #CBD5E1; object-fit: cover; flex-shrink: 0; background: #0F172A;"
-                    onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Padel&backgroundColor=0f172a&textColor=ffffff'"
+                    onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent((c.name || 'Padel')) + '&backgroundColor=0f172a,10b981&textColor=ffffff'"
                   />
                   <div>
                     <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
@@ -6882,10 +6890,10 @@ async function loadCRMDirectory() {
                   <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <!-- Avatar con Foto Real o Iniciales Dinámicas -->
                     <img 
-                      src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'Padel') + '&backgroundColor=0f172a,10b981,6366f1&textColor=ffffff'}" 
+                      src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'Padel') + '&backgroundColor=0f172a,10b981&textColor=ffffff'}" 
                       alt="Avatar" 
                       style="width: 2.3rem; height: 2.3rem; border-radius: 9999px; border: 1.5px solid #CBD5E1; object-fit: cover; flex-shrink: 0; background: #0F172A;"
-                      onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Padel&backgroundColor=0f172a&textColor=ffffff'"
+                      onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent((c.name || 'Padel')) + '&backgroundColor=0f172a,10b981&textColor=ffffff'"
                     />
                     <div>
                       <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
@@ -13200,6 +13208,69 @@ Jugador: ${checkData.player_name}`);
       if (searchInput) searchInput.placeholder = 'Buscar socio acudiente por nombre o teléfono...';
     };
 
+    window.getCustomerAvatarUrl = function(customer) {
+      const name = (customer && customer.name) ? customer.name : 'Padel';
+      if (customer && customer.avatar_url && String(customer.avatar_url).trim() !== '') {
+        return customer.avatar_url;
+      }
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0f172a,10b981&textColor=ffffff`;
+    };
+
+    window.handleAvatarUpload = async function(event) {
+      const file = event && event.target && event.target.files ? event.target.files[0] : null;
+      if (!file) return;
+
+      const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowed.includes(file.type)) {
+        alert('Solo se permiten imágenes JPG, PNG o WebP.');
+        event.target.value = '';
+        return;
+      }
+
+      const preview = document.getElementById('customer-modal-avatar-preview');
+      if (preview) {
+        const reader = new FileReader();
+        reader.onload = function() {
+          preview.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      const customerId = document.getElementById('crm-edit-player-id')?.value;
+      if (!customerId) {
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customers/${customerId}/upload-avatar`, {
+          method: 'POST',
+          body: formData,
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(result.detail || 'No se pudo subir la foto.');
+        }
+
+        if (result.avatar_url) {
+          const customerIndex = (window.allCRMCustomers || []).findIndex(item => String(item.id) === String(customerId));
+          if (customerIndex >= 0) {
+            window.allCRMCustomers[customerIndex].avatar_url = result.avatar_url;
+          }
+          const currentPreview = document.getElementById('customer-modal-avatar-preview');
+          if (currentPreview) currentPreview.src = result.avatar_url;
+          if (typeof loadCRMDirectory === 'function') {
+            await loadCRMDirectory();
+          }
+        }
+      } catch (err) {
+        console.error('Error subiendo avatar:', err);
+        alert(err.message || 'No se pudo subir la foto del cliente.');
+      }
+    };
+
     window.openCustomerModal = function(mode, playerOrId) {
       const modal = document.getElementById('modal-crm-player') || document.getElementById('register-customer-modal');
       if (!modal) return;
@@ -13217,6 +13288,8 @@ Jugador: ${checkData.player_name}`);
       const tierSelect = document.getElementById('crm-edit-tier') || document.getElementById('reg-cust-tier');
       const notesInput = document.getElementById('crm-edit-notes') || document.getElementById('reg-cust-notes');
 
+      const previewImg = document.getElementById('customer-modal-avatar-preview');
+      let currentCustomer = null;
       if (mode === 'edit' && playerOrId) {
         let p = (typeof playerOrId === 'object') ? playerOrId : null;
         if (!p) {
@@ -13224,6 +13297,7 @@ Jugador: ${checkData.player_name}`);
               (window.allCRMCustomers || []).find(item => item.id == playerOrId) ||
               (window.DEFAULT_CRM_PLAYERS || []).find(item => item.id == playerOrId);
         }
+        currentCustomer = p || null;
 
         if (titleEl) titleEl.textContent = `Editar Perfil: ${p ? p.name : 'Jugador'}`;
         if (submitTextEl) submitTextEl.textContent = 'Actualizar Perfil';
@@ -13272,6 +13346,14 @@ Jugador: ${checkData.player_name}`);
           window.toggleMinorFields(false);
         }
         window.clearSelectedGuardian();
+      }
+
+      if (previewImg) {
+        const source = window.getCustomerAvatarUrl(currentCustomer || { name: (nameInput && nameInput.value) ? nameInput.value : 'Padel' });
+        previewImg.src = source;
+        previewImg.onerror = function() {
+          this.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent((nameInput && nameInput.value) ? nameInput.value : 'Padel')}&backgroundColor=0f172a,10b981&textColor=ffffff`;
+        };
       }
 
       modal.classList.add('active');

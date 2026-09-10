@@ -26,6 +26,7 @@ class Customer(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     phone: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, default=None)
     category: Mapped[str] = mapped_column(String(50), default="4ta", nullable=False)
     client_type: Mapped[str] = mapped_column(String(50), default="Estándar", nullable=False)
     membership_tier: Mapped[str] = mapped_column(String(50), default="ESTANDAR", nullable=False)
