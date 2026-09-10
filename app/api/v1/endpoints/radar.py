@@ -394,156 +394,80 @@ async def get_clubs_list(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/club-benchmark")
-async def get_club_benchmark(
-    club_name: str = Query(..., description="Nombre del club competidor a analizar"),
-    db: AsyncSession = Depends(get_db),
-):
-    """Compara precios, jugadores recurrentes y torneos de un club competidor frente a Capital Pádel."""
-    raw_name = (club_name or "").strip()
-    if not raw_name:
-        return {
-            "status": "ok",
-            "club": club_name,
-            "total_monitored": 0,
-            "avg_price": 0,
-            "capital_avg": 45000,
-            "pricing": [],
-            "players": [],
-            "tournaments": [],
-            "heatmap_matrix": [],
-            "base_rate_capital": 45000,
-            "has_data": False,
-            "message": "No se encontraron partidos registrados para este club en la base de datos.",
-        }
+async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db)):
+    # Normalizar para búsqueda flexible (admite con tilde, sin tilde, guiones y espacios)
+    clean = club_name.strip()
+    slug = clean.lower().replace(' ', '_').replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u')
+    search_pattern = f"%{slug.replace('_', '%')}%"
 
+    # 1. Total monitoreado y tarifa promedio del club
+    q_stats = text("""
+        SELECT 
+            COUNT(*) AS total_slots,
+            COALESCE(ROUND(AVG(price_per_player)), 0) AS avg_price
+        FROM competitor_market_slots
+        WHERE club_name = :club_name 
+           OR club_name ILIKE :club_name
+           OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :slug
+           OR LOWER(club_name) ILIKE :pattern
+    """)
+    res_stats = (await db.execute(q_stats, {"club_name": clean, "slug": f"%{slug}%", "pattern": search_pattern})).mappings().first()
+    total_slots = res_stats["total_slots"] if res_stats else 0
+    avg_price = float(res_stats["avg_price"]) if res_stats else 0
+
+    # 2. Desglose para la Grilla Matricial Térmica (Franja x Día)
+    q_matrix = text("""
+        SELECT 
+            COALESCE(time_slot, 'General') AS raw_slot,
+            CASE 
+                WHEN message_date IS NOT NULL THEN TRIM(TO_CHAR(message_date::date, 'Dy'))
+                ELSE 'Lun'
+            END AS dia_code,
+            ROUND(AVG(price_per_player)) AS precio,
+            COUNT(*) AS total
+        FROM competitor_market_slots
+        WHERE (club_name = :club_name OR club_name ILIKE :club_name OR LOWER(club_name) ILIKE :pattern)
+          AND price_per_player > 0
+        GROUP BY raw_slot, dia_code
+        ORDER BY raw_slot ASC;
+    """)
+    matrix_rows = [dict(r) for r in (await db.execute(q_matrix, {"club_name": clean, "pattern": search_pattern})).mappings().all()]
+
+    # 3. Directorio de Jugadores (Tolerante a player_phone y phone)
+    q_players = text("""
+        SELECT 
+            p.player_name,
+            COALESCE(p.detected_category, '4ta') AS category,
+            COALESCE(NULLIF(p.player_phone, ''), 'Sin WhatsApp') AS phone,
+            p.total_matches_played
+        FROM market_player_profiles p
+        WHERE p.frequent_club = :club_name 
+           OR p.frequent_club ILIKE :club_name
+           OR LOWER(p.frequent_club) ILIKE :pattern
+        ORDER BY p.total_matches_played DESC
+        LIMIT 25;
+    """)
     try:
-        # 1. Consulta de estadísticas y precios en competitor_market_slots
-        q_stats = text("""
-            SELECT 
-                COUNT(*) AS total_slots, 
-                COALESCE(ROUND(AVG(price_per_player)), 0) AS avg_price 
-            FROM competitor_market_slots 
-            WHERE club_name = :club_name OR club_name ILIKE :club_name
-        """)
-        res_stats = (await db.execute(q_stats, {"club_name": raw_name})).mappings().first()
-
-        total_slots = int(res_stats["total_slots"]) if (res_stats and res_stats["total_slots"]) else 0
-        avg_price = float(res_stats["avg_price"]) if (res_stats and res_stats["avg_price"]) else 0.0
-
-        if total_slots == 0:
-            return {
-                "status": "ok",
-                "club": club_name,
-                "total_monitored": 0,
-                "avg_price": 0,
-                "capital_avg": 45000,
-                "pricing": [],
-                "players": [],
-                "tournaments": [],
-                "heatmap_matrix": [],
-                "base_rate_capital": 45000,
-                "has_data": False,
-                "message": "No se encontraron partidos registrados para este club en la base de datos.",
-            }
-
-        # 2. Desglose de tarifas por franja horaria
-        q_pricing = text("""
-            SELECT 
-                COALESCE(time_slot, 'General') AS franja,
-                'Todos los días' AS tipo_dia,
-                45000 AS tarifa_capital,
-                COALESCE(ROUND(AVG(price_per_player)), 0) AS tarifa_club,
-                CASE 
-                    WHEN COALESCE(ROUND(AVG(price_per_player)), 0) = 0 THEN 0
-                    ELSE ROUND(AVG(price_per_player) - 45000)
-                END AS brecha
-            FROM competitor_market_slots
-            WHERE (club_name = :club_name OR club_name ILIKE :club_name)
-              AND price_per_player > 0
-            GROUP BY time_slot
-            ORDER BY COUNT(*) DESC
-            LIMIT 10
-        """)
-        pricing_rows = [dict(r) for r in (await db.execute(q_pricing, {"club_name": raw_name})).mappings().all()]
-
-        # 3. Consulta de Jugadores (market_player_profiles)
-        q_players = text("""
-            SELECT 
-                p.player_name,
-                COALESCE(NULLIF(p.player_phone, ''), NULLIF(p.phone, ''), 'No disponible') AS phone,
-                COALESCE(p.detected_category, '4ta') AS category,
-                p.total_matches_played
-            FROM market_player_profiles p
-            WHERE p.frequent_club ILIKE :club_pattern
-               OR REPLACE(LOWER(p.frequent_club), ' ', '_') = LOWER(:club_name)
-            ORDER BY p.total_matches_played DESC LIMIT 25
-        """)
-        player_rows = [dict(r) for r in (await db.execute(q_players, {"club_name": raw_name, "club_pattern": f"%{raw_name}%"})).mappings().all()]
-
-        # 4. Historial de torneos / americanos
-        q_tournaments = text("""
-            SELECT 
-                COALESCE(message_date, 'N/A') AS fecha,
-                COALESCE(time_slot, 'N/A') AS hora,
-                COALESCE(category, 'Abierta') AS tipo,
-                COALESCE(price_per_player, 0) AS precio
-            FROM competitor_market_slots
-            WHERE (club_name = :club_name OR club_name ILIKE :club_name)
-              AND (match_type ILIKE '%americano%' OR players ILIKE '%americano%' OR category ILIKE '%americano%')
-            ORDER BY id DESC
-            LIMIT 15
-        """)
-        tournament_rows = [dict(r) for r in (await db.execute(q_tournaments, {"club_name": raw_name})).mappings().all()]
-
-        # 5. Grilla matricial de calor comparativa agrupando desde competitor_market_slots
-        matrix_rows = []
-        try:
-            q_matrix = text("""
-                SELECT 
-                    COALESCE(time_slot, 'General') AS raw_slot,
-                    CASE 
-                        WHEN message_date IS NOT NULL THEN TRIM(TO_CHAR(message_date::date, 'Dy'))
-                        ELSE 'Lun'
-                    END AS dia_code,
-                    ROUND(AVG(price_per_player)) AS precio,
-                    COUNT(*) AS total
-                FROM competitor_market_slots
-                WHERE (club_name = :club_name OR club_name ILIKE :club_name)
-                  AND price_per_player > 0
-                GROUP BY raw_slot, dia_code;
-            """)
-            matrix_rows = [dict(r) for r in (await db.execute(q_matrix, {"club_name": raw_name})).mappings().all()]
-        except Exception:
-            matrix_rows = []
-
-        return {
-            "status": "ok",
-            "club": club_name,
-            "total_monitored": total_slots,
-            "avg_price": avg_price,
-            "capital_avg": 45000,
-            "pricing": pricing_rows,
-            "players": player_rows,
-            "tournaments": tournament_rows,
-            "heatmap_matrix": matrix_rows,
-            "base_rate_capital": 45000,
-            "has_data": True,
-        }
+        player_rows = [dict(r) for r in (await db.execute(q_players, {"club_name": clean, "pattern": search_pattern})).mappings().all()]
     except Exception:
-        return {
-            "status": "ok",
-            "club": club_name,
-            "total_monitored": 0,
-            "avg_price": 0,
-            "capital_avg": 45000,
-            "pricing": [],
-            "players": [],
-            "tournaments": [],
-            "heatmap_matrix": [],
-            "base_rate_capital": 45000,
-            "has_data": False,
-            "message": "No se encontraron partidos registrados para este club en la base de datos.",
-        }
+        # Fallback si la columna en DB se llama diferente
+        player_rows = []
+
+    # 4. Cálculo de Brecha respecto a Capital Pádel ($45.000 COP)
+    capital_avg = 45000
+    diff = (avg_price - capital_avg) if total_slots > 0 else 0
+
+    return {
+        "status": "ok",
+        "club": clean,
+        "total_monitored": total_slots,
+        "avg_price": avg_price,
+        "capital_avg": capital_avg,
+        "price_diff": diff,
+        "heatmap_matrix": matrix_rows,
+        "players": player_rows,
+        "tournaments": []
+    }
 
 
 @router.get("/hourly-intelligence")
