@@ -400,120 +400,93 @@ async def get_club_benchmark(
         return {
             "status": "ok",
             "club": club_name,
-            "total_slots": 0,
+            "total_monitored": 0,
+            "avg_price": 0.0,
+            "capital_avg": 45000,
             "pricing": [],
             "players": [],
             "tournaments": [],
         }
 
-    clean_name = club_name.replace('_', ' ').replace('-', ' ').strip()
-    search_pattern = f"%{clean_name}%"
+    pattern = f"%{club_name.replace('_', '%').strip()}%"
 
     try:
-        pricing_query = text(
-            """
+        # 1. Total partidos monitoreados y tarifa media
+        q_stats = text("""
             SELECT 
-                COALESCE(time_slot, 'General') AS standard_time_slot,
-                COALESCE(day_type, 'Entre semana') AS day_type,
-                AVG(price_per_player) AS club_avg_price,
-                COUNT(*) AS total_slots
+                COUNT(*) AS total_slots,
+                ROUND(COALESCE(AVG(price_per_player), 0)) AS avg_price
             FROM competitor_market_slots
-            WHERE club_name ILIKE :search_pattern OR REPLACE(club_name, '_', ' ') ILIKE :search_pattern
-            GROUP BY standard_time_slot, day_type
-            """
-        )
+            WHERE club_name ILIKE :p OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :p
+        """)
+        res_stats = (await db.execute(q_stats, {"p": pattern})).mappings().first()
 
-        capital_query = text(
-            """
-            SELECT COALESCE(AVG(price_per_player), 45000) 
-            FROM competitor_market_slots 
-            WHERE club_name ILIKE '%capital%' OR club_name ILIKE '%maloka%'
-            """
-        )
-
-        players_query = text(
-            """
+        # 2. Desglose de tarifas por franja horaria real
+        q_pricing = text("""
             SELECT 
-                player_name, 
-                COALESCE(detected_category, 'General') AS detected_category, 
-                COALESCE(player_phone, 'Sin WhatsApp') AS phone, 
-                total_matches_played 
+                COALESCE(time_slot, 'General') AS franja,
+                'Todos los días' AS tipo_dia,
+                45000 AS tarifa_capital,
+                ROUND(AVG(price_per_player)) AS tarifa_club,
+                ROUND(AVG(price_per_player) - 45000) AS brecha
+            FROM competitor_market_slots
+            WHERE (club_name ILIKE :p OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :p)
+              AND price_per_player > 0
+            GROUP BY time_slot
+            ORDER BY COUNT(*) DESC
+            LIMIT 10
+        """)
+        pricing_rows = [dict(r) for r in (await db.execute(q_pricing, {"p": pattern})).mappings().all()]
+
+        # 3. Jugadores recurrentes del club (market_player_profiles)
+        q_players = text("""
+            SELECT 
+                player_name,
+                COALESCE(detected_category, 'General') AS detected_category,
+                COALESCE(player_phone, 'Sin WhatsApp') AS phone,
+                total_matches_played
             FROM market_player_profiles
-            WHERE frequent_club ILIKE :search_pattern OR REPLACE(frequent_club, '_', ' ') ILIKE :search_pattern
-            ORDER BY total_matches_played DESC LIMIT 25
-            """
-        )
+            WHERE frequent_club ILIKE :p OR REPLACE(LOWER(frequent_club), ' ', '_') ILIKE :p
+            ORDER BY total_matches_played DESC
+            LIMIT 25
+        """)
+        player_rows = [dict(r) for r in (await db.execute(q_players, {"p": pattern})).mappings().all()]
 
-        tournaments_query = text(
-            """
-            SELECT match_date::text AS match_date, raw_time_slot, standard_category, price_per_player, is_closed 
-            FROM v_competitor_market_clean 
-            WHERE (club_name ILIKE :search_pattern OR REPLACE(club_name, '_', ' ') ILIKE :search_pattern)
-              AND (match_type ILIKE '%americano%' OR match_type ILIKE '%torneo%')
-            ORDER BY match_date DESC LIMIT 15
-            """
-        )
-
-        capital_res = await db.execute(capital_query)
-        capital_val = capital_res.scalar()
-        capital_ref_price = float(capital_val) if capital_val is not None else 45000.0
-
-        pricing_res = (await db.execute(pricing_query, {"search_pattern": search_pattern})).mappings().all()
-        players_res = (await db.execute(players_query, {"search_pattern": search_pattern})).mappings().all()
-        tournaments_res = (await db.execute(tournaments_query, {"search_pattern": search_pattern})).mappings().all()
-
-        pricing_rows = [
-            {
-                "standard_time_slot": row["standard_time_slot"],
-                "day_type": row["day_type"],
-                "club_avg_price": float(row["club_avg_price"] or 0),
-                "tarifa_club": float(row["club_avg_price"] or 0),
-                "tarifa_capital": capital_ref_price,
-                "gap_cop": float((row["club_avg_price"] or 0) - capital_ref_price),
-                "total_slots": int(row["total_slots"] or 0),
-            }
-            for row in pricing_res
-        ]
-
-        player_rows = [
-            {
-                "player_name": row["player_name"],
-                "detected_category": row["detected_category"],
-                "phone": row["phone"],
-                "total_matches_played": int(row["total_matches_played"] or 0),
-            }
-            for row in players_res
-        ]
-
-        tournament_rows = [
-            {
-                "match_date": row["match_date"],
-                "raw_time_slot": row["raw_time_slot"],
-                "standard_category": row["standard_category"],
-                "price_per_player": float(row["price_per_player"] or 0),
-                "is_closed": bool(row["is_closed"]),
-            }
-            for row in tournaments_res
-        ]
-
-        total_slots = sum(r["total_slots"] for r in pricing_rows)
+        # 4. Historial de torneos / americanos
+        q_tournaments = text("""
+            SELECT 
+                COALESCE(message_date, 'N/A') AS fecha,
+                COALESCE(time_slot, 'N/A') AS hora,
+                COALESCE(category, 'Abierta') AS tipo,
+                COALESCE(price_per_player, 0) AS precio
+            FROM competitor_market_slots
+            WHERE (club_name ILIKE :p OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :p)
+              AND (match_type ILIKE '%americano%' OR players ILIKE '%americano%' OR category ILIKE '%americano%')
+            ORDER BY id DESC
+            LIMIT 15
+        """)
+        tourn_rows = [dict(r) for r in (await db.execute(q_tournaments, {"p": pattern})).mappings().all()]
 
         return {
             "status": "ok",
             "club": club_name,
-            "total_slots": total_slots,
+            "total_monitored": res_stats["total_slots"] if res_stats else 0,
+            "avg_price": float(res_stats["avg_price"]) if res_stats else 0.0,
+            "capital_avg": 45000,
             "pricing": pricing_rows,
             "players": player_rows,
-            "tournaments": tournament_rows,
+            "tournaments": tourn_rows
         }
     except Exception:
         return {
             "status": "ok",
             "club": club_name,
-            "total_slots": 0,
+            "total_monitored": 0,
+            "avg_price": 0.0,
+            "capital_avg": 45000,
             "pricing": [],
             "players": [],
-            "tournaments": [],
+            "tournaments": []
         }
 
 

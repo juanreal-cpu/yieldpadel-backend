@@ -2620,7 +2620,7 @@
               <div id="crm-featured-player-card" class="w-60 flex-shrink-0 bg-gradient-to-br from-emerald-50 via-white to-slate-50 border border-slate-200 rounded-3xl p-4 shadow-[0_18px_36px_rgba(15,23,42,0.10)] ring-1 ring-emerald-100/80 flex flex-col items-center text-center relative overflow-hidden">
                 <div class="absolute inset-x-0 top-0 h-16 bg-gradient-to-r from-emerald-500/10 via-emerald-400/5 to-slate-200/0"></div>
                 <div class="relative group w-44 h-44 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-[0_12px_24px_rgba(16,185,129,0.25)] bg-slate-900 mb-3 ring-4 ring-white">
-                  <img id="featured-player-avatar" src="https://api.dicebear.com/7.x/initials/svg?seed=Padel" alt="Foto Jugador" class="w-full h-full object-cover">
+                  <img id="featured-player-avatar" src="https://api.dicebear.com/7.x/initials/svg?seed=Padel" alt="Foto Jugador" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt || 'Jugador') + '&background=0D8ABC&color=fff';">
                   <div class="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <button type="button" onclick="triggerAvatarUploadForFeatured()" title="Cambiar Foto" class="absolute bottom-2 right-2 bg-slate-900/80 hover:bg-emerald-600 text-white p-2 rounded-xl text-xs backdrop-blur-sm transition ring-2 ring-white/80 shadow-sm">
                     📷
@@ -3091,17 +3091,17 @@
             <div id="competitor-kpis" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
                 <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Tarifa Media vs Maloka</div>
-                <div id="competitor-kpi-price-gap" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">—</div>
+                <div id="bench-price-diff" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">—</div>
                 <div id="competitor-kpi-price-gap-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Comparación por franja horaria.</div>
               </div>
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
                 <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Partidos Monitoreados</div>
-                <div id="competitor-kpi-matches" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">0</div>
+                <div id="bench-monitored-count" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">0</div>
                 <div id="competitor-kpi-matches-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Registros en la vista de mercado.</div>
               </div>
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
                 <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Jugadores Detectados</div>
-                <div id="competitor-kpi-players" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">0</div>
+                <div id="bench-players-count" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">0</div>
                 <div id="competitor-kpi-players-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Perfiles con recurrencia y teléfono.</div>
               </div>
             </div>
@@ -5623,7 +5623,7 @@
 
         <div class="flex justify-center mb-3">
           <div class="relative">
-            <img id="customer-modal-avatar-preview" src="https://api.dicebear.com/7.x/initials/svg?seed=Padel&backgroundColor=0f172a,10b981&textColor=ffffff" alt="Avatar del jugador" class="w-20 h-20 rounded-full object-cover border-2 border-emerald-500 shadow bg-slate-900">
+            <img id="customer-modal-avatar-preview" src="https://api.dicebear.com/7.x/initials/svg?seed=Padel&backgroundColor=0f172a,10b981&textColor=ffffff" alt="Avatar del jugador" class="w-20 h-20 rounded-full object-cover border-2 border-emerald-500 shadow bg-slate-900" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt || 'Jugador') + '&background=0D8ABC&color=fff';">
             <label for="customer-avatar-input" class="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg border-2 border-white cursor-pointer">📷</label>
             <input type="file" id="customer-avatar-input" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="window.handleAvatarUpload(event)">
           </div>
@@ -7356,7 +7356,7 @@ async function loadCRMDirectory() {
                        onclick="window.selectPlayerForFeaturedCard(${JSON.stringify(c).replace(/"/g, '&quot;')}); event.stopPropagation();" 
                        class="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-sm bg-slate-900 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition flex-shrink-0" 
                        style="width: 3rem; height: 3rem; border-radius: 9999px; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12); background: #0F172A; flex-shrink: 0;"
-                       onerror="this.src='${diceBearFallback}'">
+                       onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt || 'Jugador') + '&background=0D8ABC&color=fff';">
                   <div class="flex flex-col items-start min-w-0" style="display: flex; flex-direction: column; align-items: flex-start; min-width: 0;">
                     <div class="flex items-center gap-2 flex-wrap" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                       <span class="font-extrabold text-slate-900 text-sm leading-tight hover:text-emerald-600 cursor-pointer" onclick="window.selectPlayerForFeaturedCard(${JSON.stringify(c).replace(/"/g, '&quot;')}); event.stopPropagation();" style="font-weight: 800; color: #0F172A; font-size: 0.875rem; line-height: 1.25; cursor: pointer;">${c.name}</span>
@@ -7500,7 +7500,7 @@ async function loadCRMDirectory() {
                          onclick="window.openCustomerModal('edit', ${c.id})" 
                          class="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-sm bg-slate-900 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition flex-shrink-0" 
                          style="width: 3rem; height: 3rem; border-radius: 9999px; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12); background: #0F172A; flex-shrink: 0;"
-                         onerror="this.src='${diceBearFallback}'">
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt || 'Jugador') + '&background=0D8ABC&color=fff';">
                     <div class="flex flex-col items-start min-w-0" style="display: flex; flex-direction: column; align-items: flex-start; min-width: 0;">
                       <div class="flex items-center gap-2 flex-wrap" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                         <span class="font-extrabold text-slate-900 text-sm leading-tight hover:text-emerald-600 cursor-pointer" onclick="window.openCustomerModal('edit', ${c.id})" style="font-weight: 800; color: #0F172A; font-size: 0.875rem; line-height: 1.25; cursor: pointer;">${c.name}</span>
@@ -7801,33 +7801,34 @@ ${data.message}`);
         const players = Array.isArray(data && data.players) ? data.players : [];
         const tournaments = Array.isArray(data && data.tournaments) ? data.tournaments : [];
 
-        const avgCapital = pricing.filter(r => Number(r.tarifa_capital || 0) > 0).reduce((sum, row) => sum + Number(row.tarifa_capital || 0), 0) / Math.max(1, pricing.filter(r => Number(r.tarifa_capital || 0) > 0).length);
-        const avgClub = pricing.filter(r => Number(r.tarifa_club || 0) > 0).reduce((sum, row) => sum + Number(row.tarifa_club || 0), 0) / Math.max(1, pricing.filter(r => Number(r.tarifa_club || 0) > 0).length);
-        const diff = avgClub ? avgClub - avgCapital : 0;
-        const gapEl = document.getElementById('competitor-kpi-price-gap');
+        const monitoredEl = document.getElementById('bench-monitored-count') || document.getElementById('competitor-kpi-matches');
+        if (monitoredEl) monitoredEl.textContent = data.total_monitored || 0;
+
+        const playersEl = document.getElementById('bench-players-count') || document.getElementById('competitor-kpi-players');
+        if (playersEl) playersEl.textContent = (data.players || []).length;
+
+        const diff = (data.avg_price || 0) - (data.capital_avg || 45000);
+        const priceDiffEl = document.getElementById('bench-price-diff') || document.getElementById('competitor-kpi-price-gap');
+        if (priceDiffEl) priceDiffEl.textContent = (diff >= 0 ? '+' : '') + Number(diff).toLocaleString('es-CO') + ' COP';
+
         const gapSubEl = document.getElementById('competitor-kpi-price-gap-sub');
-        if (gapEl) gapEl.textContent = `${diff >= 0 ? '+' : '-'}$${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP`;
-        if (gapSubEl) gapSubEl.textContent = diff >= 0 ? `El club cobra ${Math.abs(Math.round(diff))} COP más que Capital Pádel en promedio.` : `El club cobra ${Math.abs(Math.round(diff))} COP menos que Capital Pádel en promedio.`;
-
-        const matchesEl = document.getElementById('competitor-kpi-matches');
-        if (matchesEl) matchesEl.textContent = String(pricing.length || 0);
-
-        const playersEl = document.getElementById('competitor-kpi-players');
-        if (playersEl) playersEl.textContent = String(players.length || 0);
+        if (gapSubEl) gapSubEl.textContent = diff >= 0 ? `El club cobra ${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP más que Capital Pádel en promedio.` : `El club cobra ${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP menos que Capital Pádel en promedio.`;
 
         if (pricingBody) {
           pricingBody.innerHTML = pricing.length ? pricing.map(r => {
-            const capital = Number(r.tarifa_capital || 0);
-            const club = Number(r.tarifa_club || 0);
-            const gap = Number(r.gap_cop || 0);
-            const sign = gap >= 0 ? '+' : '-';
+            const franja = r.franja || r.standard_time_slot || 'General';
+            const tipoDia = r.tipo_dia || r.day_type || 'Todos los días';
+            const capital = Number(r.tarifa_capital || 45000);
+            const club = Number(r.tarifa_club || r.club_avg_price || 0);
+            const brecha = Number(r.brecha ?? r.gap_cop ?? (club - capital));
+            const sign = brecha >= 0 ? '+' : '';
             return `
               <tr style="border-bottom: 1px solid #E2E8F0;">
-                <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${r.standard_time_slot || 'N/A'}</td>
-                <td style="padding: 0.8rem 0.7rem; color: #334155;">${r.standard_time_slot ? 'Franja detectada' : 'Sin dato'}</td>
-                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${capital ? capital.toLocaleString('es-CO') : '0'} COP</td>
-                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155;">$${club ? club.toLocaleString('es-CO') : '0'} COP</td>
-                <td style="padding: 0.8rem 0.7rem; text-align: right; color: ${gap >= 0 ? '#991B1B' : '#166534'}; font-weight: 800;">${sign}$${Math.abs(gap).toLocaleString('es-CO')} COP</td>
+                <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${franja}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${tipoDia}</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${capital.toLocaleString('es-CO')} COP</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155;">$${club.toLocaleString('es-CO')} COP</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: ${brecha >= 0 ? '#991B1B' : '#166534'}; font-weight: 800;">${sign}$${brecha.toLocaleString('es-CO')} COP</td>
               </tr>
             `;
           }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin datos comparativos para este club.</td></tr>';
@@ -7841,7 +7842,7 @@ ${data.message}`);
             return `
               <tr style="border-bottom: 1px solid #E2E8F0;">
                 <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${p.player_name || 'Jugador'}</td>
-                <td style="padding: 0.8rem 0.7rem; color: #334155;">${p.detected_category || 'Sin categoría'}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${p.detected_category || 'General'}</td>
                 <td style="padding: 0.8rem 0.7rem; color: #334155;">${phone}</td>
                 <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155; font-weight: 700;">${p.total_matches_played || 0}</td>
                 <td style="padding: 0.8rem 0.7rem; text-align: center;">
@@ -7853,15 +7854,21 @@ ${data.message}`);
         }
 
         if (tournamentsBody) {
-          tournamentsBody.innerHTML = tournaments.length ? tournaments.map(t => `
-            <tr style="border-bottom: 1px solid #E2E8F0;">
-              <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${t.match_date || 'N/A'}</td>
-              <td style="padding: 0.8rem 0.7rem; color: #334155;">${t.raw_time_slot || 'N/A'}</td>
-              <td style="padding: 0.8rem 0.7rem; color: #334155;">${t.standard_category || 'Americano'}</td>
-              <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${Number(t.price_per_player || 0).toLocaleString('es-CO')} COP</td>
-              <td style="padding: 0.8rem 0.7rem; text-align: center;">${t.is_closed ? '✅' : '—'}</td>
-            </tr>
-          `).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin torneos registrados para este club.</td></tr>';
+          tournamentsBody.innerHTML = tournaments.length ? tournaments.map(t => {
+            const fecha = t.fecha || t.match_date || 'N/A';
+            const hora = t.hora || t.raw_time_slot || 'N/A';
+            const tipo = t.tipo || t.standard_category || 'Americano';
+            const precio = Number(t.precio ?? t.price_per_player ?? 0);
+            return `
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${fecha}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${hora}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${tipo}</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${precio.toLocaleString('es-CO')} COP</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: center;">✅</td>
+              </tr>
+            `;
+          }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin torneos registrados para este club.</td></tr>';
         }
       } catch (err) {
         console.error('Error loading competitor benchmark:', err);
