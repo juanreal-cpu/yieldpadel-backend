@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -132,8 +132,6 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         americano_discount_pct = tier_discounts.get(tier_upper, 0)
         includes_beverage_perk = tier_upper in ["TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON", "ORO", "PLATA"]
 
-    wallet_balance_value = getattr(c, "wallet_balance", None)
-
     return CustomerResponse(
         id=c.id,
         name=c.name,
@@ -169,7 +167,7 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         plan_name=plan_name,
         americano_discount_pct=americano_discount_pct,
         includes_beverage_perk=includes_beverage_perk,
-        wallet_balance=float(wallet_balance_value if hasattr(c, "wallet_balance") and c.wallet_balance is not None else 0.0),
+        wallet_balance=float(c.wallet_balance if hasattr(c, 'wallet_balance') and c.wallet_balance is not None else 0.0),
     )
 
 
@@ -375,6 +373,7 @@ async def list_all_customers(
 ):
     """Retorna el listado completo de clientes del club con perfiles enriquecidos y soporte Kids."""
     await ensure_initial_customers(db)
+    # Selecciona explícitamente la entidad Customer incluyendo COALESCE(wallet_balance, 0.0) AS wallet_balance
     stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan))
 
     if category and category.upper() not in ["TODAS", "ALL", ""]:

@@ -2192,6 +2192,8 @@
 
         <!-- Menú Vertical de Navegación -->
         <nav class="space-y-1" id="main-sidebar-nav">
+          <!-- GRUPO 1: Operación en Sede -->
+          <div class="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Operación en Sede</div>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-900 transition active" id="btn-nav-calendar" onclick="switchMainView('calendar')">
             <span class="text-base">📅</span>
             <span>Matriz Calendario</span>
@@ -2199,19 +2201,6 @@
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-tournaments" onclick="switchMainView('tournaments')">
             <span class="text-base">🏆</span>
             <span>Torneos Americanos</span>
-          </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-academy" onclick="switchMainView('academy')">
-            <span class="text-base">🎓</span>
-            <span>Academia de Pádel</span>
-          </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-memberships" onclick="switchMainView('memberships')">
-            <span class="text-base">💎</span>
-            <span>Membresías del Club</span>
-          </button>
-
-          <button id="btn-nav-crm" onclick="switchMainView('crm')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 w-full transition">
-            <span class="text-base">👥</span>
-            <span>CRM Jugadores</span>
           </button>
           <button id="btn-nav-pos" onclick="switchMainView('pos')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 w-full transition">
             <span class="text-base">🛒</span>
@@ -2221,15 +2210,35 @@
             <span class="text-base">🚪</span>
             <span>Acceso & Presencia en Club</span>
           </button>
+
+          <!-- GRUPO 2: Clientes & Fidelización -->
+          <div class="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Clientes & Fidelización</div>
+          <button id="btn-nav-crm" onclick="switchMainView('crm')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 w-full transition">
+            <span class="text-base">👥</span>
+            <span>CRM Jugadores</span>
+          </button>
+          <button onclick="switchMainView('view-wallet-ledger')" id="btn-nav-wallet-ledger" class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition">
+            <span class="text-base">🪙</span>
+            <span>Auditoría Capital Points</span>
+          </button>
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-memberships" onclick="switchMainView('memberships')">
+            <span class="text-base">💎</span>
+            <span>Membresías del Club</span>
+          </button>
+          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-academy" onclick="switchMainView('academy')">
+            <span class="text-base">🎓</span>
+            <span>Academia de Pádel</span>
+          </button>
+
+          <!-- GRUPO 3: Inteligencia & Mercado -->
+          <div class="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Inteligencia & Mercado</div>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-radar" onclick="switchMainView('radar')">
             <span class="text-base">📈</span>
             <span>Radar de Precios</span>
           </button>
-          <button onclick="switchMainView('competitors')" class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition" id="btn-nav-competitors">
-            <span>🏢</span> <span>Benchmark Competencia</span>
-          </button>
-          <button onclick="switchMainView('view-wallet-ledger')" id="btn-nav-wallet-ledger" class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
-            <span>🪙</span> <span>Auditoría Capital Points</span>
+          <button onclick="switchMainView('competitors')" class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-competitors">
+            <span class="text-base">🏢</span>
+            <span>Benchmark Competencia</span>
           </button>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-yield" onclick="switchMainView('yield')">
             <span class="text-base">💡</span>
@@ -2239,6 +2248,9 @@
             <span class="text-base">📊</span>
             <span>Métricas & Ocupación</span>
           </button>
+
+          <!-- GRUPO 4: Administración -->
+          <div class="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Administración</div>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-config" onclick="switchMainView('config')">
             <span class="text-base">⚙️</span>
             <span>Configuración del Club</span>
