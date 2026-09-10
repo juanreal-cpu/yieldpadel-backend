@@ -395,97 +395,97 @@ async def get_club_benchmark(
     club_name: str = Query(..., description="Nombre del club competidor a analizar"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Compara precios, jugadores recurentes y torneos de un club competidor frente a Capital Pádel."""
-    club_norm = (club_name or '').strip()
-    if not club_norm:
-        return {"status": "ok", "club": club_norm, "pricing": [], "players": [], "tournaments": []}
+    """Compara precios, jugadores recurrentes y torneos de un club competidor frente a Capital Pádel."""
+    if not club_name or not club_name.strip():
+        return {
+            "status": "ok",
+            "club": club_name,
+            "total_slots": 0,
+            "pricing": [],
+            "players": [],
+            "tournaments": [],
+        }
+
+    clean_name = club_name.replace('_', ' ').replace('-', ' ').strip()
+    search_pattern = f"%{clean_name}%"
 
     try:
         pricing_query = text(
             """
-            WITH capital AS (
-                SELECT standard_time_slot,
-                       AVG(price_per_player) AS tarifa_capital
-                FROM v_competitor_market_clean
-                WHERE LOWER(REPLACE(REPLACE(CAST(club_name AS TEXT), ' ', '_'), '-', '_')) ILIKE '%capital%'
-                  AND LOWER(REPLACE(REPLACE(CAST(club_name AS TEXT), ' ', '_'), '-', '_')) ILIKE '%padel%'
-                  AND price_per_player IS NOT NULL
-                  AND price_per_player > 0
-                GROUP BY standard_time_slot
-            ),
-            club AS (
-                SELECT standard_time_slot,
-                       AVG(price_per_player) AS tarifa_club
-                FROM v_competitor_market_clean
-                WHERE LOWER(REPLACE(REPLACE(CAST(club_name AS TEXT), ' ', '_'), '-', '_')) ILIKE LOWER(REPLACE(REPLACE(CAST(:club_name AS TEXT), ' ', '_'), '-', '_'))
-                  AND price_per_player IS NOT NULL
-                  AND price_per_player > 0
-                GROUP BY standard_time_slot
-            )
-            SELECT COALESCE(c.standard_time_slot, cap.standard_time_slot) AS standard_time_slot,
-                   COALESCE(cap.tarifa_capital, 0) AS tarifa_capital,
-                   COALESCE(c.tarifa_club, 0) AS tarifa_club,
-                   COALESCE(c.tarifa_club, 0) - COALESCE(cap.tarifa_capital, 0) AS gap_cop
-            FROM club c
-            FULL OUTER JOIN capital cap
-              ON cap.standard_time_slot = c.standard_time_slot
-            ORDER BY COALESCE(c.standard_time_slot, cap.standard_time_slot) ASC
+            SELECT 
+                COALESCE(time_slot, 'General') AS standard_time_slot,
+                COALESCE(day_type, 'Entre semana') AS day_type,
+                AVG(price_per_player) AS club_avg_price,
+                COUNT(*) AS total_slots
+            FROM competitor_market_slots
+            WHERE club_name ILIKE :search_pattern OR REPLACE(club_name, '_', ' ') ILIKE :search_pattern
+            GROUP BY standard_time_slot, day_type
+            """
+        )
+
+        capital_query = text(
+            """
+            SELECT COALESCE(AVG(price_per_player), 45000) 
+            FROM competitor_market_slots 
+            WHERE club_name ILIKE '%capital%' OR club_name ILIKE '%maloka%'
             """
         )
 
         players_query = text(
             """
-            SELECT player_name,
-                   detected_category,
-                   COALESCE(phone, player_phone, 'Sin WhatsApp') AS phone,
-                   total_matches_played
+            SELECT 
+                player_name, 
+                COALESCE(detected_category, 'General') AS detected_category, 
+                COALESCE(player_phone, 'Sin WhatsApp') AS phone, 
+                total_matches_played 
             FROM market_player_profiles
-            WHERE LOWER(REPLACE(frequent_club, ' ', '_')) ILIKE LOWER(REPLACE(CAST(:club_name AS TEXT), ' ', '_'))
-            ORDER BY total_matches_played DESC
-            LIMIT 30
+            WHERE frequent_club ILIKE :search_pattern OR REPLACE(frequent_club, '_', ' ') ILIKE :search_pattern
+            ORDER BY total_matches_played DESC LIMIT 25
             """
         )
 
         tournaments_query = text(
             """
-            SELECT match_date::text AS match_date,
-                   raw_time_slot,
-                   standard_category,
-                   price_per_player,
-                   is_closed
-            FROM v_competitor_market_clean
-            WHERE club_name = :club_name
-              AND match_type = 'AMERICANO'
-            ORDER BY match_date DESC
-            LIMIT 20
+            SELECT match_date::text AS match_date, raw_time_slot, standard_category, price_per_player, is_closed 
+            FROM v_competitor_market_clean 
+            WHERE (club_name ILIKE :search_pattern OR REPLACE(club_name, '_', ' ') ILIKE :search_pattern)
+              AND (match_type ILIKE '%americano%' OR match_type ILIKE '%torneo%')
+            ORDER BY match_date DESC LIMIT 15
             """
         )
 
-        pricing_rows = (await db.execute(pricing_query, {"club_name": club_norm})).mappings().all()
-        player_rows = (await db.execute(players_query, {"club_name": club_norm})).mappings().all()
-        tournament_rows = (await db.execute(tournaments_query, {"club_name": club_norm})).mappings().all()
+        capital_res = await db.execute(capital_query)
+        capital_val = capital_res.scalar()
+        capital_ref_price = float(capital_val) if capital_val is not None else 45000.0
 
-        pricing_rows_list = [
+        pricing_res = (await db.execute(pricing_query, {"search_pattern": search_pattern})).mappings().all()
+        players_res = (await db.execute(players_query, {"search_pattern": search_pattern})).mappings().all()
+        tournaments_res = (await db.execute(tournaments_query, {"search_pattern": search_pattern})).mappings().all()
+
+        pricing_rows = [
             {
                 "standard_time_slot": row["standard_time_slot"],
-                "tarifa_capital": float(row["tarifa_capital"] or 0),
-                "tarifa_club": float(row["tarifa_club"] or 0),
-                "gap_cop": float(row["gap_cop"] or 0),
+                "day_type": row["day_type"],
+                "club_avg_price": float(row["club_avg_price"] or 0),
+                "tarifa_club": float(row["club_avg_price"] or 0),
+                "tarifa_capital": capital_ref_price,
+                "gap_cop": float((row["club_avg_price"] or 0) - capital_ref_price),
+                "total_slots": int(row["total_slots"] or 0),
             }
-            for row in pricing_rows
+            for row in pricing_res
         ]
 
-        player_rows_list = [
+        player_rows = [
             {
                 "player_name": row["player_name"],
                 "detected_category": row["detected_category"],
                 "phone": row["phone"],
                 "total_matches_played": int(row["total_matches_played"] or 0),
             }
-            for row in player_rows
+            for row in players_res
         ]
 
-        tournament_rows_list = [
+        tournament_rows = [
             {
                 "match_date": row["match_date"],
                 "raw_time_slot": row["raw_time_slot"],
@@ -493,18 +493,28 @@ async def get_club_benchmark(
                 "price_per_player": float(row["price_per_player"] or 0),
                 "is_closed": bool(row["is_closed"]),
             }
-            for row in tournament_rows
+            for row in tournaments_res
         ]
+
+        total_slots = sum(r["total_slots"] for r in pricing_rows)
 
         return {
             "status": "ok",
-            "club": club_norm,
-            "pricing": pricing_rows_list,
-            "players": player_rows_list,
-            "tournaments": tournament_rows_list,
+            "club": club_name,
+            "total_slots": total_slots,
+            "pricing": pricing_rows,
+            "players": player_rows,
+            "tournaments": tournament_rows,
         }
     except Exception:
-        return {"status": "ok", "club": club_norm, "pricing": [], "players": [], "tournaments": []}
+        return {
+            "status": "ok",
+            "club": club_name,
+            "total_slots": 0,
+            "pricing": [],
+            "players": [],
+            "tournaments": [],
+        }
 
 
 @router.get("/top-recurring-players")
