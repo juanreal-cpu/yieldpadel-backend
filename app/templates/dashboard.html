@@ -3173,18 +3173,18 @@
                 </div>
 
                 <!-- Grid contenedor con scroll horizontal limpio -->
-                <div class="overflow-x-auto">
+                <div class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl text-slate-200 overflow-x-auto">
                   <table class="w-full text-left border-collapse min-w-[700px]" id="benchmark-heatmap-table">
                     <thead>
-                      <tr class="text-[11px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                        <th class="py-2.5 px-3">Franja Operativa</th>
-                        <th class="py-2.5 px-3 text-center">Lun</th>
-                        <th class="py-2.5 px-3 text-center">Mar</th>
-                        <th class="py-2.5 px-3 text-center">Mié</th>
-                        <th class="py-2.5 px-3 text-center">Jue</th>
-                        <th class="py-2.5 px-3 text-center">Vie</th>
-                        <th class="py-2.5 px-3 text-center text-amber-400 font-bold">Sáb</th>
-                        <th class="py-2.5 px-3 text-center text-amber-400 font-bold">Dom</th>
+                      <tr class="border-b border-slate-800">
+                        <th class="py-3 px-3 text-xs font-bold text-slate-300 whitespace-nowrap bg-slate-900/60 rounded-l-lg border-y border-slate-800/80">Franja Operativa</th>
+                        <th class="py-3 px-2 text-center text-[11px] font-black tracking-wider text-slate-400 uppercase border-b border-slate-800">Lun</th>
+                        <th class="py-3 px-2 text-center text-[11px] font-black tracking-wider text-slate-400 uppercase border-b border-slate-800">Mar</th>
+                        <th class="py-3 px-2 text-center text-[11px] font-black tracking-wider text-slate-400 uppercase border-b border-slate-800">Mié</th>
+                        <th class="py-3 px-2 text-center text-[11px] font-black tracking-wider text-slate-400 uppercase border-b border-slate-800">Jue</th>
+                        <th class="py-3 px-2 text-center text-[11px] font-black tracking-wider text-slate-400 uppercase border-b border-slate-800">Vie</th>
+                        <th class="py-3 px-2 text-center text-[11px] font-black tracking-wider text-amber-400 uppercase border-b border-slate-800 font-bold">Sáb</th>
+                        <th class="py-3 px-2 text-center text-[11px] font-black tracking-wider text-amber-400 uppercase border-b border-slate-800 font-bold">Dom</th>
                       </tr>
                     </thead>
                     <tbody id="benchmark-heatmap-body" class="divide-y divide-slate-800/60 text-xs">
@@ -7917,7 +7917,7 @@ ${data.message}`);
             let htmlRows = '';
             distinctSlots.forEach(slot => {
               let rowHtml = `<tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition">`;
-              rowHtml += `<td class="py-2.5 px-3 font-bold text-white whitespace-nowrap bg-slate-900/90">${slot}</td>`;
+              rowHtml += `<td class="py-3 px-3 text-xs font-bold text-slate-300 whitespace-nowrap bg-slate-900/60 rounded-l-lg border-y border-slate-800/80">${slot}</td>`;
 
               days.forEach(day => {
                 const match = matrixData.find(m => {
@@ -7930,27 +7930,31 @@ ${data.message}`);
                   const precio = Number(match.precio || match.precio_competidor || 0);
                   const cellDiff = precio - 45000;
 
-                  if (cellDiff > 0) {
-                    rowHtml += `
-                      <td class="py-2.5 px-2 text-center font-bold rounded-lg transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                        <div>$${precio.toLocaleString('es-CO')}</div>
-                        <div class="text-[10px] font-black mt-0.5">(+$${cellDiff.toLocaleString('es-CO')})</div>
-                      </td>`;
-                  } else if (cellDiff < 0) {
-                    rowHtml += `
-                      <td class="py-2.5 px-2 text-center font-bold rounded-lg transition bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                        <div>$${precio.toLocaleString('es-CO')}</div>
-                        <div class="text-[10px] font-black mt-0.5">(-$${Math.abs(cellDiff).toLocaleString('es-CO')})</div>
-                      </td>`;
-                  } else {
-                    rowHtml += `
-                      <td class="py-2.5 px-2 text-center font-bold rounded-lg transition bg-slate-700/30 text-slate-300 border border-slate-700/50">
-                        <div>$${precio.toLocaleString('es-CO')}</div>
-                        <div class="text-[10px] font-semibold text-slate-400 mt-0.5">(Paridad)</div>
-                      </td>`;
+                  let badgeClass = "";
+                  if (cellDiff >= 10000) {
+                    badgeClass = "bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/20";
+                  } else if (cellDiff > 0 && cellDiff < 10000) {
+                    badgeClass = "bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold";
+                  } else if (cellDiff === 0) {
+                    badgeClass = "bg-slate-800 text-slate-300 border border-slate-700 font-medium";
+                  } else if (cellDiff < 0 && cellDiff > -15000) {
+                    badgeClass = "bg-amber-950/80 text-amber-300 border border-amber-500/40 font-bold";
+                  } else if (cellDiff <= -15000) {
+                    badgeClass = "bg-rose-600 text-white font-black shadow-lg shadow-rose-600/30";
                   }
+
+                  rowHtml += `
+                    <td class="py-2 px-1 text-center">
+                      <div class="flex flex-col items-center justify-center p-1.5 rounded-xl ${badgeClass} transition transform hover:scale-105 cursor-pointer">
+                        <span class="text-[11px] leading-tight">$${precio.toLocaleString('es-CO')}</span>
+                        <span class="text-[9px] opacity-90 font-bold">${cellDiff >= 0 ? '+' : ''}$${cellDiff.toLocaleString('es-CO')}</span>
+                      </div>
+                    </td>`;
                 } else {
-                  rowHtml += `<td class="py-2.5 px-2 text-center text-slate-600 font-medium select-none"><span class="text-slate-600">—</span></td>`;
+                  rowHtml += `
+                    <td class="py-2 px-1 text-center select-none">
+                      <div class="text-center text-slate-700 text-xs py-2">—</div>
+                    </td>`;
                 }
               });
 
