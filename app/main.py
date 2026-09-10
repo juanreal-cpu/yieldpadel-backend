@@ -213,27 +213,16 @@ async def health():
     return {"status": "ok", "service": "YieldPadel Core"}
 
 
-@app.get("/", response_class=HTMLResponse)
-async def root_view(request: Request):
-    user = get_current_user_from_request(request)
-    if user:
-        return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
-    response = templates.TemplateResponse("landing.html", {"request": request})
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
+@app.get("/")
+async def serve_landing(request: Request):
+    """Muestra la Landing Page comercial de YieldPadel"""
+    return templates.TemplateResponse("landing.html", {"request": request})
 
-
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard_view(request: Request):
-    user = get_current_user_from_request(request)
-    if not user:
-        return RedirectResponse(url="/?login=true", status_code=status.HTTP_302_FOUND)
-    response = templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
+@app.get("/dashboard")
+async def serve_dashboard(request: Request):
+    """Acceso directo al panel operativo del club sin validación de usuario/clave"""
+    response = templates.TemplateResponse("dashboard.html", {"request": request})
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
     return response
 
 
