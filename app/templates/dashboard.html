@@ -7956,7 +7956,7 @@ ${data.message}`);
         } else if (isTournament) {
           actionBtnHtml = `<span style="font-size: 0.65rem; color: #7C3AED; font-weight: 700;">🏆 Torneo Activo</span>`;
         } else if (isFull) {
-          actionBtnHtml = `<div class="flex items-center gap-1.5"><span class="card-full-badge">✓ Confirmado</span><button onclick="openReserveOrBlockModal(${slot.id})" class="px-2 py-0.5 text-[10px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 rounded" title="Ver detalle o registrar resultado">🏅 Resultado</button></div>`;
+          actionBtnHtml = `<span class="px-2.5 py-1 text-xs font-bold text-slate-500 bg-slate-100 rounded-lg border border-slate-200">🔒 Turno Completo</span>`;
         }
 
         // Detección de Turno Crítico (< 3 horas) para Animación 'On Fire' y Remate Flash
@@ -9313,12 +9313,32 @@ ${data.message}`);
       }
     };
 
+    function getSlotOccupiedSpots(slot) {
+      if (!slot) return 0;
+      const explicitOccupied = Number.isFinite(Number(slot.spots_count)) ? Number(slot.spots_count) : 0;
+      const bookedOccupied = Number.isFinite(Number(slot.booked_spots)) ? Number(slot.booked_spots) : 0;
+      const heldOccupied = Number.isFinite(Number(slot.held_spots)) ? Number(slot.held_spots) : 0;
+      const playersOccupied = Array.isArray(slot.players_names) ? slot.players_names.length : 0;
+      const participantsOccupied = Array.isArray(slot.participants) ? slot.participants.length : 0;
+      return Math.max(explicitOccupied, bookedOccupied, heldOccupied, playersOccupied, participantsOccupied, 0);
+    }
+
     // Modal Hold (Apartar Cupo)
     function openHoldModal(slotId) {
       const targetId = parseInt(slotId, 10);
       const slotList = (typeof allSlots !== 'undefined' && allSlots && allSlots.length > 0) ? allSlots : (window.allSlots || []);
       const slot = slotList.find(s => s.id === slotId || s.id === targetId || String(s.id) === String(slotId));
       if (!slot) return;
+
+      const occupied = getSlotOccupiedSpots(slot);
+      if (occupied >= 4) {
+        if (typeof window.showDarkToast === 'function') {
+          window.showDarkToast('Turno Lleno', 'Este turno ya se encuentra lleno (4/4 cupos).');
+        } else {
+          showToast('Este turno ya se encuentra lleno (4/4 cupos).', 'error');
+        }
+        return;
+      }
 
       const { dateStr, timeStr } = getColombiaDateTime();
       const slotDate = slot.date || selectedDate;
@@ -9364,17 +9384,33 @@ ${data.message}`);
       }
 
       const spotsSelect = document.getElementById('hold-spots-count');
+      const btnSubmitHold = document.getElementById('btn-submit-hold');
       if (spotsSelect) {
         spotsSelect.innerHTML = '';
-        const cap = slot.capacity || 4;
-        const maxOpts = Math.min(cap, 6);
-        for (let i = 1; i <= maxOpts; i++) {
+        const remaining = Math.max(0, 4 - occupied);
+        if (remaining <= 0) {
           const opt = document.createElement('option');
-          opt.value = i;
-          opt.textContent = `${i} Cupo${i > 1 ? 's' : ''}`;
+          opt.value = '0';
+          opt.textContent = 'Sin cupos disponibles';
           spotsSelect.appendChild(opt);
+          spotsSelect.value = '0';
+          if (btnSubmitHold) {
+            btnSubmitHold.disabled = true;
+            btnSubmitHold.textContent = 'Turno Lleno';
+          }
+        } else {
+          for (let i = 1; i <= remaining; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = `${i} Cupo${i > 1 ? 's' : ''}`;
+            spotsSelect.appendChild(opt);
+          }
+          spotsSelect.value = '1';
+          if (btnSubmitHold) {
+            btnSubmitHold.disabled = false;
+            btnSubmitHold.textContent = 'Generar Hold (10 min)';
+          }
         }
-        spotsSelect.value = '1';
       }
 
       const modal = document.getElementById('hold-modal') || document.getElementById('modal-hold');
@@ -9423,6 +9459,11 @@ ${data.message}`);
             : ((slotIdInput && slotIdInput.value) || (targetSlotInput && targetSlotInput.value) || '')));
       const slotIdResolved = Number.isFinite(Number(rawSlotId)) ? Number(rawSlotId) : parseInt(String(rawSlotId || '').trim(), 10);
 
+      const slotList = (typeof allSlots !== 'undefined' && allSlots && allSlots.length > 0) ? allSlots : (window.allSlots || []);
+      const slot = slotList.find(s => s.id === slotIdResolved || String(s.id) === String(slotIdResolved));
+      const occupied = getSlotOccupiedSpots(slot);
+      const remaining = Math.max(0, 4 - occupied);
+
       const searchInput = document.getElementById('hold-player-search');
       const nameInput = document.getElementById('hold-player-name') || document.getElementById('hold-client-name');
       const name = (searchInput && searchInput.value ? searchInput.value : (nameInput ? nameInput.value : '')).trim();
@@ -9443,6 +9484,16 @@ ${data.message}`);
 
       if (!slotIdResolved && slotIdResolved !== 0) {
         alert('No se pudo identificar el turno para asignar el cupo.');
+        return;
+      }
+
+      if (remaining <= 0) {
+        alert('Este turno ya se encuentra lleno (4/4 cupos).');
+        return;
+      }
+
+      if (spots > remaining) {
+        alert(`Solo quedan ${remaining} cupo(s) disponibles para este turno.`);
         return;
       }
 
