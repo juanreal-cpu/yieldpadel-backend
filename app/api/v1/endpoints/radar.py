@@ -407,6 +407,8 @@ async def get_club_benchmark(
             "pricing": [],
             "players": [],
             "tournaments": [],
+            "heatmap_matrix": [],
+            "base_rate_capital": 45000,
             "has_data": False,
             "message": "No se encontraron partidos registrados para este club en la base de datos.",
         }
@@ -435,6 +437,8 @@ async def get_club_benchmark(
                 "pricing": [],
                 "players": [],
                 "tournaments": [],
+                "heatmap_matrix": [],
+                "base_rate_capital": 45000,
                 "has_data": False,
                 "message": "No se encontraron partidos registrados para este club en la base de datos.",
             }
@@ -490,6 +494,42 @@ async def get_club_benchmark(
         """)
         tournament_rows = [dict(r) for r in (await db.execute(q_tournaments, {"club_name": raw_name})).mappings().all()]
 
+        # 5. Grilla matricial de calor comparativa
+        matrix_rows = []
+        try:
+            q_matrix = text("""
+                SELECT 
+                    COALESCE(standard_time_slot, 'General') AS franja,
+                    COALESCE(day_name, 'Lunes') AS dia,
+                    ROUND(AVG(price_per_player)) AS precio_competidor,
+                    COUNT(*) AS partidos_detectados
+                FROM v_competitor_market_clean
+                WHERE (club_name = :club_name OR club_name ILIKE :club_name)
+                  AND standard_time_slot != 'Otra Franja'
+                  AND price_per_player > 0
+                GROUP BY standard_time_slot, day_name
+                ORDER BY standard_time_slot ASC;
+            """)
+            matrix_rows = [dict(r) for r in (await db.execute(q_matrix, {"club_name": raw_name})).mappings().all()]
+        except Exception:
+            matrix_rows = []
+
+        if not matrix_rows:
+            q_fallback = text("""
+                SELECT 
+                    COALESCE(time_slot, 'General') AS franja,
+                    'Lunes' AS dia,
+                    ROUND(AVG(price_per_player)) AS precio_competidor,
+                    COUNT(*) AS partidos_detectados
+                FROM competitor_market_slots
+                WHERE (club_name = :club_name OR club_name ILIKE :club_name)
+                  AND price_per_player > 0
+                GROUP BY time_slot
+                ORDER BY COUNT(*) DESC
+                LIMIT 12;
+            """)
+            matrix_rows = [dict(r) for r in (await db.execute(q_fallback, {"club_name": raw_name})).mappings().all()]
+
         return {
             "status": "ok",
             "club": club_name,
@@ -499,6 +539,8 @@ async def get_club_benchmark(
             "pricing": pricing_rows,
             "players": player_rows,
             "tournaments": tournament_rows,
+            "heatmap_matrix": matrix_rows,
+            "base_rate_capital": 45000,
             "has_data": True,
         }
     except Exception:
@@ -511,6 +553,8 @@ async def get_club_benchmark(
             "pricing": [],
             "players": [],
             "tournaments": [],
+            "heatmap_matrix": [],
+            "base_rate_capital": 45000,
             "has_data": False,
             "message": "No se encontraron partidos registrados para este club en la base de datos.",
         }

@@ -3104,21 +3104,39 @@
             </div>
 
             <div style="display: grid; gap: 1.25rem; margin-top: 1.5rem;">
-              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
-                <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0 0 0.9rem;">A. Comparativa de Tarifas por Franja</h3>
-                <div style="overflow-x: auto;">
-                  <table style="width: 100%; min-width: 680px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+              <!-- 1. GRIDA MATRICIAL DE PARIDAD & TARIFAS DINÁMICAS (Infare / Airnguru Grade) -->
+              <div class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-800">
+                  <div>
+                    <h3 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                      <span>⚡</span> Grilla Matricial de Paridad & Tarifas Dinámicas (Infare Grade)
+                    </h3>
+                    <p class="text-xs text-slate-400">Diferencial térmico en tiempo real frente a la tarifa base de Capital Pádel ($45.000 COP/persona).</p>
+                  </div>
+                  <div class="flex items-center gap-3 text-xs">
+                    <span class="inline-flex items-center gap-1.5 text-emerald-400 font-bold"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Más Caro (+Yield)</span>
+                    <span class="inline-flex items-center gap-1.5 text-slate-400 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span> Paridad (±0)</span>
+                    <span class="inline-flex items-center gap-1.5 text-rose-400 font-bold"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Más Barato (-Riesgo)</span>
+                  </div>
+                </div>
+
+                <!-- Grid contenedor con scroll horizontal limpio -->
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse min-w-[700px]" id="benchmark-heatmap-table">
                     <thead>
-                      <tr style="background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%); border-bottom: 2px solid #E2E8F0; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
-                        <th style="padding: 0.8rem 0.7rem;">Franja</th>
-                        <th style="padding: 0.8rem 0.7rem;">Tipo Día</th>
-                        <th style="padding: 0.8rem 0.7rem; text-align: right;">Capital</th>
-                        <th style="padding: 0.8rem 0.7rem; text-align: right;">Club</th>
-                        <th style="padding: 0.8rem 0.7rem; text-align: right;">Brecha</th>
+                      <tr class="text-[11px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                        <th class="py-2.5 px-3">Franja Operativa</th>
+                        <th class="py-2.5 px-3 text-center">Lun</th>
+                        <th class="py-2.5 px-3 text-center">Mar</th>
+                        <th class="py-2.5 px-3 text-center">Mié</th>
+                        <th class="py-2.5 px-3 text-center">Jue</th>
+                        <th class="py-2.5 px-3 text-center">Vie</th>
+                        <th class="py-2.5 px-3 text-center text-amber-400 font-bold">Sáb</th>
+                        <th class="py-2.5 px-3 text-center text-amber-400 font-bold">Dom</th>
                       </tr>
                     </thead>
-                    <tbody id="competitor-pricing-body">
-                      <tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Selecciona un club para analizar su benchmark.</td></tr>
+                    <tbody id="benchmark-heatmap-body" class="divide-y divide-slate-800/60 text-xs">
+                      <tr><td colspan="8" class="text-center py-8 text-slate-500">Selecciona un club para visualizar su grilla matricial de paridad.</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -7802,15 +7820,17 @@ ${data.message}`);
 
       try {
         const res = await fetch(`${API_BASE}/api/v1/radar/club-benchmark?club_name=${encodeURIComponent(targetClub)}`);
-        const data = res.ok ? await res.json() : { pricing: [], players: [], tournaments: [] };
+        const data = res.ok ? await res.json() : { pricing: [], players: [], tournaments: [], heatmap_matrix: [] };
 
         const pricingBody = document.getElementById('competitor-pricing-body');
         const playersBody = document.getElementById('competitor-players-body');
         const tournamentsBody = document.getElementById('competitor-tournaments-body');
+        const heatmapBody = document.getElementById('benchmark-heatmap-body');
 
         const pricing = Array.isArray(data && data.pricing) ? data.pricing : [];
         const players = Array.isArray(data && data.players) ? data.players : [];
         const tournaments = Array.isArray(data && data.tournaments) ? data.tournaments : [];
+        const matrixData = Array.isArray(data && data.heatmap_matrix) ? data.heatmap_matrix : [];
 
         const monitoredEl = document.getElementById('bench-monitored-count') || document.getElementById('competitor-kpi-matches');
         if (monitoredEl) monitoredEl.textContent = data.total_monitored || 0;
@@ -7824,6 +7844,82 @@ ${data.message}`);
 
         const gapSubEl = document.getElementById('competitor-kpi-price-gap-sub');
         if (gapSubEl) gapSubEl.textContent = diff >= 0 ? `El club cobra ${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP más que Capital Pádel en promedio.` : `El club cobra ${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP menos que Capital Pádel en promedio.`;
+
+        // Renderizado de Grilla Matricial Térmica (Infare / Airnguru Grade)
+        if (heatmapBody) {
+          const slotList = [
+            '06:00 - 07:30', '07:30 - 09:00', '09:00 - 10:30', '10:30 - 12:30',
+            '14:00 - 15:30', '15:30 - 17:00', '16:00 - 18:00', '17:00 - 18:30',
+            '18:00 - 19:30', '19:30 - 21:00', '21:00 - 22:30'
+          ];
+          const daysOrder = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+          // Mapa rápido por normalización de franja y día
+          const cellMap = {};
+          matrixData.forEach(item => {
+            const rawFranja = (item.franja || '').toString().trim().toLowerCase();
+            const rawDia = (item.dia || '').toString().trim().toLowerCase();
+            cellMap[`${rawFranja}_${rawDia}`] = item;
+          });
+
+          // Determinar franjas reales a renderizar (mínimo las que vengan en data + franjas estándar)
+          const detectedSlots = Array.from(new Set([
+            ...slotList,
+            ...matrixData.map(m => m.franja)
+          ])).filter(Boolean);
+
+          let htmlRows = '';
+          detectedSlots.forEach(slotName => {
+            const slotLower = slotName.toString().trim().toLowerCase();
+            let rowHtml = `<tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition">`;
+            rowHtml += `<td class="py-2.5 px-3 font-bold text-white whitespace-nowrap bg-slate-900/90">${slotName}</td>`;
+
+            daysOrder.forEach(dayName => {
+              const dayLower = dayName.toLowerCase();
+              let cellItem = cellMap[`${slotLower}_${dayLower}`];
+
+              // Búsqueda aproximada si no hay match exacto
+              if (!cellItem) {
+                cellItem = matrixData.find(m => 
+                  (m.franja || '').toString().toLowerCase().includes(slotLower) && 
+                  (m.dia || '').toString().toLowerCase().includes(dayLower)
+                );
+              }
+
+              if (cellItem && cellItem.precio_competidor) {
+                const precio = Number(cellItem.precio_competidor || 0);
+                const cellDiff = precio - 45000;
+
+                if (cellDiff > 0) {
+                  rowHtml += `
+                    <td class="py-2.5 px-2 text-center font-bold rounded-lg transition" style="background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
+                      <div>$${precio.toLocaleString('es-CO')}</div>
+                      <div class="text-[10px] font-black text-emerald-400 mt-0.5">(+$${cellDiff.toLocaleString('es-CO')})</div>
+                    </td>`;
+                } else if (cellDiff < 0) {
+                  rowHtml += `
+                    <td class="py-2.5 px-2 text-center font-bold rounded-lg transition" style="background-color: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3);">
+                      <div>$${precio.toLocaleString('es-CO')}</div>
+                      <div class="text-[10px] font-black text-rose-400 mt-0.5">(-$${Math.abs(cellDiff).toLocaleString('es-CO')})</div>
+                    </td>`;
+                } else {
+                  rowHtml += `
+                    <td class="py-2.5 px-2 text-center font-bold rounded-lg transition" style="background-color: rgba(148, 163, 184, 0.1); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.2);">
+                      <div>$${precio.toLocaleString('es-CO')}</div>
+                      <div class="text-[10px] font-semibold text-slate-400 mt-0.5">(Paridad)</div>
+                    </td>`;
+                }
+              } else {
+                rowHtml += `<td class="py-2.5 px-2 text-center text-slate-600 font-medium select-none">—</td>`;
+              }
+            });
+
+            rowHtml += `</tr>`;
+            htmlRows += rowHtml;
+          });
+
+          heatmapBody.innerHTML = htmlRows || '<tr><td colspan="8" class="text-center py-8 text-slate-500">Sin datos de matriz para este club.</td></tr>';
+        }
 
         if (pricingBody) {
           pricingBody.innerHTML = pricing.length ? pricing.map(r => {
