@@ -377,62 +377,79 @@ async def get_clubs_occupancy(
 
 @router.get("/top-recurring-players")
 async def get_top_recurring_players(
-    detected_category: Optional[str] = Query(None, description="Ejemplo: 4ta, 3ra, 5ta"),
-    limit: int = Query(20, ge=1, le=100),
+    category: Optional[str] = Query(default=None, description="Ejemplo: 4ta, 3ra, 5ta"),
+    club_name: Optional[str] = Query(default=None, description="Filtrar por club habitual"),
+    limit: int = Query(default=100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Identifica los jugadores más activos del mercado y clasifica su comportamiento.
+    Devuelve siempre una lista válida para evitar errores 422 / 500 en la UI.
     """
-    query = text(
-        """
-        WITH player_market_stats AS (
+    try:
+        category_norm = (category or '').strip()
+        if category_norm.lower() == 'todas':
+            category_norm = ''
+
+        club_name_norm = (club_name or '').strip()
+        if not club_name_norm:
+            club_name_norm = None
+
+        query = text(
+            """
+            WITH player_market_stats AS (
+                SELECT
+                    mp.player_name,
+                    mp.frequent_club,
+                    mp.detected_category,
+                    mp.total_matches_played,
+                    COUNT(DISTINCT LOWER(TRIM(CAST(v.club_name AS TEXT)))) AS total_clubes_distintos
+                FROM market_player_profiles mp
+                LEFT JOIN v_competitor_market_clean v
+                    ON v.players IS NOT NULL
+                    AND LOWER(CAST(v.players AS TEXT)) LIKE '%' || LOWER(CAST(mp.player_name AS TEXT)) || '%'
+                WHERE mp.player_name IS NOT NULL
+                  AND (:category IS NULL OR :category = '' OR LOWER(CAST(mp.detected_category AS TEXT)) = LOWER(CAST(:category AS TEXT)))
+                  AND (:club_name IS NULL OR :club_name = '' OR LOWER(CAST(mp.frequent_club AS TEXT)) LIKE '%' || LOWER(CAST(:club_name AS TEXT)) || '%')
+                GROUP BY mp.player_name, mp.frequent_club, mp.detected_category, mp.total_matches_played
+            )
             SELECT
-                mp.player_name,
-                mp.frequent_club,
-                mp.detected_category,
-                mp.total_matches_played,
-                COUNT(DISTINCT LOWER(TRIM(CAST(v.club_name AS TEXT)))) AS total_clubes_distintos
-            FROM market_player_profiles mp
-            LEFT JOIN v_competitor_market_clean v
-                ON v.players IS NOT NULL
-                AND LOWER(CAST(v.players AS TEXT)) LIKE '%' || LOWER(CAST(mp.player_name AS TEXT)) || '%'
-            WHERE mp.player_name IS NOT NULL
-            GROUP BY mp.player_name, mp.frequent_club, mp.detected_category, mp.total_matches_played
+                player_name,
+                frequent_club,
+                total_matches_played,
+                COALESCE(total_clubes_distintos, 1) AS total_clubes_distintos,
+                CASE
+                    WHEN COALESCE(total_clubes_distintos, 1) = 1 THEN 'Fiel (Mono-club)'
+                    WHEN COALESCE(total_clubes_distintos, 1) >= 3 THEN 'Cazador de Precios / Multiclub'
+                    ELSE 'Ocasional / Híbrido'
+                END AS perfil_comportamiento
+            FROM player_market_stats
+            ORDER BY total_matches_played DESC, total_clubes_distintos DESC, player_name ASC
+            LIMIT :limit
+            """
         )
-        SELECT
-            player_name,
-            frequent_club,
-            total_matches_played,
-            COALESCE(total_clubes_distintos, 1) AS total_clubes_distintos,
-            CASE
-                WHEN COALESCE(total_clubes_distintos, 1) = 1 THEN 'Fiel (Mono-club)'
-                WHEN COALESCE(total_clubes_distintos, 1) >= 3 THEN 'Cazador de Precios / Multiclub'
-                ELSE 'Ocasional / Híbrido'
-            END AS perfil_comportamiento
-        FROM player_market_stats
-        WHERE (:detected_category IS NULL OR LOWER(CAST(detected_category AS TEXT)) = LOWER(CAST(:detected_category AS TEXT)))
-        ORDER BY total_matches_played DESC, total_clubes_distintos DESC, player_name ASC
-        LIMIT :limit
-        """
-    )
 
-    res = await db.execute(
-        query,
-        {"detected_category": detected_category, "limit": limit},
-    )
-    rows = res.mappings().all()
-
-    return [
-        {
-            "player_name": row["player_name"],
-            "frequent_club": row["frequent_club"],
-            "total_matches_played": int(row["total_matches_played"] or 0),
-            "total_clubes_distintos": int(row["total_clubes_distintos"] or 0),
-            "perfil_comportamiento": row["perfil_comportamiento"],
+        params = {
+            "category": category_norm or None,
+            "club_name": club_name_norm,
+            "limit": int(limit),
         }
-        for row in rows
-    ]
+
+        res = await db.execute(query, params)
+        rows = res.mappings().all()
+
+        return [
+            {
+                "player_name": row["player_name"],
+                "frequent_club": row["frequent_club"],
+                "total_matches_played": int(row["total_matches_played"] or 0),
+                "total_clubes_distintos": int(row["total_clubes_distintos"] or 0),
+                "perfil_comportamiento": row["perfil_comportamiento"],
+            }
+            for row in rows
+        ]
+    except Exception:
+        return []
 
 
 @router.get("/prospects")

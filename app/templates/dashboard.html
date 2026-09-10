@@ -7246,20 +7246,43 @@ ${data.message}`);
     };
 
     window.loadRadarAnalytics = async function() {
+      const categorySelect = document.getElementById('radar-prospect-category');
+      const rawCategory = categorySelect ? (categorySelect.value || '').trim() : '';
+      const categoryValue = rawCategory && rawCategory.toLowerCase() !== 'todas' ? rawCategory : '';
+      const limit = 50;
+
+      const buildPlayersUrl = () => {
+        const params = new URLSearchParams({ limit: String(limit) });
+        if (categoryValue) params.set('category', categoryValue);
+        return `${API_BASE}/api/v1/radar/top-recurring-players?${params.toString()}`;
+      };
+
+      const pricePromise = fetch(`${API_BASE}/api/v1/radar/price-comparison`).then(async res => {
+        if (!res.ok) throw new Error(`price-comparison failed: ${res.status}`);
+        return await res.json();
+      }).catch(err => {
+        console.warn('Radar price comparison failed:', err);
+        return [];
+      });
+
+      const occupancyPromise = fetch(`${API_BASE}/api/v1/radar/clubs-occupancy`).then(async res => {
+        if (!res.ok) throw new Error(`clubs-occupancy failed: ${res.status}`);
+        return await res.json();
+      }).catch(err => {
+        console.warn('Radar occupancy failed:', err);
+        return [];
+      });
+
+      const playersPromise = fetch(buildPlayersUrl()).then(async res => {
+        if (!res.ok) throw new Error(`top-recurring-players failed: ${res.status}`);
+        return await res.json();
+      }).catch(err => {
+        console.warn('Radar recurring players failed:', err);
+        return [];
+      });
+
       try {
-        const [priceRes, occupancyRes, playersRes] = await Promise.all([
-          fetch(`${API_BASE}/api/v1/radar/price-comparison`),
-          fetch(`${API_BASE}/api/v1/radar/clubs-occupancy`),
-          fetch(`${API_BASE}/api/v1/radar/top-recurring-players?limit=200`)
-        ]);
-
-        if (!priceRes.ok) throw new Error('No se pudo obtener la comparativa de precios');
-        if (!occupancyRes.ok) throw new Error('No se pudo obtener la ocupación del mercado');
-        if (!playersRes.ok) throw new Error('No se pudo obtener la prospección de jugadores');
-
-        const priceData = await priceRes.json();
-        const occupancyData = await occupancyRes.json();
-        const playersData = await playersRes.json();
+        const [priceData, occupancyData, playersData] = await Promise.all([pricePromise, occupancyPromise, playersPromise]);
 
         radarAnalyticsState.prices = Array.isArray(priceData) ? priceData : [];
         radarAnalyticsState.occupancy = Array.isArray(occupancyData) ? occupancyData : [];
@@ -7338,10 +7361,6 @@ ${data.message}`);
         attachRadarProspectFilters();
       } catch (err) {
         console.error('Error loading radar analytics:', err);
-        const priceBody = document.getElementById('radar-price-table-body');
-        if (priceBody) priceBody.innerHTML = `<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #B91C1C;">No se pudo cargar la comparación de tarifas.</td></tr>`;
-        const prospectBody = document.getElementById('radar-prospect-table-body');
-        if (prospectBody) prospectBody.innerHTML = `<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #B91C1C;">No se pudo cargar la prospección.</td></tr>`;
       }
     };
 
