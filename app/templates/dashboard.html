@@ -7949,7 +7949,7 @@ ${data.message}`);
           actionBtnHtml = `<div class="flex items-center gap-1.5"><span class="text-[11px] font-bold text-slate-600">✓ Partido Finalizado</span><button onclick="openReserveOrBlockModal(${slot.id})" class="px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:text-slate-900 bg-slate-100 border border-slate-300 rounded" title="Ver detalle o registrar resultado">🏅 Resultado</button></div>`;
         } else if (isAvailable) {
           actionBtnHtml = `<button onclick="openReserveOrBlockModal(${slot.id})" class="btn-card-reserve">Reservar Pista</button>`;
-        } else if (isOpenMatch) {
+        } else if (isOpenMatch || (!isFull && (slot.booked_spots || 0) < 4 && (slot.held_spots || 0) < 4)) {
           actionBtnHtml = `<button onclick="openHoldModal(${slot.id})" class="btn-card-action">+ Apartar Cupo</button>`;
         } else if (isClass) {
           actionBtnHtml = `<span style="font-size: 0.65rem; color: #0284C7; font-weight: 700;">${sportIcon} ${slot.instructor_name || 'Profesor'}</span>`;
@@ -9320,7 +9320,9 @@ ${data.message}`);
       const heldOccupied = Number.isFinite(Number(slot.held_spots)) ? Number(slot.held_spots) : 0;
       const playersOccupied = Array.isArray(slot.players_names) ? slot.players_names.length : 0;
       const participantsOccupied = Array.isArray(slot.participants) ? slot.participants.length : 0;
-      return Math.max(explicitOccupied, bookedOccupied, heldOccupied, playersOccupied, participantsOccupied, 0);
+      const legacyPlayersOccupied = Array.isArray(slot.players) ? slot.players.length : 0;
+      const baseOccupied = explicitOccupied || Math.max(bookedOccupied, heldOccupied, playersOccupied, participantsOccupied, legacyPlayersOccupied, 0);
+      return Math.max(baseOccupied, 0);
     }
 
     // Modal Hold (Apartar Cupo)
@@ -9330,8 +9332,9 @@ ${data.message}`);
       const slot = slotList.find(s => s.id === slotId || s.id === targetId || String(s.id) === String(slotId));
       if (!slot) return;
 
-      const occupied = getSlotOccupiedSpots(slot);
-      if (occupied >= 4) {
+      const ocupados = (slot.spots_count || (slot.players_names ? slot.players_names.length : (slot.players ? slot.players.length : 0)));
+      const disponibles = Math.max(1, 4 - ocupados);
+      if (ocupados >= 4) {
         if (typeof window.showDarkToast === 'function') {
           window.showDarkToast('Turno Lleno', 'Este turno ya se encuentra lleno (4/4 cupos).');
         } else {
@@ -9386,9 +9389,10 @@ ${data.message}`);
       const spotsSelect = document.getElementById('hold-spots-count');
       const btnSubmitHold = document.getElementById('btn-submit-hold');
       if (spotsSelect) {
+        const ocupados = (slot.spots_count || (slot.players_names ? slot.players_names.length : (slot.players ? slot.players.length : 0)));
+        const disponibles = Math.max(1, 4 - ocupados);
         spotsSelect.innerHTML = '';
-        const remaining = Math.max(0, 4 - occupied);
-        if (remaining <= 0) {
+        if (disponibles <= 0) {
           const opt = document.createElement('option');
           opt.value = '0';
           opt.textContent = 'Sin cupos disponibles';
@@ -9399,7 +9403,7 @@ ${data.message}`);
             btnSubmitHold.textContent = 'Turno Lleno';
           }
         } else {
-          for (let i = 1; i <= remaining; i++) {
+          for (let i = 1; i <= disponibles; i++) {
             const opt = document.createElement('option');
             opt.value = i;
             opt.textContent = `${i} Cupo${i > 1 ? 's' : ''}`;
@@ -9414,7 +9418,11 @@ ${data.message}`);
       }
 
       const modal = document.getElementById('hold-modal') || document.getElementById('modal-hold');
-      if (modal) modal.classList.add('active');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+      }
     }
     window.openHoldModal = openHoldModal;
 
