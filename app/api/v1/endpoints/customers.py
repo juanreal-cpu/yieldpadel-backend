@@ -51,6 +51,7 @@ class CustomerResponse(BaseModel):
     plan_name: Optional[str] = None
     americano_discount_pct: int = 0
     includes_beverage_perk: bool = False
+    wallet_balance: float = 0.0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -131,6 +132,8 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         americano_discount_pct = tier_discounts.get(tier_upper, 0)
         includes_beverage_perk = tier_upper in ["TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON", "ORO", "PLATA"]
 
+    wallet_balance_value = getattr(c, "wallet_balance", None)
+
     return CustomerResponse(
         id=c.id,
         name=c.name,
@@ -166,6 +169,7 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         plan_name=plan_name,
         americano_discount_pct=americano_discount_pct,
         includes_beverage_perk=includes_beverage_perk,
+        wallet_balance=float(wallet_balance_value or 0),
     )
 
 

@@ -2618,8 +2618,8 @@
                     🪙 <span id="featured-wallet-amount">0</span> pts
                   </span>
                 </div>
-                <button type="button" onclick="openWalletModal(window.currentFeaturedPlayerId)" class="mt-2 w-full py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center justify-center gap-1">
-                  <span>🪙</span> <span>Ajustar / Cargar Saldo</span>
+                <button type="button" onclick="openWalletModal(window.currentFeaturedPlayerId)" class="mt-2 w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                  <span>🪙</span> <span>Cargar / Ajustar Puntos</span>
                 </button>
               </div>
 
@@ -2756,7 +2756,7 @@
 
                 <div class="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
                   <button type="button" onclick="closeWalletModal()" class="px-4 py-2.5 border border-slate-300 bg-white text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition">Cancelar</button>
-                  <button type="button" onclick="window.submitWalletTransaction()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm transition">Confirmar Transacción</button>
+                  <button type="button" onclick="window.submitWalletTransaction()" class="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow transition">Confirmar Transacción</button>
                 </div>
               </div>
             </div>
@@ -6685,6 +6685,7 @@ window.currentWalletCustomerId = null;
 
 window.selectPlayerForFeaturedCard = function(player) {
   if (!player) return;
+  window.currentFeaturedPlayer = player;
   window.currentFeaturedPlayerId = player.id;
   window.currentWalletCustomerId = player.id;
   const img = document.getElementById('featured-player-avatar');
@@ -6787,11 +6788,11 @@ window.submitWalletTransaction = async function() {
       customer.wallet_balance = Number(data.new_balance || customer.wallet_balance || 0);
     }
 
-    const featuredWallet = document.getElementById('featured-wallet-amount');
-    if (featuredWallet) {
-      featuredWallet.textContent = Number(data.new_balance || 0).toLocaleString('es-CO');
-    }
-
+    const balance = Number(data.new_balance || 0).toLocaleString('es-CO');
+    const badge = document.getElementById('featured-wallet-amount');
+    if (badge) badge.textContent = balance;
+    if (window.currentFeaturedPlayer) window.currentFeaturedPlayer.wallet_balance = data.new_balance;
+    if (typeof window.loadCRMPlayers === 'function') window.loadCRMPlayers();
     if (typeof loadCRMPlayers === 'function') {
       await loadCRMPlayers();
     }

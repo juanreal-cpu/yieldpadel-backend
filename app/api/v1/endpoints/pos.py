@@ -186,200 +186,204 @@ async def add_stock(
 @router.get("/orders/active-slots", summary="Listar canchas activas y turnos en juego hoy")
 async def get_active_slots(db: AsyncSession = Depends(get_db)):
     """Obtiene las canchas con turnos asignados u ocupados para gestionar consumos de barra."""
-    await ensure_seed_products(db)
-    today_date = date.today()
+    try:
+        await ensure_seed_products(db)
+        today_date = date.today()
 
-    # Obtener todas las canchas
-    courts_stmt = select(Court).where(Court.is_active == True).order_by(Court.name)
-    res_courts = await db.execute(courts_stmt)
-    courts = res_courts.scalars().all()
+        # Obtener todas las canchas
+        courts_stmt = select(Court).where(Court.is_active == True).order_by(Court.name)
+        res_courts = await db.execute(courts_stmt)
+        courts = res_courts.scalars().all()
 
-    # Obtener slots de hoy con relaciones
-    slots_stmt = (
-        select(TimeSlot)
-        .options(
-            selectinload(TimeSlot.court),
-            selectinload(TimeSlot.holds),
-            selectinload(TimeSlot.bookings),
-        )
-        .where(TimeSlot.date == today_date)
-        .order_by(TimeSlot.start_time)
-    )
-    res_slots = await db.execute(slots_stmt)
-    slots = res_slots.scalars().all()
-
-    # Mapear slots por cancha
-    slots_by_court: Dict[str, List[TimeSlot]] = {}
-    for s in slots:
-        c_id = str(s.court_id)
-        if c_id not in slots_by_court:
-            slots_by_court[c_id] = []
-        slots_by_court[c_id].append(s)
-
-    # Pre-identificar slot seleccionado para cada cancha
-    selected_slots_map: Dict[str, Optional[TimeSlot]] = {}
-    all_slot_ids = []
-    now_t = datetime.now().time()
-
-    for court in courts:
-        c_id = str(court.id)
-        court_slots = slots_by_court.get(c_id, [])
-        sel: Optional[TimeSlot] = None
-        for s in court_slots:
-            if s.start_time <= now_t <= s.end_time:
-                sel = s
-                break
-        if not sel:
-            occupied = [
-                s
-                for s in court_slots
-                if s.status in [SlotStatus.PARTIALLY_BOOKED, SlotStatus.FULLY_BOOKED]
-                or bool(s.players_names)
-            ]
-            sel = occupied[0] if occupied else (court_slots[0] if court_slots else None)
-        selected_slots_map[c_id] = sel
-        if sel:
-            all_slot_ids.append(sel.id)
-
-    # 1. Cargar todas las órdenes PENDING en un solo query
-    orders_by_slot: Dict[int, Order] = {}
-    if all_slot_ids:
-        order_stmt = (
-            select(Order)
-            .options(selectinload(Order.items).selectinload(OrderItem.product))
-            .where(Order.slot_id.in_(all_slot_ids), Order.payment_status == "PENDING")
-            .order_by(desc(Order.created_at))
-        )
-        order_res = await db.execute(order_stmt)
-        for ord_item in order_res.scalars().all():
-            if ord_item.slot_id and ord_item.slot_id not in orders_by_slot:
-                orders_by_slot[ord_item.slot_id] = ord_item
-
-    # 2. Cargar clientes en un solo query para resolver membresías en memoria
-    cust_res = await db.execute(select(Customer))
-    all_customers = cust_res.scalars().all()
-
-    def find_customer_by_name(name_query: Optional[str]) -> Optional[Customer]:
-        if not name_query:
-            return None
-        nq = name_query.strip().lower()
-        # Coincidencia exacta o contenida
-        for cust in all_customers:
-            c_name = cust.name.strip().lower()
-            if nq == c_name or nq in c_name or c_name in nq:
-                return cust
-        return None
-
-    active_courts_data = []
-
-    for court in courts:
-        c_id = str(court.id)
-        selected_slot = selected_slots_map.get(c_id)
-
-        court_data = {
-            "court_id": c_id,
-            "court_name": court.name,
-            "sport_type": getattr(court, "sport_type", "PADEL") or "PADEL",
-            "has_active_match": False,
-            "slot_id": None,
-            "time_block": None,
-            "court_price": 0.0,
-            "players": [],
-            "main_customer": None,
-            "membership_tier": "ESTANDAR",
-            "pending_order": None,
-        }
-
-        if selected_slot:
-            court_data["slot_id"] = selected_slot.id
-            court_data["time_block"] = (
-                f"{selected_slot.start_time.strftime('%H:%M')} - {selected_slot.end_time.strftime('%H:%M')}"
+        # Obtener slots de hoy con relaciones
+        slots_stmt = (
+            select(TimeSlot)
+            .options(
+                selectinload(TimeSlot.court),
+                selectinload(TimeSlot.holds),
+                selectinload(TimeSlot.bookings),
             )
-            court_data["court_price"] = float(selected_slot.total_price)
-            court_data["has_active_match"] = selected_slot.status in [
-                SlotStatus.PARTIALLY_BOOKED,
-                SlotStatus.FULLY_BOOKED,
-            ] or bool(selected_slot.players_names)
+            .where(TimeSlot.date == today_date)
+            .order_by(TimeSlot.start_time)
+        )
+        res_slots = await db.execute(slots_stmt)
+        slots = res_slots.scalars().all()
 
-            # Extraer jugadores
-            players_list = []
-            if selected_slot.players_names:
-                players_list.extend(selected_slot.players_names)
+        # Mapear slots por cancha
+        slots_by_court: Dict[str, List[TimeSlot]] = {}
+        for s in slots:
+            c_id = str(s.court_id)
+            if c_id not in slots_by_court:
+                slots_by_court[c_id] = []
+            slots_by_court[c_id].append(s)
 
-            for b in selected_slot.bookings or []:
-                if b.customer_name and b.customer_name not in players_list:
-                    players_list.append(b.customer_name)
+        # Pre-identificar slot seleccionado para cada cancha
+        selected_slots_map: Dict[str, Optional[TimeSlot]] = {}
+        all_slot_ids = []
+        now_t = datetime.now().time()
 
-            for h in selected_slot.holds or []:
-                if (
-                    h.status == HoldStatus.ACTIVE
-                    and h.customer_phone
-                    and h.customer_phone not in players_list
-                ):
-                    players_list.append(h.customer_phone)
+        for court in courts:
+            c_id = str(court.id)
+            court_slots = slots_by_court.get(c_id, [])
+            sel: Optional[TimeSlot] = None
+            for s in court_slots:
+                if s.start_time <= now_t <= s.end_time:
+                    sel = s
+                    break
+            if not sel:
+                occupied = [
+                    s
+                    for s in court_slots
+                    if s.status in [SlotStatus.PARTIALLY_BOOKED, SlotStatus.FULLY_BOOKED]
+                    or bool(s.players_names)
+                ]
+                sel = occupied[0] if occupied else (court_slots[0] if court_slots else None)
+            selected_slots_map[c_id] = sel
+            if sel:
+                all_slot_ids.append(sel.id)
 
-            court_data["players"] = players_list
-            titular = None
-            if selected_slot.players_names and len(selected_slot.players_names) > 0:
-                titular = selected_slot.players_names[0]
-            if not titular and selected_slot.bookings:
-                for b in selected_slot.bookings:
-                    if b.customer_name:
-                        titular = b.customer_name
-                        break
-            if not titular and selected_slot.holds:
-                for h in selected_slot.holds:
-                    if h.customer_phone:
-                        titular = h.customer_phone
-                        break
+        # 1. Cargar todas las órdenes PENDING en un solo query
+        orders_by_slot: Dict[int, Order] = {}
+        if all_slot_ids:
+            order_stmt = (
+                select(Order)
+                .options(selectinload(Order.items).selectinload(OrderItem.product))
+                .where(Order.slot_id.in_(all_slot_ids), Order.payment_status == "PENDING")
+                .order_by(desc(Order.created_at))
+            )
+            order_res = await db.execute(order_stmt)
+            for ord_item in order_res.scalars().all():
+                if ord_item.slot_id and ord_item.slot_id not in orders_by_slot:
+                    orders_by_slot[ord_item.slot_id] = ord_item
 
-            responsable = titular if titular else "Reserva Mostrador / Sin Titular"
-            court_data["main_customer"] = responsable
+        # 2. Cargar clientes en un solo query para resolver membresías en memoria
+        cust_res = await db.execute(select(Customer))
+        all_customers = cust_res.scalars().all()
 
-            # Detalle de jugadores con membresías para selección individual en POS (en memoria)
-            players_details = []
-            for p_name in players_list:
-                p_cust = find_customer_by_name(p_name)
-                players_details.append({
-                    "name": p_name,
-                    "tier": p_cust.membership_tier if p_cust else "ESTANDAR",
-                    "customer_id": p_cust.id if p_cust else None,
-                })
-            court_data["players_details"] = players_details
+        def find_customer_by_name(name_query: Optional[str]) -> Optional[Customer]:
+            if not name_query:
+                return None
+            nq = name_query.strip().lower()
+            # Coincidencia exacta o contenida
+            for cust in all_customers:
+                c_name = cust.name.strip().lower()
+                if nq == c_name or nq in c_name or c_name in nq:
+                    return cust
+            return None
 
-            # Buscar membresía del jugador titular
-            customer = find_customer_by_name(titular) if titular else None
-            if customer:
-                court_data["customer_id"] = customer.id
-                court_data["membership_tier"] = customer.membership_tier
-            else:
-                court_data["customer_id"] = None
-                court_data["membership_tier"] = "ESTANDAR"
+        active_courts_data = []
 
-            # Orden pendiente desde memoria
-            active_order = orders_by_slot.get(selected_slot.id)
-            if active_order:
-                court_data["pending_order"] = {
-                    "order_id": active_order.id,
-                    "total_amount": float(active_order.total_amount),
-                    "items_count": sum(it.quantity for it in active_order.items),
-                    "items": [
-                        {
-                            "id": it.id,
-                            "product_id": it.product_id,
-                            "product_name": it.product.name if it.product else "Producto",
-                            "quantity": it.quantity,
-                            "unit_price": float(it.unit_price),
-                            "subtotal": float(it.subtotal),
-                            "is_perk": it.is_perk,
-                        }
-                        for it in active_order.items
-                    ],
-                }
+        for court in courts:
+            c_id = str(court.id)
+            selected_slot = selected_slots_map.get(c_id)
 
-        active_courts_data.append(court_data)
+            court_data = {
+                "court_id": c_id,
+                "court_name": court.name,
+                "sport_type": getattr(court, "sport_type", "PADEL") or "PADEL",
+                "has_active_match": False,
+                "slot_id": None,
+                "time_block": None,
+                "court_price": 0.0,
+                "players": [],
+                "main_customer": None,
+                "membership_tier": "ESTANDAR",
+                "pending_order": None,
+            }
 
-    return active_courts_data
+            if selected_slot:
+                court_data["slot_id"] = selected_slot.id
+                court_data["time_block"] = (
+                    f"{selected_slot.start_time.strftime('%H:%M')} - {selected_slot.end_time.strftime('%H:%M')}"
+                )
+                court_data["court_price"] = float(selected_slot.total_price)
+                court_data["has_active_match"] = selected_slot.status in [
+                    SlotStatus.PARTIALLY_BOOKED,
+                    SlotStatus.FULLY_BOOKED,
+                ] or bool(selected_slot.players_names)
+
+                # Extraer jugadores
+                players_list = []
+                if selected_slot.players_names:
+                    players_list.extend(selected_slot.players_names)
+
+                for b in selected_slot.bookings or []:
+                    if b.customer_name and b.customer_name not in players_list:
+                        players_list.append(b.customer_name)
+
+                for h in selected_slot.holds or []:
+                    if (
+                        h.status == HoldStatus.ACTIVE
+                        and h.customer_phone
+                        and h.customer_phone not in players_list
+                    ):
+                        players_list.append(h.customer_phone)
+
+                court_data["players"] = players_list
+                titular = None
+                if selected_slot.players_names and len(selected_slot.players_names) > 0:
+                    titular = selected_slot.players_names[0]
+                if not titular and selected_slot.bookings:
+                    for b in selected_slot.bookings:
+                        if b.customer_name:
+                            titular = b.customer_name
+                            break
+                if not titular and selected_slot.holds:
+                    for h in selected_slot.holds:
+                        if h.customer_phone:
+                            titular = h.customer_phone
+                            break
+
+                responsable = titular if titular else "Reserva Mostrador / Sin Titular"
+                court_data["main_customer"] = responsable
+
+                # Detalle de jugadores con membresías para selección individual en POS (en memoria)
+                players_details = []
+                for p_name in players_list:
+                    p_cust = find_customer_by_name(p_name)
+                    players_details.append({
+                        "name": p_name,
+                        "tier": p_cust.membership_tier if p_cust else "ESTANDAR",
+                        "customer_id": p_cust.id if p_cust else None,
+                    })
+                court_data["players_details"] = players_details
+
+                # Buscar membresía del jugador titular
+                customer = find_customer_by_name(titular) if titular else None
+                if customer:
+                    court_data["customer_id"] = customer.id
+                    court_data["membership_tier"] = customer.membership_tier
+                else:
+                    court_data["customer_id"] = None
+                    court_data["membership_tier"] = "ESTANDAR"
+
+                # Orden pendiente desde memoria
+                active_order = orders_by_slot.get(selected_slot.id)
+                if active_order:
+                    court_data["pending_order"] = {
+                        "order_id": active_order.id,
+                        "total_amount": float(active_order.total_amount),
+                        "items_count": sum(it.quantity for it in active_order.items),
+                        "items": [
+                            {
+                                "id": it.id,
+                                "product_id": it.product_id,
+                                "product_name": it.product.name if it.product else "Producto",
+                                "quantity": it.quantity,
+                                "unit_price": float(it.unit_price),
+                                "subtotal": float(it.subtotal),
+                                "is_perk": it.is_perk,
+                            }
+                            for it in active_order.items
+                        ],
+                    }
+
+            active_courts_data.append(court_data)
+
+        return active_courts_data
+    except Exception:
+        logger.exception("Error obteniendo active-slots; devolviendo lista vacía")
+        return []
 
 
 # ----------------------------------------------------
