@@ -2614,9 +2614,9 @@
                 <div class="flex items-center gap-2 mt-2 flex-wrap justify-center">
                   <span id="featured-player-category" class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">4ta</span>
                   <span id="featured-player-points" class="px-2 py-0.5 text-[11px] font-black rounded-full bg-purple-50 text-purple-700 border border-purple-200">0 pts</span>
-                  <span id="featured-player-wallet" class="px-2.5 py-1 text-xs font-black rounded-lg bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1 cursor-pointer" onclick="openWalletModal(window.currentFeaturedPlayerId)" title="Capital Points / Saldo a Favor">
-                    🪙 <span id="featured-wallet-amount">0</span> pts
-                  </span>
+                </div>
+                <div id="featured-player-wallet" class="mt-2 flex items-center justify-center gap-1.5 py-1 px-3 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl font-black text-sm">
+                  🪙 <span id="featured-wallet-amount">0</span> pts
                 </div>
                 <button type="button" onclick="openWalletModal(window.currentFeaturedPlayerId)" class="mt-2 w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
                   <span>🪙</span> <span>Cargar / Ajustar Puntos</span>
@@ -2704,12 +2704,13 @@
                       <th style="padding: 0.9rem 1rem; white-space: nowrap;">Categoría</th>
                       <th style="padding: 0.9rem 1rem; white-space: nowrap;">Reservas</th>
                       <th style="padding: 0.9rem 1rem; white-space: nowrap;">Puntos Ranking</th>
+                      <th class="px-4 py-3 text-left font-bold text-slate-700 text-xs uppercase">Billetera (Points)</th>
                       <th style="padding: 0.9rem 1rem; text-align: center; white-space: nowrap;">Acciones</th>
                     </tr>
                   </thead>
                   <tbody id="crm-table-body" data-alias="crm-ranking-tbody" class="bg-white">
                     <tr>
-                      <td colspan="10" style="padding: 2.5rem; text-align: center; color: #64748B;">Cargando jugadores y ranking...</td>
+                      <td colspan="11" style="padding: 2.5rem; text-align: center; color: #64748B;">Cargando jugadores y ranking...</td>
                     </tr>
                   </tbody>
                 </table>
@@ -2756,7 +2757,7 @@
 
                 <div class="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
                   <button type="button" onclick="closeWalletModal()" class="px-4 py-2.5 border border-slate-300 bg-white text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition">Cancelar</button>
-                  <button type="button" onclick="submitWalletTransaction()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow transition">Confirmar Transacción</button>
+                  <button type="button" onclick="submitWalletTransaction()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow cursor-pointer">Confirmar Transacción</button>
                 </div>
               </div>
             </div>
@@ -7235,6 +7236,9 @@ async function loadCRMDirectory() {
                   ${c.ranking_points || 0} pts
                 </span>
               </td>
+              <td class="px-4 py-3 font-extrabold text-amber-600 text-sm">
+                🪙 ${Number(c.wallet_balance || 0).toLocaleString('es-CO')} pts
+              </td>
               <td style="padding: 0.85rem 1rem; text-align: center; min-width: 180px;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; min-width: 0;">
                   <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" style="padding: 0.3rem 0.7rem; font-size: 0.75rem; font-weight: 700; background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; border-radius: 0.5rem; cursor: pointer; white-space: nowrap;" title="Editar Perfil CRM">
@@ -7376,10 +7380,10 @@ async function loadCRMDirectory() {
                     <span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">
                       ${c.ranking_points || 0} pts
                     </span>
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold rounded bg-amber-50 text-amber-800 border border-amber-200">
-                      🪙 ${Number(c.wallet_balance || 0).toLocaleString('es-CO')} pts
-                    </span>
                   </div>
+                </td>
+                <td class="px-4 py-3 font-extrabold text-amber-600 text-sm">
+                  🪙 ${Number(c.wallet_balance || 0).toLocaleString('es-CO')} pts
                 </td>
                 <td style="padding: 0.85rem 1rem; text-align: center; min-width: 180px;">
                   <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; min-width: 0;">
