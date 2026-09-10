@@ -6693,6 +6693,13 @@ async function loadCRMDirectory() {
             ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
             : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
 
+          const diceBearFallback = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.name || 'Padel')}&backgroundColor=0f172a,10b981&textColor=ffffff`;
+          const playerRoleBadge = c.is_minor
+            ? '<span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-sm">👦 Semillero Kids</span>'
+            : (isVip
+              ? '<span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center gap-1 shadow-sm">💎 Socio VIP</span>'
+              : '<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-1 shadow-sm">👤 Estándar</span>');
+
           // Membresía y Vigencia
           const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
           let memValidityBadge = '';
@@ -6748,22 +6755,22 @@ async function loadCRMDirectory() {
                 <span class="badge-rank ${posClass}">${pos}</span>
               </td>
               <td style="padding: 0.85rem 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                  <!-- Avatar con Foto Real o Iniciales Dinámicas -->
-                  <img 
-                    src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'Padel') + '&backgroundColor=0f172a,10b981&textColor=ffffff'}" 
-                    alt="Avatar" 
-                    style="width: 2.3rem; height: 2.3rem; border-radius: 9999px; border: 1.5px solid #CBD5E1; object-fit: cover; flex-shrink: 0; background: #0F172A;"
-                    onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent((c.name || 'Padel')) + '&backgroundColor=0f172a,10b981&textColor=ffffff'"
-                  />
-                  <div>
-                    <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                      <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
-                      ${c.is_minor ? `
-                        <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-2xs">
-                          <span>👦</span> Kid${c.guardian_name ? ` (Hijo de ${c.guardian_name})` : ''}
-                        </span>
-                      ` : ''}
+                <div style="display: flex; align-items: center; gap: 0.8rem;">
+                  <div class="relative group flex-shrink-0" style="position: relative; flex-shrink: 0;">
+                    <img src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : diceBearFallback}" 
+                         alt="${(c.name || 'Jugador').replace(/"/g, '&quot;')}" 
+                         class="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover border-2 border-emerald-500 shadow-md bg-slate-900 cursor-pointer hover:opacity-90 transition" 
+                         style="width: 3.5rem; height: 3.5rem; border-radius: 1rem; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12); background: #0F172A;"
+                         onerror="this.src='${diceBearFallback}'">
+                    <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" title="Cambiar foto" 
+                            class="absolute -bottom-1 -right-1 bg-slate-900 text-white p-1 rounded-full shadow border border-slate-700 text-[10px] hover:bg-emerald-600 transition" 
+                            style="position: absolute; right: -0.25rem; bottom: -0.25rem; background: #0F172A; color: #fff; border: 1px solid #334155; border-radius: 9999px; padding: 0.25rem; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18); font-size: 10px; line-height: 1;">
+                      📷
+                    </button>
+                  </div>
+                  <div style="display: flex; flex-direction: column; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                      <span style="font-weight: 900; color: #0F172A; font-size: 1rem; line-height: 1.2;">${c.name}</span>
                       ${c.is_playing_now ? `
                         <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
                           <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
@@ -6771,8 +6778,10 @@ async function loadCRMDirectory() {
                         </span>
                       ` : ''}
                     </div>
-                    <div style="font-size: 0.75rem; font-family: monospace; color: #64748B; margin-top: 0.15rem;">${c.phone || '-'}</div>
-                    <div style="margin-top: 0.2rem;">${typeBadge}</div>
+                    <div style="margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                      ${playerRoleBadge}
+                    </div>
+                    <div style="margin-top: 0.22rem; font-size: 0.72rem; color: #64748B; letter-spacing: 0.01em;">📱 ${c.phone || '-'}</div>
                   </div>
                 </div>
               </td>
@@ -6832,6 +6841,13 @@ async function loadCRMDirectory() {
               ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
               : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
 
+            const diceBearFallback = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.name || 'Padel')}&backgroundColor=0f172a,10b981&textColor=ffffff`;
+            const playerRoleBadge = c.is_minor
+              ? '<span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-sm">👦 Semillero Kids</span>'
+              : (isVip
+                ? '<span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center gap-1 shadow-sm">💎 Socio VIP</span>'
+                : '<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-1 shadow-sm">👤 Estándar</span>');
+
             // Membresía y Vigencia
             const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
             let memValidityBadge = '';
@@ -6887,22 +6903,22 @@ async function loadCRMDirectory() {
                   <span class="badge-rank ${posClass}">${pos}</span>
                 </td>
                 <td style="padding: 0.85rem 1rem;">
-                  <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <!-- Avatar con Foto Real o Iniciales Dinámicas -->
-                    <img 
-                      src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'Padel') + '&backgroundColor=0f172a,10b981&textColor=ffffff'}" 
-                      alt="Avatar" 
-                      style="width: 2.3rem; height: 2.3rem; border-radius: 9999px; border: 1.5px solid #CBD5E1; object-fit: cover; flex-shrink: 0; background: #0F172A;"
-                      onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent((c.name || 'Padel')) + '&backgroundColor=0f172a,10b981&textColor=ffffff'"
-                    />
-                    <div>
-                      <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                        <span style="font-weight: 700; color: #0F172A; font-size: 0.85rem;">${c.name}</span>
-                        ${c.is_minor ? `
-                          <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-2xs">
-                            <span>👦</span> Kid${c.guardian_name ? ` (Hijo de ${c.guardian_name})` : ''}
-                          </span>
-                        ` : ''}
+                  <div style="display: flex; align-items: center; gap: 0.8rem;">
+                    <div class="relative group flex-shrink-0" style="position: relative; flex-shrink: 0;">
+                      <img src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : diceBearFallback}" 
+                           alt="${(c.name || 'Jugador').replace(/"/g, '&quot;')}" 
+                           class="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover border-2 border-emerald-500 shadow-md bg-slate-900 cursor-pointer hover:opacity-90 transition" 
+                           style="width: 3.5rem; height: 3.5rem; border-radius: 1rem; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12); background: #0F172A;"
+                           onerror="this.src='${diceBearFallback}'">
+                      <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" title="Cambiar foto" 
+                              class="absolute -bottom-1 -right-1 bg-slate-900 text-white p-1 rounded-full shadow border border-slate-700 text-[10px] hover:bg-emerald-600 transition" 
+                              style="position: absolute; right: -0.25rem; bottom: -0.25rem; background: #0F172A; color: #fff; border: 1px solid #334155; border-radius: 9999px; padding: 0.25rem; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18); font-size: 10px; line-height: 1;">
+                        📷
+                      </button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; min-width: 0;">
+                      <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                        <span style="font-weight: 900; color: #0F172A; font-size: 1rem; line-height: 1.2;">${c.name}</span>
                         ${c.is_playing_now ? `
                           <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
                             <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
@@ -6910,8 +6926,10 @@ async function loadCRMDirectory() {
                           </span>
                         ` : ''}
                       </div>
-                      <div style="font-size: 0.75rem; font-family: monospace; color: #64748B; margin-top: 0.15rem;">${c.phone || '-'}</div>
-                      <div style="margin-top: 0.2rem;">${typeBadge}</div>
+                      <div style="margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                        ${playerRoleBadge}
+                      </div>
+                      <div style="margin-top: 0.22rem; font-size: 0.72rem; color: #64748B; letter-spacing: 0.01em;">📱 ${c.phone || '-'}</div>
                     </div>
                   </div>
                 </td>
