@@ -2611,10 +2611,16 @@
                 </div>
                 <h3 id="featured-player-name" class="text-base font-black text-slate-900 leading-tight">Selecciona un Jugador</h3>
                 <p id="featured-player-tier" class="text-xs font-bold text-emerald-600 mt-0.5">Socio del Club</p>
-                <div class="flex items-center gap-2 mt-2">
+                <div class="flex items-center gap-2 mt-2 flex-wrap justify-center">
                   <span id="featured-player-category" class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">4ta</span>
                   <span id="featured-player-points" class="px-2 py-0.5 text-[11px] font-black rounded-full bg-purple-50 text-purple-700 border border-purple-200">0 pts</span>
+                  <span id="featured-player-wallet" class="px-2.5 py-1 text-xs font-black rounded-lg bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1 cursor-pointer" onclick="openWalletModal(window.currentFeaturedPlayerId)" title="Capital Points / Saldo a Favor">
+                    🪙 <span id="featured-wallet-amount">0</span> pts
+                  </span>
                 </div>
+                <button type="button" onclick="openWalletModal(window.currentFeaturedPlayerId)" class="mt-2 w-full py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center justify-center gap-1">
+                  <span>🪙</span> <span>Ajustar / Cargar Saldo</span>
+                </button>
               </div>
 
               <div class="flex-1 min-w-0 w-full space-y-4">
@@ -2707,6 +2713,51 @@
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            <div id="modal-wallet-transaction" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div class="bg-white rounded-3xl border border-slate-200 shadow-[0_28px_60px_rgba(15,23,42,0.22)] w-full max-w-md overflow-hidden">
+                <div class="bg-gradient-to-r from-amber-200 via-yellow-100 to-orange-50 px-5 py-4 border-b border-amber-200">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 class="text-lg font-black text-slate-900">🪙 Billetera Digital & Capital Points</h3>
+                    </div>
+                    <button type="button" onclick="closeWalletModal()" class="text-slate-500 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
+                  </div>
+                </div>
+
+                <div class="p-5 space-y-4">
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-1.5">Nombre de Jugador</label>
+                    <input id="wallet-customer-name" type="text" readonly class="w-full px-3 py-2.5 text-sm font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded-xl">
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-1.5">Tipo de Operación</label>
+                    <select id="wallet-transaction-type" class="w-full px-3 py-2.5 text-sm font-semibold text-slate-800 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
+                      <option value="RECHARGE">Recarga en Caja / Efectivo (+)</option>
+                      <option value="TOURNAMENT_PRIZE">Premio de Torneo / Americano (+)</option>
+                      <option value="ADMIN_ADJUST">Ajuste Administrativo (+)</option>
+                      <option value="COURT_PAYMENT">Cobro / Débito Cancha (-)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-1.5">Monto en Puntos / COP</label>
+                    <input id="wallet-amount" type="number" min="0" step="1000" value="50000" class="w-full px-3 py-2.5 text-sm font-bold text-slate-800 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-1.5">Motivo / Descripción</label>
+                    <input id="wallet-description" type="text" value="Campeón Americano 4ta" class="w-full px-3 py-2.5 text-sm font-medium text-slate-800 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
+                  <button type="button" onclick="closeWalletModal()" class="px-4 py-2.5 border border-slate-300 bg-white text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition">Cancelar</button>
+                  <button type="button" onclick="window.submitWalletTransaction()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm transition">Confirmar Transacción</button>
+                </div>
               </div>
             </div>
 
@@ -6630,20 +6681,132 @@
       }
     }
 
+window.currentWalletCustomerId = null;
+
 window.selectPlayerForFeaturedCard = function(player) {
   if (!player) return;
   window.currentFeaturedPlayerId = player.id;
+  window.currentWalletCustomerId = player.id;
   const img = document.getElementById('featured-player-avatar');
   const name = document.getElementById('featured-player-name');
   const tier = document.getElementById('featured-player-tier');
   const cat = document.getElementById('featured-player-category');
   const pts = document.getElementById('featured-player-points');
+  const wallet = document.getElementById('featured-wallet-amount');
   const avatarUrl = player.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(player.name || 'Padel')}&backgroundColor=0f172a,10b981&textColor=ffffff`;
   if (img) img.src = avatarUrl;
   if (name) name.textContent = player.name || 'Jugador';
   if (tier) tier.textContent = player.membership_tier || 'Estándar';
   if (cat) cat.textContent = player.category || '4ta';
   if (pts) pts.textContent = `${player.ranking_points || 0} pts`;
+  if (wallet) wallet.textContent = Number(player.wallet_balance || 0).toLocaleString('es-CO');
+};
+
+window.openWalletModal = function(customerId) {
+  const id = Number(customerId || window.currentFeaturedPlayerId || window.currentWalletCustomerId || 0);
+  if (!id) {
+    showToast('Selecciona un jugador antes de ajustar su saldo.', 'error');
+    return;
+  }
+
+  window.currentWalletCustomerId = id;
+  const customer = (window.allCRMCustomers || []).find((player) => String(player.id) === String(id)) || null;
+  const nameInput = document.getElementById('wallet-customer-name');
+  const amountInput = document.getElementById('wallet-amount');
+  const descriptionInput = document.getElementById('wallet-description');
+  const typeSelect = document.getElementById('wallet-transaction-type');
+
+  if (nameInput) nameInput.value = customer ? customer.name : `Jugador #${id}`;
+  if (typeSelect) typeSelect.value = 'RECHARGE';
+  if (amountInput) amountInput.value = '50000';
+  if (descriptionInput) descriptionInput.value = 'Recarga de Capital Points';
+
+  const modal = document.getElementById('modal-wallet-transaction');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+};
+
+window.closeWalletModal = function() {
+  const modal = document.getElementById('modal-wallet-transaction');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.submitWalletTransaction = async function() {
+  const customerId = Number(window.currentWalletCustomerId || window.currentFeaturedPlayerId || 0);
+  if (!customerId) {
+    showToast('No hay jugador seleccionado para la transacción.', 'error');
+    return;
+  }
+
+  const amountInput = document.getElementById('wallet-amount');
+  const typeSelect = document.getElementById('wallet-transaction-type');
+  const descriptionInput = document.getElementById('wallet-description');
+
+  const rawAmount = Number(amountInput ? amountInput.value : 0);
+  const transactionType = typeSelect ? typeSelect.value : 'RECHARGE';
+  const description = descriptionInput ? descriptionInput.value.trim() : '';
+
+  if (!Number.isFinite(rawAmount) || rawAmount <= 0) {
+    showToast('El monto debe ser mayor a 0.', 'error');
+    return;
+  }
+
+  if (!description) {
+    showToast('Escribe una descripción para la transacción.', 'error');
+    return;
+  }
+
+  let payloadAmount = Math.abs(rawAmount);
+  if (transactionType === 'COURT_PAYMENT') {
+    payloadAmount = -Math.abs(rawAmount);
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/wallet/${customerId}/transaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: payloadAmount,
+        transaction_type: transactionType,
+        description
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.detail || 'No se pudo registrar la transacción.');
+    }
+
+    const customer = (window.allCRMCustomers || []).find((player) => String(player.id) === String(customerId));
+    if (customer) {
+      customer.wallet_balance = Number(data.new_balance || customer.wallet_balance || 0);
+    }
+
+    const featuredWallet = document.getElementById('featured-wallet-amount');
+    if (featuredWallet) {
+      featuredWallet.textContent = Number(data.new_balance || 0).toLocaleString('es-CO');
+    }
+
+    if (typeof loadCRMPlayers === 'function') {
+      await loadCRMPlayers();
+    }
+
+    const selectedCustomer = (window.allCRMCustomers || []).find((player) => String(player.id) === String(customerId));
+    if (selectedCustomer) {
+      window.selectPlayerForFeaturedCard(selectedCustomer);
+    }
+
+    window.closeWalletModal();
+    showToast('✅ Transacción registrada correctamente.', 'success');
+  } catch (error) {
+    console.error('Wallet transaction error:', error);
+    showToast(error.message || 'No se pudo registrar la transacción.', 'error');
+  }
 };
 
 window.triggerAvatarUploadForFeatured = function() {
@@ -7206,9 +7369,14 @@ async function loadCRMDirectory() {
                   ${c.total_bookings_completed || 0} turnos
                 </td>
                 <td style="padding: 0.85rem 1rem;">
-                  <span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">
-                    ${c.ranking_points || 0} pts
-                  </span>
+                  <div style="display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start;">
+                    <span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">
+                      ${c.ranking_points || 0} pts
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold rounded bg-amber-50 text-amber-800 border border-amber-200">
+                      🪙 ${Number(c.wallet_balance || 0).toLocaleString('es-CO')} pts
+                    </span>
+                  </div>
                 </td>
                 <td style="padding: 0.85rem 1rem; text-align: center; min-width: 180px;">
                   <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; min-width: 0;">
