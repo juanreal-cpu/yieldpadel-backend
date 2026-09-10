@@ -4,7 +4,17 @@ import logging
 import re
 import traceback
 from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field
+try:
+    from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+except ImportError:  # Pydantic v1 fallback
+    from pydantic import BaseModel, Field, validator as field_validator, root_validator
+
+    def model_validator(*args, **kwargs):
+        def decorator(func):
+            return root_validator(*args, **kwargs)(func)
+        return decorator
+
+    ConfigDict = None
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status, Request
 from fastapi.responses import JSONResponse
 from app.services.audit import log_activity
