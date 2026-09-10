@@ -9393,7 +9393,17 @@ async function submitManualBooking(e) {
 
     async function handleHoldSubmit(e) {
       e.preventDefault();
-      const slotId = document.getElementById('hold-slot-id').value;
+      const slotIdInput = document.getElementById('hold-slot-id');
+      const targetSlotInput = document.getElementById('target-slot-id');
+      const rawSlotId = (typeof targetSlotId !== 'undefined' && targetSlotId !== null && targetSlotId !== '')
+        ? targetSlotId
+        : ((typeof currentHoldSlotId !== 'undefined' && currentHoldSlotId !== null && currentHoldSlotId !== '')
+          ? currentHoldSlotId
+          : ((typeof activeSlotId !== 'undefined' && activeSlotId !== null && activeSlotId !== '')
+            ? activeSlotId
+            : ((slotIdInput && slotIdInput.value) || (targetSlotInput && targetSlotInput.value) || '')));
+      const slotIdResolved = Number.isFinite(Number(rawSlotId)) ? Number(rawSlotId) : parseInt(String(rawSlotId || '').trim(), 10);
+
       const searchInput = document.getElementById('hold-player-search');
       const nameInput = document.getElementById('hold-player-name') || document.getElementById('hold-client-name');
       const name = (searchInput && searchInput.value ? searchInput.value : (nameInput ? nameInput.value : '')).trim();
@@ -9412,6 +9422,11 @@ async function submitManualBooking(e) {
         return;
       }
 
+      if (!slotIdResolved && slotIdResolved !== 0) {
+        alert('No se pudo identificar el turno para asignar el cupo.');
+        return;
+      }
+
       const btn = document.getElementById('btn-submit-hold');
       if (btn) {
         btn.disabled = true;
@@ -9419,9 +9434,8 @@ async function submitManualBooking(e) {
         btn.textContent = 'Procesando...';
       }
 
-      const targetSlotId = parseInt(slotId, 10);
       const payload = {
-        slot_id: targetSlotId,
+        slot_id: slotIdResolved,
         player_name: name,
         customer_name: name,
         client_name: name,
@@ -9452,35 +9466,48 @@ async function submitManualBooking(e) {
           });
         }
 
-        const data = await res.json();
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          data = {};
+        }
+
         if (res.ok) {
-          const actionMsg = method === 'HOLD' 
-            ? `Hold Creado: ${name} apartó ${spots} cupo(s) (10 min TTL)` 
+          const actionMsg = method === 'HOLD'
+            ? `Hold Creado: ${name} apartó ${spots} cupo(s) (10 min TTL)`
             : (method === 'MEMBERSHIP' ? `Membresía (${tier}): ${name} confirmó ${spots} cupo(s)` : `Counter: ${name} confirmó ${spots} cupo(s)`);
-          
+
           if (typeof window.showDarkToast === 'function') {
             window.showDarkToast('Cupo Asignado con Éxito', `✅ ${actionMsg}`);
           } else if (typeof addEvent === 'function') {
             addEvent('Cupo Asignado', actionMsg, 'green');
           }
 
-          closeModal();
+          const modalHold = document.getElementById('modal-hold') || document.getElementById('hold-modal') || document.querySelector('.modal-overlay');
+          if (modalHold) {
+            modalHold.classList.remove('active');
+            modalHold.classList.add('hidden');
+            modalHold.style.display = 'none';
+          }
+
           if (typeof fetchSlots === 'function') await fetchSlots();
           if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
         } else {
           if (res.status === 409 || (data.detail && data.detail.includes('Cancha ocupada'))) {
             alert('⚠️ Cancha ocupada: Ya existe una reserva en este horario.');
           } else {
-            alert(`⚠️ Error al asignar cupo: ${data.detail || 'Fallo en la operación'}`);
+            alert(`⚠️ Error al asignar cupo: ${data.detail || data.message || 'Fallo en la operación'}`);
           }
         }
       } catch (err) {
         console.error('Error in handleHoldSubmit:', err);
-        alert('Fallo de conexión al procesar el cupo');
+        if (typeof fetchSlots === 'function') await fetchSlots();
       } finally {
         if (btn) {
           btn.disabled = false;
           btn.textContent = btn.dataset.prevText || 'Generar Hold (10 min)';
+          delete btn.dataset.prevText;
         }
       }
     }

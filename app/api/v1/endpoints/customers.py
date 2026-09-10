@@ -1,6 +1,8 @@
+import os
+import shutil
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -616,3 +618,58 @@ async def promote_customer(
         return format_customer_response(updated)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+
+
+
+@router.post("/{customer_id}/upload-avatar")
+async def upload_customer_avatar(
+    customer_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Sube y almacena la foto de perfil del jugador, actualizando el campo avatar_url
+    en PostgreSQL / Supabase para el CRM y la visualización de turnos.
+    """
+    ext = file.filename.split(".")[-1].lower() if "." in file.filename else "jpg"
+    if ext not in ["jpg", "jpeg", "png", "webp"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Formato de imagen inválido. Solo se admiten JPG, PNG o WebP."
+        )
+
+    # Carpeta estática física
+    upload_dir = os.path.join("app", "static", "uploads", "avatars")
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    file_name = f"avatar_player_{customer_id}.{ext}"
+    file_path = os.path.join(upload_dir, file_name)
+
+    # Guardar archivo en disco
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    avatar_url = f"/static/uploads/avatars/{file_name}"
+
+    # Actualizar registro en base de datos
+    res = await db.execute(select(Customer).where(Customer.id == customer_id))
+    customer = res.scalars().first()
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Cliente con ID {customer_id} no encontrado."
+        )
+
+    customer.avatar_url = avatar_url
+    await db.commit()
+    await db.refresh(customer)
+
+    return {
+        "status": "ok", 
+        "message": "Foto de perfil actualizada exitosamente",
+        "avatar_url": avatar_url
+    }
+
+

@@ -6,6 +6,13 @@ from app.core.config import settings
 from app.database import engine, Base
 import app.models  # noqa: F401 - Register models with Base.metadata
 from app.api.v1.api import api_router
+from fastapi.staticfiles import StaticFiles
+
+# Crear la carpeta de avatares si no existe
+os.makedirs("app/static/uploads/avatars", exist_ok=True)
+# Montar carpeta static
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 
 
 @asynccontextmanager

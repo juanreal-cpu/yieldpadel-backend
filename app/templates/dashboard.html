@@ -9412,7 +9412,17 @@ ${data.message}`);
 
     async function handleHoldSubmit(e) {
       e.preventDefault();
-      const slotId = document.getElementById('hold-slot-id').value;
+      const slotIdInput = document.getElementById('hold-slot-id');
+      const targetSlotInput = document.getElementById('target-slot-id');
+      const rawSlotId = (typeof targetSlotId !== 'undefined' && targetSlotId !== null && targetSlotId !== '')
+        ? targetSlotId
+        : ((typeof currentHoldSlotId !== 'undefined' && currentHoldSlotId !== null && currentHoldSlotId !== '')
+          ? currentHoldSlotId
+          : ((typeof activeSlotId !== 'undefined' && activeSlotId !== null && activeSlotId !== '')
+            ? activeSlotId
+            : ((slotIdInput && slotIdInput.value) || (targetSlotInput && targetSlotInput.value) || '')));
+      const slotIdResolved = Number.isFinite(Number(rawSlotId)) ? Number(rawSlotId) : parseInt(String(rawSlotId || '').trim(), 10);
+
       const searchInput = document.getElementById('hold-player-search');
       const nameInput = document.getElementById('hold-player-name') || document.getElementById('hold-client-name');
       const name = (searchInput && searchInput.value ? searchInput.value : (nameInput ? nameInput.value : '')).trim();
@@ -9431,6 +9441,11 @@ ${data.message}`);
         return;
       }
 
+      if (!slotIdResolved && slotIdResolved !== 0) {
+        alert('No se pudo identificar el turno para asignar el cupo.');
+        return;
+      }
+
       const btn = document.getElementById('btn-submit-hold');
       if (btn) {
         btn.disabled = true;
@@ -9438,8 +9453,8 @@ ${data.message}`);
         btn.textContent = 'Procesando...';
       }
 
-const payload = {
-        slot_id: targetSlotId,
+      const payload = {
+        slot_id: slotIdResolved,
         player_name: name,
         customer_name: name,
         client_name: name,
@@ -9470,7 +9485,6 @@ const payload = {
           });
         }
 
-        // Parseo seguro de respuesta para evitar que un JSON vacío salte al catch
         let data = {};
         try {
           data = await res.json();
@@ -9479,55 +9493,40 @@ const payload = {
         }
 
         if (res.ok) {
-          const actionMsg = method === 'HOLD' 
-            ? `Hold Creado: ${name} apartó ${spots} cupo(s) (10 min TTL)` 
+          const actionMsg = method === 'HOLD'
+            ? `Hold Creado: ${name} apartó ${spots} cupo(s) (10 min TTL)`
             : (method === 'MEMBERSHIP' ? `Membresía (${tier}): ${name} confirmó ${spots} cupo(s)` : `Counter: ${name} confirmó ${spots} cupo(s)`);
-          
+
           if (typeof window.showDarkToast === 'function') {
             window.showDarkToast('Cupo Asignado con Éxito', `✅ ${actionMsg}`);
           } else if (typeof addEvent === 'function') {
             addEvent('Cupo Asignado', actionMsg, 'green');
           }
 
-          // Cierre seguro del modal sin que interrumpa el flujo
-          try {
-            if (typeof closeModal === 'function') {
-              closeModal();
-            } else {
-              const m = document.getElementById('modal-hold') || document.querySelector('.modal-overlay:not(.hidden)');
-              if (m) {
-                m.classList.add('hidden');
-                m.style.display = 'none';
-              }
-            }
-          } catch (closeErr) {
-            console.warn('Advertencia al cerrar modal:', closeErr);
+          const modalHold = document.getElementById('modal-hold') || document.getElementById('hold-modal') || document.querySelector('.modal-overlay');
+          if (modalHold) {
+            modalHold.classList.remove('active');
+            modalHold.classList.add('hidden');
+            modalHold.style.display = 'none';
           }
 
-          // Refresco en caliente de turnos y CRM
           if (typeof fetchSlots === 'function') await fetchSlots();
           if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
-
         } else {
-          // Si el servidor arrojó un error real (ej: 409 cancha ocupada)
           if (res.status === 409 || (data.detail && data.detail.includes('Cancha ocupada'))) {
             alert('⚠️ Cancha ocupada: Ya existe una reserva en este horario.');
           } else {
-            alert(`⚠️ Error al asignar cupo: ${data.detail || data.message || 'No se pudo completar la operación'}`);
+            alert(`⚠️ Error al asignar cupo: ${data.detail || data.message || 'Fallo en la operación'}`);
           }
         }
       } catch (err) {
         console.error('Error in handleHoldSubmit:', err);
-        // Verificar si a pesar del error de red el turno ya quedó procesado
         if (typeof fetchSlots === 'function') await fetchSlots();
-        // Solo disparar alerta si el turno realmente no se reflejó
-        setTimeout(() => {
-          if (typeof fetchSlots === 'function') fetchSlots();
-        }, 500);
       } finally {
         if (btn) {
           btn.disabled = false;
           btn.textContent = btn.dataset.prevText || 'Generar Hold (10 min)';
+          delete btn.dataset.prevText;
         }
       }
     }
