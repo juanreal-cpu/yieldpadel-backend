@@ -290,6 +290,151 @@ async def get_market_rates(
     ]
 
 
+@router.get("/price-comparison")
+async def get_price_comparison(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Compara la tarifa de Capital Pádel contra el promedio del resto de la competencia
+    por franja horaria estándar y tipo de día.
+    """
+    query = text(
+        """
+        SELECT
+            standard_time_slot,
+            is_weekend,
+            ROUND(MAX(CASE WHEN LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%' THEN price_per_player END), 2) AS tarifa_capital_padel,
+            ROUND(AVG(CASE WHEN NOT (LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%') THEN price_per_player END), 2) AS tarifa_promedio_competencia,
+            ROUND(
+                MAX(CASE WHEN LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%' THEN price_per_player END)
+                - AVG(CASE WHEN NOT (LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%') THEN price_per_player END),
+                2
+            ) AS brecha_precio_cop
+        FROM v_competitor_market_clean
+        WHERE price_per_player IS NOT NULL AND price_per_player > 0
+        GROUP BY standard_time_slot, is_weekend
+        ORDER BY standard_time_slot ASC, is_weekend ASC
+        """
+    )
+
+    res = await db.execute(query)
+    rows = res.mappings().all()
+
+    data = []
+    for row in rows:
+        capital = row["tarifa_capital_padel"]
+        competition = row["tarifa_promedio_competencia"]
+        data.append(
+            {
+                "standard_time_slot": row["standard_time_slot"],
+                "is_weekend": bool(row["is_weekend"]),
+                "tarifa_capital_padel": float(capital) if capital is not None else None,
+                "tarifa_promedio_competencia": float(competition) if competition is not None else None,
+                "brecha_precio_cop": float(row["brecha_precio_cop"]) if row["brecha_precio_cop"] is not None else None,
+            }
+        )
+
+    return data
+
+
+@router.get("/clubs-occupancy")
+async def get_clubs_occupancy(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Calcula el porcentaje de convocatorias cerradas por cada club competidor.
+    """
+    query = text(
+        """
+        SELECT
+            club_name,
+            COUNT(*) AS total_convocatorias,
+            SUM(CASE WHEN is_closed THEN 1 ELSE 0 END) AS partidos_llenos,
+            ROUND(
+                (SUM(CASE WHEN is_closed THEN 1 ELSE 0 END) * 100.0) / NULLIF(COUNT(*), 0),
+                2
+            ) AS ocupacion_pct
+        FROM v_competitor_market_clean
+        WHERE club_name IS NOT NULL AND TRIM(club_name) <> ''
+        GROUP BY club_name
+        ORDER BY ocupacion_pct DESC, total_convocatorias DESC
+        """
+    )
+
+    res = await db.execute(query)
+    rows = res.mappings().all()
+
+    return [
+        {
+            "club_name": row["club_name"],
+            "total_convocatorias": int(row["total_convocatorias"] or 0),
+            "partidos_llenos": int(row["partidos_llenos"] or 0),
+            "ocupacion_pct": float(row["ocupacion_pct"] or 0),
+        }
+        for row in rows
+    ]
+
+
+@router.get("/top-recurring-players")
+async def get_top_recurring_players(
+    detected_category: Optional[str] = Query(None, description="Ejemplo: 4ta, 3ra, 5ta"),
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Identifica los jugadores más activos del mercado y clasifica su comportamiento.
+    """
+    query = text(
+        """
+        WITH player_market_stats AS (
+            SELECT
+                mp.player_name,
+                mp.frequent_club,
+                mp.detected_category,
+                mp.total_matches_played,
+                COUNT(DISTINCT LOWER(TRIM(CAST(v.club_name AS TEXT)))) AS total_clubes_distintos
+            FROM market_player_profiles mp
+            LEFT JOIN v_competitor_market_clean v
+                ON v.players IS NOT NULL
+                AND LOWER(CAST(v.players AS TEXT)) LIKE '%' || LOWER(CAST(mp.player_name AS TEXT)) || '%'
+            WHERE mp.player_name IS NOT NULL
+            GROUP BY mp.player_name, mp.frequent_club, mp.detected_category, mp.total_matches_played
+        )
+        SELECT
+            player_name,
+            frequent_club,
+            total_matches_played,
+            COALESCE(total_clubes_distintos, 1) AS total_clubes_distintos,
+            CASE
+                WHEN COALESCE(total_clubes_distintos, 1) = 1 THEN 'Fiel (Mono-club)'
+                WHEN COALESCE(total_clubes_distintos, 1) >= 3 THEN 'Cazador de Precios / Multiclub'
+                ELSE 'Ocasional / Híbrido'
+            END AS perfil_comportamiento
+        FROM player_market_stats
+        WHERE (:detected_category IS NULL OR LOWER(CAST(detected_category AS TEXT)) = LOWER(CAST(:detected_category AS TEXT)))
+        ORDER BY total_matches_played DESC, total_clubes_distintos DESC, player_name ASC
+        LIMIT :limit
+        """
+    )
+
+    res = await db.execute(
+        query,
+        {"detected_category": detected_category, "limit": limit},
+    )
+    rows = res.mappings().all()
+
+    return [
+        {
+            "player_name": row["player_name"],
+            "frequent_club": row["frequent_club"],
+            "total_matches_played": int(row["total_matches_played"] or 0),
+            "total_clubes_distintos": int(row["total_clubes_distintos"] or 0),
+            "perfil_comportamiento": row["perfil_comportamiento"],
+        }
+        for row in rows
+    ]
+
+
 @router.get("/prospects")
 async def get_market_prospects(
     category: Optional[str] = Query(None, description="Ejemplo: 3ra, 4ta, 5ta"),
