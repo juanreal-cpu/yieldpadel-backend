@@ -2228,6 +2228,9 @@
           <button onclick="switchMainView('competitors')" class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition" id="btn-nav-competitors">
             <span>🏢</span> <span>Benchmark Competencia</span>
           </button>
+          <button onclick="switchMainView('view-wallet-ledger')" id="btn-nav-wallet-ledger" class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+            <span>🪙</span> <span>Auditoría Capital Points</span>
+          </button>
           <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-yield" onclick="switchMainView('yield')">
             <span class="text-base">💡</span>
             <span>Motor de Yield</span>
@@ -2766,7 +2769,70 @@
         </div>
 
         <!-- ======================================================== -->
-        <!-- VISTA 4: 📈 RADAR DE PRECIOS                            -->
+        <!-- VISTA 4: 🪙 AUDITORÍA CAPITAL POINTS                    -->
+        <!-- ======================================================== -->
+        <div id="view-wallet-ledger" class="view-section hidden">
+          <div class="max-w-7xl mx-auto px-2 py-6">
+            <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em]">
+                  <span>🪙</span> Capital Points
+                </div>
+                <h2 class="mt-3 text-2xl font-black text-slate-900">Control y Auditoría de Capital Points</h2>
+              </div>
+              <button onclick="window.loadWalletLedger()" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition">
+                <span>↻</span> Actualizar auditoría
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+              <div class="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
+                <div class="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700">Puntos Emitidos (+)</div>
+                <div id="wallet-kpi-issued" class="mt-3 text-3xl font-black text-emerald-600">0 pts</div>
+              </div>
+              <div class="rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 shadow-sm">
+                <div class="text-[11px] font-black uppercase tracking-[0.12em] text-red-700">Puntos Redimidos / Canjeados (-)</div>
+                <div id="wallet-kpi-redeemed" class="mt-3 text-3xl font-black text-red-600">0 pts</div>
+              </div>
+              <div class="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm">
+                <div class="text-[11px] font-black uppercase tracking-[0.12em] text-blue-700">Saldo Circulante en Jugadores</div>
+                <div id="wallet-kpi-circulating" class="mt-3 text-3xl font-black text-blue-600">0 pts</div>
+              </div>
+              <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+                <div class="text-[11px] font-black uppercase tracking-[0.12em] text-slate-700">Total Operaciones Registradas</div>
+                <div id="wallet-kpi-total-ops" class="mt-3 text-3xl font-black text-slate-700">0</div>
+              </div>
+            </div>
+
+            <div class="rounded-3xl border border-slate-200 bg-white shadow-[0_18px_36px_rgba(15,23,42,0.06)] overflow-hidden">
+              <div class="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                <h3 class="text-base font-black text-slate-900">Auditoría de Movimientos</h3>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="min-w-full border-collapse text-left">
+                  <thead>
+                    <tr class="bg-slate-100 text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">
+                      <th class="px-4 py-3">Fecha / Hora</th>
+                      <th class="px-4 py-3">Jugador</th>
+                      <th class="px-4 py-3">Tipo Operación</th>
+                      <th class="px-4 py-3 text-right">Monto (PTS)</th>
+                      <th class="px-4 py-3 text-right">Saldo Posterior</th>
+                      <th class="px-4 py-3">Motivo / Concepto</th>
+                    </tr>
+                  </thead>
+                  <tbody id="wallet-ledger-table-body" class="bg-white text-sm text-slate-700">
+                    <tr>
+                      <td colspan="6" class="px-4 py-10 text-center text-slate-500">Cargando movimientos de Capital Points...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VISTA 5: 📈 RADAR DE PRECIOS                            -->
         <!-- ======================================================== -->
         <div id="view-radar" class="view-section hidden">
           <div style="max-width: 1280px; margin: 0 auto; padding-bottom: 3rem;">
@@ -5858,6 +5924,11 @@
         if ((cleanName === 'memberships' || viewName === 'memberships') && typeof loadMembershipsData === 'function') loadMembershipsData();
         if (cleanName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
         if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
+        if (cleanName === 'wallet-ledger' || viewName === 'wallet-ledger' || viewName === 'view-wallet-ledger') {
+          if (typeof window.loadWalletLedger === 'function') {
+            window.loadWalletLedger();
+          }
+        }
         if (cleanName === 'radar' || viewName === 'radar') {
           if (typeof window.loadRadarAnalytics === 'function') {
             window.loadRadarAnalytics();
@@ -5875,6 +5946,82 @@
       }
     };
     function switchMainView(viewName) { window.switchMainView(viewName); }
+
+    window.loadWalletLedger = async function() {
+      const tbody = document.getElementById('wallet-ledger-table-body');
+      const issuedEl = document.getElementById('wallet-kpi-issued');
+      const redeemedEl = document.getElementById('wallet-kpi-redeemed');
+      const circulatingEl = document.getElementById('wallet-kpi-circulating');
+      const totalOpsEl = document.getElementById('wallet-kpi-total-ops');
+
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">Cargando movimientos de Capital Points...</td></tr>';
+      }
+
+      try {
+        const metricsRes = await fetch(`${API_BASE}/api/v1/wallet/metrics`);
+        const metricsData = metricsRes.ok ? await metricsRes.json() : { metrics: {} };
+        const metrics = metricsData && metricsData.metrics ? metricsData.metrics : {};
+
+        if (issuedEl) issuedEl.textContent = `${Number(metrics.total_issued || 0).toLocaleString('es-CO')} pts`;
+        if (redeemedEl) redeemedEl.textContent = `${Number(metrics.total_redeemed || 0).toLocaleString('es-CO')} pts`;
+        if (circulatingEl) circulatingEl.textContent = `${Number(metrics.circulating_liability || 0).toLocaleString('es-CO')} pts`;
+        if (totalOpsEl) totalOpsEl.textContent = Number(metrics.total_transactions || 0).toLocaleString('es-CO');
+
+        const ledgerRes = await fetch(`${API_BASE}/api/v1/wallet/ledger?limit=200`);
+        const ledger = ledgerRes.ok ? await ledgerRes.json() : [];
+
+        if (!Array.isArray(ledger) || ledger.length === 0) {
+          if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay movimientos registrados aún.</td></tr>';
+          }
+          return;
+        }
+
+        const rowsHtml = ledger.map((row) => {
+          const createdAt = row.created_at ? new Date(row.created_at) : null;
+          const dateText = createdAt && !isNaN(createdAt.getTime()) ? createdAt.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+          const timeText = createdAt && !isNaN(createdAt.getTime()) ? createdAt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
+          const amountValue = Number(row.amount || 0);
+          const formattedAmount = amountValue > 0
+            ? `+${amountValue.toLocaleString('es-CO')} pts`
+            : `${amountValue.toLocaleString('es-CO')} pts`;
+          const amountClass = amountValue > 0 ? 'text-emerald-600 font-black' : 'text-red-600 font-black';
+          const balanceAfter = Number(row.balance_after || 0).toLocaleString('es-CO');
+          const type = row.transaction_type || 'TRANSACCION';
+          const player = row.customer_name || 'Jugador no registrado';
+          const concept = row.description || 'Sin descripción';
+
+          return `
+            <tr class="border-t border-slate-200 hover:bg-slate-50/80">
+              <td class="px-4 py-3 align-top whitespace-nowrap text-slate-600">
+                <div class="font-bold text-slate-700">${dateText}</div>
+                <div class="text-[11px] text-slate-500">${timeText}</div>
+              </td>
+              <td class="px-4 py-3 align-top">
+                <div class="font-bold text-slate-800">${player}</div>
+                <div class="text-[11px] text-slate-500">${row.customer_phone || ''}</div>
+              </td>
+              <td class="px-4 py-3 align-top">
+                <span class="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-slate-700">${type}</span>
+              </td>
+              <td class="px-4 py-3 align-top text-right ${amountClass}">${formattedAmount}</td>
+              <td class="px-4 py-3 align-top text-right font-bold text-slate-700">${balanceAfter} pts</td>
+              <td class="px-4 py-3 align-top text-slate-600">${concept}</td>
+            </tr>
+          `;
+        }).join('');
+
+        if (tbody) {
+          tbody.innerHTML = rowsHtml;
+        }
+      } catch (error) {
+        console.error('Error cargando auditoría de Capital Points:', error);
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-red-600">No se pudo cargar la auditoría de Capital Points.</td></tr>';
+        }
+      }
+    };
 
     // =========================================================================
     // COMPONENTE GLOBAL DE BÚSQUEDA REACTIVA DEL CRM (AUTOCOMPLETADO GLOBAL)

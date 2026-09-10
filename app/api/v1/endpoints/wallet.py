@@ -125,3 +125,91 @@ async def get_wallet_history(
         ]
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error consultando historial de wallet: {str(exc)}") from exc
+
+
+@router.get("/ledger")
+async def get_wallet_ledger(
+    limit: int = 50,
+    offset: int = 0,
+    transaction_type: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        params: Dict[str, Any] = {"limit": max(1, min(limit, 200)), "offset": max(0, offset)}
+        base_sql = """
+            SELECT
+                wt.id,
+                wt.created_at,
+                c.name AS customer_name,
+                c.phone AS customer_phone,
+                wt.transaction_type,
+                wt.amount,
+                wt.balance_after,
+                wt.description
+            FROM wallet_transactions wt
+            LEFT JOIN customers c ON c.id = wt.customer_id
+        """
+
+        clauses = []
+        if transaction_type:
+            clauses.append("wt.transaction_type = :transaction_type")
+            params["transaction_type"] = transaction_type.strip()
+
+        if clauses:
+            base_sql += " WHERE " + " AND ".join(clauses)
+
+        base_sql += " ORDER BY wt.created_at DESC LIMIT :limit OFFSET :offset"
+
+        rows = (await db.execute(text(base_sql), params)).mappings().all()
+
+        return [
+            {
+                "id": row["id"],
+                "created_at": row["created_at"],
+                "customer_name": row["customer_name"],
+                "customer_phone": row["customer_phone"],
+                "transaction_type": row["transaction_type"],
+                "amount": float(row["amount"] or 0),
+                "balance_after": float(row["balance_after"] or 0),
+                "description": row["description"],
+            }
+            for row in rows
+        ]
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error consultando ledger de wallet: {str(exc)}") from exc
+
+
+@router.get("/metrics")
+async def get_wallet_metrics(db: AsyncSession = Depends(get_db)):
+    try:
+        summary = (await db.execute(
+            text(
+                """
+                SELECT
+                    COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS total_issued,
+                    COALESCE(ABS(SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END)), 0) AS total_redeemed,
+                    COALESCE((SELECT SUM(wallet_balance) FROM customers), 0) AS circulating_liability,
+                    COUNT(*) AS total_transactions
+                FROM wallet_transactions
+                """
+            )
+        )).mappings().first()
+
+        if summary is None:
+            metrics = {
+                "total_issued": 0.0,
+                "total_redeemed": 0.0,
+                "circulating_liability": 0.0,
+                "total_transactions": 0,
+            }
+        else:
+            metrics = {
+                "total_issued": float(summary["total_issued"] or 0),
+                "total_redeemed": float(summary["total_redeemed"] or 0),
+                "circulating_liability": float(summary["circulating_liability"] or 0),
+                "total_transactions": int(summary["total_transactions"] or 0),
+            }
+
+        return {"status": "ok", "metrics": metrics}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error consultando métricas de wallet: {str(exc)}") from exc
