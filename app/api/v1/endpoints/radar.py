@@ -379,6 +379,7 @@ async def get_clubs_occupancy(
 async def get_top_recurring_players(
     category: Optional[str] = Query(default=None, description="Ejemplo: 4ta, 3ra, 5ta"),
     club_name: Optional[str] = Query(default=None, description="Filtrar por club habitual"),
+    time_slot: Optional[str] = Query(default=None, description="Ejemplo: Mañana, Tarde, Noche"),
     limit: int = Query(default=100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
 ):
@@ -388,15 +389,30 @@ async def get_top_recurring_players(
     """
     try:
         category_norm = (category or '').strip()
-        if category_norm.lower() == 'todas':
+        if category_norm.lower() in ('todas', 'all'):
             category_norm = ''
 
         club_name_norm = (club_name or '').strip()
         if not club_name_norm:
             club_name_norm = None
 
-        query = text(
-            """
+        time_slot_norm = (time_slot or '').strip()
+        if time_slot_norm.lower() in ('todas', 'all', ''):
+            time_slot_norm = ''
+
+        time_slot_sql = None
+        if time_slot_norm:
+            ts = time_slot_norm.lower()
+            if ts in ('mañana', 'manana'):
+                time_slot_sql = "(LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%06:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%07:30%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%09:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%10:30%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%am%')"
+            elif ts == 'tarde':
+                time_slot_sql = "(LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%14:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%15:30%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%16:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%17:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%pm%')"
+            elif ts == 'noche':
+                time_slot_sql = "(LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%18:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%19:30%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%21:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%noche%')"
+            else:
+                time_slot_sql = "LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%' || LOWER(CAST(:time_slot AS TEXT)) || '%'"
+
+        query_str = """
             WITH player_market_stats AS (
                 SELECT
                     mp.player_name,
@@ -409,8 +425,23 @@ async def get_top_recurring_players(
                     ON v.players IS NOT NULL
                     AND LOWER(CAST(v.players AS TEXT)) LIKE '%' || LOWER(CAST(mp.player_name AS TEXT)) || '%'
                 WHERE mp.player_name IS NOT NULL
+                  AND COALESCE(mp.total_matches_played, 0) >= 1
                   AND (:category IS NULL OR :category = '' OR LOWER(CAST(mp.detected_category AS TEXT)) = LOWER(CAST(:category AS TEXT)))
                   AND (:club_name IS NULL OR :club_name = '' OR LOWER(CAST(mp.frequent_club AS TEXT)) LIKE '%' || LOWER(CAST(:club_name AS TEXT)) || '%')
+            """
+
+        params: dict[str, object] = {
+            "category": category_norm or None,
+            "club_name": club_name_norm,
+            "limit": int(limit),
+        }
+
+        if time_slot_sql:
+            query_str += f" AND {time_slot_sql}"
+            if time_slot_norm and time_slot_norm.lower() not in ('mañana', 'manana', 'tarde', 'noche'):
+                params["time_slot"] = time_slot_norm
+
+        query_str += """
                 GROUP BY mp.player_name, mp.frequent_club, mp.detected_category, mp.total_matches_played
             )
             SELECT
@@ -427,15 +458,8 @@ async def get_top_recurring_players(
             ORDER BY total_matches_played DESC, total_clubes_distintos DESC, player_name ASC
             LIMIT :limit
             """
-        )
 
-        params = {
-            "category": category_norm or None,
-            "club_name": club_name_norm,
-            "limit": int(limit),
-        }
-
-        res = await db.execute(query, params)
+        res = await db.execute(text(query_str), params)
         rows = res.mappings().all()
 
         return [
@@ -472,16 +496,50 @@ async def get_market_prospects(
             last_active_date
         FROM market_player_profiles
         WHERE 1=1
+          AND COALESCE(total_matches_played, 0) >= 1
     """
-    params = {"limit": limit}
-    
-    if category:
+    params: dict[str, object] = {"limit": limit}
+
+    category_norm = (category or '').strip()
+    if category_norm and category_norm.lower() not in ('todas', 'all'):
         query += " AND detected_category ILIKE :cat"
-        params["cat"] = f"%{category}%"
-        
-    if time_slot:
-        query += " AND preferred_time_slot ILIKE :slot"
-        params["slot"] = f"%{time_slot}%"
+        params["cat"] = f"%{category_norm}%"
+
+    time_slot_norm = (time_slot or '').strip()
+    if time_slot_norm and time_slot_norm.lower() not in ('todas', 'all'):
+        ts = time_slot_norm.lower()
+        if ts in ('mañana', 'manana'):
+            query += """
+                AND (
+                    LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%06:00%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%07:30%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%09:00%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%10:30%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%am%'
+                )
+            """
+        elif ts == 'tarde':
+            query += """
+                AND (
+                    LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%14:00%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%15:30%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%16:00%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%17:00%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%pm%'
+                )
+            """
+        elif ts == 'noche':
+            query += """
+                AND (
+                    LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%18:00%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%19:30%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%21:00%'
+                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%noche%'
+                )
+            """
+        else:
+            query += " AND preferred_time_slot ILIKE :slot"
+            params["slot"] = f"%{time_slot_norm}%"
 
     query += " ORDER BY total_matches_played DESC LIMIT :limit"
 

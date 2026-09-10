@@ -2822,7 +2822,7 @@
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
                       <label for="radar-prospect-category" style="font-size: 0.72rem; font-weight: 800; color: #475569; letter-spacing: 0.04em; text-transform: uppercase;">Categoría</label>
                       <select id="radar-prospect-category" style="padding: 0.4rem 0.7rem; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 0.75rem; font-weight: 700;">
-                        <option value="ALL">Todas</option>
+                        <option value="Todas" selected>Todas</option>
                         <option value="1ra">1ra</option>
                         <option value="2da">2da</option>
                         <option value="3ra">3ra</option>
@@ -2835,12 +2835,10 @@
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
                       <label for="radar-prospect-time-slot" style="font-size: 0.72rem; font-weight: 800; color: #475569; letter-spacing: 0.04em; text-transform: uppercase;">Franja</label>
                       <select id="radar-prospect-time-slot" style="padding: 0.4rem 0.7rem; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 0.75rem; font-weight: 700;">
-                        <option value="ALL">Todas</option>
-                        <option value="Mañana">Mañana</option>
-                        <option value="Tarde">Tarde</option>
-                        <option value="Noche">Noche</option>
-                        <option value="Semana">Semana</option>
-                        <option value="Fin de Semana">Fin de Semana</option>
+                        <option value="Todas" selected>Todas</option>
+                        <option value="Mañana">Mañana (06:00 - 12:00)</option>
+                        <option value="Tarde">Tarde (12:00 - 18:00)</option>
+                        <option value="Noche">Noche (18:00 - 23:00)</option>
                       </select>
                     </div>
                   </div>
@@ -7171,30 +7169,69 @@ ${data.message}`);
 
       if (categoryEl && !categoryEl.dataset.bound) {
         categoryEl.dataset.bound = 'true';
-        categoryEl.addEventListener('change', () => {
-          renderRadarProspectTable();
+        categoryEl.addEventListener('change', async () => {
+          await window.loadProspects(categoryEl.value, timeEl ? timeEl.value : 'Todas');
         });
       }
 
       if (timeEl && !timeEl.dataset.bound) {
         timeEl.dataset.bound = 'true';
-        timeEl.addEventListener('change', () => {
-          renderRadarProspectTable();
+        timeEl.addEventListener('change', async () => {
+          await window.loadProspects(categoryEl ? categoryEl.value : 'Todas', timeEl.value);
         });
       }
     }
+
+    window.loadProspects = async function(category = 'Todas', timeSlot = 'Todas') {
+      const normalizedCategory = (category || '').toString().trim();
+      const normalizedTimeSlot = (timeSlot || '').toString().trim();
+      const params = new URLSearchParams();
+
+      if (normalizedCategory && normalizedCategory !== 'Todas' && normalizedCategory !== 'ALL') {
+        params.set('category', normalizedCategory);
+      }
+
+      if (normalizedTimeSlot && normalizedTimeSlot !== 'Todas' && normalizedTimeSlot !== 'ALL') {
+        params.set('time_slot', normalizedTimeSlot);
+      }
+
+      const url = `${API_BASE}/api/v1/radar/prospects${params.toString() ? `?${params.toString()}` : ''}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Prospects request failed: ${res.status}`);
+        }
+        const data = await res.json();
+        radarAnalyticsState.players = Array.isArray(data) ? data : [];
+        renderRadarProspectTable();
+        return radarAnalyticsState.players;
+      } catch (err) {
+        console.warn('Error loading prospects:', err);
+        radarAnalyticsState.players = [];
+        renderRadarProspectTable();
+        return [];
+      }
+    };
 
     function renderRadarProspectTable() {
       const tbody = document.getElementById('radar-prospect-table-body');
       if (!tbody) return;
 
-      const category = (document.getElementById('radar-prospect-category') || {}).value || 'ALL';
-      const timeSlot = (document.getElementById('radar-prospect-time-slot') || {}).value || 'ALL';
+      const category = (document.getElementById('radar-prospect-category') || {}).value || 'Todas';
+      const timeSlot = (document.getElementById('radar-prospect-time-slot') || {}).value || 'Todas';
       const source = radarAnalyticsState.players || [];
       const filtered = source.filter(player => {
-        const matchesCategory = category === 'ALL' || (player.detected_category || player.category || '').toUpperCase() === category.toUpperCase();
+        const playerCategory = (player.detected_category || player.category || '').toString();
+        const matchesCategory = !category || category === 'Todas' || category === 'ALL' || playerCategory.toUpperCase() === category.toUpperCase();
         const preferred = (player.preferred_time_slot || player.preferredSlot || '').toString();
-        const matchesSlot = timeSlot === 'ALL' || preferred.toUpperCase().includes(timeSlot.toUpperCase()) || (timeSlot === 'Semana' && preferred.toUpperCase().includes('SEMANA')) || (timeSlot === 'Fin de Semana' && preferred.toUpperCase().includes('FIN'));
+        const normalizedPreferred = preferred.toUpperCase();
+        const normalizedTime = (timeSlot || 'Todas').toString().toUpperCase();
+        const matchesSlot = !timeSlot || timeSlot === 'Todas' || timeSlot === 'ALL'
+          || normalizedPreferred.includes(normalizedTime)
+          || (normalizedTime === 'SEMANA' && normalizedPreferred.includes('SEMANA'))
+          || (normalizedTime === 'FIN DE SEMANA' && normalizedPreferred.includes('FIN'))
+          || (normalizedTime === 'MAÑANA' && normalizedPreferred.includes('06:00'))
+          || (normalizedTime === 'MAÑANA' && normalizedPreferred.includes('12:00'));
         return matchesCategory && matchesSlot;
       });
 
@@ -7315,27 +7352,36 @@ ${data.message}`);
             priceBody.innerHTML = `<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #64748B;">No hay datos disponibles todavía.</td></tr>`;
           } else {
             priceBody.innerHTML = radarAnalyticsState.prices.map(row => {
-              const capital = Number(row.tarifa_capital_padel || 0);
-              const competing = Number(row.tarifa_promedio_competencia || 0);
-              const delta = Number(row.brecha_precio_cop || 0);
-              const pct = competing ? ((delta / competing) * 100) : 0;
-              const isLower = delta <= 0;
-              const badgeStyle = isLower
-                ? 'background: #DCFCE7; color: #166534; border: 1px solid #86EFAC;'
-                : 'background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5;';
+              const capitalRaw = row.tarifa_capital_padel;
+              const capital = Number(capitalRaw ?? 0);
+              const competing = Number(row.tarifa_promedio_competencia ?? 0);
+              const deltaRaw = row.brecha_precio_cop;
+              const delta = Number(deltaRaw ?? 0);
+              const hasCapitalData = !!capitalRaw && Number(capital) > 0;
+              const hasComparableGap = hasCapitalData && Number.isFinite(delta);
+              const pct = hasComparableGap && competing > 0 ? ((delta / competing) * 100) : 0;
+              const isLower = hasComparableGap && delta <= 0;
+
+              const priceCell = !hasCapitalData
+                ? '<span class="text-slate-400 font-normal italic">— (Sin turnos)</span>'
+                : `<span class="text-slate-900 font-bold">$${capital.toLocaleString('es-CO')} COP</span>`;
+
+              const deltaCell = !hasComparableGap
+                ? '<span class="text-slate-400">—</span>'
+                : `<span class="text-slate-900 font-bold">${delta >= 0 ? '+' : '-'}$${Math.abs(delta).toLocaleString('es-CO')} COP / ${pct >= 0 ? '+' : '-'}${Math.abs(pct).toFixed(1)}%</span>`;
+
+              const stateCell = !hasCapitalData
+                ? '<span class="px-2.5 py-1 text-xs font-bold text-slate-500 bg-slate-100 rounded-lg border border-slate-200">Sin datos</span>'
+                : `<span style="display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 0.28rem 0.6rem; font-size: 0.66rem; font-weight: 800; background: ${isLower ? '#DCFCE7' : '#FEE2E2'}; color: ${isLower ? '#166534' : '#991B1B'}; border: 1px solid ${isLower ? '#86EFAC' : '#FCA5A5'};">${isLower ? 'Más económico' : 'Más caro'}</span>`;
 
               return `
                 <tr style="border-bottom: 1px solid #E2E8F0;">
                   <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${row.standard_time_slot || 'N/A'}</td>
                   <td style="padding: 0.8rem 0.7rem; color: #334155; font-weight: 600;">${row.is_weekend ? 'Fin de Semana' : 'Semana'}</td>
-                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${capital.toLocaleString('es-CO')} COP</td>
-                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155;">$${competing.toLocaleString('es-CO')} COP</td>
-                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: ${isLower ? '#166534' : '#991B1B'}; font-weight: 800;">${delta >= 0 ? '+' : '-'}$${Math.abs(delta).toLocaleString('es-CO')} COP / ${pct >= 0 ? '+' : '-'}${Math.abs(pct).toFixed(1)}%</td>
-                  <td style="padding: 0.8rem 0.7rem; text-align: center;">
-                    <span style="display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 0.28rem 0.6rem; font-size: 0.66rem; font-weight: 800; ${badgeStyle};">
-                      ${isLower ? 'Más económico' : 'Más caro'}
-                    </span>
-                  </td>
+                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">${priceCell}</td>
+                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155;">${competing > 0 ? `$${competing.toLocaleString('es-CO')} COP` : '<span class="text-slate-400">—</span>'}</td>
+                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: ${hasComparableGap && delta <= 0 ? '#166534' : (hasComparableGap ? '#991B1B' : '#64748B')}; font-weight: 800;">${deltaCell}</td>
+                  <td style="padding: 0.8rem 0.7rem; text-align: center;">${stateCell}</td>
                 </tr>
               `;
             }).join('');
