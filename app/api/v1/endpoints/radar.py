@@ -380,9 +380,9 @@ async def get_clubs_list(db: AsyncSession = Depends(get_db)):
     """Devuelve la lista única de clubes competidores presentes en la vista de mercado."""
     query = text(
         """
-        SELECT DISTINCT club_name
-        FROM competitor_market_slots
-        WHERE club_name IS NOT NULL AND TRIM(club_name) <> ''
+        SELECT DISTINCT club_name 
+        FROM competitor_market_slots 
+        WHERE club_name IS NOT NULL AND TRIM(club_name) != ''
         ORDER BY club_name ASC
         """
     )
@@ -396,61 +396,84 @@ async def get_club_benchmark(
     db: AsyncSession = Depends(get_db),
 ):
     """Compara precios, jugadores recurrentes y torneos de un club competidor frente a Capital Pádel."""
-    if not club_name or not club_name.strip():
+    raw_name = (club_name or "").strip()
+    if not raw_name:
         return {
             "status": "ok",
             "club": club_name,
             "total_monitored": 0,
-            "avg_price": 0.0,
+            "avg_price": 0,
             "capital_avg": 45000,
             "pricing": [],
             "players": [],
             "tournaments": [],
+            "has_data": False,
+            "message": "No se encontraron partidos registrados para este club en la base de datos.",
         }
 
-    pattern = f"%{club_name.replace('_', '%').strip()}%"
-
     try:
-        # 1. Total partidos monitoreados y tarifa media
+        # 1. Consulta de estadísticas y precios en competitor_market_slots
         q_stats = text("""
             SELECT 
-                COUNT(*) AS total_slots,
-                ROUND(COALESCE(AVG(price_per_player), 0)) AS avg_price
-            FROM competitor_market_slots
-            WHERE club_name ILIKE :p OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :p
+                COUNT(*) AS total_slots, 
+                COALESCE(ROUND(AVG(price_per_player)), 0) AS avg_price 
+            FROM competitor_market_slots 
+            WHERE club_name = :club_name OR club_name ILIKE :club_name
         """)
-        res_stats = (await db.execute(q_stats, {"p": pattern})).mappings().first()
+        res_stats = (await db.execute(q_stats, {"club_name": raw_name})).mappings().first()
 
-        # 2. Desglose de tarifas por franja horaria real
+        total_slots = int(res_stats["total_slots"]) if (res_stats and res_stats["total_slots"]) else 0
+        avg_price = float(res_stats["avg_price"]) if (res_stats and res_stats["avg_price"]) else 0.0
+
+        if total_slots == 0:
+            return {
+                "status": "ok",
+                "club": club_name,
+                "total_monitored": 0,
+                "avg_price": 0,
+                "capital_avg": 45000,
+                "pricing": [],
+                "players": [],
+                "tournaments": [],
+                "has_data": False,
+                "message": "No se encontraron partidos registrados para este club en la base de datos.",
+            }
+
+        # 2. Desglose de tarifas por franja horaria
         q_pricing = text("""
             SELECT 
                 COALESCE(time_slot, 'General') AS franja,
                 'Todos los días' AS tipo_dia,
                 45000 AS tarifa_capital,
-                ROUND(AVG(price_per_player)) AS tarifa_club,
-                ROUND(AVG(price_per_player) - 45000) AS brecha
+                COALESCE(ROUND(AVG(price_per_player)), 0) AS tarifa_club,
+                CASE 
+                    WHEN COALESCE(ROUND(AVG(price_per_player)), 0) = 0 THEN 0
+                    ELSE ROUND(AVG(price_per_player) - 45000)
+                END AS brecha
             FROM competitor_market_slots
-            WHERE (club_name ILIKE :p OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :p)
+            WHERE (club_name = :club_name OR club_name ILIKE :club_name)
               AND price_per_player > 0
             GROUP BY time_slot
             ORDER BY COUNT(*) DESC
             LIMIT 10
         """)
-        pricing_rows = [dict(r) for r in (await db.execute(q_pricing, {"p": pattern})).mappings().all()]
+        pricing_rows = [dict(r) for r in (await db.execute(q_pricing, {"club_name": raw_name})).mappings().all()]
 
-        # 3. Jugadores recurrentes del club (market_player_profiles)
+        # 3. Consulta de Jugadores (market_player_profiles)
         q_players = text("""
             SELECT 
-                player_name,
-                COALESCE(detected_category, 'General') AS detected_category,
-                COALESCE(player_phone, 'Sin WhatsApp') AS phone,
-                total_matches_played
-            FROM market_player_profiles
-            WHERE frequent_club ILIKE :p OR REPLACE(LOWER(frequent_club), ' ', '_') ILIKE :p
-            ORDER BY total_matches_played DESC
+                player_name, 
+                COALESCE(detected_category, 'General') AS detected_category, 
+                COALESCE(player_phone, '') AS phone, 
+                total_matches_played 
+            FROM market_player_profiles 
+            WHERE frequent_club = :club_name 
+               OR frequent_club ILIKE :club_name
+               OR REPLACE(LOWER(frequent_club), ' ', '_') = :club_name
+            ORDER BY total_matches_played DESC 
             LIMIT 25
         """)
-        player_rows = [dict(r) for r in (await db.execute(q_players, {"p": pattern})).mappings().all()]
+        player_rows = [dict(r) for r in (await db.execute(q_players, {"club_name": raw_name})).mappings().all()]
 
         # 4. Historial de torneos / americanos
         q_tournaments = text("""
@@ -460,33 +483,36 @@ async def get_club_benchmark(
                 COALESCE(category, 'Abierta') AS tipo,
                 COALESCE(price_per_player, 0) AS precio
             FROM competitor_market_slots
-            WHERE (club_name ILIKE :p OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :p)
+            WHERE (club_name = :club_name OR club_name ILIKE :club_name)
               AND (match_type ILIKE '%americano%' OR players ILIKE '%americano%' OR category ILIKE '%americano%')
             ORDER BY id DESC
             LIMIT 15
         """)
-        tourn_rows = [dict(r) for r in (await db.execute(q_tournaments, {"p": pattern})).mappings().all()]
+        tournament_rows = [dict(r) for r in (await db.execute(q_tournaments, {"club_name": raw_name})).mappings().all()]
 
         return {
             "status": "ok",
             "club": club_name,
-            "total_monitored": res_stats["total_slots"] if res_stats else 0,
-            "avg_price": float(res_stats["avg_price"]) if res_stats else 0.0,
+            "total_monitored": total_slots,
+            "avg_price": avg_price,
             "capital_avg": 45000,
             "pricing": pricing_rows,
             "players": player_rows,
-            "tournaments": tourn_rows
+            "tournaments": tournament_rows,
+            "has_data": True,
         }
     except Exception:
         return {
             "status": "ok",
             "club": club_name,
             "total_monitored": 0,
-            "avg_price": 0.0,
+            "avg_price": 0,
             "capital_avg": 45000,
             "pricing": [],
             "players": [],
-            "tournaments": []
+            "tournaments": [],
+            "has_data": False,
+            "message": "No se encontraron partidos registrados para este club en la base de datos.",
         }
 
 
