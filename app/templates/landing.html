@@ -485,41 +485,77 @@
     </div>
   </footer>
 
-
-  <!-- MULTI-TENANT LOGIN MODAL -->
-  <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden transition-opacity duration-300">
-    
-    <!-- Modal Dialog Card -->
-    <div class="relative w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-700/80 shadow-2xl text-slate-100 space-y-6">
+<!-- MODAL DE ACCESO AL CLUB (DISEÑO SAAS OSCURO PROFESIONAL) -->
+  <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md hidden">
+    <div class="relative w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl p-6 sm:p-8 text-white z-10" style="background-color: #0f172a !important;">
       
-      <!-- Close Button -->
-      <button 
-        onclick="closeLoginModal()" 
-        class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-      >
+      <!-- Botón cerrar (X) -->
+      <button type="button" onclick="closeLoginModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
         ✕
       </button>
 
-      <!-- Modal Header -->
-      <div>
-        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 mb-2">
-          <span>⚡ Acceso Seguro Multi-Tenant</span>
+      <!-- Badge de seguridad -->
+      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
+        <span>⚡</span> <span>Acceso Seguro Multi-Tenant</span>
+      </div>
+
+      <!-- Título -->
+      <h3 class="text-2xl font-black tracking-tight text-white mb-1">Ingresar al Club</h3>
+      <p class="text-xs text-slate-400 mb-6">Selecciona tu sede deportiva e ingresa al sistema operativo.</p>
+
+      <!-- Formulario de acceso directo sin credenciales -->
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        
+        <!-- Selector de Sede -->
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Sede Deportiva / Club</label>
+          <select id="login-club-select" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400 transition" style="background-color: #1e293b !important; color: #ffffff !important;">
+            <option value="1">Capital Pádel Club – Maloka</option>
+            <option value="2">Bogotá Pádel Center</option>
+            <option value="3">PadelTown Salitre</option>
+          </select>
         </div>
-        <h3 class="text-2xl font-display font-extrabold text-white">Ingresar al Club</h3>
-        <p class="text-xs text-slate-400 mt-1">Selecciona tu sede deportiva e ingresa con tus credenciales.</p>
+
+        <!-- Usuario -->
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Usuario o Correo</label>
+          <input type="text" id="login-username" value="admin" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition" style="background-color: #1e293b !important; color: #ffffff !important;">
+        </div>
+
+        <!-- Contraseña -->
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Contraseña</label>
+          <input type="password" id="login-password" value="••••••••" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition" style="background-color: #1e293b !important; color: #ffffff !important;">
+        </div>
+
+        <!-- Botón Iniciar Sesión Directo -->
+        <button type="submit" id="btn-do-login" class="w-full mt-2 py-3 px-4 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+          <span>Iniciar Sesión en el Club</span>
+          <span>→</span>
+        </button>
+      </form>
+
+      <!-- Accesos Rápidos de Prueba (1-Click) -->
+      <div class="mt-6 pt-5 border-t border-slate-800">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-2.5">
+          <span>Accesos Rápidos:</span>
+          <span class="text-emerald-400 font-semibold">1-Click Directo</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="quickFillAndLogin('admin')" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl text-left transition flex flex-col gap-0.5">
+            <span class="text-xs font-bold text-white flex items-center gap-1">👑 Admin</span>
+            <span class="text-[11px] text-slate-400">admin / admin123</span>
+          </button>
+          <button type="button" onclick="quickFillAndLogin('recepcion')" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl text-left transition flex flex-col gap-0.5">
+            <span class="text-xs font-bold text-white flex items-center gap-1">🎾 Recepción</span>
+            <span class="text-[11px] text-slate-400">recepcion / recepcion123</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Error Alert Message -->
-      <div id="login-error-alert" class="hidden p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2.5">
-        <svg class="w-4 h-4 text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-        <span id="login-error-text" class="font-medium">Credenciales no válidas para esta sede.</span>
-      </div>
+    </div>
+  </div>
 
-      <!-- Success Alert Message -->
-      <div id="login-success-alert" class="hidden p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5">
-        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        <span class="font-medium">¡Autenticación exitosa! Redirigiendo al Dashboard...</span>
-      </div>
 
       <!-- Login Form -->
       <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
