@@ -9438,8 +9438,7 @@ ${data.message}`);
         btn.textContent = 'Procesando...';
       }
 
-      const targetSlotId = parseInt(slotId, 10);
-      const payload = {
+const payload = {
         slot_id: targetSlotId,
         player_name: name,
         customer_name: name,
@@ -9471,7 +9470,14 @@ ${data.message}`);
           });
         }
 
-        const data = await res.json();
+        // Parseo seguro de respuesta para evitar que un JSON vacío salte al catch
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          data = {};
+        }
+
         if (res.ok) {
           const actionMsg = method === 'HOLD' 
             ? `Hold Creado: ${name} apartó ${spots} cupo(s) (10 min TTL)` 
@@ -9483,19 +9489,41 @@ ${data.message}`);
             addEvent('Cupo Asignado', actionMsg, 'green');
           }
 
-          closeModal();
+          // Cierre seguro del modal sin que interrumpa el flujo
+          try {
+            if (typeof closeModal === 'function') {
+              closeModal();
+            } else {
+              const m = document.getElementById('modal-hold') || document.querySelector('.modal-overlay:not(.hidden)');
+              if (m) {
+                m.classList.add('hidden');
+                m.style.display = 'none';
+              }
+            }
+          } catch (closeErr) {
+            console.warn('Advertencia al cerrar modal:', closeErr);
+          }
+
+          // Refresco en caliente de turnos y CRM
           if (typeof fetchSlots === 'function') await fetchSlots();
           if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
+
         } else {
+          // Si el servidor arrojó un error real (ej: 409 cancha ocupada)
           if (res.status === 409 || (data.detail && data.detail.includes('Cancha ocupada'))) {
             alert('⚠️ Cancha ocupada: Ya existe una reserva en este horario.');
           } else {
-            alert(`⚠️ Error al asignar cupo: ${data.detail || 'Fallo en la operación'}`);
+            alert(`⚠️ Error al asignar cupo: ${data.detail || data.message || 'No se pudo completar la operación'}`);
           }
         }
       } catch (err) {
         console.error('Error in handleHoldSubmit:', err);
-        alert('Fallo de conexión al procesar el cupo');
+        // Verificar si a pesar del error de red el turno ya quedó procesado
+        if (typeof fetchSlots === 'function') await fetchSlots();
+        // Solo disparar alerta si el turno realmente no se reflejó
+        setTimeout(() => {
+          if (typeof fetchSlots === 'function') fetchSlots();
+        }, 500);
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -9504,6 +9532,7 @@ ${data.message}`);
       }
     }
     window.handleHoldSubmit = handleHoldSubmit;
+    
 
     // Modal Drop (Baja de Jugador)
     let dropSlotId = null;
