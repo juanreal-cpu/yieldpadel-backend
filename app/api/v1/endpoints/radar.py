@@ -407,8 +407,8 @@ async def get_club_benchmark(
                 SELECT standard_time_slot,
                        AVG(price_per_player) AS tarifa_capital
                 FROM v_competitor_market_clean
-                WHERE LOWER(CAST(club_name AS TEXT)) LIKE '%capital%'
-                  AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%'
+                WHERE LOWER(REPLACE(REPLACE(CAST(club_name AS TEXT), ' ', '_'), '-', '_')) ILIKE '%capital%'
+                  AND LOWER(REPLACE(REPLACE(CAST(club_name AS TEXT), ' ', '_'), '-', '_')) ILIKE '%padel%'
                   AND price_per_player IS NOT NULL
                   AND price_per_player > 0
                 GROUP BY standard_time_slot
@@ -417,7 +417,7 @@ async def get_club_benchmark(
                 SELECT standard_time_slot,
                        AVG(price_per_player) AS tarifa_club
                 FROM v_competitor_market_clean
-                WHERE LOWER(CAST(club_name AS TEXT)) = LOWER(CAST(:club_name AS TEXT))
+                WHERE LOWER(REPLACE(REPLACE(CAST(club_name AS TEXT), ' ', '_'), '-', '_')) ILIKE LOWER(REPLACE(REPLACE(CAST(:club_name AS TEXT), ' ', '_'), '-', '_'))
                   AND price_per_player IS NOT NULL
                   AND price_per_player > 0
                 GROUP BY standard_time_slot
@@ -440,8 +440,7 @@ async def get_club_benchmark(
                    COALESCE(phone, player_phone, 'Sin WhatsApp') AS phone,
                    total_matches_played
             FROM market_player_profiles
-            WHERE frequent_club ILIKE '%' || :club_name || '%'
-               OR frequent_club = :club_name
+            WHERE LOWER(REPLACE(frequent_club, ' ', '_')) ILIKE LOWER(REPLACE(CAST(:club_name AS TEXT), ' ', '_'))
             ORDER BY total_matches_played DESC
             LIMIT 30
             """
@@ -516,95 +515,50 @@ async def get_top_recurring_players(
     limit: int = Query(default=100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Identifica los jugadores más activos del mercado y clasifica su comportamiento.
-    Devuelve siempre una lista válida para evitar errores 422 / 500 en la UI.
-    """
+    """Identifica los jugadores más activos del mercado y clasifica su comportamiento."""
     try:
         category_norm = (category or '').strip()
-        if category_norm.lower() in ('todas', 'all'):
-            category_norm = ''
-
         club_name_norm = (club_name or '').strip()
-        if not club_name_norm:
-            club_name_norm = None
-
         time_slot_norm = (time_slot or '').strip()
-        if time_slot_norm.lower() in ('todas', 'all', ''):
-            time_slot_norm = ''
 
-        time_slot_sql = None
-        if time_slot_norm:
-            ts = time_slot_norm.lower()
-            if ts in ('mañana', 'manana'):
-                time_slot_sql = "(LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%06:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%07:30%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%09:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%10:30%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%am%')"
-            elif ts == 'tarde':
-                time_slot_sql = "(LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%14:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%15:30%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%16:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%17:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%pm%')"
-            elif ts == 'noche':
-                time_slot_sql = "(LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%18:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%19:30%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%21:00%' OR LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%noche%')"
-            else:
-                time_slot_sql = "LOWER(CAST(mp.preferred_time_slot AS TEXT)) LIKE '%' || LOWER(CAST(:time_slot AS TEXT)) || '%'"
-
-        query_str = """
-            WITH player_market_stats AS (
-                SELECT
-                    mp.player_name,
-                    mp.frequent_club,
-                    mp.detected_category,
-                    COALESCE(mp.phone, mp.player_phone, 'Sin teléfono') AS phone,
-                    mp.total_matches_played,
-                    COUNT(DISTINCT LOWER(TRIM(CAST(v.club_name AS TEXT)))) AS total_clubes_distintos
-                FROM market_player_profiles mp
-                LEFT JOIN v_competitor_market_clean v
-                    ON v.players IS NOT NULL
-                    AND LOWER(CAST(v.players AS TEXT)) LIKE '%' || LOWER(CAST(mp.player_name AS TEXT)) || '%'
-                WHERE mp.player_name IS NOT NULL
-                  AND COALESCE(mp.total_matches_played, 0) >= 1
-                  AND (:category IS NULL OR :category = '' OR LOWER(CAST(mp.detected_category AS TEXT)) = LOWER(CAST(:category AS TEXT)))
-                  AND (:club_name IS NULL OR :club_name = '' OR LOWER(CAST(mp.frequent_club AS TEXT)) LIKE '%' || LOWER(CAST(:club_name AS TEXT)) || '%')
-            """
-
-        params: dict[str, object] = {
-            "category": category_norm or None,
-            "club_name": club_name_norm,
-            "limit": int(limit),
-        }
-
-        if time_slot_sql:
-            query_str += f" AND {time_slot_sql}"
-            if time_slot_norm and time_slot_norm.lower() not in ('mañana', 'manana', 'tarde', 'noche'):
-                params["time_slot"] = time_slot_norm
-
-        query_str += """
-                GROUP BY mp.player_name, mp.frequent_club, mp.detected_category, mp.total_matches_played
-            )
+        query = """
             SELECT
                 player_name,
                 frequent_club,
-                phone,
+                detected_category,
+                preferred_time_slot,
                 total_matches_played,
-                COALESCE(total_clubes_distintos, 1) AS total_clubes_distintos,
-                CASE
-                    WHEN COALESCE(total_clubes_distintos, 1) = 1 THEN 'Fiel (Mono-club)'
-                    WHEN COALESCE(total_clubes_distintos, 1) >= 3 THEN 'Cazador de Precios / Multiclub'
-                    ELSE 'Ocasional / Híbrido'
-                END AS perfil_comportamiento
-            FROM player_market_stats
-            ORDER BY total_matches_played DESC, total_clubes_distintos DESC, player_name ASC
-            LIMIT :limit
-            """
+                COALESCE(player_phone, '') AS phone
+            FROM market_player_profiles
+            WHERE 1=1
+        """
+        params: dict[str, object] = {"limit": limit}
 
-        res = await db.execute(text(query_str), params)
+        if category_norm and category_norm.lower() not in ("todas", "all", ""):
+            query += " AND detected_category ILIKE :cat"
+            params["cat"] = f"%{category_norm}%"
+
+        if club_name_norm and club_name_norm.lower() not in ("todas", "all", ""):
+            query += " AND LOWER(REPLACE(frequent_club, ' ', '_')) ILIKE LOWER(REPLACE(:club_name, ' ', '_'))"
+            params["club_name"] = club_name_norm
+
+        if time_slot_norm and time_slot_norm.lower() not in ("todas", "all", ""):
+            query += " AND preferred_time_slot ILIKE :slot"
+            params["slot"] = f"%{time_slot_norm}%"
+
+        query += " ORDER BY total_matches_played DESC LIMIT :limit"
+
+        res = await db.execute(text(query), params)
         rows = res.mappings().all()
 
         return [
             {
                 "player_name": row["player_name"],
                 "frequent_club": row["frequent_club"],
-                "phone": row.get("phone") or "Sin teléfono",
-                "total_matches_played": int(row["total_matches_played"] or 0),
-                "total_clubes_distintos": int(row["total_clubes_distintos"] or 0),
-                "perfil_comportamiento": row["perfil_comportamiento"],
+                "category": row["detected_category"],
+                "phone": row["phone"] or "Sin teléfono",
+                "preferred_slot": row["preferred_time_slot"],
+                "matches_played": int(row["total_matches_played"] or 0),
             }
             for row in rows
         ]
@@ -619,81 +573,49 @@ async def get_market_prospects(
     limit: int = Query(25, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Consulta prospectos del CRM detectados en otros clubes para llenar huecos de reserva.
-    """
-    query = """
-        SELECT 
-            player_name, 
-            frequent_club, 
-            detected_category, 
-            COALESCE(phone, player_phone, 'Sin teléfono') AS phone,
-            preferred_time_slot, 
-            total_matches_played, 
-            last_active_date
-        FROM market_player_profiles
-        WHERE 1=1
-          AND COALESCE(total_matches_played, 0) >= 1
-    """
-    params: dict[str, object] = {"limit": limit}
+    """Consulta prospectos del CRM detectados en otros clubes para llenar huecos de reserva."""
+    try:
+        query = """
+            SELECT 
+                player_name,
+                frequent_club,
+                detected_category,
+                preferred_time_slot,
+                total_matches_played,
+                COALESCE(player_phone, '') AS phone
+            FROM market_player_profiles
+            WHERE 1=1
+        """
+        params: dict[str, object] = {"limit": limit}
 
-    category_norm = (category or '').strip()
-    if category_norm and category_norm.lower() not in ('todas', 'all'):
-        query += " AND detected_category ILIKE :cat"
-        params["cat"] = f"%{category_norm}%"
+        category_norm = (category or '').strip()
+        if category_norm and category_norm.lower() not in ("todas", "all", ""):
+            query += " AND detected_category ILIKE :cat"
+            params["cat"] = f"%{category_norm}%"
 
-    time_slot_norm = (time_slot or '').strip()
-    if time_slot_norm and time_slot_norm.lower() not in ('todas', 'all'):
-        ts = time_slot_norm.lower()
-        if ts in ('mañana', 'manana'):
-            query += """
-                AND (
-                    LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%06:00%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%07:30%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%09:00%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%10:30%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%am%'
-                )
-            """
-        elif ts == 'tarde':
-            query += """
-                AND (
-                    LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%14:00%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%15:30%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%16:00%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%17:00%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%pm%'
-                )
-            """
-        elif ts == 'noche':
-            query += """
-                AND (
-                    LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%18:00%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%19:30%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%21:00%'
-                    OR LOWER(CAST(preferred_time_slot AS TEXT)) LIKE '%noche%'
-                )
-            """
-        else:
+        time_slot_norm = (time_slot or '').strip()
+        if time_slot_norm and time_slot_norm.lower() not in ("todas", "all", ""):
             query += " AND preferred_time_slot ILIKE :slot"
             params["slot"] = f"%{time_slot_norm}%"
 
-    query += " ORDER BY total_matches_played DESC LIMIT :limit"
+        query += " ORDER BY total_matches_played DESC LIMIT :limit"
 
-    res = await db.execute(text(query), params)
-    rows = res.fetchall()
+        res = await db.execute(text(query), params)
+        rows = res.mappings().all()
 
-    return [
-        {
-            "player_name": r[0],
-            "frequent_club": r[1],
-            "category": r[2],
-            "phone": r[3],
-            "preferred_slot": r[4],
-            "matches_played": r[5],
-            "last_active": r[6]
-        }
-        for r in rows
-    ]
+        return [
+            {
+                "player_name": row["player_name"],
+                "frequent_club": row["frequent_club"],
+                "category": row["detected_category"],
+                "phone": row["phone"] or "",
+                "preferred_slot": row["preferred_time_slot"],
+                "matches_played": int(row["total_matches_played"] or 0),
+                "last_active": None,
+            }
+            for row in rows
+        ]
+    except Exception:
+        return []
 
 
