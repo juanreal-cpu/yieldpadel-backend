@@ -65,6 +65,7 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE yield_bookings ADD COLUMN client_tier VARCHAR(50) DEFAULT 'STANDARD'",
                     "ALTER TABLE yield_bookings ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PAID'",
                     "ALTER TABLE yield_bookings ADD COLUMN transaction_id VARCHAR(100)",
+                    "ALTER TABLE users ADD COLUMN club_id VARCHAR(50) DEFAULT '2756f34a-7d24-4815-9f7e-6ed125ea5de7'",
                 ]
                 for stmt in sqlite_statements:
                     try:
@@ -142,6 +143,8 @@ async def lifespan(app: FastAPI):
                     # club_presences
                     "ALTER TABLE club_presences ADD COLUMN IF NOT EXISTS membership_tier VARCHAR(50) DEFAULT 'ESTANDAR'",
                     "ALTER TABLE club_presences ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT ''",
+                    # users
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS club_id VARCHAR(50) DEFAULT '2756f34a-7d24-4815-9f7e-6ed125ea5de7'",
                 ]
                 for stmt in pg_statements:
                     try:
@@ -172,9 +175,11 @@ app.add_middleware(
 
 import logging
 from pathlib import Path
-from fastapi import Request
-from fastapi.responses import HTMLResponse
+from typing import Optional
+from fastapi import Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from app.core.security import decode_access_token
 
 logger = logging.getLogger("yieldpadel.dashboard")
 
@@ -190,15 +195,42 @@ class SafeJinja2Templates(Jinja2Templates):
 templates = SafeJinja2Templates(directory="app/templates")
 
 
+def get_current_user_from_request(request: Request) -> Optional[dict]:
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+    if token:
+        payload = decode_access_token(token)
+        if payload and payload.get("sub"):
+            return payload
+    return None
+
+
 @app.get("/health", tags=["system"])
 async def health():
     return {"status": "ok", "service": "YieldPadel Core"}
 
 
-@app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
+async def root_view(request: Request):
+    user = get_current_user_from_request(request)
+    if user:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+    response = templates.TemplateResponse("landing.html", {"request": request})
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_view(request: Request):
-    response = templates.TemplateResponse("dashboard.html", {"request": request})
+    user = get_current_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/?login=true", status_code=status.HTTP_302_FOUND)
+    response = templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"

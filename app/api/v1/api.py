@@ -17,3 +17,6 @@ api_router.include_router(access.router, prefix="/access", tags=["access"])
 
 api_router.include_router(memberships.router, prefix="/memberships", tags=["memberships"])
 api_router.include_router(academy.router, prefix="/academy", tags=["academy"])
+
+# Ruta pública de clubes y sedes para selector multi-tenant
+api_router.add_api_route("/clubs/public", auth.get_public_clubs, methods=["GET"], tags=["clubs"], response_model=auth.List[auth.ClubPublicResponse])

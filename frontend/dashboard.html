@@ -2238,6 +2238,9 @@
         <button onclick="fetchSlots()" class="btn-refresh-sidebar" title="Refrescar turnos en vivo">
           ↻ Refrescar Datos
         </button>
+        <button onclick="window.logoutSession()" class="btn-refresh-sidebar" style="margin-top: 0.5rem; background: #FFF1F2; color: #E11D48; border-color: #FECDD3;" title="Cerrar sesión segura">
+          🚪 Cerrar Sesión
+        </button>
       </div>
     </aside>
 
@@ -2257,12 +2260,15 @@
             <!-- Active Session User Badge with RBAC Selector -->
             <div id="active-user-badge" style="display: flex; align-items: center; gap: 0.45rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #1E293B; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" title="Operador en sesión activa">
               <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
-              <span id="active-user-display">👤 Camilo Real</span>
+              <span id="active-user-display">👤 {% if user %}{{ user.full_name }}{% else %}Camilo Real{% endif %}</span>
               <select id="rbac-role-selector" onchange="window.switchRoleSimulation(this.value)" class="text-[11px] font-bold px-2 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500" title="Perfil operativo RBAC">
                 <option value="SUPERADMIN">👑 SUPERADMIN / GERENTE</option>
                 <option value="STAFF" selected>🏷️ STAFF / RECEPCIÓN</option>
                 <option value="AUXILIAR">🏷️ AUXILIAR</option>
               </select>
+              <button onclick="window.logoutSession()" title="Cerrar sesión" style="border: none; background: transparent; cursor: pointer; color: #EF4444; font-size: 0.85rem; padding-left: 0.35rem; display: flex; align-items: center;" aria-label="Cerrar sesión">
+                ✕ Salir
+              </button>
             </div>
             <div class="banner-venue-badge">
               <span class="badge-status-dot"></span>
@@ -5456,6 +5462,18 @@
     // ========================================================
     window.currentUserRole = localStorage.getItem('user_role') || 'STAFF';
 
+    window.logoutSession = async function() {
+      try {
+        await fetch('/api/v1/auth/logout', { method: 'POST' });
+      } catch (err) {}
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('user_name');
+      localStorage.removeItem('user_club');
+      sessionStorage.removeItem('current_user');
+      window.location.href = '/?login=true';
+    };
+
     window.switchRoleSimulation = function(newRole) {
       window.currentUserRole = (newRole || 'STAFF').toUpperCase();
       localStorage.setItem('user_role', window.currentUserRole);
@@ -5466,13 +5484,15 @@
       }
 
       const userDisplay = document.getElementById('active-user-display');
+      const savedName = localStorage.getItem('user_name');
       if (userDisplay) {
+        const baseName = savedName || 'Camilo Real';
         if (['SUPERADMIN', 'GERENTE', 'ADMIN'].includes(window.currentUserRole)) {
-          userDisplay.textContent = '👤 Camilo Real (Gerente)';
+          userDisplay.textContent = `👤 ${baseName} (Gerente)`;
         } else if (window.currentUserRole === 'AUXILIAR') {
-          userDisplay.textContent = '👤 Daniela P. (Auxiliar)';
+          userDisplay.textContent = `👤 ${baseName} (Auxiliar)`;
         } else {
-          userDisplay.textContent = '👤 Camilo Real (Recepción)';
+          userDisplay.textContent = `👤 ${baseName} (Recepción)`;
         }
       }
 
@@ -8288,8 +8308,7 @@ ${data.message}`);
       }
     }
     window.onManualBookingSportChange = onManualBookingSportChange;
-
-    async function submitManualBooking(e) {
+async function submitManualBooking(e) {
       if (e && e.preventDefault) e.preventDefault();
       const btn = document.getElementById('btn-confirm-manual-booking');
       const courtVal = document.getElementById('mb-court').value;
@@ -8336,9 +8355,16 @@ ${data.message}`);
           body: JSON.stringify(payload)
         });
         const data = await res.json();
+        
+        // MANEJO DE CONFLICTO 409 (COLISIÓN DE HORARIO U OVERBOOKING)
+        if (res.status === 409) {
+          alert(data.detail || '⚠️ Cancha ocupada: Ya existe una reserva activa en este horario.');
+          return;
+        }
+
         if (res.ok && data.status === 'ok') {
           closeManualBookingModal();
-          alert(`✅ ${data.message || 'Reserva creada con éxito'}\nCancha: ${data.court_name || courtVal}\nFecha: ${data.date} (${data.start_time} - ${data.end_time})\nCliente: ${data.client_name}`);
+          alert(`✅ ${data.message || 'Reserva confirmada con éxito'}\nCancha: ${data.court_name || courtVal}\nFecha: ${data.date} (${data.start_time} - ${data.end_time})\nCliente: ${data.client_name}`);
 
           // Sincronizar fecha y deporte
           selectedDate = dateVal;
@@ -8355,11 +8381,7 @@ ${data.message}`);
             addEvent('Reserva Creada', `${nameVal} - ${data.court_name || ('Cancha ' + courtVal)} (${timeVal})`, 'green');
           }
         } else {
-          if (res.status === 409 || (data.detail && data.detail.includes('Cancha ocupada'))) {
-            alert('⚠️ Cancha ocupada: Ya existe una reserva en este horario.');
-          } else {
-            alert(`❌ Error al crear reserva: ${data.detail || data.message || 'Error en el servidor'}`);
-          }
+          alert(`❌ Error al crear reserva: ${data.detail || data.message || 'Error en el servidor'}`);
         }
       } catch (err) {
         console.error('Error al registrar reserva manual:', err);
@@ -8372,6 +8394,7 @@ ${data.message}`);
       }
     }
     window.submitManualBooking = submitManualBooking;
+    
 
 
     // Modal Crear Torneo Americano

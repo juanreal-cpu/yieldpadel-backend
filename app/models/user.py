@@ -28,5 +28,6 @@ class User(Base):
     phone = Column(String(30), nullable=True)
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(30), default=UserRole.STAFF_RECEPCION.value, nullable=False)
+    club_id = Column(String(50), nullable=True, default="2756f34a-7d24-4815-9f7e-6ed125ea5de7")
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(BOGOTA_TZ).replace(tzinfo=None), nullable=False)
