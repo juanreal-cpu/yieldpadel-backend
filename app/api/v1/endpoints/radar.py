@@ -398,108 +398,114 @@ async def get_club_benchmark(
     """Compara precios, jugadores recurentes y torneos de un club competidor frente a Capital Pádel."""
     club_norm = (club_name or '').strip()
     if not club_norm:
-        raise HTTPException(status_code=400, detail="Debe indicar un club_name válido.")
+        return {"status": "ok", "club": club_norm, "pricing": [], "players": [], "tournaments": []}
 
-    pricing_query = text(
-        """
-        WITH capital AS (
-            SELECT standard_time_slot, is_weekend,
-                   AVG(CASE WHEN LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%' THEN price_per_player END) AS capital_price
-            FROM v_competitor_market_clean
-            WHERE price_per_player IS NOT NULL AND price_per_player > 0
-            GROUP BY standard_time_slot, is_weekend
-        ),
-        club AS (
-            SELECT standard_time_slot, is_weekend,
-                   AVG(price_per_player) AS club_price
-            FROM v_competitor_market_clean
-            WHERE LOWER(CAST(club_name AS TEXT)) = LOWER(CAST(:club_name AS TEXT))
-              AND price_per_player IS NOT NULL AND price_per_player > 0
-            GROUP BY standard_time_slot, is_weekend
+    try:
+        pricing_query = text(
+            """
+            WITH capital AS (
+                SELECT standard_time_slot,
+                       AVG(price_per_player) AS tarifa_capital
+                FROM v_competitor_market_clean
+                WHERE LOWER(CAST(club_name AS TEXT)) LIKE '%capital%'
+                  AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%'
+                  AND price_per_player IS NOT NULL
+                  AND price_per_player > 0
+                GROUP BY standard_time_slot
+            ),
+            club AS (
+                SELECT standard_time_slot,
+                       AVG(price_per_player) AS tarifa_club
+                FROM v_competitor_market_clean
+                WHERE LOWER(CAST(club_name AS TEXT)) = LOWER(CAST(:club_name AS TEXT))
+                  AND price_per_player IS NOT NULL
+                  AND price_per_player > 0
+                GROUP BY standard_time_slot
+            )
+            SELECT COALESCE(c.standard_time_slot, cap.standard_time_slot) AS standard_time_slot,
+                   COALESCE(cap.tarifa_capital, 0) AS tarifa_capital,
+                   COALESCE(c.tarifa_club, 0) AS tarifa_club,
+                   COALESCE(c.tarifa_club, 0) - COALESCE(cap.tarifa_capital, 0) AS gap_cop
+            FROM club c
+            FULL OUTER JOIN capital cap
+              ON cap.standard_time_slot = c.standard_time_slot
+            ORDER BY COALESCE(c.standard_time_slot, cap.standard_time_slot) ASC
+            """
         )
-        SELECT c.standard_time_slot, c.is_weekend,
-               COALESCE(cap.capital_price, 0) AS capital_price,
-               COALESCE(c.club_price, 0) AS club_price,
-               COALESCE(c.club_price, 0) - COALESCE(cap.capital_price, 0) AS gap_cop
-        FROM club c
-        LEFT JOIN capital cap ON cap.standard_time_slot = c.standard_time_slot AND cap.is_weekend = c.is_weekend
-        ORDER BY c.standard_time_slot ASC, c.is_weekend ASC
-        """
-    )
 
-    players_query = text(
-        """
-        SELECT
-            player_name,
-            detected_category,
-            COALESCE(phone, player_phone, 'Sin teléfono') AS phone,
-            COUNT(*) AS matches_played
-        FROM v_competitor_market_clean
-        WHERE LOWER(CAST(club_name AS TEXT)) = LOWER(CAST(:club_name AS TEXT))
-          AND player_name IS NOT NULL
-        GROUP BY player_name, detected_category, COALESCE(phone, player_phone, 'Sin teléfono')
-        ORDER BY matches_played DESC, player_name ASC
-        LIMIT 20
-        """
-    )
+        players_query = text(
+            """
+            SELECT player_name,
+                   detected_category,
+                   COALESCE(phone, player_phone, 'Sin WhatsApp') AS phone,
+                   total_matches_played
+            FROM market_player_profiles
+            WHERE frequent_club ILIKE '%' || :club_name || '%'
+               OR frequent_club = :club_name
+            ORDER BY total_matches_played DESC
+            LIMIT 30
+            """
+        )
 
-    tournaments_query = text(
-        """
-        SELECT
-            event_date AS date,
-            start_time,
-            match_type,
-            price_per_player,
-            is_complete_4_4 AS is_complete_4_4
-        FROM v_competitor_market_clean
-        WHERE LOWER(CAST(club_name AS TEXT)) = LOWER(CAST(:club_name AS TEXT))
-          AND (
-              is_tournament = TRUE
-              OR LOWER(CAST(match_type AS TEXT)) LIKE '%americano%'
-              OR LOWER(CAST(match_type AS TEXT)) LIKE '%torneo%'
-          )
-        ORDER BY event_date DESC, start_time DESC
-        LIMIT 20
-        """
-    )
+        tournaments_query = text(
+            """
+            SELECT match_date::text AS match_date,
+                   raw_time_slot,
+                   standard_category,
+                   price_per_player,
+                   is_closed
+            FROM v_competitor_market_clean
+            WHERE club_name = :club_name
+              AND match_type = 'AMERICANO'
+            ORDER BY match_date DESC
+            LIMIT 20
+            """
+        )
 
-    pricing_rows = (await db.execute(pricing_query, {"club_name": club_norm})).mappings().all()
-    players_rows = (await db.execute(players_query, {"club_name": club_norm})).mappings().all()
-    tournaments_rows = (await db.execute(tournaments_query, {"club_name": club_norm})).mappings().all()
+        pricing_rows = (await db.execute(pricing_query, {"club_name": club_norm})).mappings().all()
+        player_rows = (await db.execute(players_query, {"club_name": club_norm})).mappings().all()
+        tournament_rows = (await db.execute(tournaments_query, {"club_name": club_norm})).mappings().all()
 
-    return {
-        "status": "ok",
-        "club": club_norm,
-        "pricing": [
+        pricing_rows_list = [
             {
                 "standard_time_slot": row["standard_time_slot"],
-                "is_weekend": bool(row["is_weekend"]),
-                "capital_price": float(row["capital_price"] or 0),
-                "club_price": float(row["club_price"] or 0),
+                "tarifa_capital": float(row["tarifa_capital"] or 0),
+                "tarifa_club": float(row["tarifa_club"] or 0),
                 "gap_cop": float(row["gap_cop"] or 0),
             }
             for row in pricing_rows
-        ],
-        "players": [
+        ]
+
+        player_rows_list = [
             {
                 "player_name": row["player_name"],
                 "detected_category": row["detected_category"],
                 "phone": row["phone"],
-                "matches_played": int(row["matches_played"] or 0),
+                "total_matches_played": int(row["total_matches_played"] or 0),
             }
-            for row in players_rows
-        ],
-        "tournaments": [
+            for row in player_rows
+        ]
+
+        tournament_rows_list = [
             {
-                "event_date": row["date"],
-                "start_time": row["start_time"],
-                "match_type": row["match_type"],
+                "match_date": row["match_date"],
+                "raw_time_slot": row["raw_time_slot"],
+                "standard_category": row["standard_category"],
                 "price_per_player": float(row["price_per_player"] or 0),
-                "is_complete_4_4": bool(row["is_complete_4_4"]),
+                "is_closed": bool(row["is_closed"]),
             }
-            for row in tournaments_rows
-        ],
-    }
+            for row in tournament_rows
+        ]
+
+        return {
+            "status": "ok",
+            "club": club_norm,
+            "pricing": pricing_rows_list,
+            "players": player_rows_list,
+            "tournaments": tournament_rows_list,
+        }
+    except Exception:
+        return {"status": "ok", "club": club_norm, "pricing": [], "players": [], "tournaments": []}
 
 
 @router.get("/top-recurring-players")

@@ -2951,7 +2951,7 @@
                 <select id="competitor-select" style="padding: 0.52rem 0.8rem; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 0.8rem; font-weight: 700; min-width: 220px;">
                   <option value="">Cargando clubes...</option>
                 </select>
-                <button onclick="window.loadCompetitorBenchmark && window.loadCompetitorBenchmark(document.getElementById('competitor-select')?.value || '')" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; border: none; border-radius: 10px; padding: 0.62rem 1rem; font-size: 0.78rem; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);">Analizar</button>
+                <button id="competitor-analyze-btn" onclick="window.loadCompetitorBenchmark && window.loadCompetitorBenchmark(document.getElementById('competitor-select')?.value || '')" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; border: none; border-radius: 10px; padding: 0.62rem 1rem; font-size: 0.78rem; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);">Analizar</button>
               </div>
             </div>
 
@@ -7341,9 +7341,18 @@ ${data.message}`);
       });
 
       if (!filtered.length) {
+        const categoryValue = (document.getElementById('radar-prospect-category') || {}).value || 'Todas';
+        const resetAction = `window.loadProspects('Todas', '${(document.getElementById('radar-prospect-time-slot') || {}).value || 'Todas'}')`;
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" style="padding: 2rem; text-align: center; color: #64748B;">No hay jugadores para los filtros actuales.</td>
+            <td colspan="7" style="padding: 2rem; text-align: center; color: #64748B;">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+                <span>No hay resultados para <strong>${categoryValue}</strong>. Prueba otra categoría o vuelve a ver todas.</span>
+                <button type="button" onclick="${resetAction}" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; border: none; border-radius: 8px; padding: 0.5rem 0.9rem; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+                  Ver todas las categorías
+                </button>
+              </div>
+            </td>
           </tr>
         `;
         return;
@@ -7429,26 +7438,34 @@ ${data.message}`);
 
     window.loadCompetitorBenchmark = async function(clubName) {
       const select = document.getElementById('competitor-select');
+      const button = document.getElementById('competitor-analyze-btn');
       const targetClub = (clubName || (select && select.value) || '').toString().trim();
       if (!targetClub) {
         await populateCompetitorSelect();
         return;
       }
 
+      if (button) {
+        button.disabled = true;
+        button.textContent = '⏳ Analizando...';
+        button.style.opacity = '0.8';
+        button.style.cursor = 'wait';
+      }
+
       try {
         const res = await fetch(`${API_BASE}/api/v1/radar/club-benchmark?club_name=${encodeURIComponent(targetClub)}`);
-        if (!res.ok) throw new Error(`Benchmark failed: ${res.status}`);
-        const data = await res.json();
+        const data = res.ok ? await res.json() : { pricing: [], players: [], tournaments: [] };
+
         const pricingBody = document.getElementById('competitor-pricing-body');
         const playersBody = document.getElementById('competitor-players-body');
         const tournamentsBody = document.getElementById('competitor-tournaments-body');
 
-        const pricing = Array.isArray(data.pricing) ? data.pricing : [];
-        const players = Array.isArray(data.players) ? data.players : [];
-        const tournaments = Array.isArray(data.tournaments) ? data.tournaments : [];
+        const pricing = Array.isArray(data && data.pricing) ? data.pricing : [];
+        const players = Array.isArray(data && data.players) ? data.players : [];
+        const tournaments = Array.isArray(data && data.tournaments) ? data.tournaments : [];
 
-        const avgCapital = pricing.filter(r => Number(r.capital_price) > 0).reduce((sum, row) => sum + Number(row.capital_price || 0), 0) / Math.max(1, pricing.filter(r => Number(r.capital_price) > 0).length);
-        const avgClub = pricing.filter(r => Number(r.club_price) > 0).reduce((sum, row) => sum + Number(row.club_price || 0), 0) / Math.max(1, pricing.filter(r => Number(r.club_price) > 0).length);
+        const avgCapital = pricing.filter(r => Number(r.tarifa_capital || 0) > 0).reduce((sum, row) => sum + Number(row.tarifa_capital || 0), 0) / Math.max(1, pricing.filter(r => Number(r.tarifa_capital || 0) > 0).length);
+        const avgClub = pricing.filter(r => Number(r.tarifa_club || 0) > 0).reduce((sum, row) => sum + Number(row.tarifa_club || 0), 0) / Math.max(1, pricing.filter(r => Number(r.tarifa_club || 0) > 0).length);
         const diff = avgClub ? avgClub - avgCapital : 0;
         const gapEl = document.getElementById('competitor-kpi-price-gap');
         const gapSubEl = document.getElementById('competitor-kpi-price-gap-sub');
@@ -7463,25 +7480,25 @@ ${data.message}`);
 
         if (pricingBody) {
           pricingBody.innerHTML = pricing.length ? pricing.map(r => {
-            const capital = Number(r.capital_price || 0);
-            const club = Number(r.club_price || 0);
+            const capital = Number(r.tarifa_capital || 0);
+            const club = Number(r.tarifa_club || 0);
             const gap = Number(r.gap_cop || 0);
             const sign = gap >= 0 ? '+' : '-';
             return `
               <tr style="border-bottom: 1px solid #E2E8F0;">
                 <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${r.standard_time_slot || 'N/A'}</td>
-                <td style="padding: 0.8rem 0.7rem; color: #334155;">${r.is_weekend ? 'Fin de Semana' : 'Semana'}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${r.standard_time_slot ? 'Franja detectada' : 'Sin dato'}</td>
                 <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${capital ? capital.toLocaleString('es-CO') : '0'} COP</td>
                 <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155;">$${club ? club.toLocaleString('es-CO') : '0'} COP</td>
                 <td style="padding: 0.8rem 0.7rem; text-align: right; color: ${gap >= 0 ? '#991B1B' : '#166534'}; font-weight: 800;">${sign}$${Math.abs(gap).toLocaleString('es-CO')} COP</td>
               </tr>
             `;
-          }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">No hay datos comparativos para este club.</td></tr>';
+          }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin datos comparativos para este club.</td></tr>';
         }
 
         if (playersBody) {
           playersBody.innerHTML = players.length ? players.map(p => {
-            const phone = p.phone || 'Sin teléfono';
+            const phone = p.phone || 'Sin WhatsApp';
             const digits = String(phone).replace(/[^0-9]/g, '');
             const waLink = digits ? `https://wa.me/${digits}?text=${encodeURIComponent(`Hola ${p.player_name || 'jugador'}, te escribimos de Capital Pádel Club`)}` : 'https://wa.me/?text=' + encodeURIComponent(`Hola ${p.player_name || 'jugador'}, te escribimos de Capital Pádel Club`);
             return `
@@ -7489,28 +7506,38 @@ ${data.message}`);
                 <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${p.player_name || 'Jugador'}</td>
                 <td style="padding: 0.8rem 0.7rem; color: #334155;">${p.detected_category || 'Sin categoría'}</td>
                 <td style="padding: 0.8rem 0.7rem; color: #334155;">${phone}</td>
-                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155; font-weight: 700;">${p.matches_played || 0}</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155; font-weight: 700;">${p.total_matches_played || 0}</td>
                 <td style="padding: 0.8rem 0.7rem; text-align: center;">
                   <a href="${waLink}" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(5, 150, 105, 0.8); color: #FFFFFF; border-radius: 8px; padding: 0.38rem 0.7rem; font-size: 0.7rem; font-weight: 800; text-decoration: none; box-shadow: 0 6px 14px rgba(16, 185, 129, 0.15);">💬 WhatsApp</a>
                 </td>
               </tr>
             `;
-          }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">No hay jugadores recurrentes para este club.</td></tr>';
+          }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin jugadores recurrentes reportados para este club.</td></tr>';
         }
 
         if (tournamentsBody) {
           tournamentsBody.innerHTML = tournaments.length ? tournaments.map(t => `
             <tr style="border-bottom: 1px solid #E2E8F0;">
-              <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${t.event_date || 'N/A'}</td>
-              <td style="padding: 0.8rem 0.7rem; color: #334155;">${t.start_time || 'N/A'}</td>
-              <td style="padding: 0.8rem 0.7rem; color: #334155;">${t.match_type || 'Americano'}</td>
+              <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${t.match_date || 'N/A'}</td>
+              <td style="padding: 0.8rem 0.7rem; color: #334155;">${t.raw_time_slot || 'N/A'}</td>
+              <td style="padding: 0.8rem 0.7rem; color: #334155;">${t.standard_category || 'Americano'}</td>
               <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${Number(t.price_per_player || 0).toLocaleString('es-CO')} COP</td>
-              <td style="padding: 0.8rem 0.7rem; text-align: center;">${t.is_complete_4_4 ? '✅' : '—'}</td>
+              <td style="padding: 0.8rem 0.7rem; text-align: center;">${t.is_closed ? '✅' : '—'}</td>
             </tr>
           `).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin torneos registrados para este club.</td></tr>';
         }
       } catch (err) {
         console.error('Error loading competitor benchmark:', err);
+        if (pricingBody) pricingBody.innerHTML = '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">No se pudo cargar la comparación para este club.</td></tr>';
+        if (playersBody) playersBody.innerHTML = '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">No se pudo cargar la lista de jugadores.</td></tr>';
+        if (tournamentsBody) tournamentsBody.innerHTML = '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin torneos registrados para este club.</td></tr>';
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Analizar';
+          button.style.opacity = '1';
+          button.style.cursor = 'pointer';
+        }
       }
     };
 
