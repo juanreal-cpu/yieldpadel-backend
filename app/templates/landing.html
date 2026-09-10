@@ -92,10 +92,10 @@
       </a>
 
       <!-- Desktop Nav Links -->
-      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
         <a href="#features" class="hover:text-emerald-400 transition-colors">Características</a>
-        <a href="#yield-metrics" class="hover:text-emerald-400 transition-colors">Yield & RevPAST</a>
-        <a href="#whatsapp-bot" class="hover:text-emerald-400 transition-colors">Bot Anti-NoShow</a>
+        <a href="#pricing" class="hover:text-emerald-400 transition-colors">Planes & Precios</a>
+        <a href="#registro-prospectos" class="hover:text-emerald-400 transition-colors">Pre-Inscripción</a>
         <a href="#sedes" class="hover:text-emerald-400 transition-colors">Sedes Activas</a>
       </nav>
 
@@ -144,7 +144,7 @@
 
           <!-- Hero Subtitle -->
           <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-            El sistema operativo definitivo para clubes deportivos: precios dinámicos según demanda climática, <strong class="text-emerald-400">Bot de WhatsApp con Holds de 10 min anti-no-show</strong>, CRM con rankings de 1ra a 6ta y multisede centralizada.
+            El sistema operativo definitivo para clubes deportivos: Algoritmo predictivo de Yield Management por ocupación histórica, franja horaria y tarifas de competidores directos, <strong class="text-emerald-400">Bot de WhatsApp con Holds de 10 min anti-no-show</strong>, CRM con rankings de 1ra a 6ta y multisede centralizada.
           </p>
 
           <!-- Hero Action Buttons -->
@@ -325,7 +325,7 @@
               </div>
               <h3 class="text-xl font-display font-bold text-white mb-2">Yield Pricing & RevPAST</h3>
               <p class="text-slate-400 text-sm leading-relaxed mb-4">
-                Ajuste algorítmico de tarifas en franjas valle, media y pico. Multiplicador dinámico basado en demanda histórica, factores climáticos y anticipación de reserva.
+                Algoritmo predictivo de Yield Management por ocupación histórica, franja horaria y tarifas de competidores directos. Ajuste dinámico automatizado de precios.
               </p>
             </div>
             <div class="pt-4 border-t border-slate-800/60 flex items-center text-xs font-semibold text-emerald-400">
@@ -442,6 +442,173 @@
             <span>Ingresar a esta Sede</span>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
           </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN DE PRECIOS Y PLANES SAAS -->
+    <section id="pricing" class="py-20 bg-slate-950 border-t border-slate-800 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+          <span class="text-xs uppercase font-bold tracking-widest text-emerald-400">Planes & Tarifas Transparentes</span>
+          <h2 class="text-3xl sm:text-5xl font-display font-extrabold text-white">Inversión para Escalar tu Club</h2>
+          <p class="text-slate-400 text-base">Escoge la categoría que se adapte al número de pistas y nivel de automatización de tus sedes.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+          
+          <!-- Plan 1: Starter -->
+          <div class="p-8 rounded-3xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between relative">
+            <div>
+              <div class="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Monosede hasta 3 pistas</div>
+              <h3 class="text-2xl font-bold text-white mb-4">Starter</h3>
+              <div class="mb-6">
+                <span class="text-4xl font-extrabold text-white">$290.000</span>
+                <span class="text-xs text-slate-400 font-medium"> COP / mes</span>
+              </div>
+              <ul class="space-y-3 text-sm text-slate-300 mb-8">
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> Matriz Calendario Interactiva
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> Punto de Venta (POS) Básico
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> Bot de WhatsApp con Holds de 10 min
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> Soporte Estándar
+                </li>
+              </ul>
+            </div>
+            <button onclick="openLoginModal()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition">
+              Comenzar con Starter
+            </button>
+          </div>
+
+          <!-- Plan 2: Pro Yield (RECOMENDADO) -->
+          <div class="p-8 rounded-3xl bg-slate-900 border-2 border-emerald-500 shadow-2xl shadow-emerald-500/10 flex flex-col justify-between relative transform md:-translate-y-2">
+            <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-md">
+              Plan Más Popular
+            </div>
+            <div>
+              <div class="text-xs font-black uppercase tracking-wider text-emerald-400 mb-2">4 a 8 pistas</div>
+              <h3 class="text-2xl font-bold text-white mb-4">Pro Yield</h3>
+              <div class="mb-6">
+                <span class="text-4xl font-extrabold text-emerald-400">$590.000</span>
+                <span class="text-xs text-slate-400 font-medium"> COP / mes</span>
+              </div>
+              <ul class="space-y-3 text-sm text-slate-200 mb-8">
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> <strong>Todo lo del plan Starter</strong>
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> <strong>Motor de Yield Pricing Predictivo</strong>
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> <strong>Benchmark y Radar de Competencia</strong>
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> <strong>Monedero Capital Points & Fidelización</strong>
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> CRM Avanzado y Rankings de 1ra a 6ta
+                </li>
+              </ul>
+            </div>
+            <button onclick="openLoginModal()" class="w-full py-3.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition">
+              Probar Pro Yield
+            </button>
+          </div>
+
+          <!-- Plan 3: Enterprise Multisucursal -->
+          <div class="p-8 rounded-3xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between relative">
+            <div>
+              <div class="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Enterprise Multisucursal</div>
+              <h3 class="text-2xl font-bold text-white mb-4">Enterprise</h3>
+              <div class="mb-6">
+                <span class="text-4xl font-extrabold text-white">$990.000</span>
+                <span class="text-xs text-slate-400 font-medium"> COP / mes</span>
+              </div>
+              <ul class="space-y-3 text-sm text-slate-300 mb-8">
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> <strong>Ilimitadas pistas y sedes</strong>
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> Control de Acceso QR & Presencia
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> Integración API & ERP Contable Custom
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span> Account Manager Dedicado 24/7
+                </li>
+              </ul>
+            </div>
+            <button onclick="openLoginModal()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition">
+              Contactar Ventas
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECCIÓN DE REGISTRO RÁPIDO DE JUGADORES / PROSPECTOS -->
+    <section id="registro-prospectos" class="py-20 bg-slate-900/80 border-t border-slate-800 relative">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6">
+        <div class="p-8 rounded-3xl bg-slate-950 border border-emerald-500/30 shadow-2xl space-y-6">
+          <div class="text-center space-y-2">
+            <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">Pre-Inscripción de Jugadores</span>
+            <h3 class="text-2xl sm:text-3xl font-display font-extrabold text-white">Inscríbete como Prospecto en la Red del Club</h3>
+            <p class="text-xs sm:text-sm text-slate-400">Déjanos tus datos para precargar instantáneamente tu perfil en el CRM del club y agilizar tu inscripción en 1 solo clic.</p>
+          </div>
+
+          <form id="lead-form" onsubmit="handleLeadSubmit(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Nombre Completo</label>
+              <input type="text" id="lead-name" required placeholder="ej. Mateo Gómez" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Teléfono (+57)</label>
+                <input type="tel" id="lead-phone" required placeholder="+57 300 123 4567" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Categoría de Juego</label>
+                <select id="lead-category" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-400 transition">
+                  <option value="1ra">1ra Categoría</option>
+                  <option value="2da">2da Categoría</option>
+                  <option value="3ra">3ra Categoría</option>
+                  <option value="4ta" selected>4ta Categoría</option>
+                  <option value="5ta">5ta Categoría</option>
+                  <option value="6ta">6ta Categoría</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Sede Preferida</label>
+              <select id="lead-club" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-400 transition">
+                <option value="Capital Pádel Club – Maloka">Capital Pádel Club – Maloka</option>
+                <option value="Pádel Indoor 127 – Cedritos">Pádel Indoor 127 – Cedritos</option>
+                <option value="Country Padel Arena – Chía">Country Padel Arena – Chía</option>
+              </select>
+            </div>
+
+            <button type="submit" id="btn-submit-lead" class="w-full py-4 rounded-xl text-sm font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 shadow-xl shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+              <span>Pre-Inscribir Jugador en el CRM</span>
+              <span>→</span>
+            </button>
+
+            <div id="lead-success-alert" class="hidden p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold text-center">
+              ✓ ¡Prospecto registrado exitosamente! Ya está precargado en el CRM del club para su inscripción en 1 solo clic.
+            </div>
+          </form>
         </div>
       </div>
     </section>
@@ -665,6 +832,53 @@
 
   <!-- INTERACTION SCRIPTS -->
   <script>
+    async function handleLeadSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const nameEl = document.getElementById('lead-name');
+      const phoneEl = document.getElementById('lead-phone');
+      const categoryEl = document.getElementById('lead-category');
+      const clubEl = document.getElementById('lead-club');
+      const btn = document.getElementById('btn-submit-lead');
+      const alertEl = document.getElementById('lead-success-alert');
+
+      if (!nameEl || !phoneEl) return false;
+      const name = nameEl.value.trim();
+      const phone = phoneEl.value.trim();
+      const category = categoryEl ? categoryEl.value : '4ta';
+      const club_name = clubEl ? clubEl.value : '';
+
+      if (!name || !phone) return false;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+      }
+
+      try {
+        const res = await fetch('/api/v1/customers/register-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, category, club_name })
+        });
+        if (res.ok) {
+          if (alertEl) alertEl.classList.remove('hidden');
+          const form = document.getElementById('lead-form');
+          if (form) form.reset();
+        } else {
+          alert('No se pudo registrar el prospecto.');
+        }
+      } catch (err) {
+        console.error('Error al registrar lead:', err);
+        alert('Error de conexión al registrar prospecto.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        }
+      }
+      return false;
+    }
+
     // Fetch and populate active clubs dynamically
     async function loadPublicClubs() {
       try {

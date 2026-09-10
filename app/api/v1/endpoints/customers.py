@@ -98,6 +98,14 @@ class CustomerOnboardingRequest(BaseModel):
     notes: Optional[str] = None
 
 
+class LeadRegisterRequest(BaseModel):
+    name: str
+    phone: str
+    category: Optional[str] = "4ta"
+    club_name: Optional[str] = None
+    notes: Optional[str] = None
+
+
 def format_customer_response(c: Customer) -> CustomerResponse:
     today = date.today()
     days_rem = 0
@@ -520,6 +528,59 @@ async def register_customer(
     customer = re_res.scalar_one()
 
     return format_customer_response(customer)
+
+
+@router.post("/register-lead", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
+async def register_lead(
+    payload: LeadRegisterRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Registra un prospecto/lead rápido desde la Landing para autollenado e inscripción en CRM."""
+    name = payload.name.strip()
+    raw_phone = payload.phone.strip() if payload.phone else ""
+    if not name or not raw_phone:
+        raise HTTPException(status_code=400, detail="Nombre y teléfono son requeridos.")
+
+    phone = raw_phone
+    if phone.isdigit() and len(phone) == 10:
+        phone = f"+57{phone}"
+
+    club_info = f"Prospecto Lead ({payload.club_name or 'Web Landing'})"
+
+    stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(
+        or_(Customer.phone == phone, Customer.phone == raw_phone)
+    )
+    res = await db.execute(stmt)
+    existing = res.scalars().first()
+
+    if existing:
+        existing.name = name
+        existing.category = payload.category or existing.category
+        if existing.notes:
+            existing.notes = f"{existing.notes} | {club_info}"
+        else:
+            existing.notes = club_info
+        await db.commit()
+        re_stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(Customer.id == existing.id)
+        re_res = await db.execute(re_stmt)
+        return format_customer_response(re_res.scalar_one())
+
+    new_customer = Customer(
+        name=name,
+        phone=phone,
+        category=payload.category or "4ta",
+        client_type="Prospecto Lead",
+        membership_tier="ESTANDAR",
+        notes=club_info,
+        is_first_visit=True,
+        onboarding_status="PENDING",
+    )
+    db.add(new_customer)
+    await db.commit()
+
+    re_stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(Customer.id == new_customer.id)
+    re_res = await db.execute(re_stmt)
+    return format_customer_response(re_res.scalar_one())
 
 
 @router.put("/{player_id}", response_model=CustomerResponse)

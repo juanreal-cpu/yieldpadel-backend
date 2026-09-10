@@ -2161,85 +2161,106 @@
   <div id="app-container" class="saas-layout flex w-full min-h-screen bg-slate-50">
 
     <!-- 1. SIDEBAR FIJO A LA IZQUIERDA (w-64) -->
-    <aside class="saas-sidebar w-64 min-w-[16rem] h-screen fixed top-0 left-0 bg-white border-r border-slate-200 flex flex-col justify-between z-50 shadow-sm">
+    <aside id="sidebar" class="saas-sidebar w-64 min-w-[16rem] h-screen fixed top-0 left-0 bg-[#0b1329] border-r border-slate-800/80 flex flex-col justify-between z-50 shadow-xl p-3 overflow-y-auto">
       <div>
         <!-- Logo & Marca -->
-        <div class="sidebar-brand">
-          <a href="/dashboard" class="brand-title">
-            <span class="brand-icon">⚡</span>
-            <span class="brand-name">Afluenc.IA</span>
-            <span class="brand-badge">YieldPadel</span>
+        <div class="sidebar-brand mb-3 p-2">
+          <a href="/dashboard" class="brand-title flex items-center gap-2 text-white font-extrabold text-base">
+            <span class="brand-icon text-lg">⚡</span>
+            <span class="brand-name text-white">Afluenc.IA</span>
+            <span class="brand-badge text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-bold">YieldPadel</span>
           </a>
-          <div class="brand-sub">
+          <div class="brand-sub text-[11px] text-slate-400 mt-1 font-medium">
             <span>📍 Capital Pádel Club (5 Canchas)</span>
           </div>
         </div>
 
         <!-- Menú Vertical de Navegación -->
         <nav class="space-y-1" id="main-sidebar-nav">
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-900 transition active" id="btn-nav-calendar" onclick="switchMainView('calendar')">
-            <span class="text-base">📅</span>
+          <!-- GRUPO 1: OPERACIÓN EN SEDE -->
+          <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none">Operación en Sede</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-all cursor-pointer active" id="btn-nav-calendar" onclick="switchMainView('calendar')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">📅</span>
             <span>Matriz Calendario</span>
           </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-tournaments" onclick="switchMainView('tournaments')">
-            <span class="text-base">🏆</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-tournaments" onclick="switchMainView('tournaments')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🏆</span>
             <span>Torneos Americanos</span>
           </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-academy" onclick="switchMainView('academy')">
-            <span class="text-base">🎓</span>
-            <span>Academia de Pádel</span>
-          </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-memberships" onclick="switchMainView('memberships')">
-            <span class="text-base">💎</span>
-            <span>Membresías del Club</span>
-          </button>
-
-          <button id="btn-nav-crm" onclick="switchMainView('crm')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 w-full transition">
-            <span class="text-base">👥</span>
-            <span>CRM Jugadores</span>
-          </button>
-          <button id="btn-nav-pos" onclick="switchMainView('pos')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 w-full transition">
-            <span class="text-base">🛒</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-pos" onclick="switchMainView('pos')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🛒</span>
             <span>Tienda & Barra (POS)</span>
           </button>
-          <button id="btn-nav-access" onclick="switchMainView('access')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 w-full transition">
-            <span class="text-base">🚪</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-access" onclick="switchMainView('access')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🚪</span>
             <span>Acceso & Presencia en Club</span>
           </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-radar" onclick="switchMainView('radar')">
-            <span class="text-base">📈</span>
+
+          <!-- GRUPO 2: CLIENTES & FIDELIZACIÓN -->
+          <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none">Clientes & Fidelización</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-crm" onclick="switchMainView('crm')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">👥</span>
+            <span>CRM Jugadores</span>
+          </button>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-wallet-ledger" onclick="switchMainView('view-wallet-ledger')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🪙</span>
+            <span>Auditoría Capital Points</span>
+          </button>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-memberships" onclick="switchMainView('memberships')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">💎</span>
+            <span>Membresías del Club</span>
+          </button>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-academy" onclick="switchMainView('academy')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🎓</span>
+            <span>Academia de Pádel</span>
+          </button>
+
+          <!-- GRUPO 3: INTELIGENCIA & MERCADO -->
+          <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none">Inteligencia & Mercado</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-radar" onclick="switchMainView('radar')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">📈</span>
             <span>Radar de Precios</span>
           </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-yield" onclick="switchMainView('yield')">
-            <span class="text-base">💡</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-competitors" onclick="switchMainView('competitors')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🏢</span>
+            <span>Benchmark Competencia</span>
+          </button>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-yield" onclick="switchMainView('yield')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">💡</span>
             <span>Motor de Yield</span>
           </button>
-          <button id="btn-nav-analytics" onclick="switchMainView('analytics')" class="sidebar-link sidebar-nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 w-full transition">
-            <span class="text-base">📊</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-analytics" onclick="switchMainView('analytics')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">📊</span>
             <span>Métricas & Ocupación</span>
           </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-config" onclick="switchMainView('config')">
-            <span class="text-base">⚙️</span>
+
+          <!-- GRUPO 4: ADMINISTRACIÓN -->
+          <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none">Administración</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-config" onclick="switchMainView('config')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">⚙️</span>
             <span>Configuración del Club</span>
           </button>
-          <button class="sidebar-link sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition" id="btn-nav-audit" onclick="switchMainView('audit')">
-            <span class="text-base">🛡️</span>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all cursor-pointer" id="btn-nav-audit" onclick="switchMainView('audit')">
+            <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-xs shrink-0">🛡️</span>
             <span>Auditoría & Usuarios</span>
           </button>
         </nav>
       </div>
 
       <!-- Pie del Sidebar -->
-      <div class="sidebar-footer">
-        <div class="api-live-badge">
+      <div class="sidebar-footer pt-4 mt-4 border-t border-slate-800">
+        <div class="api-live-badge mb-2">
           <span class="live-dot"></span>
-          <span>🟢 API Live (Bogotá)</span>
+          <span class="text-xs text-slate-300 font-medium">🟢 API Live (Bogotá)</span>
         </div>
-        <button onclick="fetchSlots()" class="btn-refresh-sidebar" title="Refrescar turnos en vivo">
+        <button onclick="fetchSlots()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition" title="Refrescar turnos en vivo">
           ↻ Refrescar Datos
         </button>
-        <button onclick="window.logoutSession()" class="btn-refresh-sidebar" style="margin-top: 0.5rem; background: #FFF1F2; color: #E11D48; border-color: #FECDD3;" title="Cerrar sesión segura">
+        <button onclick="window.logoutSession()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg text-rose-400 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-900/50 transition mt-2" title="Cerrar sesión segura">
           🚪 Cerrar Sesión
+        </button>
+      </div>
+    </aside>
         </button>
       </div>
     </aside>

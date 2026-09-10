@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -65,6 +65,9 @@ class Customer(Base):
     consecutive_wins: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     promotion_recommended: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     recommended_category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    # Monedero / Capital Points
+    wallet_balance: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
