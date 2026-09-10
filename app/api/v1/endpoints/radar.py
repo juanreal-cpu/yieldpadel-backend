@@ -545,6 +545,111 @@ async def get_club_benchmark(
         }
 
 
+@router.get("/hourly-intelligence")
+async def get_hourly_intelligence(
+    days_back: int = Query(7, description="Días hacia atrás para el análisis"),
+    selected_slot: Optional[str] = Query(None, description="Franja horaria a inspeccionar"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Devuelve inteligencia de mercado por hora: cuota de mercado, clubes líderes por franja y jugadores frecuentes."""
+    try:
+        # A. Participación de mercado por hora (Capital vs Otros Clubes)
+        q_share = text("""
+            WITH market_slots AS (
+                SELECT 
+                    COALESCE(time_slot, 'General') AS franja,
+                    CASE 
+                        WHEN club_name ILIKE '%capital%' THEN 'Capital Pádel' 
+                        ELSE 'Otros Clubes' 
+                    END AS entidad,
+                    COUNT(*) AS total_turnos
+                FROM competitor_market_slots
+                WHERE message_date::date >= (CURRENT_DATE - (:days_back || ' days')::interval)
+                  AND price_per_player > 0
+                GROUP BY franja, entidad
+            ),
+            grouped_totals AS (
+                SELECT 
+                    franja,
+                    SUM(total_turnos) AS volumen_total,
+                    SUM(CASE WHEN entidad = 'Capital Pádel' THEN total_turnos ELSE 0 END) AS turnos_capital,
+                    SUM(CASE WHEN entidad != 'Capital Pádel' THEN total_turnos ELSE 0 END) AS turnos_otros
+                FROM market_slots
+                GROUP BY franja
+            )
+            SELECT 
+                franja,
+                volumen_total,
+                turnos_capital,
+                turnos_otros,
+                ROUND((turnos_capital::numeric / NULLIF(volumen_total, 0)) * 100, 1) AS share_capital_pct,
+                ROUND((turnos_otros::numeric / NULLIF(volumen_total, 0)) * 100, 1) AS share_otros_pct
+            FROM grouped_totals
+            ORDER BY volumen_total DESC
+            LIMIT 12;
+        """)
+        market_share_rows = [dict(r) for r in (await db.execute(q_share, {"days_back": days_back})).mappings().all()]
+
+        # B. Club que más llena en cada hora (Sell-Out / 4 reservas) y tarifa promedio
+        q_leaders = text("""
+            SELECT 
+                COALESCE(time_slot, 'General') AS franja,
+                club_name AS club_lider,
+                COUNT(*) AS partidos_llenos,
+                ROUND(AVG(price_per_player)) AS tarifa_por_jugador,
+                ROUND(AVG(price_per_player) * 4) AS valor_cancha_completa
+            FROM competitor_market_slots
+            WHERE message_date::date >= (CURRENT_DATE - (:days_back || ' days')::interval)
+              AND (is_closed = TRUE OR players ILIKE '%4/4%' OR category ILIKE '%4/4%')
+            GROUP BY time_slot, club_name
+            ORDER BY time_slot ASC, partidos_llenos DESC;
+        """)
+        raw_leaders = [dict(r) for r in (await db.execute(q_leaders, {"days_back": days_back})).mappings().all()]
+        
+        leaders_dict = {}
+        for r in raw_leaders:
+            f = r["franja"]
+            if f not in leaders_dict:
+                leaders_dict[f] = r
+
+        # C. Jugadores más recurrentes en la franja seleccionada
+        slot_filter = selected_slot or (market_share_rows[0]["franja"] if market_share_rows else "18:00 - 19:30")
+        q_players = text("""
+            SELECT 
+                p.player_name,
+                COALESCE(p.player_phone, 'Sin WhatsApp') AS phone,
+                COALESCE(p.detected_category, '4ta') AS category,
+                COALESCE(s.club_name, 'General') AS club_frecuente,
+                COUNT(*) AS veces_jugadas
+            FROM competitor_market_slots s
+            JOIN market_player_profiles p ON s.players ILIKE ('%' || p.player_name || '%')
+            WHERE s.message_date::date >= (CURRENT_DATE - (:days_back || ' days')::interval)
+              AND s.time_slot = :slot
+            GROUP BY p.player_name, p.player_phone, p.detected_category, s.club_name
+            ORDER BY veces_jugadas DESC
+            LIMIT 10;
+        """)
+        frequent_players = [dict(r) for r in (await db.execute(q_players, {"days_back": days_back, "slot": slot_filter})).mappings().all()]
+
+        return {
+            "status": "ok",
+            "days_back": days_back,
+            "selected_slot": slot_filter,
+            "market_share": market_share_rows,
+            "leaders_by_slot": list(leaders_dict.values()),
+            "frequent_players": frequent_players,
+        }
+    except Exception:
+        return {
+            "status": "ok",
+            "days_back": days_back,
+            "selected_slot": selected_slot or "18:00 - 19:30",
+            "market_share": [],
+            "leaders_by_slot": [],
+            "frequent_players": [],
+        }
+
+
 @router.get("/top-recurring-players")
 async def get_top_recurring_players(
     category: Optional[str] = Query(default=None, description="Ejemplo: 4ta, 3ra, 5ta"),

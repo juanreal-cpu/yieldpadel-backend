@@ -3103,6 +3103,58 @@
               </div>
             </div>
 
+            <!-- TABLERO DE INTELIGENCIA HORARIA (CUOTA DE MERCADO Y LÍDERES POR HORA) -->
+            <div class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-xl">
+              <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div>
+                  <h3 class="text-base font-bold flex items-center gap-2">
+                    <span>🎯</span> Cuota de Mercado & Líderes de Ocupación por Hora (Bogotá)
+                  </h3>
+                  <p class="text-xs text-slate-400">Filtrado estricto con datos de la semana anterior (D-7).</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <select id="bench-time-range" onchange="window.loadHourlyIntelligence()" class="bg-slate-800 border border-slate-700 text-xs rounded-xl px-3 py-2 text-slate-200">
+                    <option value="7" selected>Semana Pasada (Últimos 7 días)</option>
+                    <option value="14">Últimos 14 días</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Grid 2 Columnas: Izquierda Tabla de Horas y Market Share, Derecha Panel de Jugadores de la franja -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <!-- Tabla de Franjas y Market Share (2 cols) -->
+                <div class="lg:col-span-2 overflow-x-auto">
+                  <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
+                        <th class="py-2">Franja Horaria</th>
+                        <th class="py-2">Club Líder (Sell-Out)</th>
+                        <th class="py-2">Tarifa Cancha Llena</th>
+                        <th class="py-2">Market Share Capital</th>
+                        <th class="py-2 text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="hourly-share-body" class="divide-y divide-slate-800">
+                      <!-- Se puebla dinámicamente con JS -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Panel Lateral: Jugadores Detectados en esa hora (1 col) -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <span>👥</span> Jugadores en <span id="selected-slot-title" class="text-blue-400">18:00 - 19:30</span>
+                    </h4>
+                  </div>
+                  <p class="text-[11px] text-slate-400 mb-3">Perfiles detectados jugando en esta hora durante la semana pasada:</p>
+                  <div id="hourly-players-list" class="space-y-2 max-h-72 overflow-y-auto pr-1 text-xs">
+                    <!-- Se puebla con los jugadores recurrentes -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div style="display: grid; gap: 1.25rem; margin-top: 1.5rem;">
               <!-- 1. GRIDA MATRICIAL DE PARIDAD & TARIFAS DINÁMICAS (Infare / Airnguru Grade) -->
               <div class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
@@ -7966,6 +8018,10 @@ ${data.message}`);
             `;
           }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin torneos registrados para este club.</td></tr>';
         }
+
+        if (typeof window.loadHourlyIntelligence === 'function') {
+          window.loadHourlyIntelligence();
+        }
       } catch (err) {
         console.error('Error loading competitor benchmark:', err);
         if (pricingBody) pricingBody.innerHTML = '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">No se pudo cargar la comparación para este club.</td></tr>';
@@ -7978,6 +8034,115 @@ ${data.message}`);
           button.style.opacity = '1';
           button.style.cursor = 'pointer';
         }
+      }
+    };
+
+    window.loadHourlyIntelligence = async function(selectedSlot = null) {
+      const shareBody = document.getElementById('hourly-share-body');
+      const timeRangeSelect = document.getElementById('bench-time-range');
+      const daysBack = timeRangeSelect ? (timeRangeSelect.value || 7) : 7;
+
+      let url = `${API_BASE}/api/v1/radar/hourly-intelligence?days_back=${daysBack}`;
+      if (selectedSlot) {
+        url += `&selected_slot=${encodeURIComponent(selectedSlot)}`;
+      }
+
+      if (shareBody && !selectedSlot) {
+        shareBody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Cargando inteligencia de mercado por hora...</td></tr>';
+      }
+
+      try {
+        const res = await fetch(url);
+        const data = res.ok ? await res.json() : { market_share: [], leaders_by_slot: [], frequent_players: [] };
+
+        const marketShare = Array.isArray(data.market_share) ? data.market_share : [];
+        const leadersBySlot = Array.isArray(data.leaders_by_slot) ? data.leaders_by_slot : [];
+        const players = Array.isArray(data.frequent_players) ? data.frequent_players : [];
+
+        const slotLeadersMap = {};
+        leadersBySlot.forEach(l => {
+          if (l && l.franja) slotLeadersMap[l.franja] = l;
+        });
+
+        if (shareBody) {
+          if (marketShare.length === 0) {
+            shareBody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Sin datos de mercado por hora para este período.</td></tr>';
+          } else {
+            shareBody.innerHTML = marketShare.map(row => {
+              const leader = slotLeadersMap[row.franja];
+              const leaderName = leader ? `${leader.club_lider || 'General'} (${leader.partidos_llenos || 0} llenos)` : 'N/A';
+              const fullPrice = leader ? `$${Number(leader.valor_cancha_completa || ((leader.tarifa_por_jugador || 0) * 4) || 0).toLocaleString('es-CO')} COP` : 'N/A';
+              const capPct = Number(row.share_capital_pct || 0);
+              const otrosPct = Number(row.share_otros_pct || 0);
+              const isSelected = data.selected_slot && (row.franja === data.selected_slot);
+
+              return `
+                <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition ${isSelected ? 'bg-blue-900/20' : ''}">
+                  <td class="py-2.5 px-2 font-bold text-slate-200 whitespace-nowrap">
+                    <span class="px-2 py-1 rounded bg-slate-800 text-slate-200 font-mono text-[11px]">${row.franja || 'General'}</span>
+                  </td>
+                  <td class="py-2.5 px-2 text-slate-300 font-medium">${leaderName}</td>
+                  <td class="py-2.5 px-2 font-bold text-emerald-400">${fullPrice}</td>
+                  <td class="py-2.5 px-2">
+                    <div class="flex flex-col gap-1 w-32">
+                      <div class="flex justify-between text-[10px] font-bold">
+                        <span class="text-blue-400">${capPct}% Cap</span>
+                        <span class="text-slate-400">${otrosPct}% OT</span>
+                      </div>
+                      <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden flex">
+                        <div class="bg-blue-500 h-full" style="width: ${capPct}%"></div>
+                        <div class="bg-slate-500 h-full" style="width: ${otrosPct}%"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-2.5 px-2 text-center">
+                    <button onclick="window.loadHourlyIntelligence('${(row.franja || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 transition">
+                      Ver Jugadores
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+
+        // Panel de Jugadores
+        const slotTitle = document.getElementById('selected-slot-title');
+        if (slotTitle) {
+          slotTitle.textContent = data.selected_slot || '18:00 - 19:30';
+        }
+
+        const playersList = document.getElementById('hourly-players-list');
+        if (playersList) {
+          if (players.length === 0) {
+            playersList.innerHTML = '<div class="p-4 text-center text-slate-500 text-xs">Sin jugadores detectados en esta franja horaria.</div>';
+          } else {
+            playersList.innerHTML = players.map(p => {
+              const phone = p.phone || 'Sin WhatsApp';
+              const digits = String(phone).replace(/[^0-9]/g, '');
+              const waMessage = `Hola ${p.player_name || 'jugador'}, te escribimos de Capital Pádel Club. Vemos que sueles jugar a las ${data.selected_slot || 'este horario'}. ¡Te invitamos a probar nuestras canchas!`;
+              const waLink = digits ? `https://wa.me/${digits}?text=${encodeURIComponent(waMessage)}` : `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
+
+              return `
+                <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2 hover:border-slate-700 transition">
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-slate-200 truncate flex items-center gap-1.5 text-xs">
+                      <span class="truncate">${p.player_name || 'Jugador'}</span>
+                      <span class="px-1.5 py-0.2 rounded text-[10px] bg-slate-800 text-slate-400 border border-slate-700 font-semibold shrink-0">${p.category || '4ta'}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 mt-0.5 truncate">${p.club_frecuente || 'General'} • <span class="text-blue-400 font-bold">${p.veces_jugadas || 0} partidos</span></div>
+                  </div>
+                  <a href="${waLink}" target="_blank" class="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded border border-emerald-500/30 text-[10px] font-bold transition flex items-center gap-1 shrink-0">
+                    💬 WA
+                  </a>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        console.warn('Error al cargar hourly intelligence:', err);
+        if (shareBody) shareBody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Error de conexión al cargar inteligencia de mercado.</td></tr>';
       }
     };
 
