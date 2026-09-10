@@ -169,7 +169,7 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         plan_name=plan_name,
         americano_discount_pct=americano_discount_pct,
         includes_beverage_perk=includes_beverage_perk,
-        wallet_balance=float(wallet_balance_value or 0),
+        wallet_balance=float(wallet_balance_value if hasattr(c, "wallet_balance") and c.wallet_balance is not None else 0.0),
     )
 
 

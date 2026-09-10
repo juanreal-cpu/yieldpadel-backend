@@ -2756,7 +2756,7 @@
 
                 <div class="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
                   <button type="button" onclick="closeWalletModal()" class="px-4 py-2.5 border border-slate-300 bg-white text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition">Cancelar</button>
-                  <button type="button" onclick="window.submitWalletTransaction()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow transition">Confirmar Transacción</button>
+                  <button type="button" onclick="submitWalletTransaction()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow transition">Confirmar Transacción</button>
                 </div>
               </div>
             </div>
@@ -6700,9 +6700,8 @@ window.selectPlayerForFeaturedCard = function(player) {
   if (tier) tier.textContent = player.membership_tier || 'Estándar';
   if (cat) cat.textContent = player.category || '4ta';
   if (pts) pts.textContent = `${player.ranking_points || 0} pts`;
-  const bal = Number(player.wallet_balance || 0).toLocaleString('es-CO');
-  const badge = document.getElementById('featured-wallet-amount');
-  if (badge) badge.textContent = bal;
+  const balEl = document.getElementById('featured-wallet-amount');
+  if (balEl) balEl.textContent = Number(player.wallet_balance || 0).toLocaleString('es-CO');
 };
 
 window.openWalletModal = function(customerId) {
@@ -6790,15 +6789,10 @@ window.submitWalletTransaction = async function() {
       customer.wallet_balance = Number(data.new_balance || customer.wallet_balance || 0);
     }
 
-    const newBal = Number(data.new_balance !== undefined ? data.new_balance : data.wallet_balance || 0);
-    const formattedBal = newBal.toLocaleString('es-CO');
-
-    const badge = document.getElementById('featured-wallet-amount');
-    if (badge) badge.textContent = formattedBal;
-
-    if (window.currentFeaturedPlayer) {
-      window.currentFeaturedPlayer.wallet_balance = newBal;
-    }
+    const val = Number(data.new_balance || 0);
+    const balEl = document.getElementById('featured-wallet-amount');
+    if (balEl) balEl.textContent = val.toLocaleString('es-CO');
+    if (window.currentFeaturedPlayer) window.currentFeaturedPlayer.wallet_balance = val;
 
     if (typeof window.loadCRMPlayers === 'function') window.loadCRMPlayers();
     if (typeof loadCRMPlayers === 'function') {
