@@ -7847,78 +7847,67 @@ ${data.message}`);
 
         // Renderizado de Grilla Matricial Térmica (Infare / Airnguru Grade)
         if (heatmapBody) {
-          const slotList = [
-            '06:00 - 07:30', '07:30 - 09:00', '09:00 - 10:30', '10:30 - 12:30',
-            '14:00 - 15:30', '15:30 - 17:00', '16:00 - 18:00', '17:00 - 18:30',
-            '18:00 - 19:30', '19:30 - 21:00', '21:00 - 22:30'
+          const days = [
+            { key: 'Lun', aliases: ['lun', 'mon', 'lunes', 'monday'] },
+            { key: 'Mar', aliases: ['mar', 'tue', 'martes', 'tuesday'] },
+            { key: 'Mié', aliases: ['mie', 'mié', 'wed', 'miercoles', 'miércoles', 'wednesday'] },
+            { key: 'Jue', aliases: ['jue', 'thu', 'jueves', 'thursday'] },
+            { key: 'Vie', aliases: ['vie', 'fri', 'viernes', 'friday'] },
+            { key: 'Sáb', aliases: ['sab', 'sáb', 'sat', 'sabado', 'sábado', 'saturday'] },
+            { key: 'Dom', aliases: ['dom', 'sun', 'domingo', 'sunday'] }
           ];
-          const daysOrder = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-          // Mapa rápido por normalización de franja y día
-          const cellMap = {};
-          matrixData.forEach(item => {
-            const rawFranja = (item.franja || '').toString().trim().toLowerCase();
-            const rawDia = (item.dia || '').toString().trim().toLowerCase();
-            cellMap[`${rawFranja}_${rawDia}`] = item;
-          });
+          const distinctSlots = Array.from(new Set(matrixData.map(m => m.raw_slot || m.franja))).filter(Boolean).slice(0, 10);
 
-          // Determinar franjas reales a renderizar (mínimo las que vengan en data + franjas estándar)
-          const detectedSlots = Array.from(new Set([
-            ...slotList,
-            ...matrixData.map(m => m.franja)
-          ])).filter(Boolean);
+          if (distinctSlots.length === 0) {
+            heatmapBody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">Sin datos de matriz para este club.</td></tr>';
+          } else {
+            let htmlRows = '';
+            distinctSlots.forEach(slot => {
+              let rowHtml = `<tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition">`;
+              rowHtml += `<td class="py-2.5 px-3 font-bold text-white whitespace-nowrap bg-slate-900/90">${slot}</td>`;
 
-          let htmlRows = '';
-          detectedSlots.forEach(slotName => {
-            const slotLower = slotName.toString().trim().toLowerCase();
-            let rowHtml = `<tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition">`;
-            rowHtml += `<td class="py-2.5 px-3 font-bold text-white whitespace-nowrap bg-slate-900/90">${slotName}</td>`;
+              days.forEach(day => {
+                const match = matrixData.find(m => {
+                  const mSlot = m.raw_slot || m.franja;
+                  const mDay = (m.dia_code || m.dia || '').toString().toLowerCase();
+                  return mSlot === slot && day.aliases.some(alias => mDay.includes(alias));
+                });
 
-            daysOrder.forEach(dayName => {
-              const dayLower = dayName.toLowerCase();
-              let cellItem = cellMap[`${slotLower}_${dayLower}`];
+                if (match && (match.precio || match.precio_competidor)) {
+                  const precio = Number(match.precio || match.precio_competidor || 0);
+                  const cellDiff = precio - 45000;
 
-              // Búsqueda aproximada si no hay match exacto
-              if (!cellItem) {
-                cellItem = matrixData.find(m => 
-                  (m.franja || '').toString().toLowerCase().includes(slotLower) && 
-                  (m.dia || '').toString().toLowerCase().includes(dayLower)
-                );
-              }
-
-              if (cellItem && cellItem.precio_competidor) {
-                const precio = Number(cellItem.precio_competidor || 0);
-                const cellDiff = precio - 45000;
-
-                if (cellDiff > 0) {
-                  rowHtml += `
-                    <td class="py-2.5 px-2 text-center font-bold rounded-lg transition" style="background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
-                      <div>$${precio.toLocaleString('es-CO')}</div>
-                      <div class="text-[10px] font-black text-emerald-400 mt-0.5">(+$${cellDiff.toLocaleString('es-CO')})</div>
-                    </td>`;
-                } else if (cellDiff < 0) {
-                  rowHtml += `
-                    <td class="py-2.5 px-2 text-center font-bold rounded-lg transition" style="background-color: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3);">
-                      <div>$${precio.toLocaleString('es-CO')}</div>
-                      <div class="text-[10px] font-black text-rose-400 mt-0.5">(-$${Math.abs(cellDiff).toLocaleString('es-CO')})</div>
-                    </td>`;
+                  if (cellDiff > 0) {
+                    rowHtml += `
+                      <td class="py-2.5 px-2 text-center font-bold rounded-lg transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        <div>$${precio.toLocaleString('es-CO')}</div>
+                        <div class="text-[10px] font-black mt-0.5">(+$${cellDiff.toLocaleString('es-CO')})</div>
+                      </td>`;
+                  } else if (cellDiff < 0) {
+                    rowHtml += `
+                      <td class="py-2.5 px-2 text-center font-bold rounded-lg transition bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                        <div>$${precio.toLocaleString('es-CO')}</div>
+                        <div class="text-[10px] font-black mt-0.5">(-$${Math.abs(cellDiff).toLocaleString('es-CO')})</div>
+                      </td>`;
+                  } else {
+                    rowHtml += `
+                      <td class="py-2.5 px-2 text-center font-bold rounded-lg transition bg-slate-700/30 text-slate-300 border border-slate-700/50">
+                        <div>$${precio.toLocaleString('es-CO')}</div>
+                        <div class="text-[10px] font-semibold text-slate-400 mt-0.5">(Paridad)</div>
+                      </td>`;
+                  }
                 } else {
-                  rowHtml += `
-                    <td class="py-2.5 px-2 text-center font-bold rounded-lg transition" style="background-color: rgba(148, 163, 184, 0.1); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.2);">
-                      <div>$${precio.toLocaleString('es-CO')}</div>
-                      <div class="text-[10px] font-semibold text-slate-400 mt-0.5">(Paridad)</div>
-                    </td>`;
+                  rowHtml += `<td class="py-2.5 px-2 text-center text-slate-600 font-medium select-none"><span class="text-slate-600">—</span></td>`;
                 }
-              } else {
-                rowHtml += `<td class="py-2.5 px-2 text-center text-slate-600 font-medium select-none">—</td>`;
-              }
+              });
+
+              rowHtml += `</tr>`;
+              htmlRows += rowHtml;
             });
 
-            rowHtml += `</tr>`;
-            htmlRows += rowHtml;
-          });
-
-          heatmapBody.innerHTML = htmlRows || '<tr><td colspan="8" class="text-center py-8 text-slate-500">Sin datos de matriz para este club.</td></tr>';
+            heatmapBody.innerHTML = htmlRows;
+          }
         }
 
         if (pricingBody) {
