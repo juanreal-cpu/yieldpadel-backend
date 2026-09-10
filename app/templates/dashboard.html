@@ -2714,106 +2714,159 @@
         <!-- VISTA 4: 📈 RADAR DE PRECIOS                            -->
         <!-- ======================================================== -->
         <div id="view-radar" class="view-section hidden">
-          <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
-            
-            <!-- Header con Controles de Franja y Ciudad -->
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; background: #FFFFFF; padding: 1.25rem 1.5rem; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          <div style="max-width: 1280px; margin: 0 auto; padding-bottom: 3rem;">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%); padding: 1.4rem 1.5rem; border-radius: 18px; border: 1px solid #E2E8F0; box-shadow: 0 18px 32px rgba(15, 23, 42, 0.06);">
               <div>
-                <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem; letter-spacing: -0.01em;">
-                  <span>📈</span> Radar de Precios & Mapa de Competencia
+                <h2 style="font-size: 1.45rem; font-weight: 900; color: #0F172A; display: flex; align-items: center; gap: 0.6rem; letter-spacing: -0.02em;">
+                  <span>📈</span> Radar de Mercado, Tarifas & Prospección Competitiva
                 </h2>
-                <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.25rem;">
-                  Georreferenciación de 22 clubes en Colombia (10 en Bogotá). Monitoreo y benchmarking vs. Capital Pádel Club.
+                <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.35rem; max-width: 760px;">
+                  Análisis de pricing, ocupación de mercado, comportamiento recurrente y oportunidades de prospección frente a la competencia de Bogotá y zona.
                 </p>
               </div>
 
               <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                <!-- Selector de Franja -->
-                <div style="display: inline-flex; background: #F1F5F9; padding: 4px; border-radius: 8px; border: 1px solid #CBD5E1;">
-                  <button id="radar-btn-valle" onclick="setRadarFranja('VALLE')" style="padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">
+                <div style="display: inline-flex; background: #F1F5F9; padding: 4px; border-radius: 10px; border: 1px solid #CBD5E1;">
+                  <button id="radar-btn-valle" onclick="setRadarFranja('VALLE')" style="padding: 0.45rem 0.9rem; border-radius: 8px; font-size: 0.78rem; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">
                     ☀️ Franja Valle
                   </button>
-                  <button id="radar-btn-pico" onclick="setRadarFranja('PICO')" style="padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; background: #0284C7; color: #FFFFFF; box-shadow: 0 1px 3px rgba(2,132,199,0.3);">
+                  <button id="radar-btn-pico" onclick="setRadarFranja('PICO')" style="padding: 0.45rem 0.9rem; border-radius: 8px; font-size: 0.78rem; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; background: #0284C7; color: #FFFFFF; box-shadow: 0 1px 3px rgba(2,132,199,0.3);">
                     🌙 Franja Pico
                   </button>
                 </div>
 
-                <!-- Selector de Ciudad -->
                 <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <select id="radar-city-filter" onchange="onRadarCityChange(this.value)" style="padding: 0.48rem 0.85rem; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 0.8rem; font-weight: 700; cursor: pointer; outline: none;">
-                    <option value="Bogota" selected>📍 Bogotá D.C. (10 Clubes)</option>
-                    <option value="Medellin">📍 Medellín (4 Clubes)</option>
-                    <option value="Cali">📍 Cali (2 Clubes)</option>
-                    <option value="Barranquilla">📍 Barranquilla (2 Clubes)</option>
-                    <option value="all">🇨🇴 Todo Colombia (22 Clubes)</option>
+                  <select id="radar-city-filter" onchange="onRadarCityChange(this.value)" style="padding: 0.48rem 0.85rem; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 0.8rem; font-weight: 700; cursor: pointer; outline: none;">
+                    <option value="Bogota" selected>📍 Bogotá D.C.</option>
+                    <option value="Medellin">📍 Medellín</option>
+                    <option value="Cali">📍 Cali</option>
+                    <option value="Barranquilla">📍 Barranquilla</option>
+                    <option value="all">🇨🇴 Todo Colombia</option>
                   </select>
                 </div>
 
-                <button onclick="loadRadarData()" title="Refrescar datos del Radar" style="background: #F8FAFC; border: 1px solid #CBD5E1; color: #334155; padding: 0.48rem 0.75rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+                <button onclick="loadRadarData(); window.loadRadarAnalytics && window.loadRadarAnalytics();" title="Refrescar datos del Radar" style="background: #F8FAFC; border: 1px solid #CBD5E1; color: #334155; padding: 0.48rem 0.75rem; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
                   🔄
                 </button>
               </div>
             </div>
 
-            <!-- 4 KPI Cards -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-              
-              <!-- KPI 1: Tu Tarifa Actual -->
-              <div class="sidebar-card" style="margin-bottom: 0; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; border: 1px solid #334155; position: relative; overflow: hidden;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border: 1px solid #334155; border-radius: 18px; padding: 1.1rem 1.15rem; box-shadow: 0 16px 28px rgba(15, 23, 42, 0.16);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                  <span style="font-size: 0.72rem; font-weight: 700; color: #38BDF8; letter-spacing: 0.05em; text-transform: uppercase;">👑 Tu Tarifa Actual</span>
-                  <span style="background: rgba(56, 189, 248, 0.2); color: #38BDF8; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);" id="radar-kpi-target-label">FRANJA PICO</span>
+                  <span style="font-size: 0.7rem; font-weight: 800; color: #7DD3FC; letter-spacing: 0.08em; text-transform: uppercase;">Brecha de Precio Promedio</span>
+                  <span style="background: rgba(56, 189, 248, 0.18); color: #BAE6FD; font-size: 0.62rem; font-weight: 800; padding: 0.18rem 0.5rem; border: 1px solid rgba(125, 211, 252, 0.3); border-radius: 999px;">COP vs. Competencia</span>
                 </div>
-                <div style="font-size: 1.65rem; font-weight: 800; color: #FFFFFF; font-family: ui-monospace, monospace; letter-spacing: -0.02em;" id="radar-kpi-target-price">
-                  $120.000 COP
+                <div id="radar-kpi-price-gap" style="font-size: 1.8rem; font-weight: 900; color: #FFFFFF; font-family: ui-monospace, monospace; letter-spacing: -0.03em;">$0 COP</div>
+                <div id="radar-kpi-price-gap-sub" style="font-size: 0.72rem; margin-top: 0.35rem; color: #CBD5E1;">Comparativa por franja horaria y fin de semana.</div>
+              </div>
+
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.1rem 1.15rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Tasa de Llenado del Mercado</span>
+                  <span style="background: #DCFCE7; color: #166534; font-size: 0.62rem; font-weight: 800; padding: 0.18rem 0.5rem; border: 1px solid #86EFAC; border-radius: 999px;">4/4</span>
                 </div>
-                <div style="font-size: 0.72rem; color: #94A3B8; margin-top: 0.35rem;">
-                  Capital Pádel Maloka (Salitre • 4 pistas)
+                <div id="radar-kpi-market-occupancy" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; font-family: ui-monospace, monospace; letter-spacing: -0.03em;">0.0%</div>
+                <div id="radar-kpi-market-occupancy-sub" style="font-size: 0.72rem; margin-top: 0.35rem; color: #64748B;">Promedio de partidos cerrados por club.</div>
+              </div>
+
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.1rem 1.15rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Jugadores Monitoreados en Zona</span>
+                  <span style="background: #E0F2FE; color: #075985; font-size: 0.62rem; font-weight: 800; padding: 0.18rem 0.5rem; border: 1px solid #BAE6FD; border-radius: 999px;">CRM</span>
+                </div>
+                <div id="radar-kpi-players-monitored" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; font-family: ui-monospace, monospace; letter-spacing: -0.03em;">0</div>
+                <div id="radar-kpi-players-monitored-sub" style="font-size: 0.72rem; margin-top: 0.35rem; color: #64748B;">Perfiles detectados y activos en la competencia.</div>
+              </div>
+            </div>
+
+            <div style="display: grid; gap: 1.25rem; margin-bottom: 1.5rem;">
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.15rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                  <div>
+                    <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0;">Tabla Semáforo de Comparativa de Tarifas</h3>
+                    <p style="font-size: 0.72rem; color: #64748B; margin-top: 0.2rem;">Capital Pádel frente a la media competitive por franja y tipo de día.</p>
+                  </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                  <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                    <thead>
+                      <tr style="background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%); border-bottom: 2px solid #E2E8F0; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <th style="padding: 0.85rem 0.8rem; white-space: nowrap;">Franja Horaria</th>
+                        <th style="padding: 0.85rem 0.8rem; white-space: nowrap;">Tipo de Día</th>
+                        <th style="padding: 0.85rem 0.8rem; white-space: nowrap; text-align: right;">Tarifa Capital Pádel</th>
+                        <th style="padding: 0.85rem 0.8rem; white-space: nowrap; text-align: right;">Promedio Competencia</th>
+                        <th style="padding: 0.85rem 0.8rem; white-space: nowrap; text-align: right;">Brecha</th>
+                        <th style="padding: 0.85rem 0.8rem; white-space: nowrap; text-align: center;">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody id="radar-price-table-body">
+                      <tr>
+                        <td colspan="6" style="padding: 2rem; text-align: center; color: #64748B;">Cargando comparativa de precios...</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              <!-- KPI 2: Promedio Competencia -->
-              <div class="sidebar-card" style="margin-bottom: 0; background: #FFFFFF; border: 1px solid #E2E8F0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                  <span style="font-size: 0.72rem; font-weight: 700; color: #64748B; letter-spacing: 0.05em; text-transform: uppercase;">📊 Promedio Competencia</span>
-                  <span style="background: #F1F5F9; color: #475569; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px;" id="radar-kpi-city-scope">Bogotá D.C.</span>
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.15rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                  <div>
+                    <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0;">Directorio de Prospección y Jugadores Recurrentes</h3>
+                    <p style="font-size: 0.72rem; color: #64748B; margin-top: 0.2rem;">Seguimiento de comportamiento y oportunidades de conversión por categoría y franja.</p>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <label for="radar-prospect-category" style="font-size: 0.72rem; font-weight: 800; color: #475569; letter-spacing: 0.04em; text-transform: uppercase;">Categoría</label>
+                      <select id="radar-prospect-category" style="padding: 0.4rem 0.7rem; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 0.75rem; font-weight: 700;">
+                        <option value="ALL">Todas</option>
+                        <option value="1ra">1ra</option>
+                        <option value="2da">2da</option>
+                        <option value="3ra">3ra</option>
+                        <option value="4ta">4ta</option>
+                        <option value="5ta">5ta</option>
+                        <option value="6ta">6ta</option>
+                      </select>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <label for="radar-prospect-time-slot" style="font-size: 0.72rem; font-weight: 800; color: #475569; letter-spacing: 0.04em; text-transform: uppercase;">Franja</label>
+                      <select id="radar-prospect-time-slot" style="padding: 0.4rem 0.7rem; border-radius: 8px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 0.75rem; font-weight: 700;">
+                        <option value="ALL">Todas</option>
+                        <option value="Mañana">Mañana</option>
+                        <option value="Tarde">Tarde</option>
+                        <option value="Noche">Noche</option>
+                        <option value="Semana">Semana</option>
+                        <option value="Fin de Semana">Fin de Semana</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div style="font-size: 1.65rem; font-weight: 800; color: #0F172A; font-family: ui-monospace, monospace; letter-spacing: -0.02em;" id="radar-kpi-avg-price">
-                  $132.222 COP
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.35rem;" id="radar-kpi-avg-sub">
-                  Calculado sobre 9 competidores en Bogotá
+
+                <div style="overflow-x: auto;">
+                  <table style="width: 100%; min-width: 820px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                    <thead>
+                      <tr style="background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%); border-bottom: 2px solid #E2E8F0; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <th style="padding: 0.8rem 0.7rem; white-space: nowrap;">Jugador</th>
+                        <th style="padding: 0.8rem 0.7rem; white-space: nowrap;">Club Habitual</th>
+                        <th style="padding: 0.8rem 0.7rem; white-space: nowrap;">Categoría</th>
+                        <th style="padding: 0.8rem 0.7rem; white-space: nowrap;">Franja Preferida</th>
+                        <th style="padding: 0.8rem 0.7rem; white-space: nowrap;">Partidos Jugados</th>
+                        <th style="padding: 0.8rem 0.7rem; white-space: nowrap;">Perfil</th>
+                        <th style="padding: 0.8rem 0.7rem; white-space: nowrap; text-align: center;">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="radar-prospect-table-body">
+                      <tr>
+                        <td colspan="7" style="padding: 2rem; text-align: center; color: #64748B;">Cargando perfiles de prospección...</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
-
-              <!-- KPI 3: Posicionamiento -->
-              <div class="sidebar-card" style="margin-bottom: 0; background: #FFFFFF; border: 1px solid #E2E8F0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                  <span style="font-size: 0.72rem; font-weight: 700; color: #059669; letter-spacing: 0.05em; text-transform: uppercase;">🎯 Posicionamiento</span>
-                  <span style="background: #DCFCE7; color: #15803D; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px;">Competitivo</span>
-                </div>
-                <div style="font-size: 1.65rem; font-weight: 800; color: #059669; font-family: ui-monospace, monospace; letter-spacing: -0.02em;" id="radar-kpi-competitiveness">
-                  +9.2%
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.35rem;" id="radar-kpi-comp-sub">
-                  Más económico que el promedio de la zona
-                </div>
-              </div>
-
-              <!-- KPI 4: Clubes Monitoreados -->
-              <div class="sidebar-card" style="margin-bottom: 0; background: #FFFFFF; border: 1px solid #E2E8F0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                  <span style="font-size: 0.72rem; font-weight: 700; color: #64748B; letter-spacing: 0.05em; text-transform: uppercase;">📍 Clubes Monitoreados</span>
-                  <span style="background: #E0F2FE; color: #0284C7; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px;">GPS Activo</span>
-                </div>
-                <div style="font-size: 1.65rem; font-weight: 800; color: #0F172A; font-family: ui-monospace, monospace; letter-spacing: -0.02em;" id="radar-kpi-clubs-count">
-                  10 / 22
-                </div>
-                <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.35rem;">
-                  10 en la ciudad • 22 en directorio nacional
-                </div>
-              </div>
-
             </div>
 
             <!-- Mapa Interactivo Leaflet -->
@@ -5651,6 +5704,9 @@
         if (cleanName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
         if (cleanName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
         if (cleanName === 'radar' || viewName === 'radar') {
+          if (typeof window.loadRadarAnalytics === 'function') {
+            window.loadRadarAnalytics();
+          }
           setTimeout(() => {
             if (!window.radarMapInstance && typeof initRadarMap === 'function') {
               initRadarMap();
@@ -7103,6 +7159,193 @@ ${data.message}`);
     let radarCurrentFranja = 'PICO';
     let radarCurrentCity = 'Bogota';
     let radarDataCache = null;
+    let radarAnalyticsState = {
+      prices: [],
+      occupancy: [],
+      players: []
+    };
+
+    function attachRadarProspectFilters() {
+      const categoryEl = document.getElementById('radar-prospect-category');
+      const timeEl = document.getElementById('radar-prospect-time-slot');
+
+      if (categoryEl && !categoryEl.dataset.bound) {
+        categoryEl.dataset.bound = 'true';
+        categoryEl.addEventListener('change', () => {
+          renderRadarProspectTable();
+        });
+      }
+
+      if (timeEl && !timeEl.dataset.bound) {
+        timeEl.dataset.bound = 'true';
+        timeEl.addEventListener('change', () => {
+          renderRadarProspectTable();
+        });
+      }
+    }
+
+    function renderRadarProspectTable() {
+      const tbody = document.getElementById('radar-prospect-table-body');
+      if (!tbody) return;
+
+      const category = (document.getElementById('radar-prospect-category') || {}).value || 'ALL';
+      const timeSlot = (document.getElementById('radar-prospect-time-slot') || {}).value || 'ALL';
+      const source = radarAnalyticsState.players || [];
+      const filtered = source.filter(player => {
+        const matchesCategory = category === 'ALL' || (player.detected_category || player.category || '').toUpperCase() === category.toUpperCase();
+        const preferred = (player.preferred_time_slot || player.preferredSlot || '').toString();
+        const matchesSlot = timeSlot === 'ALL' || preferred.toUpperCase().includes(timeSlot.toUpperCase()) || (timeSlot === 'Semana' && preferred.toUpperCase().includes('SEMANA')) || (timeSlot === 'Fin de Semana' && preferred.toUpperCase().includes('FIN'));
+        return matchesCategory && matchesSlot;
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="padding: 2rem; text-align: center; color: #64748B;">No hay jugadores para los filtros actuales.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(player => {
+        const categoryName = player.detected_category || player.category || '4ta';
+        const preferred = player.preferred_time_slot || player.preferredSlot || 'N/A';
+        const profile = player.perfil_comportamiento || player.profile || 'Ocasional / Híbrido';
+        const profileColors = {
+          'Fiel (Mono-club)': 'background: #DCFCE7; color: #166534; border: 1px solid #86EFAC;',
+          'Cazador de Precios / Multiclub': 'background: #F5F3FF; color: #6D28D9; border: 1px solid #C4B5FD;',
+          'Ocasional / Híbrido': 'background: #E0F2FE; color: #075985; border: 1px solid #BAE6FD;'
+        };
+
+        return `
+          <tr style="border-bottom: 1px solid #E2E8F0;">
+            <td style="padding: 0.8rem 0.7rem; font-weight: 700; color: #0F172A;">${player.player_name || 'Jugador'}</td>
+            <td style="padding: 0.8rem 0.7rem; color: #334155;">${player.frequent_club || 'Club no identificado'}</td>
+            <td style="padding: 0.8rem 0.7rem; color: #334155;">${categoryName}</td>
+            <td style="padding: 0.8rem 0.7rem; color: #334155;">${preferred}</td>
+            <td style="padding: 0.8rem 0.7rem; color: #334155; font-weight: 700;">${player.total_matches_played || 0}</td>
+            <td style="padding: 0.8rem 0.7rem;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; padding: 0.28rem 0.55rem; border-radius: 999px; font-size: 0.66rem; font-weight: 800; ${profileColors[profile] || 'background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0;'};">
+                ${profile}
+              </span>
+            </td>
+            <td style="padding: 0.8rem 0.7rem; text-align: center;">
+              <button type="button" onclick="window.openRadarLeadWhatsApp && window.openRadarLeadWhatsApp('${(player.player_name || 'Jugador').replace(/'/g, "\\'")}')" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(5, 150, 105, 0.8); color: #FFFFFF; border-radius: 8px; padding: 0.38rem 0.7rem; font-size: 0.7rem; font-weight: 800; cursor: pointer; box-shadow: 0 6px 14px rgba(16, 185, 129, 0.15);">
+                💬 Conectar WhatsApp
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.openRadarLeadWhatsApp = function(playerName) {
+      const safeName = encodeURIComponent((playerName || 'jugador').trim());
+      const message = encodeURIComponent(`Hola ${playerName || 'jugador'}, vi tu perfil en el radar de prospección de YieldPadel y me gustaría conversar sobre cupos libres.`);
+      window.open(`https://wa.me/?text=${message}`, '_blank');
+    };
+
+    window.loadRadarAnalytics = async function() {
+      try {
+        const [priceRes, occupancyRes, playersRes] = await Promise.all([
+          fetch(`${API_BASE}/api/v1/radar/price-comparison`),
+          fetch(`${API_BASE}/api/v1/radar/clubs-occupancy`),
+          fetch(`${API_BASE}/api/v1/radar/top-recurring-players?limit=200`)
+        ]);
+
+        if (!priceRes.ok) throw new Error('No se pudo obtener la comparativa de precios');
+        if (!occupancyRes.ok) throw new Error('No se pudo obtener la ocupación del mercado');
+        if (!playersRes.ok) throw new Error('No se pudo obtener la prospección de jugadores');
+
+        const priceData = await priceRes.json();
+        const occupancyData = await occupancyRes.json();
+        const playersData = await playersRes.json();
+
+        radarAnalyticsState.prices = Array.isArray(priceData) ? priceData : [];
+        radarAnalyticsState.occupancy = Array.isArray(occupancyData) ? occupancyData : [];
+        radarAnalyticsState.players = Array.isArray(playersData) ? playersData : [];
+
+        const priceGapEl = document.getElementById('radar-kpi-price-gap');
+        const priceGapSubEl = document.getElementById('radar-kpi-price-gap-sub');
+        const avgGap = radarAnalyticsState.prices.length
+          ? radarAnalyticsState.prices.reduce((sum, row) => sum + (Number(row.brecha_precio_cop) || 0), 0) / radarAnalyticsState.prices.length
+          : 0;
+
+        if (priceGapEl) {
+          const absGap = Math.abs(avgGap);
+          const sign = avgGap <= 0 ? '-' : '+';
+          priceGapEl.textContent = `${sign}$${Math.round(absGap).toLocaleString('es-CO')} COP`;
+          priceGapEl.style.color = avgGap <= 0 ? '#86EFAC' : '#FCA5A5';
+        }
+
+        if (priceGapSubEl) {
+          if (avgGap <= 0) {
+            priceGapSubEl.textContent = 'Capital Pádel es más económico que la competencia en promedio.';
+          } else {
+            priceGapSubEl.textContent = 'Capital Pádel está por encima del mercado promedio en la zona.';
+          }
+        }
+
+        const priceBody = document.getElementById('radar-price-table-body');
+        if (priceBody) {
+          if (!radarAnalyticsState.prices.length) {
+            priceBody.innerHTML = `<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #64748B;">No hay datos disponibles todavía.</td></tr>`;
+          } else {
+            priceBody.innerHTML = radarAnalyticsState.prices.map(row => {
+              const capital = Number(row.tarifa_capital_padel || 0);
+              const competing = Number(row.tarifa_promedio_competencia || 0);
+              const delta = Number(row.brecha_precio_cop || 0);
+              const pct = competing ? ((delta / competing) * 100) : 0;
+              const isLower = delta <= 0;
+              const badgeStyle = isLower
+                ? 'background: #DCFCE7; color: #166534; border: 1px solid #86EFAC;'
+                : 'background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5;';
+
+              return `
+                <tr style="border-bottom: 1px solid #E2E8F0;">
+                  <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${row.standard_time_slot || 'N/A'}</td>
+                  <td style="padding: 0.8rem 0.7rem; color: #334155; font-weight: 600;">${row.is_weekend ? 'Fin de Semana' : 'Semana'}</td>
+                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${capital.toLocaleString('es-CO')} COP</td>
+                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155;">$${competing.toLocaleString('es-CO')} COP</td>
+                  <td style="padding: 0.8rem 0.7rem; text-align: right; color: ${isLower ? '#166534' : '#991B1B'}; font-weight: 800;">${delta >= 0 ? '+' : '-'}$${Math.abs(delta).toLocaleString('es-CO')} COP / ${pct >= 0 ? '+' : '-'}${Math.abs(pct).toFixed(1)}%</td>
+                  <td style="padding: 0.8rem 0.7rem; text-align: center;">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 0.28rem 0.6rem; font-size: 0.66rem; font-weight: 800; ${badgeStyle};">
+                      ${isLower ? 'Más económico' : 'Más caro'}
+                    </span>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+
+        const occupancyKpi = document.getElementById('radar-kpi-market-occupancy');
+        const occupancyKpiSub = document.getElementById('radar-kpi-market-occupancy-sub');
+        if (radarAnalyticsState.occupancy.length) {
+          const avgOccupancy = radarAnalyticsState.occupancy.reduce((sum, row) => sum + (Number(row.ocupacion_pct) || 0), 0) / radarAnalyticsState.occupancy.length;
+          if (occupancyKpi) occupancyKpi.textContent = `${avgOccupancy.toFixed(1)}%`;
+          if (occupancyKpiSub) occupancyKpiSub.textContent = `${radarAnalyticsState.occupancy.length} club(es) analizados con media de ocupación del mercado.`;
+        } else if (occupancyKpi) {
+          occupancyKpi.textContent = '0.0%';
+        }
+
+        const playersKpi = document.getElementById('radar-kpi-players-monitored');
+        const playersKpiSub = document.getElementById('radar-kpi-players-monitored-sub');
+        if (playersKpi) playersKpi.textContent = String(radarAnalyticsState.players.length || 0);
+        if (playersKpiSub) playersKpiSub.textContent = `${radarAnalyticsState.players.length || 0} perfiles detectados y activos en la zona.`;
+
+        renderRadarProspectTable();
+        attachRadarProspectFilters();
+      } catch (err) {
+        console.error('Error loading radar analytics:', err);
+        const priceBody = document.getElementById('radar-price-table-body');
+        if (priceBody) priceBody.innerHTML = `<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #B91C1C;">No se pudo cargar la comparación de tarifas.</td></tr>`;
+        const prospectBody = document.getElementById('radar-prospect-table-body');
+        if (prospectBody) prospectBody.innerHTML = `<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #B91C1C;">No se pudo cargar la prospección.</td></tr>`;
+      }
+    };
+
+    window.loadRadarAnalytics();
 
     function initRadarMap() {
       const mapContainer = document.getElementById('radar-map');
