@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
 <head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+
+  <script src="https://cdn.tailwindcss.com"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YieldPadel | Autonomous Yield Management & WhatsApp Bot para Clubes Deportivos</title>
@@ -150,9 +153,16 @@
               onclick="openLoginModal()" 
               class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.03] transition-all duration-200 flex items-center justify-center gap-3"
             >
-              <span>Acceder al Portal del Club</span>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-            </button>
+<!-- En el botón de la barra superior (Navbar) -->
+<a href="/dashboard" class="px-4 py-2 text-xs font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 rounded-lg shadow-sm transition flex items-center gap-2">
+  <span>Ingresar al Club</span>
+</a>
+
+<!-- En el botón grande central (Hero) -->
+<a href="/dashboard" class="px-6 py-3.5 text-sm font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-lg transition flex items-center gap-2">
+  <span>Acceder al Portal del Club →</span>
+</a>
+
 
             <a 
               href="#features" 
@@ -497,14 +507,7 @@
         ✕
       </button>
 
-      <!-- Modal Header -->
-      <div>
-        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 mb-2">
-          <span>⚡ Acceso Seguro Multi-Tenant</span>
-        </div>
-        <h3 class="text-2xl font-display font-extrabold text-white">Ingresar al Club</h3>
-        <p class="text-xs text-slate-400 mt-1">Selecciona tu sede deportiva e ingresa con tus credenciales.</p>
-      </div>
+
 
       <!-- Error Alert Message -->
       <div id="login-error-alert" class="hidden p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2.5">
