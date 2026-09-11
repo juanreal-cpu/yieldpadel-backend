@@ -2341,7 +2341,11 @@
           </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-tournaments" onclick="switchMainView('tournaments')" title="Torneos Americanos">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🏆</span>
-            <span class="truncate">Torneos</span>
+            <span class="truncate">Americanos</span>
+          </button>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-official-tournaments" onclick="switchMainView('official-tournaments')" title="Torneos Oficiales & Brackets">
+            <span class="w-4 text-center text-xs shrink-0 opacity-70">🥇</span>
+            <span class="truncate">Torneos Oficiales</span>
           </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-pos" onclick="switchMainView('pos')" title="Tienda & Barra (POS)">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🛒</span>
@@ -2808,6 +2812,162 @@
         </div>
 
         <!-- ======================================================== -->
+        <!-- VISTA: 🥇 GESTOR PARAMÉTRICO DE TORNEOS OFICIALES         -->
+        <!-- ======================================================== -->
+        <div id="view-official-tournaments" class="view-section hidden w-full px-6 py-6 space-y-6 overflow-x-hidden">
+          <div class="max-w-7xl mx-auto space-y-6">
+            
+            <!-- Encabezado Superior -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 rounded-3xl text-white shadow-lg border border-slate-700/60">
+              <div class="space-y-1">
+                <div class="flex items-center gap-3">
+                  <span class="text-3xl">🥇</span>
+                  <div>
+                    <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                      Gestor Paramétrico de Torneos Oficiales
+                      <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-400/40">FPR / Oficial</span>
+                    </h2>
+                    <p class="text-xs text-slate-300 font-medium mt-0.5">
+                      Fase de grupos, cruces en vivo, playoffs, asignación física de pistas y cálculo automático de ascensos CRM.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <div class="inline-flex rounded-xl bg-slate-800/80 p-1 border border-slate-700">
+                  <button type="button" onclick="filterOfficialTournamentsCategory('ALL')" id="btn-off-cat-all" class="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 transition">Todas</button>
+                  <button type="button" onclick="filterOfficialTournamentsCategory('1ra')" id="btn-off-cat-1ra" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">1ra</button>
+                  <button type="button" onclick="filterOfficialTournamentsCategory('2da')" id="btn-off-cat-2da" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">2da</button>
+                  <button type="button" onclick="filterOfficialTournamentsCategory('3ra')" id="btn-off-cat-3ra" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">3ra</button>
+                  <button type="button" onclick="filterOfficialTournamentsCategory('4ta')" id="btn-off-cat-4ta" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">4ta</button>
+                  <button type="button" onclick="filterOfficialTournamentsCategory('5ta')" id="btn-off-cat-5ta" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">5ta</button>
+                </div>
+
+                <button type="button" onclick="openCreateOfficialTournamentModal()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+                  <span>🏆</span> <span>+ Nuevo Torneo Oficial</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Selector de Torneo Activo -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div class="flex items-center gap-3 w-full md:w-auto">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Torneo Seleccionado:</span>
+                <select id="official-tournament-selector" onchange="onSelectOfficialTournament(this.value)" class="flex-1 md:w-80 px-3 py-2 text-xs font-extrabold bg-slate-50 border border-slate-300 rounded-xl text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="">Cargando torneos oficiales...</option>
+                </select>
+              </div>
+
+              <!-- Acciones Rápidas del Torneo -->
+              <div class="flex items-center gap-2 flex-wrap w-full md:w-auto justify-end" id="official-tournament-actions">
+                <button type="button" onclick="openRegisterOfficialTeamModal()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm">
+                  <span>👥</span> <span>Inscribir Pareja CRM</span>
+                </button>
+                <button type="button" onclick="openFinalizeOfficialTournamentModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm">
+                  <span>🥇</span> <span>Finalizar & Asignar Ranking</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Ficha Técnica Resumen del Torneo -->
+            <div id="official-tournament-meta-card" class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase block">Categoría & Deporte</span>
+                <span id="ot-meta-category" class="text-sm font-black text-slate-800">-</span>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase block">Regla de Partido</span>
+                <span id="ot-meta-match-rule" class="text-sm font-black text-indigo-700">Mejor de 3 Sets</span>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase block">Formato & Desempate</span>
+                <span id="ot-meta-format" class="text-sm font-black text-slate-800">Grupos + Playoffs</span>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase block">Pistas Bloqueadas</span>
+                <span id="ot-meta-courts" class="text-sm font-black text-emerald-700 font-mono">0 Canchas</span>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase block">Estado</span>
+                <span id="ot-meta-status" class="inline-block px-2 py-0.5 rounded text-[10px] font-black bg-blue-100 text-blue-800">ENROLLMENT</span>
+              </div>
+            </div>
+
+            <!-- Grilla Principal: Mesa de Control & Cruces -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              <!-- Columna Izquierda: Grupos & Tablas de Posiciones -->
+              <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Encabezado de Sección Grupos -->
+                <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                      <span>📊</span> <span>Tablas de Posiciones por Grupo (Round-Robin)</span>
+                    </h3>
+                    <span id="ot-groups-count" class="text-xs font-bold text-slate-500 font-mono">0 Grupos</span>
+                  </div>
+
+                  <div id="ot-groups-container" class="space-y-6">
+                    <p class="text-xs text-slate-400 italic text-center py-6">Selecciona o crea un torneo oficial para visualizar sus grupos y estadísticas.</p>
+                  </div>
+                </div>
+
+                <!-- Brackets de Playoffs / Cuadro Eliminatorio -->
+                <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                      <span>🌳</span> <span>Bracket de Eliminación Directa / Playoffs</span>
+                    </h3>
+                    <span class="text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">Camino a la Corona</span>
+                  </div>
+
+                  <div id="ot-playoffs-bracket" class="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[160px] items-center">
+                    <!-- Cuartos, Semis, Final se pueblan dinámicamente -->
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500 col-span-3">
+                      Generando cruces según clasificación de grupos...
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Columna Derecha: Mesa de Control con Marcadores en Vivo -->
+              <div class="space-y-6">
+                
+                <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                      <span>🎾</span> <span>Partidos & Marcadores en Vivo</span>
+                    </h3>
+                    <span id="ot-live-matches-count" class="px-2 py-0.5 text-[10px] font-black rounded-full bg-emerald-100 text-emerald-800">0 Partidos</span>
+                  </div>
+
+                  <div id="ot-matches-list" class="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-400 italic text-center py-6">No hay partidos cargados para este torneo.</p>
+                  </div>
+                </div>
+
+                <!-- Lista de Parejas Inscritas -->
+                <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                  <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+                    <h4 class="text-xs font-black text-slate-700 uppercase tracking-wider">Parejas Inscritas</h4>
+                    <span id="ot-teams-badge" class="text-xs font-bold text-slate-500 font-mono">0 Equipos</span>
+                  </div>
+                  <div id="ot-teams-list" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs">
+                    <!-- Dinámico -->
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
         <!-- VISTA 3: 👥 CRM JUGADORES                                -->
         <!-- ======================================================== -->
         <div id="view-crm" class="view-section hidden w-full px-6 py-6 space-y-6 overflow-x-hidden">
@@ -2900,6 +3060,39 @@
               </div>
               <div id="crm-first-visit-chips" style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
                 <div style="font-size: 0.75rem; color: #78350F;">Cargando lista de nuevos clientes...</div>
+              </div>
+            </div>
+
+            <!-- TABLERO VISUAL: 🔮 TOP PRONOSTICADORES (POLA & GAMIFICACIÓN) -->
+            <div id="crm-predictions-leaderboard-banner" class="w-full bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border-2 border-dashed border-amber-300 rounded-3xl p-5 shadow-sm space-y-3 mb-6">
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-2xl">🔮</span>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                      Comunidad: Top Pronosticadores del Mes (Pola & Match Predictor)
+                      <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded-md bg-amber-500 text-slate-950">Sin Apuestas en Efectivo</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-600 font-medium">
+                      +3 pts por acertar partido regular, +5 pts por acertar campeón de torneo. Puntos canjeables en barra y tienda.
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="loadPredictionsLeaderboard()" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 shadow-xs transition flex items-center gap-1">
+                    <span>🔄</span> <span>Actualizar Podio</span>
+                  </button>
+                  <button type="button" onclick="openVotePredictionModal()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-black shadow-xs transition flex items-center gap-1">
+                    <span>🗳️</span> <span>Votar Pronóstico</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Fila de Tarjetas Top Pronosticadores -->
+              <div id="predictions-top-cards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-2">
+                <div class="p-3 bg-white rounded-2xl border border-slate-200 text-center text-xs text-slate-400 col-span-full">
+                  Cargando podio de pronósticos del mes...
+                </div>
               </div>
             </div>
 
@@ -6404,6 +6597,7 @@
       // 5. Disparadores diferidos envueltos en try/catch
       try {
         if ((activeName === 'crm' || rawId === 'crm') && typeof loadCRMPlayers === 'function') loadCRMPlayers();
+        if ((activeName === 'crm' || rawId === 'crm') && typeof loadPredictionsLeaderboard === 'function') loadPredictionsLeaderboard();
         if ((activeName === 'pos' || rawId === 'pos') && typeof loadPosData === 'function') loadPosData();
         if ((activeName === 'access' || rawId === 'access') && typeof loadAccessPresence === 'function') loadAccessPresence();
         if ((activeName === 'audit' || rawId === 'audit') && typeof loadAuditLogs === 'function') loadAuditLogs();
@@ -6412,6 +6606,9 @@
         if (activeName === 'access' && typeof loadAccessData === 'function') loadAccessData();
         if (activeName === 'audit' && typeof loadAuditData === 'function') loadAuditData();
         if (activeName === 'tournaments' && typeof loadTournaments === 'function') loadTournaments();
+        if ((activeName === 'official-tournaments' || rawId === 'official-tournaments' || rawId === 'view-official-tournaments') && typeof loadOfficialTournaments === 'function') {
+          loadOfficialTournaments();
+        }
         if ((activeName === 'academy' || rawId === 'academy') && typeof loadAcademyClasses === 'function') loadAcademyClasses();
         if ((activeName === 'memberships' || rawId === 'memberships') && typeof loadMembershipsData === 'function') loadMembershipsData();
         if (activeName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
@@ -13975,6 +14172,723 @@ Jugador: ${checkData.player_name}`);
     }
     window.submitClearDebtAndCheckout = submitClearDebtAndCheckout;
 
+    // =========================================================================
+    // MODULO: 🥇 GESTOR PARAMÉTRICO DE TORNEOS OFICIALES & BRACKETS
+    // =========================================================================
+    window.officialTournamentsCache = [];
+    window.selectedOfficialTournamentId = null;
+    window.currentOfficialCategoryFilter = 'ALL';
+
+    function filterOfficialTournamentsCategory(cat) {
+      window.currentOfficialCategoryFilter = cat;
+      ['all', '1ra', '2da', '3ra', '4ta', '5ta'].forEach(c => {
+        const btn = document.getElementById('btn-off-cat-' + c);
+        if (btn) {
+          if ((c === 'all' && cat === 'ALL') || c === cat) {
+            btn.classList.add('bg-indigo-600', 'text-white');
+            btn.classList.remove('text-slate-300');
+          } else {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('text-slate-300');
+          }
+        }
+      });
+      loadOfficialTournaments();
+    }
+    window.filterOfficialTournamentsCategory = filterOfficialTournamentsCategory;
+
+    async function loadOfficialTournaments() {
+      try {
+        const url = `/api/v1/official-tournaments/?category_filter=${encodeURIComponent(window.currentOfficialCategoryFilter || 'ALL')}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const list = await res.json();
+        window.officialTournamentsCache = list || [];
+
+        const sel = document.getElementById('official-tournament-selector');
+        if (sel) {
+          if (list.length === 0) {
+            sel.innerHTML = '<option value="">No hay torneos oficiales en esta categoría</option>';
+            renderOfficialTournamentDetails(null);
+            return;
+          }
+
+          sel.innerHTML = list.map(t => `
+            <option value="${t.id}" ${t.id === window.selectedOfficialTournamentId ? 'selected' : ''}>
+              🏆 ${escapeHtml(t.name)} (${t.category} - ${t.status})
+            </option>
+          `).join('');
+
+          if (!window.selectedOfficialTournamentId || !list.find(x => x.id === window.selectedOfficialTournamentId)) {
+            window.selectedOfficialTournamentId = list[0].id;
+          }
+          sel.value = window.selectedOfficialTournamentId;
+          const activeTourn = list.find(x => x.id === window.selectedOfficialTournamentId);
+          renderOfficialTournamentDetails(activeTourn);
+        }
+      } catch (err) {
+        console.error('Error cargando torneos oficiales:', err);
+      }
+    }
+    window.loadOfficialTournaments = loadOfficialTournaments;
+
+    function onSelectOfficialTournament(idStr) {
+      const id = parseInt(idStr, 10);
+      window.selectedOfficialTournamentId = id;
+      const tourn = (window.officialTournamentsCache || []).find(t => t.id === id);
+      renderOfficialTournamentDetails(tourn);
+    }
+    window.onSelectOfficialTournament = onSelectOfficialTournament;
+
+    function renderOfficialTournamentDetails(t) {
+      if (!t) {
+        document.getElementById('ot-meta-category').textContent = '-';
+        document.getElementById('ot-meta-match-rule').textContent = '-';
+        document.getElementById('ot-meta-format').textContent = '-';
+        document.getElementById('ot-meta-courts').textContent = '0 Canchas';
+        document.getElementById('ot-meta-status').textContent = 'SIN TORNEO';
+        document.getElementById('ot-groups-container').innerHTML = '<p class="text-xs text-slate-400 italic text-center py-6">No hay torneos disponibles. Crea uno nuevo con el botón superior.</p>';
+        document.getElementById('ot-matches-list').innerHTML = '<p class="text-xs text-slate-400 italic text-center py-6">Sin partidos programados.</p>';
+        document.getElementById('ot-teams-list').innerHTML = '<p class="text-xs text-slate-400 italic text-center py-4">Sin parejas inscritas.</p>';
+        return;
+      }
+
+      // Meta info
+      document.getElementById('ot-meta-category').textContent = `${t.category} (${t.sport_type})`;
+      const ruleNames = {
+        BEST_OF_3: 'Mejor de 3 Sets (a 6)',
+        BEST_OF_3_SHORT: 'Sets Cortos (a 4 games)',
+        ONE_LONG_SET_8: 'Set Pro Largo (a 8)',
+        TIMED_MATCH: `Por Tiempo (${t.match_duration_minutes}m)`
+      };
+      document.getElementById('ot-meta-match-rule').textContent = ruleNames[t.match_rule] || t.match_rule;
+      document.getElementById('ot-meta-format').textContent = t.format_type === 'GROUPS_PLAYOFFS' ? 'Grupos + Playoffs' : 'Eliminación + Backdraw';
+      document.getElementById('ot-meta-courts').textContent = `${(t.assigned_court_ids || []).length} Canchas Bloqueadas`;
+      
+      const stEl = document.getElementById('ot-meta-status');
+      if (stEl) {
+        stEl.textContent = t.status;
+        if (t.status === 'FINISHED') {
+          stEl.className = 'inline-block px-2.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800';
+        } else {
+          stEl.className = 'inline-block px-2.5 py-0.5 rounded text-[10px] font-black bg-blue-100 text-blue-800';
+        }
+      }
+
+      // 1. Grupos y Standings
+      const grpCont = document.getElementById('ot-groups-container');
+      const grpCount = document.getElementById('ot-groups-count');
+      if (grpCount) grpCount.textContent = `${(t.groups || []).length} Grupos`;
+
+      if (grpCont) {
+        if (!t.groups || t.groups.length === 0) {
+          grpCont.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-4">No se han generado grupos aún.</p>';
+        } else {
+          grpCont.innerHTML = t.groups.map(g => {
+            const standings = g.standings || [];
+            return `
+              <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
+                <div class="flex justify-between items-center">
+                  <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                    <span>${escapeHtml(g.name)}</span>
+                  </h4>
+                  <span class="text-[10px] font-bold text-slate-500">${standings.length} Parejas</span>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                  <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-slate-100/90 text-slate-600 font-extrabold text-[10px] uppercase">
+                      <tr>
+                        <th class="p-2.5">#</th>
+                        <th class="p-2.5">Pareja / Dupla</th>
+                        <th class="p-2.5 text-center">PJ</th>
+                        <th class="p-2.5 text-center">PG</th>
+                        <th class="p-2.5 text-center">PP</th>
+                        <th class="p-2.5 text-center">SF</th>
+                        <th class="p-2.5 text-center">SC</th>
+                        <th class="p-2.5 text-center">Dif Sets</th>
+                        <th class="p-2.5 text-center">PTS</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-[11px]">
+                      ${standings.length === 0 ? '<tr><td colspan="9" class="p-3 text-center text-slate-400">Sin parejas en este grupo aún.</td></tr>' : ''}
+                      ${standings.map((s, idx) => {
+                        const isQual = idx < 2;
+                        return `
+                          <tr class="${isQual ? 'bg-indigo-50/40 font-bold' : ''} hover:bg-slate-50 transition">
+                            <td class="p-2.5 font-mono ${isQual ? 'text-indigo-700 font-black' : 'text-slate-500'}">${idx + 1} ${isQual ? '⭐' : ''}</td>
+                            <td class="p-2.5 font-bold text-slate-900">${escapeHtml(s.team_name || 'Equipo')}</td>
+                            <td class="p-2.5 text-center font-mono">${s.pj || 0}</td>
+                            <td class="p-2.5 text-center font-mono text-emerald-700">${s.pg || 0}</td>
+                            <td class="p-2.5 text-center font-mono text-rose-600">${s.pp || 0}</td>
+                            <td class="p-2.5 text-center font-mono">${s.sf || 0}</td>
+                            <td class="p-2.5 text-center font-mono">${s.sc || 0}</td>
+                            <td class="p-2.5 text-center font-mono ${(s.sf - s.sc) >= 0 ? 'text-indigo-700' : 'text-slate-500'}">${(s.sf - s.sc) > 0 ? '+' : ''}${(s.sf || 0) - (s.sc || 0)}</td>
+                            <td class="p-2.5 text-center font-black font-mono text-indigo-900">${s.pts || 0}</td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // 2. Bracket Playoffs
+      const bracketCont = document.getElementById('ot-playoffs-bracket');
+      if (bracketCont) {
+        const champ = t.champion_team ? `
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 border-2 border-amber-400 text-center space-y-1">
+            <span class="text-2xl block">👑</span>
+            <span class="text-[10px] font-black uppercase tracking-wider text-amber-900 block">Campeones Oficiales</span>
+            <span class="text-xs font-black text-slate-950 block">${escapeHtml(t.champion_team)}</span>
+            <span class="text-[10px] font-bold text-emerald-700 block">+100 pts Ranking FPR</span>
+          </div>
+        ` : `
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1">
+            <span class="text-lg text-slate-400 block">🏆</span>
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Por Definir</span>
+            <span class="text-xs font-bold text-slate-600 block">Final en Juego</span>
+          </div>
+        `;
+
+        const runner = t.runner_up_team ? `
+          <div class="p-4 rounded-2xl bg-slate-100 border border-slate-300 text-center space-y-1">
+            <span class="text-xl block">🥈</span>
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-600 block">Subcampeones</span>
+            <span class="text-xs font-black text-slate-900 block">${escapeHtml(t.runner_up_team)}</span>
+            <span class="text-[10px] font-bold text-indigo-700 block">+50 pts Ranking</span>
+          </div>
+        ` : `
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1">
+            <span class="text-base text-slate-400 block">🥈</span>
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Subcampeón</span>
+            <span class="text-xs text-slate-400 block">Pendiente</span>
+          </div>
+        `;
+
+        bracketCont.innerHTML = `
+          <div class="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-200 space-y-2 text-xs">
+            <span class="text-[10px] font-black text-indigo-900 uppercase tracking-wider block">Semi 1</span>
+            <div class="bg-white p-2 rounded-lg border border-indigo-100 font-bold text-slate-800">1° Grupo A vs 2° Grupo B</div>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-200 space-y-2 text-xs">
+            <span class="text-[10px] font-black text-indigo-900 uppercase tracking-wider block">Semi 2</span>
+            <div class="bg-white p-2 rounded-lg border border-indigo-100 font-bold text-slate-800">1° Grupo B vs 2° Grupo A</div>
+          </div>
+          <div class="space-y-2">
+            ${champ}
+            ${runner}
+          </div>
+        `;
+      }
+
+      // 3. Partidos & Marcadores en Vivo
+      const matchesCont = document.getElementById('ot-matches-list');
+      const liveMatchesCount = document.getElementById('ot-live-matches-count');
+      if (liveMatchesCount) liveMatchesCount.textContent = `${(t.matches || []).length} Partidos`;
+
+      if (matchesCont) {
+        if (!t.matches || t.matches.length === 0) {
+          matchesCont.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-6">No hay cruces generados aún. Inscribe parejas en los grupos.</p>';
+        } else {
+          matchesCont.innerHTML = t.matches.map(m => {
+            const scStr = (m.scores || []).map(s => `${s.t1}-${s.t2}`).join(', ');
+            return `
+              <div class="p-3 bg-slate-50 hover:bg-white border border-slate-200 rounded-2xl transition space-y-2 shadow-2xs">
+                <div class="flex justify-between items-center text-[10px] font-bold text-slate-500">
+                  <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-700">${m.stage || 'GRUPO'}</span>
+                  <span class="font-mono text-indigo-600">${m.scheduled_time || 'Turno Progamado'}</span>
+                </div>
+                <div class="text-xs font-black text-slate-900 flex justify-between items-center">
+                  <span class="${m.winner_team_id === m.team1.id ? 'text-emerald-700' : ''}">${escapeHtml(m.team1.name)}</span>
+                  <span class="text-slate-400 text-[10px]">vs</span>
+                  <span class="${m.winner_team_id === m.team2.id ? 'text-emerald-700' : ''}">${escapeHtml(m.team2.name)}</span>
+                </div>
+                <div class="flex justify-between items-center pt-1 border-t border-slate-200 text-xs">
+                  <span class="font-mono font-black text-slate-800">${scStr ? `Sets: ${scStr}` : 'Marcador: 0-0'}</span>
+                  <button type="button" onclick="openRecordMatchScoreModal(${m.id}, '${escapeHtml(m.team1.name)}', '${escapeHtml(m.team2.name)}', ${m.team1.id}, ${m.team2.id})" class="px-2.5 py-1 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition shadow-2xs">
+                    ✏️ Cargar Marcador
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // 4. Parejas inscritas
+      const teamsCont = document.getElementById('ot-teams-list');
+      const teamsBadge = document.getElementById('ot-teams-badge');
+      if (teamsBadge) teamsBadge.textContent = `${(t.teams || []).length} Equipos`;
+
+      if (teamsCont) {
+        if (!t.teams || t.teams.length === 0) {
+          teamsCont.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-3">Sin parejas inscritas.</p>';
+        } else {
+          teamsCont.innerHTML = t.teams.map((tm, idx) => `
+            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+              <div>
+                <span class="font-bold text-slate-900 block">${idx + 1}. ${escapeHtml(tm.team_name)}</span>
+                <span class="text-[10px] text-slate-500">${tm.player1 ? tm.player1.name : ''} & ${tm.player2 ? tm.player2.name : ''}</span>
+              </div>
+              <span class="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold text-[9px]">${t.category}</span>
+            </div>
+          `).join('');
+        }
+      }
+    }
+
+    // --- Modales de Torneos Oficiales ---
+    function openCreateOfficialTournamentModal() {
+      // Cargar lista de pistas
+      const chk = document.getElementById('ot-create-courts-checklist');
+      if (chk) {
+        chk.innerHTML = (window.allCourts || [
+          { id: '2756f34a-7d24-4815-9f7e-6ed125ea5de7', name: 'Pista 1 (Panorámica)' },
+          { id: '3856f34a-7d24-4815-9f7e-6ed125ea5de8', name: 'Pista 2 (Central)' },
+          { id: '4956f34a-7d24-4815-9f7e-6ed125ea5de9', name: 'Pista 3' },
+          { id: '5a56f34a-7d24-4815-9f7e-6ed125ea5df0', name: 'Pista 4' },
+          { id: '6b56f34a-7d24-4815-9f7e-6ed125ea5df1', name: 'Pista 5' },
+        ]).map(c => `
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" name="ot_courts" value="${c.id}" checked class="rounded text-indigo-600" />
+            <span class="truncate">${escapeHtml(c.name)}</span>
+          </label>
+        `).join('');
+      }
+
+      const today = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
+      const startD = document.getElementById('ot-create-start-date');
+      const endD = document.getElementById('ot-create-end-date');
+      if (startD) startD.value = today;
+      if (endD) endD.value = today;
+
+      const modal = document.getElementById('modal-create-official-tournament');
+      if (modal) modal.style.display = 'flex';
+    }
+    window.openCreateOfficialTournamentModal = openCreateOfficialTournamentModal;
+
+    function closeCreateOfficialTournamentModal() {
+      const modal = document.getElementById('modal-create-official-tournament');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeCreateOfficialTournamentModal = closeCreateOfficialTournamentModal;
+
+    async function handleCreateOfficialTournamentSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('ot-create-name').value;
+      const category = document.getElementById('ot-create-category').value;
+      const sport = document.getElementById('ot-create-sport').value;
+      const format = document.getElementById('ot-create-format').value;
+      const rule = document.getElementById('ot-create-match-rule').value;
+      const duration = parseInt(document.getElementById('ot-create-duration').value || '60', 10);
+      const tiebreak = document.getElementById('ot-create-tiebreak').value;
+      const startD = document.getElementById('ot-create-start-date').value;
+      const endD = document.getElementById('ot-create-end-date').value || startD;
+      const startT = document.getElementById('ot-create-start-time').value;
+      const endT = document.getElementById('ot-create-end-time').value;
+
+      const checkedCourts = Array.from(document.querySelectorAll('input[name="ot_courts"]:checked')).map(cb => cb.value);
+      if (checkedCourts.length === 0) {
+        alert('Por favor selecciona al menos una pista a proteger y bloquear para el torneo.');
+        return;
+      }
+
+      const payload = {
+        name,
+        category,
+        sport_type: sport,
+        format_type: format,
+        match_rule: rule,
+        match_duration_minutes: duration,
+        tiebreak_rule: tiebreak,
+        start_date: startD,
+        end_date: endD,
+        start_time: startT,
+        end_time: endT,
+        assigned_court_ids: checkedCourts,
+        num_groups: 2
+      };
+
+      try {
+        const res = await fetch('/api/v1/official-tournaments/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(`✅ ${data.message}`);
+          closeCreateOfficialTournamentModal();
+          window.selectedOfficialTournamentId = data.tournament_id;
+          await loadOfficialTournaments();
+          if (typeof fetchSlots === 'function') fetchSlots();
+        } else {
+          const err = await res.json();
+          alert('Error creando torneo oficial: ' + (err.detail || 'Fallo'));
+        }
+      } catch (err) {
+        console.error('Error al crear torneo oficial:', err);
+        alert('Error de conexión al crear torneo oficial');
+      }
+    }
+    window.handleCreateOfficialTournamentSubmit = handleCreateOfficialTournamentSubmit;
+
+    function openRegisterOfficialTeamModal() {
+      if (!window.selectedOfficialTournamentId) {
+        alert('Selecciona primero un torneo oficial.');
+        return;
+      }
+
+      const p1 = document.getElementById('ot-team-player-1');
+      const p2 = document.getElementById('ot-team-player-2');
+      const grpSel = document.getElementById('ot-team-group');
+
+      const crmList = window.crmCustomersCache || [];
+      const opts = '<option value="">Selecciona jugador...</option>' + crmList.map(c => `
+        <option value="${c.id}">${escapeHtml(c.name)} (${c.category || '4ta'} - Tel: ${c.phone})</option>
+      `).join('');
+
+      if (p1) p1.innerHTML = opts;
+      if (p2) p2.innerHTML = opts;
+
+      const activeTourn = (window.officialTournamentsCache || []).find(t => t.id === window.selectedOfficialTournamentId);
+      if (grpSel && activeTourn && activeTourn.groups) {
+        grpSel.innerHTML = '<option value="">Automático (Round Robin)</option>' + activeTourn.groups.map(g => `
+          <option value="${g.id}">${escapeHtml(g.name)}</option>
+        `).join('');
+      }
+
+      const modal = document.getElementById('modal-register-official-team');
+      if (modal) modal.style.display = 'flex';
+    }
+    window.openRegisterOfficialTeamModal = openRegisterOfficialTeamModal;
+
+    function closeRegisterOfficialTeamModal() {
+      const modal = document.getElementById('modal-register-official-team');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeRegisterOfficialTeamModal = closeRegisterOfficialTeamModal;
+
+    async function handleRegisterOfficialTeamSubmit(e) {
+      e.preventDefault();
+      const teamName = document.getElementById('ot-team-name').value;
+      const c1 = parseInt(document.getElementById('ot-team-player-1').value, 10);
+      const c2 = parseInt(document.getElementById('ot-team-player-2').value, 10);
+      const grpVal = document.getElementById('ot-team-group').value;
+      const seedVal = document.getElementById('ot-team-seed').value;
+
+      if (!c1 || !c2) {
+        alert('Debes seleccionar ambos jugadores del CRM.');
+        return;
+      }
+      if (c1 === c2) {
+        alert('La pareja debe estar compuesta por dos jugadores diferentes.');
+        return;
+      }
+
+      const payload = {
+        tournament_id: window.selectedOfficialTournamentId,
+        team_name: teamName,
+        customer_id_1: c1,
+        customer_id_2: c2,
+        group_id: grpVal ? parseInt(grpVal, 10) : null,
+        seed: seedVal ? parseInt(seedVal, 10) : null
+      };
+
+      try {
+        const res = await fetch('/api/v1/official-tournaments/register-team', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(`✅ ${data.message}`);
+          closeRegisterOfficialTeamModal();
+          await loadOfficialTournaments();
+        } else {
+          const err = await res.json();
+          alert('Error al inscribir pareja: ' + (err.detail || 'Fallo'));
+        }
+      } catch (err) {
+        console.error('Error inscribiendo equipo:', err);
+        alert('Error de conexión al inscribir equipo');
+      }
+    }
+    window.handleRegisterOfficialTeamSubmit = handleRegisterOfficialTeamSubmit;
+
+    function openRecordMatchScoreModal(matchId, t1Name, t2Name, t1Id, t2Id) {
+      document.getElementById('rms-match-id').value = matchId;
+      document.getElementById('rms-team1-name').textContent = t1Name;
+      document.getElementById('rms-team2-name').textContent = t2Name;
+
+      const winSel = document.getElementById('rms-winner-select');
+      if (winSel) {
+        winSel.innerHTML = `
+          <option value="${t1Id}">Ganador: ${t1Name}</option>
+          <option value="${t2Id}">Ganador: ${t2Name}</option>
+        `;
+      }
+
+      const modal = document.getElementById('modal-record-match-score');
+      if (modal) modal.style.display = 'flex';
+    }
+    window.openRecordMatchScoreModal = openRecordMatchScoreModal;
+
+    function closeRecordMatchScoreModal() {
+      const modal = document.getElementById('modal-record-match-score');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeRecordMatchScoreModal = closeRecordMatchScoreModal;
+
+    async function handleRecordMatchScoreSubmit(e) {
+      e.preventDefault();
+      const matchId = parseInt(document.getElementById('rms-match-id').value, 10);
+      const s1t1 = parseInt(document.getElementById('rms-s1-t1').value || '6', 10);
+      const s1t2 = parseInt(document.getElementById('rms-s1-t2').value || '4', 10);
+      const s2t1 = parseInt(document.getElementById('rms-s2-t1').value || '6', 10);
+      const s2t2 = parseInt(document.getElementById('rms-s2-t2').value || '3', 10);
+      const s3t1 = parseInt(document.getElementById('rms-s3-t1').value || '0', 10);
+      const s3t2 = parseInt(document.getElementById('rms-s3-t2').value || '0', 10);
+      const winnerId = parseInt(document.getElementById('rms-winner-select').value, 10);
+
+      const scores = [
+        { set: 1, t1: s1t1, t2: s1t2 },
+        { set: 2, t1: s2t1, t2: s2t2 },
+      ];
+      if (s3t1 > 0 || s3t2 > 0) {
+        scores.push({ set: 3, t1: s3t1, t2: s3t2 });
+      }
+
+      const payload = {
+        match_id: matchId,
+        scores: scores,
+        winner_team_id: winnerId,
+        status: 'COMPLETED'
+      };
+
+      try {
+        const res = await fetch('/api/v1/official-tournaments/record-score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(`✅ ${data.message}`);
+          closeRecordMatchScoreModal();
+          await loadOfficialTournaments();
+        } else {
+          const err = await res.json();
+          alert('Error al guardar marcador: ' + (err.detail || 'Fallo'));
+        }
+      } catch (err) {
+        console.error('Error guardando marcador:', err);
+        alert('Error de conexión al guardar marcador');
+      }
+    }
+    window.handleRecordMatchScoreSubmit = handleRecordMatchScoreSubmit;
+
+    function openFinalizeOfficialTournamentModal() {
+      if (!window.selectedOfficialTournamentId) {
+        alert('Selecciona primero un torneo oficial.');
+        return;
+      }
+      const tourn = (window.officialTournamentsCache || []).find(t => t.id === window.selectedOfficialTournamentId);
+      if (!tourn || !tourn.teams || tourn.teams.length < 2) {
+        alert('El torneo debe contar con al menos 2 parejas para poder coronar campeones.');
+        return;
+      }
+
+      const champSel = document.getElementById('fot-champion-select');
+      const runSel = document.getElementById('fot-runner-select');
+
+      const opts = tourn.teams.map(tm => `
+        <option value="${tm.id}">${escapeHtml(tm.team_name)}</option>
+      `).join('');
+
+      if (champSel) champSel.innerHTML = opts;
+      if (runSel) {
+        runSel.innerHTML = opts;
+        if (tourn.teams.length > 1) runSel.selectedIndex = 1;
+      }
+
+      const modal = document.getElementById('modal-finalize-official-tournament');
+      if (modal) modal.style.display = 'flex';
+    }
+    window.openFinalizeOfficialTournamentModal = openFinalizeOfficialTournamentModal;
+
+    function closeFinalizeOfficialTournamentModal() {
+      const modal = document.getElementById('modal-finalize-official-tournament');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeFinalizeOfficialTournamentModal = closeFinalizeOfficialTournamentModal;
+
+    async function handleFinalizeOfficialTournamentSubmit(e) {
+      e.preventDefault();
+      const champId = parseInt(document.getElementById('fot-champion-select').value, 10);
+      const runnerId = parseInt(document.getElementById('fot-runner-select').value, 10);
+
+      if (champId === runnerId) {
+        alert('La pareja campeona y subcampeona no pueden ser la misma.');
+        return;
+      }
+
+      const payload = {
+        tournament_id: window.selectedOfficialTournamentId,
+        champion_team_id: champId,
+        runner_up_team_id: runnerId,
+        champions_points: 100,
+        runner_up_points: 50
+      };
+
+      try {
+        const res = await fetch('/api/v1/official-tournaments/finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(`👑 ¡Torneo Finalizado con Éxito!\n\n${data.message}`);
+          closeFinalizeOfficialTournamentModal();
+          await loadOfficialTournaments();
+          if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
+        } else {
+          const err = await res.json();
+          alert('Error al finalizar torneo: ' + (err.detail || 'Fallo'));
+        }
+      } catch (err) {
+        console.error('Error al finalizar torneo:', err);
+        alert('Error de conexión al finalizar torneo');
+      }
+    }
+    window.handleFinalizeOfficialTournamentSubmit = handleFinalizeOfficialTournamentSubmit;
+
+    // =========================================================================
+    // MODULO: 🔮 POLA Y PRONÓSTICOS DE PARTIDOS (COMUNIDAD & GAMIFICACIÓN)
+    // =========================================================================
+    async function loadPredictionsLeaderboard() {
+      const container = document.getElementById('predictions-top-cards');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/v1/predictions/leaderboard?limit=5');
+        if (!res.ok) return;
+        const data = await res.json();
+        const top = data.top_predictors || [];
+
+        if (top.length === 0) {
+          container.innerHTML = '<div class="p-3 bg-white rounded-2xl border border-slate-200 text-center text-xs text-slate-400 col-span-full">No hay pronósticos registrados este mes aún.</div>';
+          return;
+        }
+
+        container.innerHTML = top.map(p => `
+          <div class="p-3 bg-white rounded-2xl border border-amber-200/80 shadow-2xs space-y-1 text-center relative overflow-hidden">
+            <span class="absolute top-1 left-2 font-mono text-[10px] font-black text-amber-600">#${p.rank}</span>
+            <div class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-900 mx-auto flex items-center justify-center font-black text-xs">
+              ${p.avatar_url ? `<img src="${p.avatar_url}" class="w-full h-full rounded-full object-cover" />` : '🔮'}
+            </div>
+            <span class="font-extrabold text-xs text-slate-900 truncate block">${escapeHtml(p.customer_name)}</span>
+            <div class="flex items-center justify-center gap-1 font-mono text-[11px] font-black text-amber-700">
+              <span>🪙 ${p.monthly_points} pts</span>
+            </div>
+            <span class="text-[9px] font-bold text-slate-400 block">${p.hits_count} aciertos (${p.accuracy_pct}%)</span>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error('Error cargando leaderboard pronósticos:', e);
+      }
+    }
+    window.loadPredictionsLeaderboard = loadPredictionsLeaderboard;
+
+    function openVotePredictionModal() {
+      // 1. Poblar partidos próximos
+      const slotSel = document.getElementById('vote-slot-select');
+      const custSel = document.getElementById('vote-customer-select');
+
+      const slots = window.currentSlots || [];
+      const upcoming = slots.filter(s => s.status !== 'CANCELLED');
+      if (slotSel) {
+        if (upcoming.length === 0) {
+          slotSel.innerHTML = '<option value="">No hay partidos próximos disponibles</option>';
+        } else {
+          slotSel.innerHTML = upcoming.map(s => `
+            <option value="${s.id}">
+              ${s.date} ${s.start_time} - ${s.court_name || 'Cancha'} (${s.category || '4ta'})
+            </option>
+          `).join('');
+        }
+      }
+
+      // 2. Poblar clientes CRM
+      if (custSel) {
+        const crmList = window.crmCustomersCache || [];
+        custSel.innerHTML = '<option value="">Selecciona tu perfil...</option>' + crmList.map(c => `
+          <option value="${c.id}">${escapeHtml(c.name)} (${c.category || '4ta'})</option>
+        `).join('');
+      }
+
+      const modal = document.getElementById('modal-vote-prediction');
+      if (modal) modal.style.display = 'flex';
+    }
+    window.openVotePredictionModal = openVotePredictionModal;
+
+    function closeVotePredictionModal() {
+      const modal = document.getElementById('modal-vote-prediction');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeVotePredictionModal = closeVotePredictionModal;
+
+    async function handleVotePredictionSubmit(e) {
+      e.preventDefault();
+      const slotId = parseInt(document.getElementById('vote-slot-select').value, 10);
+      const custId = parseInt(document.getElementById('vote-customer-select').value, 10);
+      const winner = document.querySelector('input[name="predicted_winner"]:checked')?.value || 'TEAM_A';
+
+      if (!slotId || !custId) {
+        alert('Por favor selecciona el partido y tu perfil de jugador.');
+        return;
+      }
+
+      const payload = {
+        slot_id: slotId,
+        customer_id: custId,
+        predicted_winner: winner
+      };
+
+      try {
+        const res = await fetch('/api/v1/predictions/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(`🔮 ¡Pronóstico Registrado con Éxito!\n\n${data.message}`);
+          closeVotePredictionModal();
+          loadPredictionsLeaderboard();
+        } else {
+          const err = await res.json();
+          alert('Error al registrar pronóstico: ' + (err.detail || 'Fallo'));
+        }
+      } catch (err) {
+        console.error('Error al registrar pronóstico:', err);
+        alert('Error de conexión al registrar pronóstico');
+      }
+    }
+    window.handleVotePredictionSubmit = handleVotePredictionSubmit;
+
     function initOperationalDashboard() {
       // 2. AUTOCOMPLETADO ESTRICTO DE FECHA
       const dateInput = document.getElementById('selected-date') || document.querySelector('input[type="date"]');
@@ -16287,6 +17201,343 @@ PARTIDO CERRADO</textarea>
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: 🥇 CREAR TORNEO OFICIAL PARAMÉTRICO                -->
+  <!-- ======================================================== -->
+  <div id="modal-create-official-tournament" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 20px; width: 94%; max-width: 620px; padding: 1.75rem; box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.2); max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+        <div>
+          <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+            <span>🥇</span> <span>Crear Torneo Oficial (FPR / FedePádel)</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Configura el formato modular, reglas de sets y bloqueo de pistas.</p>
+        </div>
+        <button type="button" onclick="closeCreateOfficialTournamentModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="create-official-tournament-form" onsubmit="handleCreateOfficialTournamentSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nombre Oficial del Torneo:</label>
+          <input type="text" id="ot-create-name" required placeholder="Ej: Copa Aniversario Capital Pádel" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Categoría Oficial:</label>
+            <select id="ot-create-category" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+              <option value="1ra">1ra Categoría (Pro / Abierta)</option>
+              <option value="2da">2da Categoría</option>
+              <option value="3ra">3ra Categoría</option>
+              <option value="4ta" selected>4ta Categoría</option>
+              <option value="5ta">5ta Categoría</option>
+              <option value="6ta">6ta Categoría (Iniciación)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Disciplina Deportiva:</label>
+            <select id="ot-create-sport" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+              <option value="PADEL" selected>🎾 Pádel</option>
+              <option value="PICKLEBALL">🏓 Pickleball</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Formato de Competición:</label>
+            <select id="ot-create-format" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+              <option value="GROUPS_PLAYOFFS" selected>Grupos + Playoffs (Llave Final)</option>
+              <option value="DIRECT_ELIMINATION_BACKDRAW">Eliminación Directa + Cuadro B (Backdraw)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Regla Modular de Partido:</label>
+            <select id="ot-create-match-rule" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+              <option value="BEST_OF_3" selected>Mejor de 3 Sets (Sets a 6 games)</option>
+              <option value="BEST_OF_3_SHORT">Sets Cortos a 4 Games (Tiebreak al 4-4)</option>
+              <option value="ONE_LONG_SET_8">Set Pro Largo a 8 Games</option>
+              <option value="TIMED_MATCH">Partido por Tiempo (45 - 60 min)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Duración Máxima Partido (minutos):</label>
+            <input type="number" id="ot-create-duration" value="60" min="30" max="180" class="w-full px-3 py-2 text-xs font-mono font-bold border border-slate-300 rounded-xl" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Criterio de Desempate en Grupo:</label>
+            <select id="ot-create-tiebreak" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+              <option value="SETS_DIFF" selected>Diferencia de Sets (SF - SC)</option>
+              <option value="GAMES_DIFF">Diferencia de Games (GF - GC)</option>
+              <option value="HEAD_TO_HEAD">Enfrentamiento Directo (Head to Head)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Fecha Inicio:</label>
+            <input type="date" id="ot-create-start-date" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Fecha Fin:</label>
+            <input type="date" id="ot-create-end-date" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Hora Inicio Bloqueo:</label>
+            <input type="time" id="ot-create-start-time" value="08:00" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Hora Fin Bloqueo:</label>
+            <input type="time" id="ot-create-end-time" value="22:00" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Pistas Físicas Asignadas (Bloqueo Automático):</label>
+          <div id="ot-create-courts-checklist" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <!-- Dinámico de canchas -->
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeCreateOfficialTournamentModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition">
+            <span>✓</span> <span>Crear Torneo & Proteger Pistas</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: 👥 INSCRIBIR PAREJA CRM AL TORNEO -->
+  <div id="modal-register-official-team" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 20px; width: 92%; max-width: 520px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+            <span>👥</span> <span>Inscribir Pareja Oficial desde el CRM</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Valida automáticamente las categorías de ambos deportistas.</p>
+        </div>
+        <button type="button" onclick="closeRegisterOfficialTeamModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="register-official-team-form" onsubmit="handleRegisterOfficialTeamSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nombre de la Pareja / Dupla:</label>
+          <input type="text" id="ot-team-name" required placeholder="Ej: Los Galácticos (Gómez / Ruiz)" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Jugador 1 (Drive / Titular):</label>
+          <select id="ot-team-player-1" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+            <option value="">Selecciona jugador 1 del CRM...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Jugador 2 (Revés / Titular):</label>
+          <select id="ot-team-player-2" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+            <option value="">Selecciona jugador 2 del CRM...</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Grupo Asignado:</label>
+            <select id="ot-team-group" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+              <option value="">Automático (Round Robin)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Siembra / Seed (Opcional):</label>
+            <input type="number" id="ot-team-seed" min="1" max="16" placeholder="Ej: 1, 2" class="w-full px-3 py-2 text-xs font-mono font-bold border border-slate-300 rounded-xl" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeRegisterOfficialTeamModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs font-black bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition">
+            <span>✓</span> <span>Confirmar Inscripción</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: 🎾 REGISTRAR MARCADOR Y AVANZAR BRACKET -->
+  <div id="modal-record-match-score" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 20px; width: 92%; max-width: 480px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+            <span>🎾</span> <span>Registrar Marcador del Encuentro</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Recalcula inmediatamente la tabla de posiciones y cruces.</p>
+        </div>
+        <button type="button" onclick="closeRecordMatchScoreModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="record-match-score-form" onsubmit="handleRecordMatchScoreSubmit(event)" class="space-y-4">
+        <input type="hidden" id="rms-match-id" />
+        
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex justify-between items-center font-bold">
+          <span id="rms-team1-name" class="text-indigo-900">Dupla 1</span>
+          <span class="text-slate-400">VS</span>
+          <span id="rms-team2-name" class="text-emerald-900">Dupla 2</span>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-700">Marcador por Sets:</label>
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <!-- Set 1 -->
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="text-[10px] font-black text-slate-500 uppercase block">Set 1</span>
+              <div class="flex items-center justify-center gap-1">
+                <input type="number" id="rms-s1-t1" min="0" max="7" value="6" class="w-10 text-center font-mono font-bold py-1 border rounded" />
+                <span>-</span>
+                <input type="number" id="rms-s1-t2" min="0" max="7" value="4" class="w-10 text-center font-mono font-bold py-1 border rounded" />
+              </div>
+            </div>
+            <!-- Set 2 -->
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="text-[10px] font-black text-slate-500 uppercase block">Set 2</span>
+              <div class="flex items-center justify-center gap-1">
+                <input type="number" id="rms-s2-t1" min="0" max="7" value="6" class="w-10 text-center font-mono font-bold py-1 border rounded" />
+                <span>-</span>
+                <input type="number" id="rms-s2-t2" min="0" max="7" value="3" class="w-10 text-center font-mono font-bold py-1 border rounded" />
+              </div>
+            </div>
+            <!-- Set 3 -->
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="text-[10px] font-black text-slate-500 uppercase block">Set 3 (STB)</span>
+              <div class="flex items-center justify-center gap-1">
+                <input type="number" id="rms-s3-t1" min="0" max="15" value="0" class="w-10 text-center font-mono font-bold py-1 border rounded" />
+                <span>-</span>
+                <input type="number" id="rms-s3-t2" min="0" max="15" value="0" class="w-10 text-center font-mono font-bold py-1 border rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Pareja Ganadora del Partido:</label>
+          <select id="rms-winner-select" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+            <option value="">Selecciona ganador...</option>
+          </select>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeRecordMatchScoreModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition">
+            <span>✓</span> <span>Guardar Marcador</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: 🥇 FINALIZAR TORNEO & ASIGNAR ASCENSOS -->
+  <div id="modal-finalize-official-tournament" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 20px; width: 92%; max-width: 500px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+            <span>🥇</span> <span>Finalización Oficial & Coronación</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Asigna puntos de ranking (+100/+50) y dispara sugerencia de ascenso.</p>
+        </div>
+        <button type="button" onclick="closeFinalizeOfficialTournamentModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="finalize-official-tournament-form" onsubmit="handleFinalizeOfficialTournamentSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Pareja Campeona (+100 pts de Ranking):</label>
+          <select id="fot-champion-select" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-emerald-900">
+            <option value="">Selecciona campeones...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Pareja Subcampeona (+50 pts de Ranking):</label>
+          <select id="fot-runner-select" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-slate-800">
+            <option value="">Selecciona subcampeones...</option>
+          </select>
+        </div>
+
+        <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs text-amber-900 font-medium">
+          ⚠️ Los jugadores campeones que acumulen 2 títulos o victorias consecutivas recibirán automáticamente la insignia <strong>"Ascenso Sugerido a Categoría Superior"</strong> en el CRM.
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeFinalizeOfficialTournamentModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs font-black bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-xl shadow-sm transition">
+            <span>🏆</span> <span>Coronar y Actualizar Ranking</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: 🔮 VOTAR PRONÓSTICO DE PARTIDO (POLA & COMUNIDAD) -->
+  <div id="modal-vote-prediction" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999;">
+    <div style="background: #FFFFFF; border-radius: 20px; width: 92%; max-width: 460px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+            <span>🔮</span> <span>Pronosticar Partido (Pola de la Comunidad)</span>
+          </h3>
+          <p class="text-xs text-amber-600 font-bold mt-0.5">¡Gana +3 puntos mensuales si aciertas el ganador!</p>
+        </div>
+        <button type="button" onclick="closeVotePredictionModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="vote-prediction-form" onsubmit="handleVotePredictionSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Seleccionar Partido Próximo:</label>
+          <select id="vote-slot-select" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+            <option value="">Cargando partidos disponibles...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Jugador que Vota (CRM):</label>
+          <select id="vote-customer-select" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+            <option value="">Selecciona tu perfil de jugador...</option>
+          </select>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-700">Tu Pronóstico Ganador:</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-indigo-500 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+              <input type="radio" name="predicted_winner" value="TEAM_A" checked class="text-indigo-600" />
+              <span class="text-xs font-black text-slate-800">🎾 Pareja / Equipo A</span>
+            </label>
+            <label class="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50">
+              <input type="radio" name="predicted_winner" value="TEAM_B" class="text-emerald-600" />
+              <span class="text-xs font-black text-slate-800">🎾 Pareja / Equipo B</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeVotePredictionModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs font-black bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl shadow-sm transition">
+            <span>🗳️</span> <span>Confirmar Voto</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

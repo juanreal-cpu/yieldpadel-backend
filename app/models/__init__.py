@@ -22,6 +22,22 @@ from app.models.product import Product, Order, OrderItem, Sale
 from app.models.access import ClubPresence
 from app.models.whatsapp_conversation import WhatsAppConversation, WhatsAppMessage
 from app.models.accounting import DailyAccountingLedger
+from app.models.predictions import (
+    MatchPrediction,
+    PredictionLeaderboard,
+    PredictedWinner,
+    PredictionStatus,
+)
+from app.models.official_tournaments import (
+    OfficialTournament,
+    TournamentTeam,
+    TournamentGroup,
+    TournamentMatch,
+    TournamentFormatType,
+    TournamentMatchRule,
+    TournamentTiebreakRule,
+    OfficialTournamentStatus,
+)
 
 __all__ = [
     "Club",
@@ -48,6 +64,18 @@ __all__ = [
     "WhatsAppConversation",
     "WhatsAppMessage",
     "DailyAccountingLedger",
+    "MatchPrediction",
+    "PredictionLeaderboard",
+    "PredictedWinner",
+    "PredictionStatus",
+    "OfficialTournament",
+    "TournamentTeam",
+    "TournamentGroup",
+    "TournamentMatch",
+    "TournamentFormatType",
+    "TournamentMatchRule",
+    "TournamentTiebreakRule",
+    "OfficialTournamentStatus",
     "SlotMode",
     "SlotStatus",
     "HoldStatus",

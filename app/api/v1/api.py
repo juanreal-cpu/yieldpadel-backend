@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import slots, holds, webhooks, customers, tournaments, auth, audit, courts, admin, analytics, pos, access, memberships, academy, wallet, accounting
+from app.api.v1.endpoints import slots, holds, webhooks, customers, tournaments, auth, audit, courts, admin, analytics, pos, access, memberships, academy, wallet, accounting, predictions, official_tournaments
 
 api_router = APIRouter()
 api_router.include_router(slots.router, prefix="/slots", tags=["slots"])
@@ -19,6 +19,8 @@ api_router.include_router(memberships.router, prefix="/memberships", tags=["memb
 api_router.include_router(academy.router, prefix="/academy", tags=["academy"])
 api_router.include_router(wallet.router, prefix="/wallet", tags=["Wallet & Capital Points"])
 api_router.include_router(accounting.router, prefix="/accounting", tags=["accounting"])
+api_router.include_router(predictions.router, prefix="/predictions", tags=["predictions"])
+api_router.include_router(official_tournaments.router, prefix="/official-tournaments", tags=["official-tournaments"])
 
 # Ruta pública de clubes y sedes para selector multi-tenant
 api_router.add_api_route("/clubs/public", auth.get_public_clubs, methods=["GET"], tags=["clubs"], response_model=auth.List[auth.ClubPublicResponse])
