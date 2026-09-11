@@ -28,6 +28,38 @@ from app.models.incident import PlayerIncident
 
 logger = logging.getLogger("yieldpadel.whatsapp")
 
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
+# -----------------------------------------------------------------------------
+# IA Concierge (Gemini) - Conocimiento del club y tono humano
+# -----------------------------------------------------------------------------
+
+CONCIERGE_SYSTEM_INSTRUCTION = """Eres el asistente concierge oficial de Capital Pádel Club (sede Maloka, Bogotá).
+Tu tono es cálido, servicial, deportivo y formal-cercano (español de Colombia con trato respetuoso).
+
+INFORMACIÓN INSTITUCIONAL DEL CLUB:
+- Ubicación: Complejo Maloka, Bogotá D.C.
+- Horario: Lunes a Domingo de 06:00 a 24:00 (último turno inicia 22:00/22:30).
+- Instalaciones: 5 canchas de pádel (Canchas 1 a 4 azules, Cancha 5 negra), 2 pistas de pickleball, 1 cancha de arena para vóley y sala de consolas.
+- Servicios: Tienda/POS (venta y alquiler de palas, bolas), Bar/Cafetería, vestieres, parqueadero cubierto.
+- Actividades: Torneos Americanos entre semana y fines de semana, Academia formativa y partidos abiertos comunitarios.
+
+REGLAS DE INTERACCIÓN:
+- Si el usuario saluda por primera vez o dice 'hola', responde con el saludo cálido y humano presentándote como el equipo de Capital Pádel Club y ofreciendo ayuda en reservas, torneos o servicios.
+- Si pregunta qué es el club, horarios, servicios o precios generales, responde de forma clara y directa usando emojis deportivos sobrios (🎾, 📍, ⌚, 🏆).
+- Si pregunta por disponibilidad específica de canchas para hoy o mañana, invoca la consulta a la base de datos de time_slots y presenta las opciones disponibles con su precio en pesos colombianos.
+- Si el mensaje corresponde a una lista de partido con raquetas (🎾) o comandos 'voy'/'me bajo', deriva al flujo transaccional existente sin alterarlo."""
+
+
+def is_transactional_message(text: str) -> bool:
+    """True si el mensaje trae raquetas (🎾) o comandos rígidos 'voy'/'me bajo' que deben ir al flujo transaccional existente."""
+    if not text:
+        return False
+    return bool("🎾" in text or JOIN_REGEX.search(text) or DROP_REGEX.search(text))
+
 # Cache en memoria de mensajes enviados y recibidos por ID (wamid) para resolver citas
 MESSAGES_CACHE: Dict[str, str] = {}
 
@@ -1336,6 +1368,56 @@ async def process_availability_query(
         f"{body_sections}\n\n"
         f"💬 *¿Cómo reservar?* Responde citando el turno o escribe *'VOY [Hora] [Cancha]'* para apartar de inmediato."
     )
+
+
+async def generate_concierge_reply(
+    message_text: str,
+    sender_phone: str,
+    db: Optional[AsyncSession] = None,
+) -> str:
+    """
+    Concierge conversacional (Gemini) con conocimiento institucional del club.
+    Si el mensaje pregunta por disponibilidad, delega en la consulta real a time_slots
+    en lugar de improvisar horarios. Para el resto (saludo, info general, precios),
+    responde con el tono cálido definido en CONCIERGE_SYSTEM_INSTRUCTION.
+    """
+    clean = (message_text or "").strip()
+
+    if db is not None and detect_intent(clean) == "AVAILABILITY":
+        return await process_availability_query(db, query_text=clean)
+
+    api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
+    if not genai or not api_key:
+        logger.warning("Gemini no configurado (falta google-generativeai o GEMINI_API_KEY); usando respuesta de respaldo.")
+        return (
+            "🎾 *¡Hola! Bienvenido a Capital Pádel Club* 🎾\n\n"
+            "📍 Estamos en el Complejo Maloka, Bogotá D.C.\n"
+            "⌚ Horario: Lunes a Domingo de 06:00 a 24:00 (último turno 22:00/22:30).\n"
+            "🏆 Contamos con 5 canchas de pádel, 2 de pickleball, cancha de arena para vóley y sala de consolas.\n\n"
+            "Cuéntame en qué te podemos ayudar: reservas, torneos o servicios del club."
+        )
+
+    try:
+        model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(
+            model_name=model_name,
+            system_instruction=CONCIERGE_SYSTEM_INSTRUCTION,
+        )
+        response = await model.generate_content_async(clean or "hola")
+        ai_text = (getattr(response, "text", None) or "").strip()
+        if not ai_text:
+            raise ValueError("Respuesta vacía de Gemini")
+        return ai_text
+    except Exception as exc:
+        logger.error(f"Error generando respuesta de concierge IA para {sender_phone}: {exc}", exc_info=True)
+        return (
+            "🎾 *Capital Pádel Club* 🎾\n\n"
+            "En este momento nuestro asistente virtual no está disponible, pero con gusto te ayudamos:\n"
+            "• Escribe *'qué horas hay'* para ver disponibilidad de hoy.\n"
+            "• Escribe *'voy'* o *'me bajo'* para gestionar tu cupo en un partido.\n\n"
+            "Un miembro de nuestro equipo te contactará en breve. ¡Gracias por tu paciencia! 🏆"
+        )
 
 
 async def generate_availability_broadcast(

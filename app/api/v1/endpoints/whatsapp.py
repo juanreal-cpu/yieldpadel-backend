@@ -12,8 +12,10 @@ from app.core.timezone import get_bogota_today
 from app.services.whatsapp import (
     MESSAGES_CACHE,
     generate_availability_broadcast,
+    generate_concierge_reply,
     generate_promo_urgent_broadcast,
     get_player_incidents,
+    is_transactional_message,
     normalize_phone,
     process_incoming_whatsapp_message,
     send_whatsapp_message,
@@ -106,15 +108,23 @@ async def receive_webhook(
 
                     print(f"[WHATSAPP INCOMING] Mensaje de {sender_phone} ({sender_name}): '{message_text}' | Quoted: {bool(quoted_text)}")
 
-                    # Procesar mensaje a través del servicio con contexto de cita
-                    reply_text = await process_incoming_whatsapp_message(
-                        db=db,
-                        sender_phone=sender_phone,
-                        sender_name=sender_name,
-                        raw_text=message_text,
-                        quoted_text=quoted_text,
-                        context=context,
-                    )
+                    # Enrutar: mensajes con raquetas (🎾) o comandos rígidos ('voy'/'me bajo')
+                    # van al flujo transaccional existente; el resto lo atiende el concierge IA.
+                    if is_transactional_message(message_text):
+                        reply_text = await process_incoming_whatsapp_message(
+                            db=db,
+                            sender_phone=sender_phone,
+                            sender_name=sender_name,
+                            raw_text=message_text,
+                            quoted_text=quoted_text,
+                            context=context,
+                        )
+                    else:
+                        reply_text = await generate_concierge_reply(
+                            message_text=message_text,
+                            sender_phone=sender_phone,
+                            db=db,
+                        )
 
                     if reply_text:
                         print(f"[WHATSAPP OUTGOING PREPARED]:\n{reply_text}\n")
