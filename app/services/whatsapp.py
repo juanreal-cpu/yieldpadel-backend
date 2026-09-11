@@ -25,6 +25,8 @@ from app.core.timezone import BOGOTA_TZ, get_bogota_now, get_bogota_today
 from app.models.court import Court
 from app.models.slot import ClientTier, SlotMode, SlotStatus, TimeSlot
 from app.models.incident import PlayerIncident
+from app.models.customer import Customer
+from app.models.membership import MembershipPlan
 
 logger = logging.getLogger("yieldpadel.whatsapp")
 
@@ -43,7 +45,8 @@ Tu tono es cálido, servicial, deportivo y formal-cercano (español de Colombia 
 INFORMACIÓN INSTITUCIONAL DEL CLUB:
 - Ubicación: Complejo Maloka, Bogotá D.C.
 - Horario: Lunes a Domingo de 06:00 a 24:00 (último turno inicia 22:00/22:30).
-- Instalaciones: 5 canchas de pádel (Canchas 1 a 4 azules, Cancha 5 negra), 2 pistas de pickleball, 1 cancha de arena para vóley y sala de consolas.
+- Deportes soportados: Pádel (5 pistas), Pickleball (2 pistas), Vóley (1 cancha) y Consolas.
+- Instalaciones: 5 canchas de pádel (Canchas 1 a 4 azules, Cancha 5 negra), 2 pistas de pickleball, 1 Cancha de Vóley Normal (superficie reglamentaria convencional, no de arena) y sala de consolas.
 - Servicios: Tienda/POS (venta y alquiler de palas, bolas), Bar/Cafetería, vestieres, parqueadero cubierto.
 - Actividades: Torneos Americanos entre semana y fines de semana, Academia formativa y partidos abiertos comunitarios.
 
@@ -113,7 +116,7 @@ def _local_concierge_fallback(clean_text: str) -> str:
             "🎾 *Nuestras instalaciones en Capital Pádel Club:*\n\n"
             "• 5 canchas de pádel (4 azules + 1 negra)\n"
             "• 2 pistas de pickleball 🏓\n"
-            "• 1 cancha de arena para vóley 🏐\n"
+            "• 1 Cancha de Vóley Normal 🏐\n"
             "• Sala de consolas 🎮\n\n"
             "¿Quieres que te muestre la disponibilidad de hoy?"
         )
@@ -159,6 +162,94 @@ MESSAGES_CACHE: Dict[str, str] = {}
 # Parámetros del sistema de cancelación
 CANCELLATION_GRACE_MINUTES = getattr(settings, "CANCELLATION_GRACE_MINUTES", 30)
 CONFIRMATION_GRACE_MINUTES = 10
+
+# -----------------------------------------------------------------------------
+# Memoria de sesión conversacional por teléfono (TTL) + handoff humano
+# -----------------------------------------------------------------------------
+
+SESSION_TTL_MINUTES = 10
+HUMAN_HANDOFF_PAUSE_MINUTES = 15
+MAX_UNKNOWN_RETRIES = 2
+
+# Estado temporal por número: {"expires_at", "awaiting_sport", "sport", "last_offered_slots",
+# "last_slot_id", "paused_for_human", "paused_until", "unknown_retry_count"}
+CONVERSATION_SESSIONS: Dict[str, dict] = {}
+
+SPORT_CHOICE_MAP = {
+    "PADEL": [r"\bp[aá]del\b", "🎾"],
+    "PICKLEBALL": [r"\bpickleball\b", "🏓"],
+    "VOLLEYBALL": [r"\bv[oó]ley(bol)?\b", "🏐"],
+}
+
+HUMAN_HANDOFF_KEYWORDS = [
+    r"\basesor\b",
+    r"\bhablar\s+con\s+alguien\b",
+    r"\bhablar\s+con\s+(?:un\s+)?humano\b",
+    r"\bpersona\s+real\b",
+    r"\batenci[oó]n\s+humana\b",
+    r"\bcomunicar(?:me)?\s+con\s+(?:el\s+)?club\b",
+    r"\bcomunicar(?:me)?\s+con\s+recepci[oó]n\b",
+    r"\bquiero\s+hablar\s+con\s+(?:un\s+)?(?:asesor|persona|alguien)\b",
+    r"\bnecesito\s+ayuda\s+humana\b",
+    r"\brecepci[oó]n\b.*\bhablar\b",
+]
+HUMAN_HANDOFF_REGEX = re.compile("|".join(HUMAN_HANDOFF_KEYWORDS), re.IGNORECASE)
+
+HUMAN_HANDOFF_MESSAGE = (
+    "Para brindarte una atención personalizada en este caso, te comunico directamente con nuestro asesor en sede:\n"
+    "📲 WhatsApp Recepción: https://wa.me/573123489466?text=Hola%2C%20necesito%20apoyo%20con%20una%20consulta"
+)
+
+
+def get_session(phone: str) -> dict:
+    """Obtiene (o crea/renueva) el estado de sesión conversacional de un número, respetando el TTL de 10 min."""
+    key = normalize_phone(phone)
+    now = get_bogota_now()
+    session = CONVERSATION_SESSIONS.get(key)
+    if session and session.get("expires_at") and session["expires_at"] < now:
+        # Expiró la memoria conversacional (no la pausa por handoff humano, que tiene su propio vencimiento)
+        paused_until = session.get("paused_until")
+        session = {
+            "paused_for_human": bool(paused_until and paused_until > now),
+            "paused_until": paused_until,
+        }
+        CONVERSATION_SESSIONS[key] = session
+    if session is None:
+        session = {}
+        CONVERSATION_SESSIONS[key] = session
+    session["expires_at"] = now + timedelta(minutes=SESSION_TTL_MINUTES)
+    return session
+
+
+def is_paused_for_human(phone: str) -> bool:
+    """True si el número tiene respuestas automáticas pausadas por un handoff humano reciente (15 min)."""
+    key = normalize_phone(phone)
+    session = CONVERSATION_SESSIONS.get(key)
+    if not session:
+        return False
+    paused_until = session.get("paused_until")
+    if session.get("paused_for_human") and paused_until and paused_until > get_bogota_now():
+        return True
+    if paused_until and paused_until <= get_bogota_now():
+        session["paused_for_human"] = False
+        session["paused_until"] = None
+    return False
+
+
+def trigger_human_handoff(phone: str) -> None:
+    """Marca el número como derivado a asesor humano, pausando respuestas automáticas por 15 minutos."""
+    session = get_session(phone)
+    session["paused_for_human"] = True
+    session["paused_until"] = get_bogota_now() + timedelta(minutes=HUMAN_HANDOFF_PAUSE_MINUTES)
+    session["unknown_retry_count"] = 0
+
+
+def is_human_handoff_request(text: str) -> bool:
+    """True si el usuario pide explícitamente hablar con un asesor humano."""
+    if not text:
+        return False
+    return bool(HUMAN_HANDOFF_REGEX.search(text))
+
 
 # -----------------------------------------------------------------------------
 # Expresiones regulares para reconocimiento de intenciones
@@ -1350,6 +1441,9 @@ async def process_incoming_whatsapp_message(
     Orquestador principal de mensajes entrantes.
     Resuelve el texto citado desde context si no viene explícito.
     """
+    if is_paused_for_human(sender_phone):
+        return ""
+
     if not quoted_text and context:
         quoted_text = (
             context.get("quoted_message", {}).get("body")
@@ -1372,7 +1466,7 @@ async def process_incoming_whatsapp_message(
     elif intent == "LIST":
         return await process_list_intent(db, sender_phone, sender_name, raw_text)
     else:
-        return await generate_concierge_reply(message_text=raw_text, sender_phone=sender_phone, db=db)
+        return await generate_concierge_reply(message_text=raw_text, sender_phone=sender_phone, db=db, sender_name=sender_name)
 
 
 async def process_availability_query(
@@ -1506,48 +1600,465 @@ async def generate_quick_availability_reply(
     )
 
 
+ASK_SPORT_MESSAGE = "¿En qué deporte te gustaría jugar hoy? (🎾 Pádel, 🏓 Pickleball o 🏐 Vóley)"
+
+
+def detect_sport_choice(text: str) -> Optional[str]:
+    """Detecta explícitamente Pádel/Pickleball/Vóley en el texto (para el flujo de disponibilidad por deporte)."""
+    if not text:
+        return None
+    for sport, (pattern, emoji) in SPORT_CHOICE_MAP.items():
+        if emoji in text or re.search(pattern, text, re.IGNORECASE):
+            return sport
+    return None
+
+
+async def offer_slots_for_sport(
+    db: AsyncSession,
+    session: dict,
+    sport: str,
+    target_date: Optional[date] = None,
+) -> str:
+    """Lista los turnos AVAILABLE de un deporte y guarda los índices ofrecidos en la sesión para reserva por número."""
+    today = get_bogota_today()
+    now_bogota = get_bogota_now()
+    d = target_date or today
+    day_label = "hoy" if d == today else "mañana"
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date == d,
+            TimeSlot.sport_type == sport,
+            cast(TimeSlot.status, String) == "AVAILABLE",
+            TimeSlot.slot_type == "MATCH",
+        )
+        .order_by(TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+    if d == today:
+        current_time = now_bogota.time()
+        slots = [s for s in slots if s.start_time > current_time]
+
+    session["sport"] = sport
+    session["awaiting_sport"] = False
+    emoji = get_sport_emoji(sport)
+
+    if not slots:
+        session["last_offered_slots"] = {}
+        return f"{emoji} Por el momento no hay turnos libres de {sport.title()} para {day_label}. ¿Deseas consultar otra fecha o deporte?"
+
+    offered = {}
+    lines = []
+    for i, s in enumerate(slots[:5], start=1):
+        c_name = s.court.name if s.court else "Cancha"
+        st = s.start_time.strftime("%I:%M %p").lstrip("0")
+        et = s.end_time.strftime("%I:%M %p").lstrip("0")
+        price = f"${int(s.total_price or 0):,}".replace(",", ".")
+        lines.append(f"{i}. {st} - {et} | {c_name} - {price} COP")
+        offered[i] = s.id
+
+    session["last_offered_slots"] = offered
+    lines_str = "\n".join(lines)
+    return (
+        f"{emoji} *Turnos libres de {sport.title()} para {day_label}:*\n"
+        f"{lines_str}\n\n"
+        f"Responde con el *número* de la opción para apartarla de inmediato."
+    )
+
+
+async def book_slot_for_phone(
+    db: AsyncSession,
+    slot_id: int,
+    sender_phone: str,
+    sender_name: Optional[str] = None,
+) -> str:
+    """Ejecuta la reserva real de un turno para el número que escribe (status pasa a PARTIALLY_BOOKED/FULLY_BOOKED)."""
+    res = await db.execute(
+        select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id)
+    )
+    slot = res.scalar_one_or_none()
+    if not slot:
+        return "Ese turno ya no existe. ¿Quieres ver otras opciones disponibles?"
+
+    participants = to_participants_list(slot.players_names)
+    norm_phone = normalize_phone(sender_phone)
+    if any(p.get("phone") and normalize_phone(p["phone"]) == norm_phone for p in participants):
+        return "Ya tienes un cupo reservado en ese turno. ¡Nos vemos en la pista! 🎾"
+
+    if slot.status == SlotStatus.BLOCKED or len(participants) >= (slot.capacity or 4):
+        return "Lo sentimos, ese turno ya no está disponible. ¿Quieres ver otras opciones?"
+
+    display_name = sender_name or mask_phone(sender_phone)
+    participants.append({
+        "spot_index": len(participants) + 1,
+        "phone": norm_phone,
+        "display_name": display_name,
+        "client_tier": "ESTANDAR",
+        "host_phone": None,
+    })
+
+    slot.players_names = participants
+    slot.booked_spots = len(participants)
+    slot.status = SlotStatus.FULLY_BOOKED if len(participants) >= (slot.capacity or 4) else SlotStatus.PARTIALLY_BOOKED
+    await db.commit()
+
+    c_name = slot.court.name if slot.court else "tu cancha"
+    st = slot.start_time.strftime("%I:%M %p").lstrip("0")
+    et = slot.end_time.strftime("%I:%M %p").lstrip("0")
+    return f"✅ ¡Listo! Reservaste el turno de {st} - {et} en *{c_name}*. ¡Nos vemos en la pista! 🎾"
+
+
+async def handle_sport_and_booking_flow(
+    db: AsyncSession,
+    sender_phone: str,
+    sender_name: Optional[str],
+    clean: str,
+    session: dict,
+) -> Optional[str]:
+    """Orquesta: preguntar deporte -> listar turnos -> reservar por número de opción."""
+    bare_number = re.match(r"^\s*([1-9])\s*$", clean)
+    if bare_number and session.get("last_offered_slots"):
+        idx = int(bare_number.group(1))
+        slot_id = session["last_offered_slots"].get(idx)
+        if not slot_id:
+            return "Esa opción no está disponible. Por favor elige uno de los números de la lista enviada."
+        return await book_slot_for_phone(db, slot_id, sender_phone, sender_name)
+
+    sport_choice = detect_sport_choice(clean)
+
+    if session.get("awaiting_sport") and sport_choice:
+        return await offer_slots_for_sport(db, session, sport_choice)
+
+    if detect_intent(clean) == "AVAILABILITY" or QUICK_AVAILABILITY_REGEX.search(clean):
+        target_date = get_bogota_today()
+        if re.search(r"\bma[ñn]ana\b", clean, re.IGNORECASE):
+            target_date = target_date + timedelta(days=1)
+        if sport_choice:
+            return await offer_slots_for_sport(db, session, sport_choice, target_date=target_date)
+        session["awaiting_sport"] = True
+        return ASK_SPORT_MESSAGE
+
+    return None
+
+
+SOCIAL_QUERY_REGEX = re.compile(r"qui[eé]nes?\s+(son|est[aá]n|hay|juegan)|qui[eé]n\s+m[aá]s\s+va", re.IGNORECASE)
+
+
+async def handle_social_query(db: AsyncSession, clean: str, session: dict) -> Optional[str]:
+    """Responde '¿quiénes son?' listando jugadores del turno abierto en contexto (categoría + puntos de ranking)."""
+    if not SOCIAL_QUERY_REGEX.search(clean):
+        return None
+
+    slot_id = session.get("last_slot_id")
+    if not slot_id and session.get("last_offered_slots"):
+        slot_id = next(iter(session["last_offered_slots"].values()), None)
+    if not slot_id:
+        return "Cuéntame la hora o cancha del turno que quieres consultar 🙂"
+
+    res = await db.execute(select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id))
+    slot = res.scalar_one_or_none()
+    if not slot:
+        return "No encontré ese turno. ¿Puedes indicarme la hora o cancha?"
+
+    participants = to_participants_list(slot.players_names)
+    if not participants:
+        return "Aún no hay jugadores inscritos en ese turno. ¡Sé el primero en anotarte! 🎾"
+
+    lines = []
+    for p in participants:
+        name = p.get("display_name") or "Jugador"
+        phone = p.get("phone")
+        category = "4ta"
+        points = 0
+        if phone:
+            cres = await db.execute(select(Customer).where(Customer.phone == normalize_phone(phone)))
+            cust = cres.scalars().first()
+            if cust:
+                category = cust.category
+                points = cust.ranking_points
+        lines.append(f"• {name} ({category} - {points} pts)")
+
+    st = slot.start_time.strftime("%I:%M %p").lstrip("0")
+    c_name = slot.court.name if slot.court else "cancha"
+    return f"👥 *Jugadores inscritos en el turno de {st} ({c_name}):*\n" + "\n".join(lines)
+
+
+PROFILE_SCORE_REGEX = re.compile(r"qu[eé]\s+puntaje\s+tengo|qu[eé]\s+categor[ií]a\s+soy|mi\s+categor[ií]a|mis?\s+puntos", re.IGNORECASE)
+WALLET_BALANCE_REGEX = re.compile(r"cu[aá]nto\s+cr[eé]dito\s+tengo|\bsaldo\b|capital\s+points", re.IGNORECASE)
+TOP_RANKING_REGEX = re.compile(r"top\s*3\s+de\s+([a-záéíóúñ0-9]+)", re.IGNORECASE)
+
+
+async def handle_profile_query(db: AsyncSession, sender_phone: str, clean: str) -> Optional[str]:
+    """Responde consultas de perfil CRM: puntaje/categoría, saldo (wallet_balance) y Top 3 por categoría."""
+    top_match = TOP_RANKING_REGEX.search(clean)
+    if top_match:
+        category = top_match.group(1).strip()
+        res = await db.execute(
+            select(Customer)
+            .where(Customer.category.ilike(category))
+            .order_by(Customer.ranking_points.desc())
+            .limit(3)
+        )
+        top_players = list(res.scalars().all())
+        if not top_players:
+            return f"Aún no tenemos jugadores registrados en la categoría {category}."
+        medals = ["🥇", "🥈", "🥉"]
+        lines = [f"{medals[i]} {p.name} - {p.ranking_points} pts" for i, p in enumerate(top_players)]
+        return f"🏆 *Top 3 de {top_players[0].category}:*\n" + "\n".join(lines)
+
+    norm_phone = normalize_phone(sender_phone)
+
+    if PROFILE_SCORE_REGEX.search(clean):
+        res = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+        cust = res.scalars().first()
+        if not cust:
+            return "No encontramos tu perfil registrado aún. ¡Juega tu primer partido para empezar a sumar puntos! 🎾"
+        return (
+            f"🏅 *Tu perfil en Capital Pádel Club:*\n"
+            f"• Categoría: {cust.category}\n"
+            f"• Puntos de ranking: {cust.ranking_points} pts\n"
+            f"• Victorias consecutivas: {cust.consecutive_wins}"
+        )
+
+    if WALLET_BALANCE_REGEX.search(clean):
+        res = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+        cust = res.scalars().first()
+        balance = cust.wallet_balance if cust else 0.0
+        return f"💳 Tienes *${int(balance):,}* COP en Capital Points disponibles.".replace(",", ".")
+
+    return None
+
+
+ACTIVE_RESERVATION_WHERE_REGEX = re.compile(r"d[oó]nde\s+es\s+mi\s+cancha|d[oó]nde\s+juego", re.IGNORECASE)
+ACTIVE_RESERVATION_WITH_WHOM_REGEX = re.compile(r"con\s+qui[eé]n(es)?\s+voy\s+a\s+jugar|mis\s+compa[ñn]eros", re.IGNORECASE)
+
+
+async def _find_active_slot_today(db: AsyncSession, sender_phone: str) -> Optional[TimeSlot]:
+    today = get_bogota_today()
+    now_time = get_bogota_now().time()
+    norm_phone = normalize_phone(sender_phone)
+    res = await db.execute(
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(TimeSlot.date == today, TimeSlot.slot_type == "MATCH")
+        .order_by(TimeSlot.start_time.asc())
+    )
+    slots = list(res.scalars().all())
+    candidates = []
+    for s in slots:
+        participants = to_participants_list(s.players_names)
+        if any(p.get("phone") and normalize_phone(p["phone"]) == norm_phone for p in participants):
+            candidates.append(s)
+    if not candidates:
+        return None
+    upcoming = [s for s in candidates if s.end_time > now_time]
+    return upcoming[0] if upcoming else candidates[0]
+
+
+async def handle_active_reservation_query(db: AsyncSession, sender_phone: str, clean: str) -> Optional[str]:
+    """Responde '¿dónde es mi cancha?' y '¿con quién voy a jugar?' consultando el turno activo de hoy."""
+    wants_where = bool(ACTIVE_RESERVATION_WHERE_REGEX.search(clean))
+    wants_with_whom = bool(ACTIVE_RESERVATION_WITH_WHOM_REGEX.search(clean))
+    if not wants_where and not wants_with_whom:
+        return None
+
+    slot = await _find_active_slot_today(db, sender_phone)
+    if not slot:
+        return "No tienes ninguna cancha asignada para hoy. ¿Deseas consultar turnos libres?"
+
+    if wants_where:
+        c_name = slot.court.name if slot.court else "Cancha"
+        st = slot.start_time.strftime("%I:%M %p").lstrip("0")
+        return f"📍 Tu turno de hoy es en *{c_name}* a las *{st}*."
+
+    norm_phone = normalize_phone(sender_phone)
+    participants = to_participants_list(slot.players_names)
+    others = [p for p in participants if not (p.get("phone") and normalize_phone(p["phone"]) == norm_phone)]
+    if not others:
+        return "Por ahora eres el único inscrito en tu turno de hoy. ¡Invita a más jugadores! 🎾"
+    lines = []
+    for p in others:
+        name = p.get("display_name") or "Jugador"
+        category = "4ta"
+        if p.get("phone"):
+            cres = await db.execute(select(Customer).where(Customer.phone == normalize_phone(p["phone"])))
+            cust = cres.scalars().first()
+            if cust:
+                category = cust.category
+        lines.append(f"• {name} ({category})")
+    return "🎾 *Tus compañeros de turno hoy:*\n" + "\n".join(lines)
+
+
+RATES_QUESTION_REGEX = re.compile(r"cu[aá]nto\s+vale\s+la\s+hora|cu[aá]nto\s+vale\s+el\s+turno|valor\s+de\s+la\s+hora|valor\s+del\s+turno", re.IGNORECASE)
+MEMBERSHIP_QUESTION_REGEX = re.compile(r"membres[ií]as?|planes?\s+de\s+socio|tapia|coello|gal[aá]n|chingotto|lebr[oó]n", re.IGNORECASE)
+
+MEMBERSHIP_PROMO_TEXT = (
+    "💡 Recuerda que con nuestras Membresías Oficiales (Tapia, Coello, Galán, Chingotto, Lebrón) "
+    "obtienes tarifas preferenciales, horas fijas incluidas, clases de academia y bebidas sin costo."
+)
+
+
+async def handle_rates_and_membership_query(db: AsyncSession, clean: str) -> Optional[str]:
+    """Responde preguntas de tarifas (valle/pico + promo membresías) y detalle de planes de membresía."""
+    if RATES_QUESTION_REGEX.search(clean):
+        return (
+            "💰 *Tarifas en Capital Pádel Club:*\n\n"
+            "La tarifa depende de la franja horaria:\n"
+            "• 🌿 *Tarifa Valle* (antes de las 6:00 p.m.)\n"
+            "• 🔥 *Tarifa Pico* (noches y fines de semana)\n\n"
+            f"{MEMBERSHIP_PROMO_TEXT}"
+        )
+
+    if MEMBERSHIP_QUESTION_REGEX.search(clean):
+        res = await db.execute(select(MembershipPlan).where(MembershipPlan.is_active == True))  # noqa: E712
+        plans = list(res.scalars().all())
+        if not plans:
+            return MEMBERSHIP_PROMO_TEXT
+        lines = []
+        for p in plans:
+            st = p.start_time.strftime("%I:%M %p").lstrip("0")
+            et = p.end_time.strftime("%I:%M %p").lstrip("0")
+            perks = []
+            if p.includes_academy_classes:
+                perks.append(f"{p.monthly_classes_count} clases de academia/mes")
+            if p.includes_beverage_perk:
+                perks.append("bebida sin costo")
+            if p.americano_discount_pct:
+                perks.append(f"{p.americano_discount_pct}% dcto. en torneos")
+            perks_str = ", ".join(perks) if perks else "tarifas preferenciales"
+            lines.append(f"• *{p.name.title()}*: horario {st} - {et}, {perks_str}")
+        return "🏆 *Nuestras Membresías Oficiales:*\n" + "\n".join(lines)
+
+    return None
+
+
+TOURNAMENTS_QUESTION_REGEX = re.compile(r"torneos?|americanos?", re.IGNORECASE)
+ACADEMY_QUESTION_REGEX = re.compile(r"academia|clases?\s+de\s+p[aá]del|niveles?\s+de\s+academia", re.IGNORECASE)
+
+
+async def handle_tournaments_and_academy_query(db: AsyncSession, clean: str) -> Optional[str]:
+    """Informa torneos americanos activos y niveles de la Academia de Pádel; registra intención de inscripción."""
+    wants_enroll = bool(re.search(r"quiero|inscrib|apartar|reservar\s+cupo", clean, re.IGNORECASE))
+
+    if TOURNAMENTS_QUESTION_REGEX.search(clean):
+        today = get_bogota_today()
+        res = await db.execute(
+            select(TimeSlot)
+            .where(
+                TimeSlot.slot_type.in_(["AMERICANO", "TOURNAMENT"]),
+                TimeSlot.date >= today,
+                TimeSlot.is_finished == False,  # noqa: E712
+            )
+            .order_by(TimeSlot.date.asc(), TimeSlot.start_time.asc())
+        )
+        slots = list(res.scalars().all())
+        seen = set()
+        lines = []
+        for s in slots:
+            key = (s.tournament_name, s.date, s.start_time)
+            if key in seen:
+                continue
+            seen.add(key)
+            date_str = s.date.strftime("%d/%m")
+            st = s.start_time.strftime("%I:%M %p").lstrip("0")
+            price = f"${int(s.total_price or 0):,}".replace(",", ".")
+            lines.append(f"• *{s.tournament_name or 'Torneo Americano'}* - {date_str} {st} | Inscripción: {price} COP")
+            if len(lines) >= 4:
+                break
+        if not lines:
+            return "🏆 Por ahora no tenemos Torneos Americanos programados. ¡Muy pronto anunciaremos nuevas fechas!"
+        header = "🏆 *Torneos Americanos disponibles:*\n" + "\n".join(lines)
+        if wants_enroll:
+            return header + "\n\nCuéntanos tu nombre completo y la pareja/torneo de tu interés y registramos tu inscripción."
+        return header + "\n\n¿Deseas inscribirte en alguno? Escribe *'quiero inscribirme'* + el torneo."
+
+    if ACADEMY_QUESTION_REGEX.search(clean):
+        header = (
+            "🎓 *Academia de Pádel - Niveles disponibles:*\n"
+            "• *Iniciación* (6ta - 7ma)\n"
+            "• *Media* (4ta - 5ta)\n"
+            "• *Avanzado*\n"
+        )
+        if wants_enroll:
+            return header + "\nCuéntanos tu nombre y el nivel/horario de tu interés y te confirmamos el cupo."
+        return header + "\n¿Quieres solicitar un cupo? Escribe *'quiero cupo en [nivel]'*."
+
+    return None
+
+
 async def generate_concierge_reply(
     message_text: str,
     sender_phone: str,
     db: Optional[AsyncSession] = None,
+    sender_name: Optional[str] = None,
 ) -> str:
     """
     Concierge conversacional (Gemini) con conocimiento institucional del club.
-    - Saludo corto y estricto ('hola', 'buenas', 'inicio', 'start'...) -> mensaje de bienvenida fijo.
-    - Pregunta de disponibilidad/reservas -> consulta real a time_slots (formato compacto).
-    - Resto de preguntas en lenguaje natural -> Gemini (o base de conocimiento local si Gemini no está disponible).
+    Orden de resolución: pausa por handoff humano -> handoff explícito -> saludo estricto ->
+    flujo de deporte/reserva -> consultas sociales/CRM/reserva activa -> tarifas/membresías ->
+    torneos/academia -> Gemini (o base de conocimiento local) con handoff automático tras 2 fallos.
     """
     clean = (message_text or "").strip()
 
+    if is_paused_for_human(sender_phone):
+        return ""
+
+    if is_human_handoff_request(clean):
+        trigger_human_handoff(sender_phone)
+        return HUMAN_HANDOFF_MESSAGE
+
+    session = get_session(sender_phone)
+
     if is_simple_greeting(clean):
+        session["unknown_retry_count"] = 0
         return WELCOME_MESSAGE
 
-    if db is not None and (detect_intent(clean) == "AVAILABILITY" or QUICK_AVAILABILITY_REGEX.search(clean)):
-        target_date = get_bogota_today()
-        if re.search(r"\bma[ñn]ana\b", clean, re.IGNORECASE):
-            target_date = target_date + timedelta(days=1)
-        return await generate_quick_availability_reply(db, target_date=target_date)
+    if db is not None:
+        for handler in (
+            lambda: handle_sport_and_booking_flow(db, sender_phone, sender_name, clean, session),
+            lambda: handle_social_query(db, clean, session),
+            lambda: handle_profile_query(db, sender_phone, clean),
+            lambda: handle_active_reservation_query(db, sender_phone, clean),
+            lambda: handle_rates_and_membership_query(db, clean),
+            lambda: handle_tournaments_and_academy_query(db, clean),
+        ):
+            reply = await handler()
+            if reply:
+                session["unknown_retry_count"] = 0
+                return reply
 
     api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
-    if not genai or not api_key:
+    ai_text = None
+    if genai and api_key:
+        try:
+            model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                system_instruction=CONCIERGE_SYSTEM_INSTRUCTION,
+            )
+            response = await model.generate_content_async(clean or "hola")
+            ai_text = (getattr(response, "text", None) or "").strip() or None
+        except Exception as exc:
+            logger.error(f"Error generando respuesta de concierge IA para {sender_phone}: {exc}", exc_info=True)
+            ai_text = None
+    else:
         logger.warning("Gemini no configurado (falta google-generativeai o GEMINI_API_KEY); usando base de conocimiento local.")
-        return _local_concierge_fallback(clean)
 
-    try:
-        model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(
-            model_name=model_name,
-            system_instruction=CONCIERGE_SYSTEM_INSTRUCTION,
-        )
-        response = await model.generate_content_async(clean or "hola")
-        ai_text = (getattr(response, "text", None) or "").strip()
-        if not ai_text:
-            raise ValueError("Respuesta vacía de Gemini")
+    if ai_text:
+        session["unknown_retry_count"] = 0
         return ai_text
-    except Exception as exc:
-        logger.error(f"Error generando respuesta de concierge IA para {sender_phone}: {exc}", exc_info=True)
-        return _local_concierge_fallback(clean)
+
+    # No hubo coincidencia en ningún handler ni respuesta útil de Gemini: contar reintento fallido
+    session["unknown_retry_count"] = session.get("unknown_retry_count", 0) + 1
+    if session["unknown_retry_count"] >= MAX_UNKNOWN_RETRIES:
+        trigger_human_handoff(sender_phone)
+        return HUMAN_HANDOFF_MESSAGE
+    return _local_concierge_fallback(clean)
+
 
 
 async def generate_availability_broadcast(

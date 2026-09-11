@@ -124,6 +124,7 @@ async def receive_webhook(
                             message_text=message_text,
                             sender_phone=sender_phone,
                             db=db,
+                            sender_name=sender_name,
                         )
 
                     if reply_text:
