@@ -402,9 +402,9 @@
     /* 2. BANNER EJECUTIVO SUPERIOR (HEADER OSCURO DE CONTRASTE) */
     /* ======================================================== */
     .executive-banner {
-      background-color: #0F172A;
+      background-color: #0a0f1d;
       color: #F8FAFC;
-      padding: 0.625rem 1.25rem;
+      padding: 0.75rem 1.5rem;
       border-bottom: 1px solid #1E293B;
       box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
     }
@@ -562,7 +562,7 @@
     /* ======================================================== */
     .saas-work-area {
       flex: 1;
-      padding: 1rem 1.25rem;
+      padding: 0;
       max-width: 100%;
     }
 
@@ -2170,8 +2170,10 @@
       gap: 0.5rem !important;
     }
 
-    #main-content, main, .main-layout {
+    #main-content {
       margin-left: 190px !important;
+      padding: 0 !important;
+      width: calc(100vw - 190px) !important;
     }
 
     .sport-pill {
@@ -2416,7 +2418,7 @@
     </aside>
 
     <!-- 2. CONTENIDO PRINCIPAL SAAS -->
-    <main id="main-content" class="flex-1 ml-48 min-h-screen bg-slate-50 overflow-x-hidden overflow-y-auto max-w-full px-5 py-4">
+    <main id="main-content" class="min-h-screen bg-slate-50 overflow-x-hidden overflow-y-auto">
 
       <!-- ======================================================== -->
       <!-- 2. BANNER EJECUTIVO SUPERIOR (HEADER OSCURO #0F172A)     -->
@@ -2517,16 +2519,16 @@
         <!-- ======================================================== -->
         <!-- VISTA 1: 📅 MATRIZ CALENDARIO (OPERACIÓN EN TIEMPO REAL) -->
         <!-- ======================================================== -->
-        <div id="view-calendar" class="view-section">
+        <div id="view-calendar" class="view-section w-full px-6 py-4 space-y-4">
           
           <!-- BARRA DE HERRAMIENTAS OPERATIVA (Card Blanca 2 Filas) -->
 <!-- ======================================================== -->
           <!-- CABECERA PROFESIONAL SAAS: SEPARACIÓN EN 2 NIVELES LIMPIOS -->
           <!-- ======================================================== -->
-          <div id="calendar-controls" class="mb-6 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div id="calendar-controls" class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             
-            <!-- NIVEL 1: Header de Acciones Principales (bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between) -->
-            <div class="bg-white border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+            <!-- NIVEL 1: Header de Acciones Principales -->
+            <div class="w-full flex flex-wrap items-center justify-between gap-3 py-4 bg-white border-b border-slate-200">
               <!-- Izquierda: Navegación Temporal y Fecha -->
               <div class="flex items-center gap-3">
                 <div class="flex items-center rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
@@ -2559,8 +2561,8 @@
               </div>
             </div>
 
-<!-- NIVEL 2: Filtros y Deporte (bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4) -->
-            <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+<!-- NIVEL 2: Filtros y Deporte -->
+            <div class="w-full flex flex-wrap items-center justify-between gap-3 py-3 bg-slate-50 border-b border-slate-200">
               <!-- Segmented Control de Deportes (Tabs tipo pastilla) -->
               <div class="flex items-center gap-1.5" id="sport-selector-container">
                 <button type="button" onclick="setSportFilter('PADEL')" id="btn-sport-padel" class="btn-sport-filter active inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg shadow-sm transition font-bold" style="background-color: #0f172a; color: #ffffff; border: 1px solid #0f172a;">
@@ -2620,7 +2622,7 @@
               </div>
 
                             <!-- Contenedor Matriz Calendario Profesional Claro -->
-              <div class="calendar-wrapper" id="calendar-matrix-container" data-alias="calendar-wrapper">
+              <div class="calendar-wrapper w-full mt-2" id="calendar-matrix-container" data-alias="calendar-wrapper">
                 <div id="loading-spinner" class="hidden" style="display: none;"></div>
                 <div id="calendar-matrix" class="calendar-matrix" data-alias="slots-grid">
                   <div id="grid-loader" class="hidden" style="display: none; grid-column: 1/-1; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; text-align: center; color: #64748B;">
