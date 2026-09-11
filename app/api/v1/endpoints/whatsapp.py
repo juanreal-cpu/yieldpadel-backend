@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
@@ -215,6 +215,7 @@ from app.services import get_club_config
 class BroadcastRequest(BaseModel):
     target_date: Optional[str] = None
     group_id: Optional[str] = None
+    sport: Optional[str] = "PADEL"
 
 
 @router.post("/broadcast-availability")
@@ -222,10 +223,11 @@ async def broadcast_availability(
     payload: Optional[BroadcastRequest] = None,
     target_date: Optional[str] = Query(None),
     group_id: Optional[str] = Query(None),
+    sport: Optional[str] = Query("PADEL"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Despacha el resumen de turnos libres del día al grupo de WhatsApp.
+    Despacha el resumen de turnos libres del día al grupo de WhatsApp filtrado por deporte.
     Permite enviar parámetros por JSON body o Query params.
     """
     d_str = (payload.target_date if payload and payload.target_date else None) or target_date
@@ -245,12 +247,14 @@ async def broadcast_availability(
         or group_id
         or default_group
     )
+    sport_filter = ((payload.sport if payload and payload.sport else None) or sport or "PADEL").upper().strip()
 
-    broadcast_text, total_slots = await generate_availability_broadcast(db, target_date=parsed_date)
+    broadcast_text, total_slots = await generate_availability_broadcast(db, target_date=parsed_date, sport=sport_filter)
     sent_success = await send_whatsapp_message(to_phone=target_group, message_body=broadcast_text)
 
     return {
         "status": "sent" if sent_success else "simulated",
+        "sport": sport_filter,
         "target_date": str(parsed_date),
         "total_available_slots": total_slots,
         "total_slots": total_slots,
@@ -264,6 +268,7 @@ async def broadcast_promo_urgent(
     payload: Optional[BroadcastRequest] = None,
     target_date: Optional[str] = Query(None),
     group_id: Optional[str] = Query(None),
+    sport: Optional[str] = Query("PADEL"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -286,16 +291,72 @@ async def broadcast_promo_urgent(
         or group_id
         or default_group
     )
+    sport_filter = ((payload.sport if payload and payload.sport else None) or sport or "PADEL").upper().strip()
 
-    broadcast_text, total_critical = await generate_promo_urgent_broadcast(db, target_date=parsed_date)
+    broadcast_text, total_critical = await generate_promo_urgent_broadcast(db, target_date=parsed_date, sport=sport_filter)
     sent_success = await send_whatsapp_message(to_phone=target_group, message_body=broadcast_text)
 
     return {
         "status": "sent" if sent_success else "simulated",
+        "sport": sport_filter,
         "target_date": str(parsed_date),
         "total_critical_slots": total_critical,
         "recipient": target_group,
         "broadcast_text": broadcast_text,
+    }
+
+
+@router.post("/notify-expiring-memberships")
+async def notify_expiring_memberships(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Consulta socios cuya membresía vence en 2 días o menos y despacha
+    recordatorio personalizado por WhatsApp con opción de renovación inmediata.
+    """
+    today = get_bogota_today()
+    target_threshold = today + timedelta(days=2)
+
+    stmt = (
+        select(Customer)
+        .where(
+            Customer.membership_end_date != None,  # noqa: E711
+            Customer.membership_end_date >= today,
+            Customer.membership_end_date <= target_threshold,
+        )
+    )
+    res = await db.execute(stmt)
+    customers = list(res.scalars().all())
+
+    sent_count = 0
+    notified = []
+
+    for c in customers:
+        if not c.phone:
+            continue
+        days_left = (c.membership_end_date - today).days
+        plan_name = (c.membership_tier or "Socio").title()
+        day_str = "hoy mismo" if days_left == 0 else ("mañana" if days_left == 1 else f"en {days_left} días")
+
+        msg = (
+            f"👑 *¡Hola {c.name}! Recordatorio de tu Membresía Capital Pádel Club* 🎾\n\n"
+            f"Te recordamos que tu *Membresía {plan_name}* vence {day_str} ({c.membership_end_date.strftime('%d/%m/%Y')}).\n\n"
+            "Para no perder tus beneficios exclusivos (horas preferenciales, clases en academia y bebida de cortesía), "
+            "puedes renovarla directamente respondiendo a este mensaje o acercándote al counter del club.\n\n"
+            "¡Será un gusto seguir compartiendo la pista contigo!"
+        )
+
+        success = await send_whatsapp_message(to_phone=c.phone, message_body=msg)
+        await log_conversation_message(db, c.phone, msg, direction="bot", player_name=c.name)
+        if success:
+            sent_count += 1
+        notified.append({"customer_id": c.id, "name": c.name, "phone": c.phone, "days_left": days_left})
+
+    return {
+        "status": "success",
+        "notified_count": len(notified),
+        "messages_sent": sent_count,
+        "customers": notified,
     }
 
 

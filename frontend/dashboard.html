@@ -10520,14 +10520,15 @@ ${data.message}`);
         btn.textContent = 'Enviando...';
       }
       try {
-        const query = selectedDate ? `?date=${selectedDate}` : '';
+        const sportParam = encodeURIComponent(window.currentSport || 'PADEL');
+        const query = selectedDate ? `?date=${selectedDate}&sport=${sportParam}` : `?sport=${sportParam}`;
         const res = await fetch(`${API_BASE}/api/v1/whatsapp/broadcast-availability${query}`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
           if (typeof addEvent === 'function') {
-            addEvent('WhatsApp Difundido', `Resumen de disponibilidad (${data.total_available_slots || 0} turnos) enviado`, 'green');
+            addEvent('WhatsApp Difundido', `Resumen de disponibilidad (${data.total_available_slots || 0} turnos de ${window.currentSport || 'PADEL'}) enviado`, 'green');
           }
-          window.showDarkToast('Difusión Enviada con Éxito', 'Se notificó la disponibilidad de turnos al canal oficial de WhatsApp del club.');
+          window.showDarkToast('Difusión Enviada con Éxito', `Se notificó la disponibilidad de ${window.currentSport || 'Pádel'} al canal oficial de WhatsApp.`);
         } else {
           window.showDarkToast('Error en Difusión', data.detail || 'Error al enviar difusión WhatsApp');
         }
@@ -10551,13 +10552,14 @@ ${data.message}`);
         btn.innerHTML = '<span>⏳</span> <span>Aplicando remate...</span>';
       }
       try {
-        const res = await fetch('/api/v1/whatsapp/broadcast-promo-urgent', { method: 'POST' });
+        const sportParam = encodeURIComponent(window.currentSport || 'PADEL');
+        const res = await fetch(`/api/v1/whatsapp/broadcast-promo-urgent?sport=${sportParam}`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
           if (typeof addEvent === 'function') {
-            addEvent('Remate Flash Activado', `${data.total_critical_slots || 0} turnos críticos enviados con descuento`, 'amber');
+            addEvent('Remate Flash Activado', `${data.total_critical_slots || 0} turnos críticos (${window.currentSport || 'PADEL'}) enviados con descuento`, 'amber');
           }
-          window.showDarkToast('Remate Flash Activado (-25%)', 'La oferta especial de última hora fue difundida por WhatsApp.');
+          window.showDarkToast('Remate Flash Activado (-25%)', `La oferta especial de última hora para ${window.currentSport || 'Pádel'} fue difundida por WhatsApp.`);
           if (typeof fetchSlots === 'function') await fetchSlots();
         } else {
           window.showDarkToast('Error en Remate Flash', data.detail || 'Error en Remate Flash');

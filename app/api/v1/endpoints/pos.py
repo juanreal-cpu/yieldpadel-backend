@@ -16,6 +16,7 @@ from app.models.product import INITIAL_DUMMY_PRODUCTS, Order, OrderItem, Product
 from app.models.slot import HoldStatus, PaymentStatus, SlotStatus, TimeSlot
 from app.models.accounting import DailyAccountingLedger
 from app.services.audit import log_activity
+from app.services.whatsapp import send_whatsapp_message, log_conversation_message, normalize_phone
 
 logger = logging.getLogger("yieldpadel.pos")
 
@@ -613,6 +614,35 @@ async def add_item_to_slot_order(
     await db.commit()
     await db.refresh(order)
 
+    # Notificación transaccional de consumo / hidratación por WhatsApp
+    target_phone = None
+    if payload.customer_id:
+        c_stmt = select(Customer).where(Customer.id == payload.customer_id)
+        c_ent = (await db.execute(c_stmt)).scalars().first()
+        if c_ent and c_ent.phone:
+            target_phone = c_ent.phone
+    elif payload.player_name and payload.player_name not in ("Mesa / Cuenta General", "Cliente Cancha"):
+        c_stmt = select(Customer).where(Customer.name.ilike(payload.player_name.strip()))
+        c_ent = (await db.execute(c_stmt)).scalars().first()
+        if c_ent and c_ent.phone:
+            target_phone = c_ent.phone
+
+    if target_phone:
+        sub_cop = f"${int(subtotal):,}".replace(",", ".")
+        item_msg = (
+            f"🥤 *¡Qué bien que te hidrates!* 🎾\n\n"
+            f"Hola {cust_player_name}, registramos en tu cuenta:\n"
+            f"• Consumo: {qty}x {product.name}\n"
+            f"• Subtotal: {sub_cop} COP\n"
+            f"• Turno #{payload.slot_id}\n\n"
+            f"¡Sigue dándolo todo en la pista!"
+        )
+        try:
+            await send_whatsapp_message(to_phone=target_phone, message_body=item_msg)
+            await log_conversation_message(db, target_phone, item_msg, direction="bot", player_name=cust_player_name)
+        except Exception as e:
+            logger.warning(f"Error enviando WhatsApp de consumo: {e}")
+
     # Cargar relaciones completas para respuesta
     stmt_full = (
         select(Order)
@@ -729,6 +759,38 @@ async def checkout_order(
     await db.commit()
     await db.refresh(order)
 
+    # Enviar recibo digital por WhatsApp al cliente titular
+    cust_receipt_phone = None
+    if order.customer_id:
+        c_stmt = select(Customer).where(Customer.id == order.customer_id)
+        c_ent = (await db.execute(c_stmt)).scalars().first()
+        if c_ent and c_ent.phone:
+            cust_receipt_phone = c_ent.phone
+    elif order.customer_name and order.customer_name not in ("Cliente Mostrador", "Cliente Cancha", "Cliente Barra"):
+        c_stmt = select(Customer).where(Customer.name.ilike(order.customer_name.strip()))
+        c_ent = (await db.execute(c_stmt)).scalars().first()
+        if c_ent and c_ent.phone:
+            cust_receipt_phone = c_ent.phone
+
+    if cust_receipt_phone:
+        tot_cop = f"${int(total_to_pay):,}".replace(",", ".")
+        receipt_msg = (
+            f"🧾 *RECIBO DE PAGO DIGITAL - CAPITAL PÁDEL CLUB* 🎾\n\n"
+            f"Hola {order.customer_name}, confirmamos el pago de tu cuenta:\n"
+            f"• Recibo #: REC-ORD-{order.id}\n"
+            f"• Cancha: ${int(court_price):,} COP\n"
+            f"• Consumos Tienda/Barra: ${int(bar_total):,} COP\n"
+            f"• Descuento: -${int(discount):,} COP\n"
+            f"• *TOTAL PAGADO: {tot_cop} COP*\n"
+            f"• Medio de Pago: {payment_method}\n\n"
+            f"¡Gracias por jugar en Capital Pádel Club! Nos vemos en la próxima."
+        ).replace(",", ".")
+        try:
+            await send_whatsapp_message(to_phone=cust_receipt_phone, message_body=receipt_msg)
+            await log_conversation_message(db, cust_receipt_phone, receipt_msg, direction="bot", player_name=order.customer_name)
+        except Exception as e:
+            logger.warning(f"Error enviando recibo WhatsApp: {e}")
+
     return CheckoutResponse(
         order_id=order.id,
         slot_id=order.slot_id,
@@ -829,6 +891,33 @@ async def checkout_slot(
         logger.warning(f"Error registrando cierre en DailyAccountingLedger: {e}")
 
     await db.commit()
+
+    # Enviar recibo digital por WhatsApp al cliente del turno
+    cust_receipt_phone = None
+    if customer_name and customer_name not in ("Cliente Cancha", "Cliente Mostrador", "Cliente Barra"):
+        c_stmt = select(Customer).where(Customer.name.ilike(customer_name.strip()))
+        c_ent = (await db.execute(c_stmt)).scalars().first()
+        if c_ent and c_ent.phone:
+            cust_receipt_phone = c_ent.phone
+
+    if cust_receipt_phone:
+        tot_cop = f"${int(total_to_pay):,}".replace(",", ".")
+        receipt_msg = (
+            f"🧾 *RECIBO DE PAGO DIGITAL - CAPITAL PÁDEL CLUB* 🎾\n\n"
+            f"Hola {customer_name}, confirmamos la liquidación de tu turno:\n"
+            f"• Turno #{slot.id}\n"
+            f"• Cancha: ${int(court_price):,} COP\n"
+            f"• Consumos Tienda/Barra: ${int(bar_total):,} COP\n"
+            f"• Descuento: -${int(discount):,} COP\n"
+            f"• *TOTAL PAGADO: {tot_cop} COP*\n"
+            f"• Medio de Pago: {payment_method}\n\n"
+            f"¡Gracias por visitarnos en Capital Pádel Club!"
+        ).replace(",", ".")
+        try:
+            await send_whatsapp_message(to_phone=cust_receipt_phone, message_body=receipt_msg)
+            await log_conversation_message(db, cust_receipt_phone, receipt_msg, direction="bot", player_name=customer_name)
+        except Exception as e:
+            logger.warning(f"Error enviando recibo WhatsApp en checkout_slot: {e}")
 
     # Log de Auditoría Operativa
     try:

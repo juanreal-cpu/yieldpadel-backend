@@ -25,7 +25,14 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.timezone import get_bogota_now, get_bogota_today, validate_slot_not_past
 from app.services import calculate_recommended_price, get_club_config, update_club_config
-from app.services.whatsapp import detect_sport_from_text, get_sport_emoji, get_sport_default_capacity, format_whatsapp_reply
+from app.services.whatsapp import (
+    detect_sport_from_text,
+    get_sport_emoji,
+    get_sport_default_capacity,
+    format_whatsapp_reply,
+    send_whatsapp_message,
+    log_conversation_message,
+)
 import uuid
 from app.models.court import Court
 from app.models.customer import Customer
@@ -1393,6 +1400,47 @@ async def create_manual_booking(
         await db.commit()
         await db.refresh(slot)
 
+        # Despacho transaccional por WhatsApp según modalidad de reserva
+        if client_phone and not client_phone.startswith("+57-WA-") and not client_phone.startswith("+57-unknown"):
+            st_fmt = start_t.strftime("%I:%M %p").lstrip("0")
+            et_fmt = end_t.strftime("%I:%M %p").lstrip("0")
+            c_label = target_court.name
+            d_label = b_date.strftime("%d/%m/%Y")
+            price_cop = f"${int(total_price):,}".replace(",", ".")
+
+            if mode_enum == SlotMode.FULL_COURT:
+                wa_body = (
+                    f"✅ *¡RESERVA CONFIRMADA - CANCHA COMPLETA!* 🎾\n\n"
+                    f"Hola {client_name}, tu reserva ha quedado confirmada:\n"
+                    f"• Sede: Capital Pádel Club (Complejo Maloka)\n"
+                    f"• Pista: {c_label}\n"
+                    f"• Fecha: {d_label}\n"
+                    f"• Horario: {st_fmt} - {et_fmt}\n"
+                    f"• Valor total: {price_cop} COP\n\n"
+                    f"Los {cap} cupos están reservados para tu grupo cerrado.\n"
+                    f"¡Te esperamos en la pista! 🎾"
+                )
+            else:
+                share_cop = f"${int(total_price / cap):,}".replace(",", ".")
+                wa_body = (
+                    f"📋 *¡CUPO RESERVADO - PARTIDO ABIERTO (1/{cap})!* 🎾\n\n"
+                    f"Hola {client_name}, apartamos tu cupo en convocatoria abierta:\n"
+                    f"• Sede: Capital Pádel Club (Complejo Maloka)\n"
+                    f"• Pista: {c_label}\n"
+                    f"• Fecha: {d_label}\n"
+                    f"• Horario: {st_fmt} - {et_fmt}\n"
+                    f"• Tu aporte individual: {share_cop} COP\n\n"
+                    f"⚠️ *ADVERTENCIA DE CONFIRMACIÓN:* Si faltando 30 minutos para el inicio no se completan los {cap} jugadores, "
+                    f"el turno no podrá disputarse como partido cerrado y la cancha podrá ser liberada por el club.\n"
+                    f"Te notificaremos en cuanto se unan compañeros a la partida."
+                )
+
+            try:
+                await send_whatsapp_message(to_phone=client_phone, message_body=wa_body)
+                await log_conversation_message(db, client_phone, wa_body, direction="bot", player_name=client_name)
+            except Exception as wa_err:
+                logger.warning(f"Error enviando confirmación WhatsApp a {client_phone}: {wa_err}")
+
         return {
             "status": "ok",
             "message": "Reserva confirmada con éxito",
@@ -1420,14 +1468,15 @@ async def create_manual_booking(
         )
 
 
-@router.post("/{slot_id}/apply-flash-promo", summary="Aplicar descuento Flash Promo (-25%) a un turno")
+@router.post("/{slot_id}/apply-flash-promo", summary="Aplicar descuento Flash Promo (-25%) y notificar a recurrentes")
 async def apply_flash_promo(
     slot_id: int,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Aplica de inmediato un descuento del 25% sobre la tarifa base de este turno,
-    marca is_promo=True y actualiza su precio en la plataforma.
+    marca is_promo=True, actualiza el precio en la plataforma y despacha por WhatsApp
+    la oferta relámpago a los jugadores habituales de esa franja en las últimas 8 semanas.
     """
     stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id)
     res = await db.execute(stmt)
@@ -1448,15 +1497,69 @@ async def apply_flash_promo(
     await db.commit()
     await db.refresh(slot)
 
+    # Buscar jugadores habituales de este día de la semana y franja horaria (+/- 1 hora) en las últimas 8 semanas
+    slot_weekday = slot.date.weekday()
+    eight_weeks_ago = slot.date - timedelta(weeks=8)
+    st_min = (datetime.combine(slot.date, slot.start_time) - timedelta(hours=1)).time()
+    st_max = (datetime.combine(slot.date, slot.start_time) + timedelta(hours=1)).time()
+
+    hist_stmt = (
+        select(TimeSlot)
+        .where(
+            TimeSlot.date >= eight_weeks_ago,
+            TimeSlot.date < slot.date,
+            TimeSlot.start_time >= st_min,
+            TimeSlot.start_time <= st_max,
+            TimeSlot.status.in_([SlotStatus.FULLY_BOOKED, SlotStatus.PARTIALLY_BOOKED]),
+        )
+    )
+    hist_res = await db.execute(hist_stmt)
+    historical_slots = list(hist_res.scalars().all())
+
+    recurrent_phones = set()
+    for hs in historical_slots:
+        if hs.date.weekday() == slot_weekday:
+            parts = to_participants_list(hs.players_names)
+            for p in parts:
+                ph = normalize_phone(p.get("phone"))
+                if ph and not ph.startswith("+57-WA-") and not ph.startswith("+57-unknown"):
+                    recurrent_phones.add(ph)
+
+    st_str = slot.start_time.strftime("%I:%M %p").lstrip("0")
+    et_str = slot.end_time.strftime("%I:%M %p").lstrip("0")
+    c_name = slot.court.name if slot.court else "Cancha"
+    d_str = slot.date.strftime("%d/%m/%Y")
+    orig_cop = f"${int(original_price):,}".replace(",", ".")
+    disc_cop = f"${int(discounted_price):,}".replace(",", ".")
+
+    promo_msg = (
+        f"⚡ *¡OFERTA RELÁMPAGO FLASH (-25%)!* 🎾\n\n"
+        f"Hola crack, sabemos que sueles jugar en este horario. Se acaba de liberar un turno con súper descuento:\n"
+        f"• Pista: {c_name}\n"
+        f"• Fecha: {d_str}\n"
+        f"• Horario: {st_str} - {et_str}\n"
+        f"• Tarifa Regular: ~{orig_cop} COP~\n"
+        f"• *Tarifa Promo Flash: {disc_cop} COP* ⚡ (-25%)\n\n"
+        f"Responde directamente *'VOY'* a este mensaje para apartarlo antes de que se agote."
+    )
+
+    notified_count = 0
+    for ph in list(recurrent_phones)[:10]:  # Límite prudente de 10 clientes habituales
+        sent = await send_whatsapp_message(to_phone=ph, message_body=promo_msg)
+        if sent:
+            notified_count += 1
+        await log_conversation_message(db, ph, promo_msg, direction="bot")
+
     return {
         "status": "ok",
         "success": True,
-        "message": f"Promo Flash activada (-25%): Nuevo valor ${int(discounted_price):,} COP.",
+        "message": f"Promo Flash activada (-25%): Nuevo valor ${int(discounted_price):,} COP. Notificados {notified_count} jugadores recurrentes.",
         "slot_id": slot.id,
-        "court_name": slot.court.name if slot.court else "Cancha",
+        "court_name": c_name,
         "original_price": float(original_price),
         "discounted_price": float(discounted_price),
         "is_promo": slot.is_promo,
+        "recurrent_players_notified": notified_count,
     }
 
 
@@ -1936,6 +2039,39 @@ async def create_americano(
         )
     except Exception as e:
         print(f"[AUDIT LOG WARNING] Error in create_americano: {e}")
+
+    # Despachar invitaciones por WhatsApp a jugadores registrados en Customer que coincidan con la categoría
+    try:
+        target_cat = (payload.category or "4ta").strip().lower()
+        c_stmt = select(Customer).where(Customer.phone != None)  # noqa: E711
+        all_custs = (await db.execute(c_stmt)).scalars().all()
+
+        matching_customers = []
+        for cust in all_custs:
+            cust_cat = (cust.category or "4ta").strip().lower()
+            if target_cat in cust_cat or cust_cat in target_cat or "todas" in target_cat or "open" in target_cat:
+                matching_customers.append(cust)
+
+        d_str = payload.date.strftime("%d/%m/%Y")
+        st_str = payload.start_time.strftime("%I:%M %p").lstrip("0")
+        prize_cop = f"${int(prize_val):,}".replace(",", ".")
+        invite_msg = (
+            f"🏆 *¡NUEVO TORNEO AMERICANO EN CAPITAL PÁDEL CLUB!* 🎾\n\n"
+            f"¡Hola crack! Se acaba de abrir la convocatoria oficial para tu categoría:\n"
+            f"• Torneo: *{t_name}*\n"
+            f"• Modalidad: {label_t}\n"
+            f"• Fecha: {d_str} a las {st_str}\n"
+            f"• Bolsa de Premios: *{prize_cop}*\n"
+            f"• Categoría convocada: {payload.category or 'Abierta'}\n\n"
+            f"¡Asegura tu cupo antes de que se agoten! Responde a este chat o inscríbete en recepción."
+        )
+
+        for mc in matching_customers[:15]:  # Notificar hasta 15 jugadores de la categoría
+            if mc.phone:
+                await send_whatsapp_message(to_phone=mc.phone, message_body=invite_msg)
+                await log_conversation_message(db, mc.phone, invite_msg, direction="bot", player_name=mc.name)
+    except Exception as invite_err:
+        logger.warning(f"Error enviando invitaciones al torneo americano: {invite_err}")
 
     return [compute_slot_response(s, now_utc) for s in loaded_slots]
 

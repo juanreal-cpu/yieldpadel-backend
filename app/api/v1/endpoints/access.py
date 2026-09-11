@@ -12,6 +12,10 @@ from app.services.access import (
     perform_check_in,
     perform_check_out,
 )
+from app.services.whatsapp import send_whatsapp_message, log_conversation_message
+from app.models.slot import TimeSlot
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 logger = logging.getLogger("yieldpadel.access")
 
@@ -64,6 +68,31 @@ async def check_in_endpoint(
         except Exception as log_err:
             logger.warning(f"Error logging check-in audit: {log_err}")
 
+        # Mensaje de bienvenida por WhatsApp al registrar check-in
+        if presence.phone:
+            court_name = "Pista Asignada"
+            if presence.current_slot_id:
+                slot_res = await db.execute(
+                    select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == presence.current_slot_id)
+                )
+                slot_obj = slot_res.scalars().first()
+                if slot_obj and slot_obj.court:
+                    court_name = slot_obj.court.name
+
+            welcome_msg = (
+                f"👋 *¡Bienvenido a Capital Pádel Club, {presence.player_name}!* 🎾\n\n"
+                f"Tu ingreso ha sido registrado exitosamente.\n"
+                f"• Cancha asignada: *{court_name}*\n"
+                f"• Plan de Socio: {presence.membership_tier or 'Estándar'}\n\n"
+                "Recuerda que tienes vestieres con duchas y lockers a tu disposición. "
+                "¡Que tengas un excelente partido!"
+            )
+            try:
+                await send_whatsapp_message(to_phone=presence.phone, message_body=welcome_msg)
+                await log_conversation_message(db, presence.phone, welcome_msg, direction="bot", player_name=presence.player_name)
+            except Exception as e:
+                logger.warning(f"Error enviando WhatsApp de check-in: {e}")
+
         return {
             "success": True,
             "message": f"Entrada registrada para {presence.player_name}",
@@ -106,6 +135,22 @@ async def check_out_endpoint(
             )
         except Exception as log_err:
             logger.warning(f"Error logging check-out audit: {log_err}")
+
+        # Mensaje de despedida y agradecimiento por WhatsApp si check-out fue exitoso
+        player_phone = result.get("phone")
+        player_name = result.get("player_name") or "Jugador"
+        if result.get("status") == "SUCCESS" and player_phone:
+            farewell_msg = (
+                f"🎾 *¡Gracias por jugar hoy en Capital Pádel Club, {player_name}!* 🏆\n\n"
+                "Esperamos que hayas disfrutado tu partido y tu estadía en el club.\n"
+                "Tus puntos y estadísticas ya se encuentran actualizados en tu perfil.\n\n"
+                "¡Nos vemos pronto en la pista!"
+            )
+            try:
+                await send_whatsapp_message(to_phone=player_phone, message_body=farewell_msg)
+                await log_conversation_message(db, player_phone, farewell_msg, direction="bot", player_name=player_name)
+            except Exception as e:
+                logger.warning(f"Error enviando WhatsApp de check-out: {e}")
 
         return result
     except HTTPException:

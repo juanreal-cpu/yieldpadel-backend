@@ -44,12 +44,14 @@ CONCIERGE_SYSTEM_INSTRUCTION = """Eres el asistente concierge oficial de Capital
 Tu tono es cálido, servicial, deportivo y formal-cercano (español de Colombia con trato respetuoso).
 
 INFORMACIÓN INSTITUCIONAL DEL CLUB:
-- Ubicación: Complejo Maloka, Bogotá D.C.
+- Ubicación: Complejo Maloka, Bogotá D.C. (parqueadero cubierto vigilado dentro de Maloka).
 - Horario: Lunes a Domingo de 06:00 a 24:00 (último turno inicia 22:00/22:30).
-- Deportes soportados: Pádel (5 pistas), Pickleball (2 pistas), Vóley (1 cancha) y Consolas.
-- Instalaciones: 5 canchas de pádel (Canchas 1 a 4 azules, Cancha 5 negra), 2 pistas de pickleball, 1 Cancha de Vóley Normal (superficie reglamentaria convencional, no de arena) y sala de consolas.
-- Servicios: Tienda/POS (venta y alquiler de palas, bolas), Bar/Cafetería, vestieres, parqueadero cubierto.
-- Actividades: Torneos Americanos entre semana y fines de semana, Academia formativa y partidos abiertos comunitarios.
+- Deportes soportados: Pádel (5 pistas), Pickleball (2 pistas), Vóley (1 cancha) y Consolas (sala gamer).
+- Instalaciones: 5 canchas de pádel panorámicas (Canchas 1 a 4 azules, Cancha 5 negra), 2 pistas de pickleball, 1 Cancha de Vóley Reglamentaria/Convencional (superficie rígida / piso de alta competencia, NO es de arena) y sala de consolas.
+- Servicios: Tienda/POS (venta y alquiler de palas, bolas y grips), Bar/Cafetería con bebidas hidratantes y snacks, vestieres con duchas y lockers, parqueadero cubierto en Maloka.
+- Tarifas: Se estructuran en Franja Valle (lunes a viernes antes de las 6:00 p.m.) y Franja Pico (noches después de las 6:00 p.m., fines de semana y festivos).
+- Membresías Oficiales: Promueve los planes Tapia, Coello, Galán, Chingotto y Lebrón para obtener tarifas preferenciales, horas fijas incluidas, clases de academia y bebidas sin costo.
+- Actividades: Torneos Americanos entre semana y fines de semana, Academia formativa (Iniciación, Media, Avanzada), partidos abiertos comunitarios y predicciones deportivas.
 
 REGLAS DE INTERACCIÓN:
 - Si el usuario saluda por primera vez o dice 'hola', responde con el saludo cálido y humano presentándote como el equipo de Capital Pádel Club y ofreciendo ayuda en reservas, torneos o servicios.
@@ -114,47 +116,60 @@ def _local_concierge_fallback(clean_text: str) -> str:
     t = clean_text.lower()
     if re.search(r"\bcu[aá]nt[ao]s?\b.*\bcanchas?\b|\bcanchas?\b.*\btienen\b", t):
         return (
-            "🎾 *Nuestras instalaciones en Capital Pádel Club:*\n\n"
-            "• 5 canchas de pádel (4 azules + 1 negra)\n"
+            "🎾 *Instalaciones de Capital Pádel Club (Sede Maloka):*\n\n"
+            "• 5 canchas de pádel panorámicas (Canchas 1 a 4 azules, Cancha 5 negra) 🎾\n"
             "• 2 pistas de pickleball 🏓\n"
-            "• 1 Cancha de Vóley Normal 🏐\n"
-            "• Sala de consolas 🎮\n\n"
-            "¿Quieres que te muestre la disponibilidad de hoy?"
+            "• 1 Cancha de Vóley Reglamentaria (superficie convencional rígida, no de arena) 🏐\n"
+            "• Sala de consolas gamer 🎮\n"
+            "• Vestieres con duchas y parqueadero cubierto en Maloka 🚗\n\n"
+            "¿Quieres consultar turnos disponibles hoy?"
+        )
+    if re.search(r"\bv[oó]ley\b|\bvoleibol\b", t):
+        return (
+            "🏐 *Cancha de Vóley en Capital Pádel Club:*\n\n"
+            "Nuestra cancha es de superficie deportiva reglamentaria convencional (piso rígido de alto impacto, *no es cancha de arena / vóley playa*).\n"
+            "Ideal para partidos de 6 vs 6 y entrenamientos.\n\n"
+            "¿Te gustaría conocer los horarios y turnos de vóley disponibles?"
         )
     if re.search(r"\bservicios?\b|\bqu[eé]\s+hay\b|\bofrecen\b", t):
         return (
-            "🏆 *Servicios de Capital Pádel Club:*\n\n"
-            "• Tienda/POS: venta y alquiler de palas y bolas 🎾\n"
-            "• Bar / Cafetería\n"
-            "• Vestieres\n"
-            "• Parqueadero cubierto 🚗\n"
-            "• Torneos Americanos, Academia y partidos abiertos comunitarios\n\n"
-            "¿Te gustaría conocer horarios o disponibilidad?"
+            "🏆 *Servicios de Capital Pádel Club (Maloka):*\n\n"
+            "• Tienda/POS: venta y alquiler de palas, bolas y accesorios 🎾\n"
+            "• Bar & Cafetería con bebidas hidratantes y snacks\n"
+            "• Vestieres completos, duchas y lockers\n"
+            "• Parqueadero cubierto vigilado dentro del Complejo Maloka 🚗\n"
+            "• Torneos Americanos, Academia formativa y partidos comunitarios\n\n"
+            "¿Te gustaría consultar horarios o disponibilidad?"
         )
     if re.search(r"\bprecios?\b|\bvalor(es)?\b|\bcu[aá]nto\s+cuesta\b|\btarifas?\b", t):
         return (
             "💰 *Tarifas en Capital Pádel Club:*\n\n"
-            "Nuestras tarifas varían según la franja horaria (valle/pico) y la cancha. "
-            "Escribe *'disponibilidad'* o *'turnos hoy'* y te muestro los horarios con su precio exacto en COP. 🎾"
+            "Nuestras tarifas se dividen en:\n"
+            "• 🌿 *Tarifa Valle:* Lunes a viernes antes de las 6:00 p.m.\n"
+            "• 🔥 *Tarifa Pico:* Noches (después de 6:00 p.m.), fines de semana y festivos.\n\n"
+            "💡 *Tip:* Con nuestras Membresías Oficiales (Tapia, Coello, Galán, Chingotto, Lebrón) "
+            "tienes tarifas preferenciales, horas mensuales y clases sin costo adicional.\n\n"
+            "Escribe *'disponibilidad'* o *'turnos hoy'* para ver los horarios con precio exacto en COP."
         )
     if re.search(r"\bd[oó]nde\b|\bubicad[oa]s?\b|\bdirecci[oó]n\b|\bqueda[n]?\b", t):
         return (
             "📍 *Ubicación de Capital Pádel Club:*\n\n"
-            "Estamos en el Complejo Maloka, Bogotá D.C. ¡Te esperamos! 🎾"
+            "Estamos ubicados dentro del Complejo Maloka, Bogotá D.C. Contamos con parqueadero cubierto vigilado y acceso directo a las pistas. ¡Te esperamos! 🎾"
         )
     if re.search(r"\bhorarios?\b|\ba\s+qu[eé]\s+hora\b|\babren\b|\bcierran\b", t):
         return (
-            "⌚ *Horario de Capital Pádel Club:*\n\n"
-            "Todos los días de 06:00 a.m. a 12:00 a.m. (medianoche). "
-            "El último turno inicia a las 22:00/22:30. 🎾"
+            "⌚ *Horario de Atención:*\n\n"
+            "Todos los días (lunes a domingo) de 06:00 a.m. a 12:00 a.m. (medianoche). "
+            "El último turno disponible inicia a las 22:00 o 22:30. 🎾"
         )
     return (
-        "🎾 *Capital Pádel Club* 🎾\n\n"
-        "Puedo ayudarte con reservas, torneos o servicios del club. Por ejemplo, pregúntame:\n"
+        "🎾 *Capital Pádel Club (Sede Maloka)* 🎾\n\n"
+        "Puedo colaborarte con reservas, torneos o servicios del club. Por ejemplo, pregúntame:\n"
         "• *'cuántas canchas tienen'*\n"
-        "• *'qué servicios hay'*\n"
-        "• *'disponibilidad de hoy'*\n\n"
-        "¡Cuéntame en qué te ayudo! 🏆"
+        "• *'tarifas y membresías'*\n"
+        "• *'turnos libres hoy'*\n"
+        "• *'partidos abiertos'*\n\n"
+        "¡Dime en qué te colaboro hoy! 🏆"
     )
 
 # Cache en memoria de mensajes enviados y recibidos por ID (wamid) para resolver citas
@@ -1756,7 +1771,8 @@ async def book_full_court(
         f"• Pista: {c_name}\n"
         f"• Horario: {st} - {et}\n"
         f"• Valor total: {price} COP\n\n"
-        f"Los 4 cupos quedaron apartados para tu grupo cerrado. ¡Nos vemos en la pista!"
+        f"Los {capacity} cupos quedaron apartados para tu grupo cerrado.\n"
+        f"¡Te esperamos en la pista! 🎾"
     )
 
 
@@ -1778,7 +1794,7 @@ async def join_or_create_split_match(
     participants = to_participants_list(slot.players_names)
     norm_phone = normalize_phone(sender_phone)
     if any(p.get("phone") and normalize_phone(p["phone"]) == norm_phone for p in participants):
-        return "Ya tienes un cupo reservado en ese turno. ¡Nos vemos en la pista! 🎾"
+        return "Ya tienes un cupo reservado en ese turno. Te avisaremos conforme se sumen compañeros."
 
     capacity = slot.capacity or 4
     if slot.status == SlotStatus.BLOCKED or len(participants) >= capacity:
@@ -1814,7 +1830,7 @@ async def join_or_create_split_match(
             "Todos los cupos están cubiertos. ¡Ahora sí, los esperamos en la pista!\n\n"
             f"💳 ¿Cómo prefieres pagar tu parte (${price_each} COP)?\n"
             "• Responde *'LINK'* para enviarte enlace de pago digital.\n"
-            "• Responde *'CLUB'* para pagar directamente en recepción al llegar."
+            "• Responde *'CLUB'* o *'SEDE'* para pagar directamente en recepción al llegar."
         )
         for p in previous_participants:
             p_phone = p.get("phone")
@@ -1842,16 +1858,20 @@ async def join_or_create_split_match(
             f"• Horario: {st} - {et}\n"
             f"• Tu posición: 🎾 1. {display_name}\n"
             f"• Quedan {capacity - 1} cupos libres.\n\n"
-            "⚠️ *REGLA IMPORTANTE:* Si el partido no completa los 4 jugadores faltando 30 minutos para el inicio, "
-            "la cancha podrá ser reasignada o liberada por el club.\n"
-            "Te avisaremos por este chat a medida que otros jugadores se anoten."
+            "⚠️ *ADVERTENCIA DE CONFIRMACIÓN:* Tienes tu cupo reservado. "
+            "Si faltando 30 minutos para el inicio el partido no completa los 4 jugadores, "
+            "la cancha no podrá jugarse en modalidad partido cerrado y podrá ser liberada o reasignada por el club.\n"
+            "Te notificaremos por este chat a medida que se inscriban nuevos compañeros."
         )
 
     return (
         f"📋 *¡Cupo confirmado!* Ahora son *{new_count}/{capacity}* jugadores en el partido.\n"
         f"• Pista: {c_name}\n"
-        f"• Horario: {st} - {et}\n\n"
-        "Te avisaremos por este chat cuando se complete el partido."
+        f"• Horario: {st} - {et}\n"
+        f"• Tu posición: 🎾 {new_count}. {display_name}\n\n"
+        "⚠️ *ADVERTENCIA DE CONFIRMACIÓN:* Si faltando 30 minutos para el inicio no se completan los 4 jugadores, "
+        "el turno podrá ser liberado por el club.\n"
+        "Te avisaremos por este chat cuando se cierre el partido."
     )
 
 
@@ -1889,10 +1909,10 @@ async def handle_sport_and_booking_flow(
         # Turno virgen: preguntar la modalidad antes de reservar
         session["pending_mode_slot_id"] = slot_id
         return (
-            "🎾 *¿Cómo prefieres apartar el turno?*\n"
+            "🎾 *¿Cómo deseas apartar este turno?*\n"
             "1️⃣ *Cancha Completa:* Reservas los 4 cupos para tu grupo cerrado.\n"
-            "2️⃣ *Mi Cupo (1/4 de Cancha):* Abres convocatoria pública con tu raqueta y esperas a que otros 3 jugadores se sumen.\n"
-            "Responde con *1* o *2*."
+            "2️⃣ *Mi Cupo / 1/4:* Abres convocatoria comunitaria con tu raqueta y esperas 3 compañeros.\n\n"
+            "Responde con *1* o *2* para confirmar."
         )
 
     sport_choice = detect_sport_choice(clean)
@@ -2158,6 +2178,311 @@ async def handle_tournaments_and_academy_query(db: AsyncSession, clean: str) -> 
     return None
 
 
+SPLIT_PAYMENT_REGEX = re.compile(r"^\s*(link|club|sede|digital|mostrador|taquilla|en\s+sede|en\s+el\s+club)\s*$", re.IGNORECASE)
+
+
+async def handle_split_payment_choice(db: AsyncSession, sender_phone: str, clean: str) -> Optional[str]:
+    """
+    Gestiona la respuesta del jugador al cerrarse el partido (4/4):
+    - 'LINK': despacha el enlace de pago de pasarela digital (Bold / Wompi) y monto por jugador.
+    - 'CLUB' / 'SEDE': marca su estado de pago como 'PAY_AT_VENUE' y confirma pago en recepción.
+    """
+    if not SPLIT_PAYMENT_REGEX.search(clean):
+        return None
+
+    norm_phone = normalize_phone(sender_phone)
+    today = get_bogota_today()
+
+    # Buscar el slot más reciente donde el jugador está inscrito en modo SPLIT_MATCH
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date >= today,
+            TimeSlot.mode == SlotMode.SPLIT_MATCH,
+            TimeSlot.status == SlotStatus.FULLY_BOOKED,
+        )
+        .order_by(TimeSlot.date.asc(), TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    matched_slot = None
+    for s in slots:
+        parts = to_participants_list(s.players_names)
+        if any(p.get("phone") and normalize_phone(p["phone"]) == norm_phone for p in parts):
+            matched_slot = s
+            break
+
+    if not matched_slot:
+        return None
+
+    cap = matched_slot.capacity or 4
+    total = matched_slot.total_price or Decimal("80000.00")
+    share_cop = int(total / cap)
+    st = matched_slot.start_time.strftime("%I:%M %p").lstrip("0")
+    c_name = matched_slot.court.name if matched_slot.court else "Cancha"
+
+    clean_lower = clean.lower()
+    if "link" in clean_lower or "digital" in clean_lower:
+        payment_url = f"https://checkout.wompi.co/l/yieldpadel-slot-{matched_slot.id}"
+        return (
+            f"💳 *PAGO DIGITAL DE TU CUPO (1/{cap})* 🎾\n\n"
+            f"• Turno: {st} en {c_name}\n"
+            f"• Monto a pagar: *${share_cop:,} COP*\n\n"
+            f"Haz clic en el siguiente enlace seguro para pagar con PSE, Tarjeta o Nequi:\n"
+            f"👉 {payment_url}\n\n"
+            "Una vez realizado el pago, tu cupo quedará 100% liquidado en el sistema."
+        ).replace(",", ".")
+
+    if "club" in clean_lower or "sede" in clean_lower or "mostrador" in clean_lower or "taquilla" in clean_lower:
+        # Actualizar payment_status en el participante
+        parts = to_participants_list(matched_slot.players_names)
+        for p in parts:
+            if p.get("phone") and normalize_phone(p["phone"]) == norm_phone:
+                p["payment_status"] = "PAY_AT_VENUE"
+        matched_slot.players_names = parts
+        await db.commit()
+
+        return (
+            f"🏢 *PAGO EN RECEPCIÓN CONFIRMADO* 🎾\n\n"
+            f"• Turno: {st} en {c_name}\n"
+            f"• Valor pendiente en counter: *${share_cop:,} COP*\n\n"
+            "Hemos registrado que pagarás en counter/recepción al llegar (efectivo o datáfono). ¡Nos vemos en el club!"
+        ).replace(",", ".")
+
+    return None
+
+
+CATEGORY_MATCH_QUERY_REGEX = re.compile(
+    r"partidos?\s+(abiertos?|disponibles?|de\s+mi\s+categor[ií]a|para\s+jugar|de\s+([1-7]ra|[1-7]da|[1-7]ta|[1-7]ma|iniciaci[oó]n))",
+    re.IGNORECASE,
+)
+
+CATEGORY_LADDER = ["7ma", "6ta", "5ta", "4ta", "3ra", "2da", "1ra"]
+
+
+def get_tolerated_categories(cat: Optional[str]) -> List[str]:
+    """Retorna la categoría del jugador y sus vecinas inmediata superior e inferior (+/- 1)."""
+    clean_cat = (cat or "4ta").strip().lower()
+    if "inicia" in clean_cat or "7" in clean_cat:
+        norm_cat = "7ma"
+    elif "6" in clean_cat:
+        norm_cat = "6ta"
+    elif "5" in clean_cat:
+        norm_cat = "5ta"
+    elif "4" in clean_cat:
+        norm_cat = "4ta"
+    elif "3" in clean_cat:
+        norm_cat = "3ra"
+    elif "2" in clean_cat:
+        norm_cat = "2da"
+    elif "1" in clean_cat:
+        norm_cat = "1ra"
+    else:
+        norm_cat = "4ta"
+
+    try:
+        idx = CATEGORY_LADDER.index(norm_cat)
+    except ValueError:
+        idx = 3
+
+    indices = [idx]
+    if idx > 0:
+        indices.append(idx - 1)
+    if idx < len(CATEGORY_LADDER) - 1:
+        indices.append(idx + 1)
+
+    return [CATEGORY_LADDER[i] for i in sorted(indices)]
+
+
+async def handle_category_tolerance_query(
+    db: AsyncSession,
+    sender_phone: str,
+    clean: str,
+    session: dict,
+) -> Optional[str]:
+    """
+    Permite consultar y descubrir partidos abiertos comunitarios aplicando
+    tolerancia deportiva de categoría (+/- 1 nivel).
+    """
+    if not CATEGORY_MATCH_QUERY_REGEX.search(clean) and not ("partidos abiertos" in clean.lower()):
+        return None
+
+    norm_phone = normalize_phone(sender_phone)
+    cres = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+    customer = cres.scalars().first()
+    player_cat = customer.category if customer else "4ta"
+
+    # Revisar si el usuario especificó una categoría explícita en su consulta
+    cat_match = re.search(r"\b([1-7](?:ra|da|ta|ma)|iniciaci[oó]n)\b", clean, re.IGNORECASE)
+    if cat_match:
+        player_cat = cat_match.group(1).lower()
+
+    tolerated = get_tolerated_categories(player_cat)
+    today = get_bogota_today()
+    now_time = get_bogota_now().time()
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date == today,
+            TimeSlot.mode == SlotMode.SPLIT_MATCH,
+            cast(TimeSlot.status, String).in_(["AVAILABLE", "PARTIALLY_BOOKED"]),
+            TimeSlot.slot_type == "MATCH",
+        )
+        .order_by(TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    matching_slots = []
+    for s in slots:
+        if s.start_time <= now_time:
+            continue
+        p_count = len(to_participants_list(s.players_names))
+        cap = s.capacity or 4
+        if 0 < p_count < cap:
+            s_cat = (s.category or "4ta").strip().lower()
+            if any(t in s_cat for t in tolerated):
+                matching_slots.append((s, p_count, cap))
+
+    if not matching_slots:
+        tolerated_str = ", ".join(tolerated)
+        return (
+            f"🎾 *Partidos Abiertos con Tolerancia Deportiva:*\n\n"
+            f"Tu categoría analizada es *{player_cat.upper()}* (tolerancia: {tolerated_str}).\n"
+            f"En este momento no hay partidos abiertos con cupos en ese rango para hoy.\n\n"
+            "💡 *¿Deseas abrir tú el partido?* Elige un turno libre y selecciona *'Mi Cupo / 1/4'* para convocar a otros jugadores."
+        )
+
+    offered = {}
+    lines = []
+    for i, (s, p_count, cap) in enumerate(matching_slots[:5], start=1):
+        c_name = s.court.name if s.court else "Cancha"
+        st = s.start_time.strftime("%I:%M %p").lstrip("0")
+        et = s.end_time.strftime("%I:%M %p").lstrip("0")
+        s_cat = (s.category or "4ta").upper()
+        faltan = cap - p_count
+        lines.append(f"• *Opción {i}:* {st} - {et} | {c_name} (Categoría: {s_cat}) ➔ *{p_count}/{cap} inscritos* (faltan {faltan})")
+        offered[i] = s.id
+
+    session["last_offered_slots"] = offered
+    tolerated_str = ", ".join(tolerated)
+    return (
+        f"🎾 *Partidos Abiertos Encontrados (Tolerancia: {tolerated_str}):*\n\n"
+        + "\n".join(lines)
+        + "\n\nResponde con el número de opción para sumarte con tu raqueta al partido."
+    )
+
+
+CHALLENGE_QUERY_REGEX = re.compile(r"retos?\s+pendientes?|tengo\s+retos?|desaf[ií]os?|partidos?\s+de\s+reto", re.IGNORECASE)
+
+
+async def handle_challenge_query(db: AsyncSession, sender_phone: str, clean: str) -> Optional[str]:
+    """Responde consultas sobre retos deportivos o partidos de reto pendientes del jugador."""
+    if not CHALLENGE_QUERY_REGEX.search(clean):
+        return None
+
+    norm_phone = normalize_phone(sender_phone)
+    cres = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+    customer = cres.scalars().first()
+    if not customer:
+        return "No encontramos retos activos asociados a tu perfil registrado. ¡Invita a un rival para jugar un partido de reto por ranking!"
+
+    today = get_bogota_today()
+    # Buscar slots con tipo RETO o CHALLENGE donde el cliente participe
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date >= today,
+            TimeSlot.slot_type.in_(["RETO", "CHALLENGE"]),
+            TimeSlot.status != SlotStatus.CANCELLED,
+        )
+        .order_by(TimeSlot.date.asc(), TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    user_challenges = []
+    for s in slots:
+        parts = to_participants_list(s.players_names)
+        if any(p.get("phone") and normalize_phone(p["phone"]) == norm_phone for p in parts):
+            user_challenges.append(s)
+
+    if not user_challenges:
+        return (
+            f"⚔️ *Retos Deportivos - Capital Pádel Club* ⚔️\n\n"
+            f"Hola {customer.name}, actualmente no tienes retos pendientes por disputar.\n"
+            f"• Puntos de ranking actuales: {customer.ranking_points} pts\n"
+            f"• Victorias consecutivas: {customer.consecutive_wins or 0}\n\n"
+            f"💡 ¡Recuerda que cada reto ganado te otorga *+30 puntos de ranking*!"
+        )
+
+    lines = []
+    for s in user_challenges:
+        c_name = s.court.name if s.court else "Cancha"
+        date_str = s.date.strftime("%d/%m")
+        st = s.start_time.strftime("%I:%M %p").lstrip("0")
+        lines.append(f"⚔️ *Reto:* {date_str} {st} en {c_name}")
+
+    return f"⚔️ *Tus Retos Pendientes:* 🎾\n\n" + "\n".join(lines)
+
+
+PREDICTIONS_QUERY_REGEX = re.compile(r"apostar|votar|pron[oó]stic(os|ar)|partidos?\s+para\s+(apostar|votar|pronosticar|predecir)", re.IGNORECASE)
+
+
+async def handle_predictions_query(db: AsyncSession, clean: str) -> Optional[str]:
+    """Informa partidos confirmados disponibles para emitir pronósticos deportivos comunitarios."""
+    if not PREDICTIONS_QUERY_REGEX.search(clean):
+        return None
+
+    today = get_bogota_today()
+    now_time = get_bogota_now().time()
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date == today,
+            TimeSlot.status == SlotStatus.FULLY_BOOKED,
+            TimeSlot.start_time > now_time,
+        )
+        .order_by(TimeSlot.start_time.asc())
+        .limit(4)
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    if not slots:
+        return (
+            "🏆 *Pronósticos Deportivos Capital Pádel Club:*\n\n"
+            "En este momento no hay partidos cerrados programados para hoy pendientes de inicio.\n"
+            "¡Apenas se confirme el próximo partido 4/4 o Americano podrás votar por tu favorito y ganar +3 puntos en el Leaderboard mensual!"
+        )
+
+    lines = []
+    for s in slots:
+        c_name = s.court.name if s.court else "Pista"
+        st = s.start_time.strftime("%I:%M %p").lstrip("0")
+        participants = to_participants_list(s.players_names)
+        names = [p.get("display_name", "Jugador") for p in participants[:4]]
+        team_a = " / ".join(names[:2]) if len(names) >= 2 else "Pareja A"
+        team_b = " / ".join(names[2:4]) if len(names) >= 4 else "Pareja B"
+        lines.append(f"• *{st} ({c_name}):* {team_a} 🆚 {team_b} (Turno #{s.id})")
+
+    return (
+        "🏆 *Partidos Disponibles para Pronóstico (Votación Deportiva):*\n\n"
+        + "\n".join(lines)
+        + "\n\n💡 *Reglas de la Pola Comunitaria:*\n"
+        "• +3 puntos por acertar el ganador de un partido regular.\n"
+        "• +5 puntos por acertar la final de un torneo oficial.\n"
+        "• 100% lúdico y formativo. Ingresa a la app o responde con el Turno y tu equipo elegido (Equipo A o Equipo B) para registrar tu voto."
+    )
+
+
 async def generate_concierge_reply(
     message_text: str,
     sender_phone: str,
@@ -2167,7 +2492,8 @@ async def generate_concierge_reply(
     """
     Concierge conversacional (Gemini) con conocimiento institucional del club.
     Orden de resolución: pausa por handoff humano -> handoff explícito -> saludo estricto ->
-    flujo de deporte/reserva -> consultas sociales/CRM/reserva activa -> tarifas/membresías ->
+    flujo de deporte/reserva -> pagos de split -> consultas de categoría +/-1 ->
+    consultas sociales/CRM/reserva activa -> retos/pronósticos -> tarifas/membresías ->
     torneos/academia -> Gemini (o base de conocimiento local) con handoff automático tras 2 fallos.
     """
     clean = (message_text or "").strip()
@@ -2187,9 +2513,13 @@ async def generate_concierge_reply(
 
     if db is not None:
         for handler in (
+            lambda: handle_split_payment_choice(db, sender_phone, clean),
             lambda: handle_sport_and_booking_flow(db, sender_phone, sender_name, clean, session),
+            lambda: handle_category_tolerance_query(db, sender_phone, clean, session),
             lambda: handle_social_query(db, clean, session),
             lambda: handle_profile_query(db, sender_phone, clean),
+            lambda: handle_challenge_query(db, sender_phone, clean),
+            lambda: handle_predictions_query(db, clean),
             lambda: handle_active_reservation_query(db, sender_phone, clean),
             lambda: handle_rates_and_membership_query(db, clean),
             lambda: handle_tournaments_and_academy_query(db, clean),
@@ -2233,20 +2563,25 @@ async def generate_concierge_reply(
 async def generate_availability_broadcast(
     db: AsyncSession,
     target_date: Optional[date] = None,
+    sport: Optional[str] = "PADEL",
 ) -> Tuple[str, int]:
     """
-    Genera el resumen de turnos clave libres del día para despacho masivo al grupo de WhatsApp.
+    Genera el resumen de turnos clave libres del día para despacho masivo al grupo de WhatsApp,
+    filtrando estrictamente por el deporte seleccionado ('PADEL', 'PICKLEBALL', 'VOLLEYBALL').
     """
     today = get_bogota_today()
     d = target_date or today
     date_str = d.strftime("%d/%m/%Y")
     now_bogota = get_bogota_now()
+    sport_upper = (sport or "PADEL").upper().strip()
+    emoji = get_sport_emoji(sport_upper)
 
     stmt = (
         select(TimeSlot)
         .options(selectinload(TimeSlot.court))
         .where(
             TimeSlot.date == d,
+            TimeSlot.sport_type == sport_upper,
             cast(TimeSlot.status, String) == "AVAILABLE",
             TimeSlot.slot_type == "MATCH",
         )
@@ -2262,8 +2597,8 @@ async def generate_availability_broadcast(
     total_free = len(slots)
     if total_free == 0:
         msg = (
-            f"🎾 *ESTADO DE PISTAS - CAPITAL PÁDEL CLUB* 🎾\n\n"
-            f"📅 Hoy {date_str}: ¡Canchas al 100% de ocupación!\n"
+            f"{emoji} *ESTADO DE PISTAS ({sport_upper.title()}) - CAPITAL PÁDEL CLUB* {emoji}\n\n"
+            f"📅 Hoy {date_str}: ¡Canchas al 100% de ocupación en {sport_upper.title()}!\n"
             f"Agradecemos a toda la comunidad. Consulta los turnos abiertos de mañana en recepción."
         )
         return msg, 0
@@ -2283,7 +2618,7 @@ async def generate_availability_broadcast(
 
     slots_text = "\n".join(lines)
     msg = (
-        f"📢 *TURNOS DISPONIBLES DE PÁDEL HOY ({date_str})* 🎾\n"
+        f"📢 *TURNOS DISPONIBLES DE {sport_upper.title()} HOY ({date_str})* {emoji}\n"
         f"¡Asegura tu cancha o partido abierto antes de que se agoten!\n\n"
         f"{slots_text}\n\n"
         f"⚡ *Quedan {total_free} bloques disponibles en el club.*\n"
@@ -2295,21 +2630,25 @@ async def generate_availability_broadcast(
 async def generate_promo_urgent_broadcast(
     db: AsyncSession,
     target_date: Optional[date] = None,
+    sport: Optional[str] = "PADEL",
 ) -> Tuple[str, int]:
     """
-    Filtra los slots vacíos más críticos (< 3 horas para el inicio) y genera
+    Filtra los slots vacíos más críticos (< 3 horas para el inicio) de un deporte y genera
     una alerta con precio de descuento '⚡ PROMO FLASH YIELD (-25%)'.
     """
     today = get_bogota_today()
     now_bogota = get_bogota_now()
     d = target_date or today
     date_str = d.strftime("%d/%m/%Y")
+    sport_upper = (sport or "PADEL").upper().strip()
+    emoji = get_sport_emoji(sport_upper)
 
     stmt = (
         select(TimeSlot)
         .options(selectinload(TimeSlot.court))
         .where(
             TimeSlot.date == d,
+            TimeSlot.sport_type == sport_upper,
             cast(TimeSlot.status, String) == "AVAILABLE",
             TimeSlot.slot_type == "MATCH",
         )
@@ -2332,8 +2671,8 @@ async def generate_promo_urgent_broadcast(
             future_slots = slots[:2]
         if not future_slots:
             msg = (
-                f"⚡ *REMATE DE CANCHAS - YIELDPADEL* ⚡\n\n"
-                f"📅 {date_str}: No hay turnos críticos libres en este momento. ¡Todas las pistas próximas están confirmadas!"
+                f"⚡ *REMATE DE CANCHAS ({sport_upper.title()}) - YIELDPADEL* ⚡\n\n"
+                f"📅 {date_str}: No hay turnos críticos libres en este momento en {sport_upper.title()}. ¡Todas las pistas próximas están confirmadas!"
             )
             return msg, 0
         urgent_slots = future_slots
@@ -2353,7 +2692,7 @@ async def generate_promo_urgent_broadcast(
 
     slots_text = "\n\n".join(lines)
     msg = (
-        f"⚡ *¡REMATE FLASH YIELD - ÚLTIMA HORA!* ⚡\n"
+        f"⚡ *¡REMATE FLASH YIELD - ÚLTIMA HORA ({sport_upper.title()})!* ⚡\n"
         f"🚨 *Turnos con descuento especial para jugar hoy* en Capital Pádel Club:\n\n"
         f"{slots_text}\n\n"
         f"🏃‍♂️ *¡Aprovecha antes de que se ocupen!* Responde inmediatamente *'VOY [Hora]'* para bloquear tu pista al instante."
