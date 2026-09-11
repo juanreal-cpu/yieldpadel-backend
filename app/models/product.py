@@ -68,6 +68,8 @@ class OrderItem(Base):
     unit_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"), nullable=False)
     subtotal: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"), nullable=False)
     is_perk: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    customer_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    customer_name: Mapped[str] = mapped_column(String(150), default="Mesa / Cuenta General", nullable=False)
 
     order: Mapped["Order"] = relationship("Order", back_populates="items")
     product: Mapped["Product"] = relationship("Product", lazy="joined")

@@ -97,6 +97,7 @@ class TimeSlot(Base):
     slot_type: Mapped[str] = mapped_column(String(50), default="MATCH", nullable=False)
     instructor_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     is_promo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    recurrence_group_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
 
     # Campos para Torneos Americanos y Eventos
     tournament_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)

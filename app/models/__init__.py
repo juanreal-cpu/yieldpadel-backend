@@ -21,6 +21,7 @@ from app.models.audit import AuditLog
 from app.models.product import Product, Order, OrderItem, Sale
 from app.models.access import ClubPresence
 from app.models.whatsapp_conversation import WhatsAppConversation, WhatsAppMessage
+from app.models.accounting import DailyAccountingLedger
 
 __all__ = [
     "Club",
@@ -46,6 +47,7 @@ __all__ = [
     "ClubPresence",
     "WhatsAppConversation",
     "WhatsAppMessage",
+    "DailyAccountingLedger",
     "SlotMode",
     "SlotStatus",
     "HoldStatus",

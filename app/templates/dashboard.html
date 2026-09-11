@@ -2400,6 +2400,10 @@
             <span class="w-4 text-center text-xs shrink-0 opacity-70">⚙️</span>
             <span class="truncate">Configuración</span>
           </button>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-accounting" onclick="switchMainView('accounting')" title="Cierre de Caja / Contabilidad">
+            <span class="w-4 text-center text-xs shrink-0 opacity-70">💵</span>
+            <span class="truncate">Cierre de Caja</span>
+          </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-audit" onclick="switchMainView('audit')" title="Auditoría & Usuarios">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🛡️</span>
             <span class="truncate">Auditoría</span>
@@ -3027,6 +3031,125 @@
                   <span>Enviar</span> <span>🚀</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VISTA: 💵 CIERRE DE CAJA & ARQUEO DIARIO (#view-accounting) -->
+        <!-- ======================================================== -->
+        <div id="view-accounting" class="view-section hidden w-full px-6 py-6 space-y-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-200 gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">💵</span>
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">Cierre de Caja & Arqueo Diario</h2>
+              </div>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">Control contable en tiempo real, cuadre de caja y consolidación por medio de pago.</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <button type="button" onclick="loadDailyAccountingLedger()" class="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                <span>🔄</span> <span>Actualizar</span>
+              </button>
+              <button type="button" onclick="exportAccountingLedgerCSV()" class="px-4 py-2 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer" style="background-color: #059669 !important; color: #ffffff !important;">
+                <span>📥</span> <span>Exportar Cierre (CSV / Excel)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tarjetas de Resumen Superior (KPIs) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-black shrink-0 border border-emerald-100">
+                💵
+              </div>
+              <div class="min-w-0 flex-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Facturado Hoy</span>
+                <span id="acc-kpi-total" class="text-lg font-black text-slate-900 font-mono tracking-tight">$0 COP</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-black shrink-0 border border-amber-100">
+                🪙
+              </div>
+              <div class="min-w-0 flex-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Efectivo en Caja</span>
+                <span id="acc-kpi-cash" class="text-lg font-black text-amber-700 font-mono tracking-tight">$0 COP</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-black shrink-0 border border-blue-100">
+                💳
+              </div>
+              <div class="min-w-0 flex-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Datáfono / Tarjetas</span>
+                <span id="acc-kpi-card" class="text-lg font-black text-blue-700 font-mono tracking-tight">$0 COP</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-black shrink-0 border border-purple-100">
+                📱
+              </div>
+              <div class="min-w-0 flex-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Transferencias / Digital</span>
+                <span id="acc-kpi-digital" class="text-lg font-black text-purple-700 font-mono tracking-tight">$0 COP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de Herramientas y Filtros -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="flex items-center gap-2">
+                <label for="acc-date-filter" class="text-xs font-bold text-slate-600">Fecha:</label>
+                <input type="date" id="acc-date-filter" onchange="loadDailyAccountingLedger()" class="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+              </div>
+
+              <div class="flex items-center gap-2">
+                <label for="acc-concept-filter" class="text-xs font-bold text-slate-600">Concepto:</label>
+                <select id="acc-concept-filter" onchange="loadDailyAccountingLedger()" class="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <option value="TODOS" selected>Todos los Conceptos</option>
+                  <option value="CANCHAS">🎾 Canchas / Turnos</option>
+                  <option value="TIENDA">🛒 Tienda & Barra</option>
+                  <option value="AMERICANOS">🏆 Torneos Americanos</option>
+                  <option value="CLASES">🎓 Clases Academia</option>
+                  <option value="MEMBRESIA">💎 Membresías</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="text-xs font-bold text-slate-500">
+              Movimientos Registrados: <span id="acc-total-count" class="text-slate-900 font-mono font-black">0</span>
+            </div>
+          </div>
+
+          <!-- Tabla Transaccional de Arqueo -->
+          <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                    <th class="p-3.5">Hora</th>
+                    <th class="p-3.5">Recibo #</th>
+                    <th class="p-3.5">Cliente</th>
+                    <th class="p-3.5">Concepto</th>
+                    <th class="p-3.5">Detalle</th>
+                    <th class="p-3.5">Medio de Pago</th>
+                    <th class="p-3.5 text-right font-mono">Efectivo ($)</th>
+                    <th class="p-3.5 text-right font-mono">Tarjeta ($)</th>
+                    <th class="p-3.5 text-right font-mono">Total ($)</th>
+                    <th class="p-3.5 text-center">Operador</th>
+                  </tr>
+                </thead>
+                <tbody id="accounting-table-body" class="divide-y divide-slate-100 font-medium text-slate-800">
+                  <tr>
+                    <td colspan="10" class="p-8 text-center text-slate-400">Cargando arqueo de caja...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -5595,13 +5718,33 @@
           👑 <strong>Socio Activo:</strong> Exención de pago aplicada ($0 COP) por membresía activa.
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
           <div class="form-group" style="margin-bottom: 0;">
             <label class="form-label" style="font-weight: 700; color: #475569;">Precio Acordado (COP)</label>
             <input type="number" id="mb-price" class="form-control" placeholder="80000" value="80000" step="1000" min="0" required style="font-weight: 700; color: #047857;" />
           </div>
           <div class="form-group flex items-end" style="margin-bottom: 0;">
             <span id="mb-price-hint" class="text-[11px] text-slate-500 font-medium pb-2">Tarifa general calculada</span>
+          </div>
+        </div>
+
+        <!-- Toggle de Reserva Fija / Periódica -->
+        <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2.5 mb-3">
+          <label class="flex items-center gap-2.5 cursor-pointer select-none">
+            <input type="checkbox" id="mb-is-recurring" onchange="toggleManualBookingRecurring(this.checked)" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
+            <span class="text-xs font-bold text-indigo-900">🔁 Reserva Fija / Periódica</span>
+          </label>
+          <div id="mb-recurring-options" class="hidden grid grid-cols-2 gap-2.5 pt-1">
+            <div>
+              <label class="block text-[11px] font-bold text-indigo-800 mb-1">Frecuencia:</label>
+              <select id="mb-recurrence-frequency" class="form-control text-xs font-semibold bg-white border-indigo-200">
+                <option value="WEEKLY" selected>Semanal (mismo día y hora)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-indigo-800 mb-1">Número de semanas (4 a 12):</label>
+              <input type="number" id="mb-recurrence-weeks" min="4" max="12" value="4" class="form-control text-xs font-bold text-indigo-950 bg-white border-indigo-200">
+            </div>
           </div>
         </div>
 
@@ -6282,6 +6425,11 @@
         if (activeName === 'wallet-ledger' || rawId === 'wallet-ledger' || rawId === 'view-wallet-ledger') {
           if (typeof window.loadWalletLedger === 'function') {
             window.loadWalletLedger();
+          }
+        }
+        if (activeName === 'accounting' || rawId === 'accounting' || rawId === 'view-accounting') {
+          if (typeof window.loadDailyAccountingLedger === 'function') {
+            window.loadDailyAccountingLedger();
           }
         }
         if (activeName === 'radar' || rawId === 'radar') {
@@ -9889,6 +10037,18 @@ ${data.message}`);
     }
     window.onManualBookingSportChange = onManualBookingSportChange;
 
+    function toggleManualBookingRecurring(isChecked) {
+      const container = document.getElementById('mb-recurring-options');
+      if (container) {
+        if (isChecked) {
+          container.classList.remove('hidden');
+        } else {
+          container.classList.add('hidden');
+        }
+      }
+    }
+    window.toggleManualBookingRecurring = toggleManualBookingRecurring;
+
     async function submitManualBooking(e) {
       if (e && e.preventDefault) e.preventDefault();
       const btn = document.getElementById('btn-confirm-manual-booking');
@@ -9903,6 +10063,10 @@ ${data.message}`);
       const priceVal = parseFloat(document.getElementById('mb-price').value || '0');
       const catVal = document.getElementById('mb-category').value;
       const tierVal = (document.getElementById('mb-membership-tier') ? document.getElementById('mb-membership-tier').value : 'ESTANDAR');
+
+      const isRecurringEl = document.getElementById('mb-is-recurring');
+      const isRecurring = isRecurringEl ? isRecurringEl.checked : false;
+      const weeksVal = parseInt(document.getElementById('mb-recurrence-weeks')?.value || '4', 10);
 
       if (!nameVal || !phoneVal || !dateVal || !timeVal) {
         alert('Por favor completa todos los campos requeridos.');
@@ -9920,7 +10084,9 @@ ${data.message}`);
         client_phone: phoneVal,
         price: priceVal,
         category: catVal,
-        client_tier: tierVal
+        client_tier: tierVal,
+        is_recurring: isRecurring,
+        recurrence_weeks: weeksVal,
       };
 
       const origHtml = btn ? btn.innerHTML : '<span>➕</span> <span>Confirmar Reserva</span>';
@@ -12398,8 +12564,9 @@ ${data.message}`);
           courtObj.players.forEach((p, idx) => {
             const pDet = (courtObj.players_details || []).find(d => d.name === p);
             const pTier = pDet ? pDet.tier : 'ESTANDAR';
+            const pCustId = pDet ? (pDet.customer_id || '') : '';
             const tierBadge = pTier !== 'ESTANDAR' ? ` (👑 ${pTier})` : '';
-            opts += `<option value="${escapeHtml(p)}" data-tier="${pTier}">Jugador ${idx + 1}: ${escapeHtml(p)}${tierBadge}</option>`;
+            opts += `<option value="${escapeHtml(p)}" data-tier="${pTier}" data-customer-id="${pCustId}">Jugador ${idx + 1}: ${escapeHtml(p)}${tierBadge}</option>`;
           });
         }
         playerSel.innerHTML = opts;
@@ -12481,7 +12648,10 @@ ${data.message}`);
       const slotIdVal = document.getElementById('pos-modal-slot-id').value;
       const customerIdVal = document.getElementById('pos-modal-customer-id').value;
       const playerSel = document.getElementById('pos-modal-player-select');
-      const selectedPlayer = (playerSel && playerSel.value) ? playerSel.value : document.getElementById('modal-pos-player-name').textContent;
+      let selectedPlayer = (playerSel && playerSel.value) ? playerSel.value : document.getElementById('modal-pos-player-name').textContent;
+      let selectedCustId = (playerSel && playerSel.selectedIndex >= 0) ? playerSel.options[playerSel.selectedIndex].getAttribute('data-customer-id') : null;
+      if (!selectedCustId && customerIdVal) selectedCustId = customerIdVal;
+
       const sel = document.getElementById('pos-modal-product-select');
       if (!sel || !sel.value) {
         alert('Por favor selecciona un producto a cargar.');
@@ -12502,7 +12672,8 @@ ${data.message}`);
           product_id: productId,
           quantity: qty,
           is_membership_perk: isPerk,
-          player_name: selectedPlayer
+          player_name: selectedPlayer,
+          customer_id: selectedCustId ? parseInt(selectedCustId, 10) : null
         };
 
         const res = await fetch('/api/v1/pos/orders/add-item', {
@@ -12538,7 +12709,30 @@ ${data.message}`);
       const hiddenInput = document.getElementById('checkout-payment-method');
       if (hiddenInput) hiddenInput.value = method;
 
-      const methods = ['EFECTIVO', 'DATAFONO', 'BOLD_WOMPI', 'SALDO_A_FAVOR'];
+      const splitContainer = document.getElementById('checkout-split-container');
+      if (splitContainer) {
+        if (method === 'SPLIT') {
+          splitContainer.classList.remove('hidden');
+          const totalNeto = parseFloat(document.getElementById('checkout-raw-court-price')?.value || '0')
+            + parseFloat(document.getElementById('checkout-raw-bar-total')?.value || '0')
+            - parseFloat(document.getElementById('checkout-raw-discount')?.value || '0');
+          const half = Math.round(Math.max(0, totalNeto) / 2);
+          const cashInp = document.getElementById('checkout-split-cash');
+          const cardInp = document.getElementById('checkout-split-card');
+          if (cashInp) cashInp.value = half;
+          if (cardInp) cardInp.value = Math.max(0, totalNeto) - half;
+          validateSplitPaymentRealtime();
+        } else {
+          splitContainer.classList.add('hidden');
+          const btnConfirm = document.getElementById('btn-confirm-checkout');
+          if (btnConfirm) {
+            btnConfirm.disabled = false;
+            btnConfirm.classList.remove('opacity-50', 'cursor-not-allowed');
+          }
+        }
+      }
+
+      const methods = ['EFECTIVO', 'DATAFONO', 'BOLD_WOMPI', 'SPLIT', 'SALDO_A_FAVOR'];
       methods.forEach(m => {
         const btn = document.getElementById('btn-pm-' + m.toLowerCase());
         if (btn) {
@@ -12556,6 +12750,41 @@ ${data.message}`);
       });
     }
     window.selectCheckoutPaymentMethod = selectCheckoutPaymentMethod;
+
+    function validateSplitPaymentRealtime() {
+      const courtPrice = parseFloat(document.getElementById('checkout-raw-court-price')?.value || '0');
+      const barTotal = parseFloat(document.getElementById('checkout-raw-bar-total')?.value || '0');
+      const discount = parseFloat(document.getElementById('checkout-raw-discount')?.value || '0');
+      const totalToPay = Math.max(0, (courtPrice + barTotal) - discount);
+
+      const cash = parseFloat(document.getElementById('checkout-split-cash')?.value || '0');
+      const card = parseFloat(document.getElementById('checkout-split-card')?.value || '0');
+      const sum = cash + card;
+      const diff = Math.round(totalToPay - sum);
+
+      const feedback = document.getElementById('checkout-split-feedback');
+      const btnConfirm = document.getElementById('btn-confirm-checkout');
+
+      if (diff === 0) {
+        if (feedback) {
+          feedback.innerHTML = `<span class="text-emerald-700">✓ Suma exacta ($${(typeof formatCOP === 'function' ? formatCOP(totalToPay) : totalToPay)}): Listo para cobrar</span>`;
+        }
+        if (btnConfirm) {
+          btnConfirm.disabled = false;
+          btnConfirm.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+      } else {
+        const signText = diff > 0 ? `Faltan $${Math.abs(diff).toLocaleString('es-CO')} COP` : `Excedente de $${Math.abs(diff).toLocaleString('es-CO')} COP`;
+        if (feedback) {
+          feedback.innerHTML = `<span class="text-rose-600 font-bold">⚠️ La suma debe ser igual a ${(typeof formatCOP === 'function' ? formatCOP(totalToPay) : totalToPay)} COP (${signText})</span>`;
+        }
+        if (btnConfirm) {
+          btnConfirm.disabled = true;
+          btnConfirm.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+      }
+    }
+    window.validateSplitPaymentRealtime = validateSplitPaymentRealtime;
 
     function openPOSCheckoutModal(orderId, slotId, courtName, customerName, courtPrice, barTotal, tier) {
       document.getElementById('checkout-order-id').value = orderId || '';
@@ -12584,6 +12813,57 @@ ${data.message}`);
       document.getElementById('checkout-membership-discount').textContent = `-${formatCOP(discount)}`;
       document.getElementById('checkout-total-to-pay').textContent = formatCOP(totalToPay);
 
+      // Renderizar desglose individualizado por jugador
+      const breakdownBox = document.getElementById('checkout-items-breakdown-container');
+      const breakdownList = document.getElementById('checkout-items-by-player');
+      if (breakdownBox && breakdownList) {
+        breakdownList.innerHTML = '';
+        let foundItems = [];
+        if (window.activePOSCourtsMap) {
+          Object.values(window.activePOSCourtsMap).forEach(c => {
+            if ((slotId && String(c.slot_id) === String(slotId)) || (orderId && c.pending_order && String(c.pending_order.order_id) === String(orderId))) {
+              if (c.pending_order && c.pending_order.items) {
+                foundItems = c.pending_order.items;
+              }
+            }
+          });
+        }
+
+        if (foundItems.length > 0) {
+          breakdownBox.classList.remove('hidden');
+          const grouped = {};
+          foundItems.forEach(it => {
+            const pName = it.customer_name || 'Mesa / Cuenta General';
+            if (!grouped[pName]) grouped[pName] = [];
+            grouped[pName].push(it);
+          });
+
+          let bHtml = '';
+          Object.entries(grouped).forEach(([player, pItems]) => {
+            const playerSubtotal = pItems.reduce((acc, x) => acc + (x.is_perk ? 0 : (x.subtotal || 0)), 0);
+            bHtml += `
+              <div class="p-1.5 rounded bg-white border border-slate-200">
+                <div class="flex justify-between items-center text-[11px] font-black text-slate-800">
+                  <span class="flex items-center gap-1">👤 ${escapeHtml(player)}</span>
+                  <span class="font-mono text-emerald-700">${formatCOP(playerSubtotal)}</span>
+                </div>
+                <div class="mt-1 pl-3 space-y-0.5 border-l-2 border-slate-200 text-[10px] text-slate-600">
+                  ${pItems.map(it => `
+                    <div class="flex justify-between">
+                      <span>• ${it.quantity}x ${escapeHtml(it.product_name)} ${it.is_perk ? '<span class="text-[9px] font-bold text-purple-700">(🎁 Cortesía)</span>' : ''}</span>
+                      <span class="font-mono font-bold">${it.is_perk ? '$0' : formatCOP(it.subtotal)}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          });
+          breakdownList.innerHTML = bHtml;
+        } else {
+          breakdownBox.classList.add('hidden');
+        }
+      }
+
       selectCheckoutPaymentMethod('EFECTIVO');
 
       const modal = document.getElementById('modal-pos-checkout');
@@ -12602,10 +12882,14 @@ ${data.message}`);
       const slotId = document.getElementById('checkout-slot-id').value;
       const discount = parseFloat(document.getElementById('checkout-raw-discount').value || '0');
       const method = document.getElementById('checkout-payment-method').value || 'EFECTIVO';
+      const cash = parseFloat(document.getElementById('checkout-split-cash')?.value || '0');
+      const card = parseFloat(document.getElementById('checkout-split-card')?.value || '0');
 
       const payload = {
         payment_method: method,
-        discount_amount: discount
+        discount_amount: discount,
+        amount_cash: method === 'SPLIT' ? cash : 0,
+        amount_card: method === 'SPLIT' ? card : 0,
       };
 
       try {
@@ -12630,6 +12914,7 @@ ${data.message}`);
           closePOSCheckoutModal();
           await loadPOSData();
           if (typeof fetchSlots === 'function') fetchSlots();
+          if (typeof loadDailyAccountingLedger === 'function') loadDailyAccountingLedger();
           alert(`🧾 ¡Partido cerrado y liquidado con éxito!\n\nAlquiler Cancha: ${formatCOP(data.court_price)}\nConsumos Barra: ${formatCOP(data.bar_total)}\nDescuento Membresía: -${formatCOP(data.membership_discount || 0)}\nTotal Neto Pagado: ${formatCOP(data.total_to_pay)}\nMedio de Pago: ${data.payment_method || method}\nEstado Cancha: Liberada ✓`);
         } else {
           const err = await res.json();
@@ -12641,6 +12926,38 @@ ${data.message}`);
       }
     }
     window.confirmPOSCheckout = confirmPOSCheckout;
+
+    // --- Activación de Remate Flash (-25%) ---
+    async function triggerFlashPromo(slotId) {
+      if (!slotId) return;
+      const ok = confirm("⚡ Remate Flash: Se aplicará un 25% de descuento sobre la tarifa base de este turno y se actualizará su precio inmediatamente. ¿Deseas activarlo?");
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`/api/v1/slots/${slotId}/apply-flash-promo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof showDarkToast === 'function') {
+            showDarkToast('⚡ Remate Flash Activado', data.message || 'Precio promocional -25% aplicado.');
+          } else {
+            alert(`⚡ Remate Flash Activado: ${data.message || 'Descuento aplicado exitosamente'}`);
+          }
+          if (typeof fetchSlots === 'function') await fetchSlots();
+        } else {
+          const err = await res.json();
+          alert('Error al activar Promo Flash: ' + (err.detail || 'No se pudo aplicar el descuento'));
+        }
+      } catch (e) {
+        console.error('Error en triggerFlashPromo:', e);
+        alert('Error de conexión al activar Remate Flash.');
+      }
+    }
+    window.triggerFlashPromo = triggerFlashPromo;
+    window.triggerFlashPromoForSlot = triggerFlashPromo;
 
     // --- Modal Agregar Stock ---
     function openPOSAddStockModal(productId, productName, currentStock) {
@@ -13974,6 +14291,123 @@ Jugador: ${checkData.player_name}`);
 
     setInterval(() => { loadInboxConversations(); }, 20000);
     loadInboxConversations();
+
+    // =========================================================================
+    // MODULO: 💵 CIERRE DE CAJA & ARQUEO DIARIO (#view-accounting)
+    // =========================================================================
+    window.accountingLedgerCache = [];
+
+    async function loadDailyAccountingLedger() {
+      const dateInp = document.getElementById('acc-date-filter');
+      const conceptInp = document.getElementById('acc-concept-filter');
+      const tbody = document.getElementById('accounting-table-body');
+      
+      let dateVal = dateInp ? dateInp.value : '';
+      if (!dateVal) {
+        dateVal = (typeof getColombiaTodayString === 'function') ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
+        if (dateInp) dateInp.value = dateVal;
+      }
+      const conceptVal = conceptInp ? conceptInp.value : 'TODOS';
+
+      try {
+        const url = `/api/v1/accounting/daily-ledger?date=${encodeURIComponent(dateVal)}&concept=${encodeURIComponent(conceptVal)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Error al consultar libro contable');
+        const data = await res.json();
+
+        window.accountingLedgerCache = data.transactions || [];
+
+        // Renderizar KPIs
+        const kpis = data.kpis || {};
+        const kpiTotal = document.getElementById('acc-kpi-total');
+        const kpiCash = document.getElementById('acc-kpi-cash');
+        const kpiCard = document.getElementById('acc-kpi-card');
+        const kpiDigital = document.getElementById('acc-kpi-digital');
+        const countBadge = document.getElementById('acc-total-count');
+
+        if (kpiTotal) kpiTotal.textContent = (typeof formatCOP === 'function') ? formatCOP(kpis.total_billed_cop || 0) : `$${Math.round(kpis.total_billed_cop || 0).toLocaleString('es-CO')}`;
+        if (kpiCash) kpiCash.textContent = (typeof formatCOP === 'function') ? formatCOP(kpis.total_cash_cop || 0) : `$${Math.round(kpis.total_cash_cop || 0).toLocaleString('es-CO')}`;
+        if (kpiCard) kpiCard.textContent = (typeof formatCOP === 'function') ? formatCOP(kpis.total_card_cop || 0) : `$${Math.round(kpis.total_card_cop || 0).toLocaleString('es-CO')}`;
+        if (kpiDigital) kpiDigital.textContent = (typeof formatCOP === 'function') ? formatCOP(kpis.total_digital_cop || 0) : `$${Math.round(kpis.total_digital_cop || 0).toLocaleString('es-CO')}`;
+        if (countBadge) countBadge.textContent = data.total_transactions || 0;
+
+        // Renderizar Tabla
+        if (tbody) {
+          if (!data.transactions || data.transactions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-slate-400">No hay movimientos registrados para esta fecha y filtro.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = data.transactions.map(t => {
+            let pmBadgeClass = 'bg-slate-100 text-slate-700';
+            if (t.payment_method === 'EFECTIVO') pmBadgeClass = 'bg-amber-100 text-amber-800 border border-amber-200';
+            else if (t.payment_method === 'DATAFONO') pmBadgeClass = 'bg-blue-100 text-blue-800 border border-blue-200';
+            else if (t.payment_method === 'SPLIT') pmBadgeClass = 'bg-purple-100 text-purple-800 border border-purple-200 font-black';
+            else if (t.payment_method === 'BOLD_WOMPI' || t.payment_method === 'TRANSFERENCIA') pmBadgeClass = 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+
+            const formattedCash = (typeof formatCOP === 'function') ? formatCOP(t.amount_cash || 0) : `$${Math.round(t.amount_cash || 0).toLocaleString('es-CO')}`;
+            const formattedCard = (typeof formatCOP === 'function') ? formatCOP(t.amount_card || 0) : `$${Math.round(t.amount_card || 0).toLocaleString('es-CO')}`;
+            const formattedTotal = (typeof formatCOP === 'function') ? formatCOP(t.total_amount || 0) : `$${Math.round(t.total_amount || 0).toLocaleString('es-CO')}`;
+
+            return `
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="p-3.5 font-bold font-mono text-slate-600">${t.time || '--:--'}</td>
+                <td class="p-3.5 font-mono text-[11px] font-bold text-slate-700">${t.transaction_id || '--'}</td>
+                <td class="p-3.5 font-bold text-slate-900">${t.customer_name || 'Cliente'}</td>
+                <td class="p-3.5"><span class="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-slate-100 text-slate-700">${t.concept}</span></td>
+                <td class="p-3.5 text-slate-600 max-w-xs truncate">${t.details || '-'}</td>
+                <td class="p-3.5"><span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${pmBadgeClass}">${t.payment_method}</span></td>
+                <td class="p-3.5 text-right font-mono font-bold text-amber-700">${formattedCash}</td>
+                <td class="p-3.5 text-right font-mono font-bold text-blue-700">${formattedCard}</td>
+                <td class="p-3.5 text-right font-mono font-black text-slate-900">${formattedTotal}</td>
+                <td class="p-3.5 text-center text-slate-500 text-[11px]">${t.operator || 'Staff'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Error cargando arqueo:', err);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-rose-500 font-bold">Error al cargar datos contables.</td></tr>';
+      }
+    }
+    window.loadDailyAccountingLedger = loadDailyAccountingLedger;
+
+    function exportAccountingLedgerCSV() {
+      const items = window.accountingLedgerCache || [];
+      if (items.length === 0) {
+        alert('No hay transacciones visibles para exportar.');
+        return;
+      }
+
+      const headers = ['Hora', 'Recibo #', 'Fecha', 'Cliente', 'Telefono', 'Concepto', 'Detalle', 'Medio de Pago', 'Efectivo COP', 'Tarjeta COP', 'Total COP', 'Operador'];
+      const rows = items.map(t => [
+        t.time || '',
+        t.transaction_id || '',
+        t.date || '',
+        `"${(t.customer_name || '').replace(/"/g, '""')}"`,
+        `"${(t.customer_phone || '').replace(/"/g, '""')}"`,
+        t.concept || '',
+        `"${(t.details || '').replace(/"/g, '""')}"`,
+        t.payment_method || '',
+        Math.round(t.amount_cash || 0),
+        Math.round(t.amount_card || 0),
+        Math.round(t.total_amount || 0),
+        `"${(t.operator || '').replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const dateInp = document.getElementById('acc-date-filter');
+      const dateStr = (dateInp && dateInp.value) ? dateInp.value : 'hoy';
+      const fileName = `Cierre_Caja_YieldPadel_${dateStr}.csv`;
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+    window.exportAccountingLedgerCSV = exportAccountingLedgerCSV;
 
     // =========================================================================
     // MODULO: 🎓 ACADEMIA DE PÁDEL & CLASES
@@ -15535,6 +15969,12 @@ PARTIDO CERRADO</textarea>
             <span id="checkout-bar-total" class="font-bold text-slate-800 font-mono">$0 COP</span>
           </div>
 
+          <!-- Consumos Agrupados por Jugador / Cuenta -->
+          <div id="checkout-items-breakdown-container" class="hidden bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1.5 max-h-36 overflow-y-auto">
+            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Detalle por Jugador:</span>
+            <div id="checkout-items-by-player" class="space-y-1"></div>
+          </div>
+
           <div class="flex justify-between items-center text-xs text-purple-700">
             <span class="font-bold flex items-center gap-1.5">
               <span>👑</span> <span>Descuentos de Membresía aplicados:</span>
@@ -15562,9 +16002,30 @@ PARTIDO CERRADO</textarea>
             <button type="button" onclick="selectCheckoutPaymentMethod('BOLD_WOMPI')" id="btn-pm-bold_wompi" class="payment-method-btn py-2 px-3 text-xs font-bold rounded-lg border text-center transition" style="background-color: #f8fafc !important; color: #334155 !important; border: 1px solid #cbd5e1 !important;">
               📱 Bold / Wompi
             </button>
-            <button type="button" onclick="selectCheckoutPaymentMethod('SALDO_A_FAVOR')" id="btn-pm-saldo_a_favor" class="payment-method-btn py-2 px-3 text-xs font-bold rounded-lg border text-center transition" style="background-color: #f8fafc !important; color: #334155 !important; border: 1px solid #cbd5e1 !important;">
+            <button type="button" onclick="selectCheckoutPaymentMethod('SPLIT')" id="btn-pm-split" class="payment-method-btn py-2 px-3 text-xs font-bold rounded-lg border text-center transition" style="background-color: #f8fafc !important; color: #334155 !important; border: 1px solid #cbd5e1 !important;">
+              ⚖️ Pago Mixto (Efectivo + Tarjeta)
+            </button>
+            <button type="button" onclick="selectCheckoutPaymentMethod('SALDO_A_FAVOR')" id="btn-pm-saldo_a_favor" class="col-span-2 payment-method-btn py-1.5 px-3 text-xs font-bold rounded-lg border text-center transition" style="background-color: #f8fafc !important; color: #334155 !important; border: 1px solid #cbd5e1 !important;">
               🎁 Saldo a Favor
             </button>
+          </div>
+
+          <!-- Inputs desplegables de Pago Mixto (Split Payment) -->
+          <div id="checkout-split-container" class="hidden p-3 bg-purple-50/70 border border-purple-200 rounded-xl space-y-2 mt-2">
+            <span class="text-[11px] font-black text-purple-900 uppercase tracking-wider block">Desglose de Pago Mixto:</span>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">💵 Efectivo $ COP</label>
+                <input type="number" id="checkout-split-cash" oninput="validateSplitPaymentRealtime()" min="0" step="500" value="0" class="w-full px-2.5 py-1.5 text-xs font-bold text-amber-900 border border-purple-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">💳 Datáfono / Tarjeta $ COP</label>
+                <input type="number" id="checkout-split-card" oninput="validateSplitPaymentRealtime()" min="0" step="500" value="0" class="w-full px-2.5 py-1.5 text-xs font-bold text-blue-900 border border-purple-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+            </div>
+            <div id="checkout-split-feedback" class="text-[11px] font-bold text-slate-600 pt-1">
+              <!-- Validación en tiempo real -->
+            </div>
           </div>
         </div>
 

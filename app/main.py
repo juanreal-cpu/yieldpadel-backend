@@ -150,6 +150,11 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE club_presences ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT ''",
                     # users
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS club_id VARCHAR(50) DEFAULT '2756f34a-7d24-4815-9f7e-6ed125ea5de7'",
+                    # time_slots recurrence
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS recurrence_group_id VARCHAR(100)",
+                    # order_items customer attribution
+                    "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS customer_id INTEGER",
+                    "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS customer_name VARCHAR(150) DEFAULT 'Mesa / Cuenta General'",
                 ]
                 for stmt in pg_statements:
                     try:

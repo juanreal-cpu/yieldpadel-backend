@@ -14,6 +14,7 @@ from app.models.court import Court
 from app.models.customer import Customer
 from app.models.product import INITIAL_DUMMY_PRODUCTS, Order, OrderItem, Product
 from app.models.slot import HoldStatus, PaymentStatus, SlotStatus, TimeSlot
+from app.models.accounting import DailyAccountingLedger
 from app.services.audit import log_activity
 
 logger = logging.getLogger("yieldpadel.pos")
@@ -58,11 +59,14 @@ class AddItemToSlotRequest(BaseModel):
     quantity: int = Field(default=1, ge=1)
     is_membership_perk: bool = False
     player_name: Optional[str] = None
+    customer_id: Optional[int] = None
 
 
 class CheckoutOrderRequest(BaseModel):
-    payment_method: str = "EFECTIVO"  # EFECTIVO, DATAFONO, BOLD_WOMPI, SALDO_A_FAVOR
+    payment_method: str = "EFECTIVO"  # EFECTIVO, DATAFONO, BOLD_WOMPI, SALDO_A_FAVOR, SPLIT
     discount_amount: float = 0.0
+    amount_cash: float = 0.0
+    amount_card: float = 0.0
 
 
 class CheckoutResponse(BaseModel):
@@ -373,6 +377,8 @@ async def get_active_slots(db: AsyncSession = Depends(get_db)):
                                 "unit_price": float(it.unit_price),
                                 "subtotal": float(it.subtotal),
                                 "is_perk": it.is_perk,
+                                "customer_name": getattr(it, "customer_name", "Mesa / Cuenta General") or "Mesa / Cuenta General",
+                                "customer_id": getattr(it, "customer_id", None),
                             }
                             for it in active_order.items
                         ],
@@ -590,6 +596,7 @@ async def add_item_to_slot_order(
         unit_price = product.price
         subtotal = unit_price * qty
 
+    cust_player_name = payload.player_name.strip() if payload.player_name else (order.customer_name or "Mesa / Cuenta General")
     order_item = OrderItem(
         order_id=order.id,
         product_id=product.id,
@@ -597,6 +604,8 @@ async def add_item_to_slot_order(
         unit_price=unit_price,
         subtotal=subtotal,
         is_perk=is_perk_effective,
+        customer_id=payload.customer_id,
+        customer_name=cust_player_name,
     )
     db.add(order_item)
     order.total_amount += subtotal
@@ -630,6 +639,8 @@ async def add_item_to_slot_order(
                 "unit_price": float(it.unit_price),
                 "subtotal": float(it.subtotal),
                 "is_perk": it.is_perk,
+                "customer_name": getattr(it, "customer_name", "Mesa / Cuenta General") or "Mesa / Cuenta General",
+                "customer_id": getattr(it, "customer_id", None),
             }
             for it in order_full.items
         ],
@@ -677,6 +688,44 @@ async def checkout_order(
     total_to_pay = max(0.0, (court_price + bar_total) - discount)
 
     order.payment_status = "PAID"
+
+    # Registro en DailyAccountingLedger
+    try:
+        from app.core.timezone import get_bogota_today
+        pm = payment_method.upper()
+        cash = Decimal(str(payload.amount_cash if payload else 0))
+        card = Decimal(str(payload.amount_card if payload else 0))
+        tot = Decimal(str(total_to_pay))
+        dig = Decimal("0.00")
+
+        if pm == "EFECTIVO":
+            cash = tot
+        elif pm == "DATAFONO":
+            card = tot
+        elif pm in ("BOLD_WOMPI", "TRANSFERENCIA"):
+            dig = tot
+        elif pm == "SPLIT":
+            if cash == 0 and card == 0:
+                cash = tot
+
+        ledger_entry = DailyAccountingLedger(
+            date=get_bogota_today(),
+            customer_name=order.customer_name or "Cliente Cancha",
+            concept="CANCHAS" if court_price > 0 else "TIENDA",
+            details=f"Liquidación Orden #{order.id}: Cancha ${court_price:,.0f} + Barra ${bar_total:,.0f}",
+            payment_method=pm,
+            amount_cash=cash,
+            amount_card=card,
+            amount_digital=dig,
+            total_amount=tot,
+            operator="Recepcionista Turno",
+            slot_id=order.slot_id,
+            order_id=order.id,
+        )
+        db.add(ledger_entry)
+    except Exception as e:
+        logger.warning(f"Error registrando cierre en DailyAccountingLedger: {e}")
+
     await db.commit()
     await db.refresh(order)
 
@@ -741,6 +790,43 @@ async def checkout_slot(
     else:
         order_id = 0
         customer_name = "Cliente Cancha"
+
+    # Registro en DailyAccountingLedger
+    try:
+        from app.core.timezone import get_bogota_today
+        pm = payment_method.upper()
+        cash = Decimal(str(payload.amount_cash if payload else 0))
+        card = Decimal(str(payload.amount_card if payload else 0))
+        tot = Decimal(str(total_to_pay))
+        dig = Decimal("0.00")
+
+        if pm == "EFECTIVO":
+            cash = tot
+        elif pm == "DATAFONO":
+            card = tot
+        elif pm in ("BOLD_WOMPI", "TRANSFERENCIA"):
+            dig = tot
+        elif pm == "SPLIT":
+            if cash == 0 and card == 0:
+                cash = tot
+
+        ledger_entry = DailyAccountingLedger(
+            date=get_bogota_today(),
+            customer_name=customer_name or "Cliente Cancha",
+            concept="CANCHAS",
+            details=f"Liquidación Slot #{slot.id}: Cancha ${court_price:,.0f} + Consumos ${bar_total:,.0f}",
+            payment_method=pm,
+            amount_cash=cash,
+            amount_card=card,
+            amount_digital=dig,
+            total_amount=tot,
+            operator="Recepcionista Turno",
+            slot_id=slot.id,
+            order_id=order_id if order_id != 0 else None,
+        )
+        db.add(ledger_entry)
+    except Exception as e:
+        logger.warning(f"Error registrando cierre en DailyAccountingLedger: {e}")
 
     await db.commit()
 

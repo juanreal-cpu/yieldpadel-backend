@@ -237,4 +237,6 @@ class ManualBookingRequest(BaseModel):
     client_phone: str
     price: Optional[Decimal] = None
     category: Optional[str] = "4ta"
-    client_tier: Optional[str] = "ESTANDAR"
+    client_tier: Optional[str] = "ESTANDAR"
+    is_recurring: Optional[bool] = False
+    recurrence_weeks: Optional[int] = 4

@@ -1157,7 +1157,134 @@ async def create_manual_booking(
 
         mode_enum = SlotMode.FULL_COURT if (payload.mode or "FULL_COURT").upper() == "FULL_COURT" else SlotMode.SPLIT_MATCH
 
-# 5. Collision Guard Estricto (Anti-Overbooking)
+        # 5. Soporte para Reservas Periódicas / Recurrentes (is_recurring == True)
+        if getattr(payload, "is_recurring", False):
+            weeks = max(4, min(12, int(payload.recurrence_weeks or 4)))
+            recurrence_dates = [b_date + timedelta(days=7 * i) for i in range(weeks)]
+
+            # A) Validar colisiones en todas las fechas solicitadas
+            for w_idx, target_dt in enumerate(recurrence_dates, start=1):
+                chk_stmt = (
+                    select(TimeSlot)
+                    .where(
+                        TimeSlot.court_id == target_court.id,
+                        TimeSlot.date == target_dt,
+                        TimeSlot.start_time < end_t,
+                        TimeSlot.end_time > start_t,
+                        TimeSlot.status != SlotStatus.CANCELLED,
+                    )
+                )
+                chk_res = await db.execute(chk_stmt)
+                clashes = chk_res.scalars().all()
+                for c_slot in clashes:
+                    if c_slot.status == SlotStatus.BLOCKED or c_slot.slot_type in ("MAINTENANCE", "BLOCKED"):
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"⚠️ Conflicto recurrente en Semana {w_idx} ({target_dt.strftime('%Y-%m-%d')}): Cancha bloqueada por mantenimiento ({c_slot.start_time.strftime('%H:%M')} - {c_slot.end_time.strftime('%H:%M')}).",
+                        )
+                    if c_slot.start_time != start_t and c_slot.status != SlotStatus.AVAILABLE:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"⚠️ Conflicto recurrente en Semana {w_idx} ({target_dt.strftime('%Y-%m-%d')}): Cancha ocupada con reserva solapada ({c_slot.start_time.strftime('%H:%M')} - {c_slot.end_time.strftime('%H:%M')}).",
+                        )
+                    if c_slot.start_time == start_t:
+                        if c_slot.status == SlotStatus.FULLY_BOOKED or (c_slot.booked_spots and c_slot.booked_spots >= (c_slot.capacity or cap)):
+                            raise HTTPException(
+                                status_code=status.HTTP_409_CONFLICT,
+                                detail=f"⚠️ Conflicto recurrente en Semana {w_idx} ({target_dt.strftime('%Y-%m-%d')}): Esta franja ({start_t.strftime('%H:%M')} - {end_t.strftime('%H:%M')}) ya está 100% reservada.",
+                            )
+                        if mode_enum == SlotMode.FULL_COURT:
+                            c_players = list(c_slot.players_names or [])
+                            others = [p for p in c_players if isinstance(p, dict) and p.get("phone") != client_phone]
+                            if len(others) > 0 or c_slot.booked_spots > 0:
+                                raise HTTPException(
+                                    status_code=status.HTTP_409_CONFLICT,
+                                    detail=f"⚠️ Conflicto recurrente en Semana {w_idx} ({target_dt.strftime('%Y-%m-%d')}): Ya hay jugadores inscritos en esa franja.",
+                                )
+
+            # B) Sin colisiones -> Crear / Actualizar los slots del lote
+            recurrence_group_id = str(uuid.uuid4())
+            created_slots = []
+            for target_dt in recurrence_dates:
+                ex_stmt = (
+                    select(TimeSlot)
+                    .where(
+                        TimeSlot.court_id == target_court.id,
+                        TimeSlot.date == target_dt,
+                        TimeSlot.start_time == start_t,
+                        TimeSlot.status != SlotStatus.CANCELLED,
+                    )
+                )
+                ex_res = await db.execute(ex_stmt)
+                target_slot = ex_res.scalars().first()
+
+                if target_slot:
+                    target_slot.total_price = total_price
+                    target_slot.price_total_cop = total_price
+                    target_slot.price = total_price
+                    target_slot.price_per_player_cop = total_price / (target_slot.capacity or cap)
+                    target_slot.sport_type = sport
+                    target_slot.recurrence_group_id = recurrence_group_id
+                    curr_players = list(target_slot.players_names or [])
+                    if not any(isinstance(p, dict) and p.get("phone") == client_phone for p in curr_players):
+                        p_entry = dict(player_entry)
+                        p_entry["spot_index"] = len(curr_players) + 1
+                        curr_players.append(p_entry)
+                    target_slot.players_names = curr_players
+                    if mode_enum == SlotMode.FULL_COURT:
+                        target_slot.mode = SlotMode.FULL_COURT
+                        target_slot.booked_spots = target_slot.capacity
+                        target_slot.status = SlotStatus.FULLY_BOOKED
+                    else:
+                        target_slot.mode = SlotMode.SPLIT_MATCH
+                        target_slot.booked_spots = len(curr_players)
+                        target_slot.status = SlotStatus.FULLY_BOOKED if target_slot.booked_spots >= target_slot.capacity else SlotStatus.PARTIALLY_BOOKED
+                    created_slots.append(target_slot)
+                else:
+                    booked_spots = cap if mode_enum == SlotMode.FULL_COURT else 1
+                    st_status = SlotStatus.FULLY_BOOKED if booked_spots >= cap else SlotStatus.PARTIALLY_BOOKED
+                    new_slot = TimeSlot(
+                        club_id=1,
+                        court_id=target_court.id,
+                        date=target_dt,
+                        start_time=start_t,
+                        end_time=end_t,
+                        total_price=total_price,
+                        price_total_cop=total_price,
+                        price_per_player_cop=total_price / cap,
+                        price=total_price,
+                        mode=mode_enum,
+                        capacity=cap,
+                        booked_spots=booked_spots,
+                        status=st_status,
+                        category=payload.category or "4ta",
+                        players_names=[dict(player_entry)],
+                        slot_type="MATCH",
+                        instructor_name=None,
+                        is_promo=False,
+                        sport_type=sport,
+                        recurrence_group_id=recurrence_group_id,
+                    )
+                    db.add(new_slot)
+                    created_slots.append(new_slot)
+
+            await db.commit()
+            return {
+                "status": "ok",
+                "is_recurring": True,
+                "recurrence_group_id": recurrence_group_id,
+                "weeks_booked": weeks,
+                "message": f"Reserva fija confirmada por {weeks} semanas consecutivas.",
+                "dates": [str(d) for d in recurrence_dates],
+                "court_name": target_court.name,
+                "start_time": start_t.strftime("%H:%M"),
+                "end_time": end_t.strftime("%H:%M"),
+                "client_name": client_name,
+                "client_phone": client_phone,
+                "total_price_per_session": float(total_price),
+            }
+
+        # 5b. Collision Guard Estricto para Reserva Individual
         # Condición matemática de colisión: (start_time < new_end) AND (end_time > new_start)
         overlap_stmt = (
             select(TimeSlot)
@@ -1291,6 +1418,46 @@ async def create_manual_booking(
             status_code=500,
             detail=f"Error al procesar reserva manual: {str(exc)}",
         )
+
+
+@router.post("/{slot_id}/apply-flash-promo", summary="Aplicar descuento Flash Promo (-25%) a un turno")
+async def apply_flash_promo(
+    slot_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Aplica de inmediato un descuento del 25% sobre la tarifa base de este turno,
+    marca is_promo=True y actualiza su precio en la plataforma.
+    """
+    stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id)
+    res = await db.execute(stmt)
+    slot = res.scalars().first()
+    if not slot:
+        raise HTTPException(status_code=404, detail=f"Turno #{slot_id} no encontrado")
+
+    original_price = slot.total_price or Decimal("80000.00")
+    discounted_price = (original_price * Decimal("0.75")).quantize(Decimal("1.00"))
+
+    slot.total_price = discounted_price
+    slot.price_total_cop = discounted_price
+    slot.price = discounted_price
+    if slot.capacity:
+        slot.price_per_player_cop = (discounted_price / slot.capacity).quantize(Decimal("1.00"))
+    slot.is_promo = True
+
+    await db.commit()
+    await db.refresh(slot)
+
+    return {
+        "status": "ok",
+        "success": True,
+        "message": f"Promo Flash activada (-25%): Nuevo valor ${int(discounted_price):,} COP.",
+        "slot_id": slot.id,
+        "court_name": slot.court.name if slot.court else "Cancha",
+        "original_price": float(original_price),
+        "discounted_price": float(discounted_price),
+        "is_promo": slot.is_promo,
+    }
 
 
 @router.get("/{slot_id}/yield-recommendation")
