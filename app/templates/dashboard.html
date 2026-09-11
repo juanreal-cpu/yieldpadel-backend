@@ -297,10 +297,10 @@
     }
 
     .sidebar-nav-item.active {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: #FFFFFF;
-      font-weight: 500;
-      box-shadow: none;
+      background: linear-gradient(135deg, rgba(0, 245, 160, 0.15) 0%, rgba(0, 217, 245, 0.1) 100%);
+      color: #00F5A0;
+      font-weight: 600;
+      box-shadow: 0 0 15px rgba(0, 245, 160, 0.15);
     }
 
     .sidebar-nav-item .nav-icon {
@@ -455,8 +455,8 @@
     }
 
     .kpi-card {
-      background-color: rgba(30, 41, 59, 0.8);
-      border: 1px solid rgba(51, 65, 85, 0.6);
+      background-color: #0e1320;
+      border: 1px solid rgba(30, 41, 59, 0.9);
       border-radius: 0.75rem;
       padding: 0.625rem;
       display: flex;
@@ -464,6 +464,8 @@
       justify-content: space-between;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
     }
 
     .kpi-label {
@@ -2054,15 +2056,16 @@
       border-left: 4px solid #7C3AED;
     }
 
-      /* ESTILOS REFORZADOS BARRA DE CONTROL SAAS LIMPIA (sidebar fijo w-48, estilo Linear) */
+      /* ESTILOS REFORZADOS BARRA DE CONTROL SAAS LIMPIA (Electric Performance) */
     .sidebar-nav-item.active {
-      background-color: rgba(255, 255, 255, 0.1) !important;
-      color: #FFFFFF !important;
-      font-weight: 500 !important;
-      box-shadow: none;
+      background: linear-gradient(135deg, rgba(0, 245, 160, 0.15) 0%, rgba(0, 217, 245, 0.1) 100%) !important;
+      border: 1px solid rgba(0, 245, 160, 0.4) !important;
+      color: #00F5A0 !important;
+      font-weight: 600 !important;
+      box-shadow: 0 0 15px rgba(0, 245, 160, 0.15) !important;
     }
     .sidebar-nav-item.active span {
-      color: #FFFFFF !important;
+      color: #00F5A0 !important;
     }
 
     /* ==================================================================== */
@@ -2122,10 +2125,11 @@
     #sidebar .sidebar-link.active,
     #sidebar .sidebar-link[class*="bg-blue"],
     #sidebar .sidebar-link[class*="bg-white"] {
-      background-color: rgba(255, 255, 255, 0.12) !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-      color: #ffffff !important;
+      background: linear-gradient(135deg, rgba(0, 245, 160, 0.15) 0%, rgba(0, 217, 245, 0.1) 100%) !important;
+      border: 1px solid rgba(0, 245, 160, 0.4) !important;
+      color: #00F5A0 !important;
       font-weight: 600 !important;
+      box-shadow: 0 0 15px rgba(0, 245, 160, 0.15) !important;
     }
     #sidebar .sidebar-link span,
     #sidebar .sidebar-link.active span {
@@ -2273,9 +2277,24 @@
     <aside id="sidebar" class="fixed top-0 left-0 h-screen w-48 z-40 bg-[#0e1015] border-r border-[#1f2430] flex flex-col justify-between py-3 px-2 select-none overflow-y-hidden">
       <div>
         <!-- Logo & Marca -->
-        <div id="sidebar-logo-container" class="flex items-center gap-2.5 px-2 pb-3 mb-1 border-b border-[#1f2430]/60 shrink-0">
-          <div class="w-6 h-6 rounded-md bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-xs shrink-0">Y</div>
-          <span class="font-bold text-white text-xs tracking-tight select-none !opacity-100 !text-white">YieldPadel</span>
+        <div id="sidebar-logo-container" class="flex items-center gap-2.5 px-2 pb-3 mb-2 border-b border-slate-800/80 shrink-0">
+          <div class="w-8 h-8 rounded-xl bg-slate-900 border border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-500/10 shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="10" r="7" stroke="url(#gradCyanGreen)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="32 6"/>
+              <path d="M10 7L12 11M14 7L12 11M12 11V16" stroke="#00F5A0" stroke-width="2" stroke-linecap="round"/>
+              <path d="M15 15C16.1046 15 17 14.1046 17 13C17 11.8954 16.1046 11 15 11H13.5V17" stroke="#00D9F5" stroke-width="1.8" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="gradCyanGreen" x1="5" y1="3" x2="19" y2="17" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#00F5A0"/>
+                  <stop offset="1" stop-color="#00D9F5"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-black text-white text-xs tracking-tight">YieldPadel</span>
+            <span class="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Electric OS</span>
+          </div>
         </div>
 
         <!-- Menú Vertical de Navegación -->
@@ -2352,8 +2371,8 @@
 
       <!-- Pie del Sidebar -->
       <div class="pt-2 mt-auto border-t border-[#1f2430]/60 flex flex-col gap-1">
-        <div class="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold text-emerald-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+        <div class="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold text-[#00F5A0]">
+          <span class="w-2 h-2 rounded-full bg-[#00F5A0] shadow-[0_0_8px_#00F5A0] animate-pulse shrink-0"></span>
           <span class="truncate">API Live (Bogotá)</span>
         </div>
         <button type="button" onclick="fetchSlots()" class="sidebar-link w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition" title="Refrescar turnos en vivo">
@@ -2404,6 +2423,7 @@
         <div class="kpi-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 w-full items-center">
           <!-- KPI 1: Clientes Activos -->
           <div class="kpi-card">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
             <div class="kpi-label">
               <span>Clientes Activos</span>
               <span class="kpi-tag kpi-tag-cyan">+12 este mes</span>
@@ -2414,6 +2434,7 @@
 
           <!-- KPI 2: Ingresos Confirmados con Meta Diaria -->
           <div class="kpi-card">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-400 to-cyan-400"></div>
             <div class="kpi-label">
               <span>Ingresos Confirmados</span>
               <span class="kpi-tag kpi-tag-emerald" id="kpi-revenue-tag">En Vivo</span>
@@ -2424,6 +2445,7 @@
 
           <!-- KPI 3: Tasa de Ocupación Hoy -->
           <div class="kpi-card">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-teal-400 to-emerald-500"></div>
             <div class="kpi-label">
               <span>Tasa Ocupación Hoy</span>
               <span class="kpi-tag kpi-tag-emerald" id="kpi-occupancy-tag">Alta demanda</span>
@@ -2436,6 +2458,7 @@
 
           <!-- KPI 4: Partidos Abiertos por Completar -->
           <div class="kpi-card">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-400 to-orange-500"></div>
             <div class="kpi-label">
               <span>Partidos Abiertos</span>
               <span class="kpi-tag kpi-tag-amber" id="kpi-open-tag">Completar</span>
@@ -2446,6 +2469,7 @@
 
           <!-- KPI 5: RevPAST Proyectado -->
           <div class="kpi-card">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-violet-500 to-purple-600"></div>
             <div class="kpi-label">
               <span>RevPAST Proyectado</span>
               <span class="kpi-tag kpi-tag-purple">Meta $1.5M</span>
