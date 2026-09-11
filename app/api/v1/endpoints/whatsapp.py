@@ -369,6 +369,27 @@ class ReactivateBotRequest(BaseModel):
     sender_phone: str
 
 
+@router.get("/inbox/pending-count")
+async def get_inbox_pending_count(db: AsyncSession = Depends(get_db)):
+    """
+    Cuenta en la base de datos todas las conversaciones activas donde
+    is_bot_paused == True o unread_count > 0.
+    """
+    from sqlalchemy import func, or_
+    stmt = (
+        select(func.count(WhatsAppConversation.id))
+        .where(
+            or_(
+                WhatsAppConversation.is_bot_paused == True,  # noqa: E712
+                WhatsAppConversation.unread_count > 0,
+            )
+        )
+    )
+    res = await db.execute(stmt)
+    total = res.scalar() or 0
+    return {"pending_count": int(total)}
+
+
 @router.get("/conversations")
 async def list_conversations(db: AsyncSession = Depends(get_db)):
     """Bandeja de conversaciones de WhatsApp para el panel de Chat Recepción del Dashboard."""

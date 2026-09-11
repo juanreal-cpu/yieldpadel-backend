@@ -2332,12 +2332,15 @@
             <span class="w-4 text-center text-xs shrink-0 opacity-70">📅</span>
             <span class="truncate">Calendario</span>
           </button>
-          <button type="button" onclick="switchMainView('inbox')" id="btn-nav-inbox" class="sidebar-link w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer">
-            <span class="flex items-center gap-2">
-              <span class="text-sm">💬</span>
+          <button type="button" onclick="switchMainView('inbox')" id="btn-nav-inbox" class="sidebar-link w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer">
+            <span class="flex items-center gap-2.5">
+              <span class="text-base">💬</span>
               <span class="font-bold">Chat Recepción</span>
             </span>
-            <span id="inbox-unread-badge" class="px-2 py-0.5 text-[10px] font-black rounded-full bg-rose-500 text-white shadow-sm">LIVE</span>
+            <!-- Burbuja roja con número de chats pendientes -->
+            <span id="inbox-unread-badge" class="hidden px-2 py-0.5 text-[11px] font-black rounded-full bg-rose-600 text-white shadow-md shadow-rose-600/40 border border-rose-400/30 animate-pulse tracking-tight">
+              0
+            </span>
           </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-tournaments" onclick="switchMainView('tournaments')" title="Torneos Americanos">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🏆</span>
@@ -15159,6 +15162,9 @@ Jugador: ${checkData.player_name}`);
           container.scrollTop = container.scrollHeight;
         }
         loadInboxConversations();
+        if (typeof window.updateInboxUnreadBadge === 'function') {
+          window.updateInboxUnreadBadge();
+        }
       } catch (e) {
         // Silencioso
       }
@@ -15178,6 +15184,9 @@ Jugador: ${checkData.player_name}`);
           body: JSON.stringify({ sender_phone: phone, message }),
         });
         selectInboxConversation(phone);
+        if (typeof window.updateInboxUnreadBadge === 'function') {
+          window.updateInboxUnreadBadge();
+        }
       } catch (e) {
         if (typeof window.showDarkToast === 'function') {
           window.showDarkToast('Error', 'No se pudo enviar el mensaje manual.');
@@ -15196,6 +15205,9 @@ Jugador: ${checkData.player_name}`);
           body: JSON.stringify({ sender_phone: phone }),
         });
         selectInboxConversation(phone);
+        if (typeof window.updateInboxUnreadBadge === 'function') {
+          window.updateInboxUnreadBadge();
+        }
         if (typeof window.showDarkToast === 'function') {
           window.showDarkToast('Atención Finalizada', 'La conversación volvió al Asistente IA');
         }
@@ -15205,8 +15217,46 @@ Jugador: ${checkData.player_name}`);
     }
     window.handbackChatToBot = handbackChatToBot;
 
-    setInterval(() => { loadInboxConversations(); }, 20000);
+    // Actualización dinámica de la burbuja roja de chats pendientes
+    window.updateInboxUnreadBadge = async function() {
+      try {
+        const badge = document.getElementById('inbox-unread-badge');
+        if (!badge) return;
+
+        let count = 0;
+        try {
+          const res = await fetch('/api/v1/whatsapp/inbox/pending-count');
+          if (res.ok) {
+            const data = await res.json();
+            count = parseInt(data.pending_count || 0, 10);
+          } else if (Array.isArray(window.inboxConversationsCache)) {
+            count = window.inboxConversationsCache.filter(c => c.is_bot_paused || (c.unread_count && c.unread_count > 0)).length;
+          }
+        } catch (fetchErr) {
+          if (Array.isArray(window.inboxConversationsCache)) {
+            count = window.inboxConversationsCache.filter(c => c.is_bot_paused || (c.unread_count && c.unread_count > 0)).length;
+          }
+        }
+
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      } catch (err) {
+        // Silencioso
+      }
+    };
+
+    setInterval(() => {
+      loadInboxConversations();
+      if (typeof window.updateInboxUnreadBadge === 'function') {
+        window.updateInboxUnreadBadge();
+      }
+    }, 15000);
     loadInboxConversations();
+    window.updateInboxUnreadBadge();
 
     // =========================================================================
     // MODULO: 💵 CIERRE DE CAJA & ARQUEO DIARIO (#view-accounting)
