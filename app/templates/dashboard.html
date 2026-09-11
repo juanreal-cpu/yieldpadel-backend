@@ -70,6 +70,31 @@
       color: inherit !important;
     }
 
+    /* ==================================================================== */
+    /* CORRECCIÓN DE CONTRASTE ESTRICTO: TIENDA & POS (#view-pos)           */
+    /* ==================================================================== */
+    #view-pos .bg-white, #view-pos .bg-slate-50, #view-pos .bg-slate-100 {
+      color: #0f172a !important;
+    }
+    #view-pos .bg-white h1, #view-pos .bg-white h2, #view-pos .bg-white h3, #view-pos .bg-white h4,
+    #view-pos .bg-white p, #view-pos .bg-white span, #view-pos .bg-white div, #view-pos .bg-white td, #view-pos .bg-white th,
+    #view-pos .bg-slate-50 h1, #view-pos .bg-slate-50 h2, #view-pos .bg-slate-50 h3, #view-pos .bg-slate-50 h4,
+    #view-pos .bg-slate-50 p, #view-pos .bg-slate-50 span, #view-pos .bg-slate-50 div,
+    #view-pos .bg-slate-100 span, #view-pos .bg-slate-100 div {
+      color: inherit;
+    }
+    #view-pos label {
+      color: #475569 !important; /* slate-600 */
+    }
+    #view-pos .bg-white button.text-white, #view-pos .bg-slate-50 button.text-white, #view-pos .bg-slate-100 button.text-white,
+    #view-pos button.bg-slate-900, #view-pos button.bg-emerald-600, #view-pos button.bg-indigo-600, #view-pos button.bg-rose-600 {
+      color: #ffffff !important;
+    }
+    #view-pos .bg-white button.text-white *, #view-pos .bg-slate-50 button.text-white *, #view-pos .bg-slate-100 button.text-white *,
+    #view-pos button.bg-slate-900 *, #view-pos button.bg-emerald-600 *, #view-pos button.bg-indigo-600 *, #view-pos button.bg-rose-600 * {
+      color: inherit !important;
+    }
+
     /* CLASES DE CALOR FORZADAS PARA MATRIZ DE OCUPACIÓN (#view-analytics) */
     .heat-cell-0 {
       background-color: #f8fafc !important;
@@ -537,7 +562,7 @@
     /* ======================================================== */
     .saas-work-area {
       flex: 1;
-      padding: 1.5rem 2rem;
+      padding: 1rem 1.25rem;
       max-width: 100%;
     }
 
@@ -2317,6 +2342,10 @@
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🚪</span>
             <span class="truncate">Acceso Club</span>
           </button>
+          <button type="button" onclick="switchMainView('physical-map')" id="btn-nav-physical-map" class="sidebar-link w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition cursor-pointer">
+            <span class="w-4 text-center text-xs opacity-70">📍</span>
+            <span class="truncate">Mapa en Vivo</span>
+          </button>
 
           <!-- GRUPO 2: CLIENTES -->
           <div class="px-2 pt-2 pb-0.5 text-[9px] font-semibold tracking-wider text-[#606980] uppercase select-none">Clientes</div>
@@ -2387,7 +2416,7 @@
     </aside>
 
     <!-- 2. CONTENIDO PRINCIPAL SAAS -->
-    <main id="main-content" class="flex-1 ml-48 min-h-screen bg-slate-50 overflow-x-hidden overflow-y-auto p-6 max-w-full">
+    <main id="main-content" class="flex-1 ml-48 min-h-screen bg-slate-50 overflow-x-hidden overflow-y-auto max-w-full px-5 py-4">
 
       <!-- ======================================================== -->
       <!-- 2. BANNER EJECUTIVO SUPERIOR (HEADER OSCURO #0F172A)     -->
@@ -2494,7 +2523,7 @@
 <!-- ======================================================== -->
           <!-- CABECERA PROFESIONAL SAAS: SEPARACIÓN EN 2 NIVELES LIMPIOS -->
           <!-- ======================================================== -->
-          <div class="mb-6 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div id="calendar-controls" class="mb-6 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             
             <!-- NIVEL 1: Header de Acciones Principales (bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between) -->
             <div class="bg-white border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
@@ -2567,47 +2596,6 @@
               </div>
             </div>
 
-          </div>
-
-          <!-- ======================================================== -->
-          <!-- MAPA FÍSICO DEL CLUB EN TIEMPO REAL (Electric Performance) -->
-          <!-- ======================================================== -->
-          <div class="mb-6 rounded-2xl border border-slate-800/90 bg-[#0b101b] shadow-2xl overflow-hidden">
-            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-slate-800/70">
-              <div class="flex items-center gap-2.5">
-                <span class="text-sm font-black text-white">📍 Distribución Física del Club (Tiempo Real)</span>
-                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold text-emerald-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse"></span>
-                  EN VIVO (Bogotá)
-                </span>
-              </div>
-              <button type="button" onclick="window.fetchLiveCourtMap()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/60 hover:bg-slate-800 border border-slate-700 rounded-lg transition" title="Refrescar mapa">
-                <span>↻</span><span>Actualizar</span>
-              </button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 p-4 rounded-2xl bg-[#0b101b] border border-slate-800/90 shadow-2xl" id="live-club-map-grid">
-              <div class="live-court-cell" data-court-number="1"></div>
-              <div class="live-court-cell" data-court-number="2"></div>
-              <div class="live-court-cell" data-court-number="3"></div>
-
-              <div class="live-court-cell" data-court-number="4"></div>
-
-              <!-- Celda Central Fija: Recepción -->
-              <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-3 flex flex-col justify-center items-center text-center">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">🏢 Recepción, Bar &amp; Control de Acceso</span>
-                <span class="text-3xl font-black text-white mt-1" id="live-occupancy-count">0</span>
-                <span class="text-[10px] text-slate-400 font-medium">Personas en Sede</span>
-                <span class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-bold text-emerald-400">🖐️ Huellero Activo</span>
-                <span class="mt-1 text-[9px] text-slate-500" id="live-access-today">Actualizado hace instantes</span>
-              </div>
-
-              <div class="live-court-cell" data-court-number="5"></div>
-
-              <div class="live-court-cell" data-court-number="6"></div>
-              <div class="live-court-cell" data-court-number="8"></div>
-              <div class="live-court-cell" data-court-number="7"></div>
-            </div>
           </div>
 
           <!-- Contenedor Principal: Matriz 5 Canchas a Ancho Completo (100%) -->
@@ -2690,6 +2678,49 @@
 
           </main>
 
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VISTA: 📍 MAPA FÍSICO 2D DEL CLUB (Tiempo Real, Independiente) -->
+        <!-- ======================================================== -->
+        <div id="view-physical-map" class="view-section hidden px-5 py-4 space-y-4">
+          <div class="rounded-2xl border border-slate-800/90 bg-[#0b101b] shadow-2xl overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-slate-800/70">
+              <div class="flex items-center gap-2.5">
+                <span class="text-sm font-black text-white">📍 Distribución Física del Club (Tiempo Real)</span>
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold text-emerald-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse"></span>
+                  EN VIVO (Bogotá)
+                </span>
+              </div>
+              <button type="button" onclick="window.fetchLiveCourtMap()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/60 hover:bg-slate-800 border border-slate-700 rounded-lg transition" title="Refrescar mapa">
+                <span>↻</span><span>Actualizar</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 p-4 rounded-2xl bg-[#0b101b] border border-slate-800/90 shadow-2xl" id="physical-map-grid">
+              <div class="live-court-cell" data-court-number="1"></div>
+              <div class="live-court-cell" data-court-number="2"></div>
+              <div class="live-court-cell" data-court-number="3"></div>
+
+              <div class="live-court-cell" data-court-number="4"></div>
+
+              <!-- Celda Central Fija: Recepción -->
+              <div class="bg-[#0a0e17] border-2 border-amber-500/40 text-white rounded-xl p-3 flex flex-col justify-center items-center text-center">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">🏢 Recepción, Bar &amp; Control de Acceso</span>
+                <span class="text-3xl font-black text-white mt-1" id="live-occupancy-count">0</span>
+                <span class="text-[10px] text-slate-400 font-medium">Personas en Sede</span>
+                <span class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-bold text-emerald-400">🖐️ Huellero Activo</span>
+                <span class="mt-1 text-[9px] text-slate-500" id="live-access-today">Actualizado hace instantes</span>
+              </div>
+
+              <div class="live-court-cell" data-court-number="5"></div>
+
+              <div class="live-court-cell" data-court-number="6"></div>
+              <div class="live-court-cell" data-court-number="8"></div>
+              <div class="live-court-cell" data-court-number="7"></div>
+            </div>
+          </div>
         </div>
 
         <!-- ======================================================== -->
@@ -6169,6 +6200,9 @@
         if ((activeName === 'memberships' || rawId === 'memberships') && typeof loadMembershipsData === 'function') loadMembershipsData();
         if (activeName === 'config' && typeof loadClubCourtsConfig === 'function') loadClubCourtsConfig();
         if (activeName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
+        if ((activeName === 'physical-map' || rawId === 'physical-map') && typeof window.fetchLiveCourtMap === 'function') {
+          window.fetchLiveCourtMap();
+        }
         if (activeName === 'wallet-ledger' || rawId === 'wallet-ledger' || rawId === 'view-wallet-ledger') {
           if (typeof window.loadWalletLedger === 'function') {
             window.loadWalletLedger();
@@ -13629,7 +13663,15 @@ Jugador: ${checkData.player_name}`);
       }
     };
 
-    function renderLiveCourtCell(court) {
+    function getCourtSurfaceClasses(courtNumber, sportType) {
+      const n = parseInt(courtNumber, 10);
+      if (sportType === 'VOLLEYBALL' || n === 8) return 'bg-[#1b6b3e] border-2 border-emerald-500';
+      if (sportType === 'PICKLEBALL' || n === 6 || n === 7) return 'bg-[#181a20] border-2 border-slate-600';
+      if (n === 5) return 'bg-[#12141a] border-2 border-slate-700';
+      return 'bg-[#004b99] border-2 border-[#0066cc]'; // Padel Central 1-4, superficie WPT
+    }
+
+    function renderLiveCourtCell(court, courtNumber) {
       const status = court.status || 'AVAILABLE';
       const count = court.players_count || 0;
       const capacity = court.capacity || 4;
@@ -13637,49 +13679,51 @@ Jugador: ${checkData.player_name}`);
       const price = court.price ? `$${Number(court.price).toLocaleString('es-CO')}` : '—';
       const sportIcon = court.sport_type === 'PICKLEBALL' ? '🏓' : (court.sport_type === 'VOLLEYBALL' ? '🏐' : '🎾');
       const clickAttr = `onclick="window.openLiveMapSlot(${court.slot_id ? `'${court.slot_id}'` : 'null'})"`;
+      const surfaceClasses = getCourtSurfaceClasses(courtNumber, court.sport_type);
 
-      let boxClasses = '';
+      let glowClasses = '';
       let badgeHtml = '';
       let bodyHtml = '';
 
       if (status === 'OPEN_MATCH') {
-        boxClasses = 'bg-[#1c150b] border border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.1)]';
-        badgeHtml = `<span class="text-[10px] font-bold text-amber-400">🟡 Cupos ${count}/${capacity}</span>`;
+        glowClasses = 'ring-2 ring-amber-500/70 shadow-[0_0_10px_rgba(245,158,11,0.25)]';
+        badgeHtml = `<span class="text-[10px] font-bold text-amber-300 bg-black/40 px-1.5 py-0.5 rounded">🟡 Cupos ${count}/${capacity}</span>`;
         bodyHtml = `
-          <div class="text-[10px] text-slate-300 truncate mt-1">${names.join(', ') || 'Sin jugadores registrados'}</div>
-          <button type="button" onclick="event.stopPropagation(); window.openLiveMapSlot(${court.slot_id ? `'${court.slot_id}'` : 'null'})" class="mt-2 w-full text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/40 rounded-md py-1 hover:bg-amber-500/20 transition">+ Sumar</button>`;
+          <div class="text-[10px] text-white/90 truncate mt-1 bg-black/30 rounded px-1">${names.join(', ') || 'Sin jugadores registrados'}</div>
+          <button type="button" onclick="event.stopPropagation(); window.openLiveMapSlot(${court.slot_id ? `'${court.slot_id}'` : 'null'})" class="relative z-10 mt-2 w-full text-[10px] font-bold text-amber-200 bg-amber-500/20 border border-amber-400/60 rounded-md py-1 hover:bg-amber-500/30 transition">+ Sumar</button>`;
       } else if (status === 'FULL_MATCH') {
-        boxClasses = 'bg-[#0d1a1f] border border-cyan-400 shadow-[0_0_12px_rgba(0,217,245,0.15)]';
-        badgeHtml = `<span class="text-[10px] font-bold text-cyan-300">🔵 En Juego (${count}/${capacity})</span>`;
+        glowClasses = 'ring-2 ring-cyan-400/80 shadow-[0_0_12px_rgba(0,217,245,0.3)]';
+        badgeHtml = `<span class="text-[10px] font-bold text-cyan-200 bg-black/40 px-1.5 py-0.5 rounded">🔵 En Juego (${count}/${capacity})</span>`;
         bodyHtml = `
-          <div class="text-[10px] text-slate-300 truncate mt-1">${names.join(', ') || '—'}</div>
-          <div class="text-[10px] font-bold text-cyan-300 mt-1">⏱️ Faltan ${court.time_remaining_minutes || 0} min</div>`;
+          <div class="text-[10px] text-white/90 truncate mt-1 bg-black/30 rounded px-1">${names.join(', ') || '—'}</div>
+          <div class="text-[10px] font-bold text-cyan-200 mt-1">⏱️ Faltan ${court.time_remaining_minutes || 0} min</div>`;
       } else if (status === 'CLASS') {
-        boxClasses = 'bg-[#18122b] border border-purple-500/60';
-        badgeHtml = `<span class="text-[10px] font-bold text-purple-300">🟣 Clase / Academia</span>`;
-        bodyHtml = `<div class="text-[10px] text-slate-300 truncate mt-1">${names.join(', ') || 'Academia de Pádel'}</div>`;
+        glowClasses = 'ring-2 ring-purple-400/70';
+        badgeHtml = `<span class="text-[10px] font-bold text-purple-200 bg-black/40 px-1.5 py-0.5 rounded">🟣 Clase / Academia</span>`;
+        bodyHtml = `<div class="text-[10px] text-white/90 truncate mt-1 bg-black/30 rounded px-1">${names.join(', ') || 'Academia de Pádel'}</div>`;
       } else if (status === 'MAINTENANCE') {
-        boxClasses = 'bg-slate-900/60 border border-slate-700 opacity-60';
-        badgeHtml = `<span class="text-[10px] font-bold text-slate-400">⚪ Mantenimiento</span>`;
-        bodyHtml = `<div class="text-[10px] text-slate-500 mt-1">Pista no disponible</div>`;
+        glowClasses = 'opacity-60 grayscale';
+        badgeHtml = `<span class="text-[10px] font-bold text-slate-300 bg-black/40 px-1.5 py-0.5 rounded">⚪ Mantenimiento</span>`;
+        bodyHtml = `<div class="text-[10px] text-white/70 mt-1">Pista no disponible</div>`;
       } else {
-        boxClasses = 'bg-[#0e1424] border border-dashed border-emerald-500/40';
-        badgeHtml = `<span class="text-[10px] font-bold text-emerald-400">🟢 Libre</span>`;
-        bodyHtml = `<div class="text-[10px] text-slate-400 mt-1">Desde ${price}</div>`;
+        glowClasses = 'ring-1 ring-dashed ring-emerald-400/50';
+        badgeHtml = `<span class="text-[10px] font-bold text-emerald-200 bg-black/40 px-1.5 py-0.5 rounded">🟢 Libre</span>`;
+        bodyHtml = `<div class="text-[10px] text-white/80 mt-1">Desde ${price}</div>`;
       }
 
       return `
-        <div class="live-court-card rounded-xl p-2.5 cursor-pointer transition ${boxClasses}" ${clickAttr} title="${court.court_name || ''}">
-          <div class="flex items-center justify-between gap-1">
-            <span class="text-[11px] font-bold text-white truncate">${sportIcon} ${court.court_name || ''}</span>
+        <div class="live-court-card relative overflow-hidden rounded-xl p-2.5 cursor-pointer transition ${surfaceClasses} ${glowClasses}" ${clickAttr} title="${court.court_name || ''}">
+          <div class="absolute left-2 right-2 top-1/2 -translate-y-1/2 border-t-2 border-dashed border-white/40 pointer-events-none"></div>
+          <div class="relative flex items-center justify-between gap-1">
+            <span class="text-[11px] font-bold text-white truncate drop-shadow">${sportIcon} ${court.court_name || ''}</span>
           </div>
-          <div class="mt-1">${badgeHtml}</div>
-          ${bodyHtml}
+          <div class="relative mt-1">${badgeHtml}</div>
+          <div class="relative">${bodyHtml}</div>
         </div>`;
     }
 
     window.fetchLiveCourtMap = async function() {
-      const grid = document.getElementById('live-club-map-grid');
+      const grid = document.getElementById('physical-map-grid');
       if (!grid) return;
       try {
         const res = await fetch('/api/v1/courts/live-status');
@@ -13693,8 +13737,9 @@ Jugador: ${checkData.player_name}`);
 
         const courts = Array.isArray(data.courts) ? data.courts : [];
         courts.forEach((court, idx) => {
-          const cell = grid.querySelector(`.live-court-cell[data-court-number="${idx + 1}"]`);
-          if (cell) cell.innerHTML = renderLiveCourtCell(court);
+          const courtNumber = idx + 1;
+          const cell = grid.querySelector(`.live-court-cell[data-court-number="${courtNumber}"]`);
+          if (cell) cell.innerHTML = renderLiveCourtCell(court, courtNumber);
         });
       } catch (e) {
         // Silencioso: el mapa simplemente no se actualiza en este ciclo
