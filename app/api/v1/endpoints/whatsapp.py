@@ -15,11 +15,16 @@ from app.services.whatsapp import (
     generate_concierge_reply,
     generate_promo_urgent_broadcast,
     get_player_incidents,
+    is_conversation_paused,
     is_transactional_message,
+    log_conversation_message,
     normalize_phone,
     process_incoming_whatsapp_message,
     send_whatsapp_message,
+    set_conversation_paused,
 )
+from app.models.whatsapp_conversation import WhatsAppConversation
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +113,15 @@ async def receive_webhook(
 
                     print(f"[WHATSAPP INCOMING] Mensaje de {sender_phone} ({sender_name}): '{message_text}' | Quoted: {bool(quoted_text)}")
 
+                    # Bandeja humana: registrar el mensaje entrante y respetar la pausa del bot si un asesor está atendiendo
+                    paused = await is_conversation_paused(db, sender_phone)
+                    await log_conversation_message(
+                        db, sender_phone, message_text, direction="incoming",
+                        player_name=sender_name, increment_unread=paused,
+                    )
+                    if paused:
+                        continue
+
                     # Enrutar: mensajes con raquetas (🎾) o comandos rígidos ('voy'/'me bajo')
                     # van al flujo transaccional existente; el resto lo atiende el concierge IA.
                     if is_transactional_message(message_text):
@@ -129,6 +143,7 @@ async def receive_webhook(
 
                     if reply_text:
                         print(f"[WHATSAPP OUTGOING PREPARED]:\n{reply_text}\n")
+                        await log_conversation_message(db, sender_phone, reply_text, direction="bot")
                         await send_whatsapp_message(
                             to_phone=raw_from,
                             message_body=reply_text,
@@ -281,6 +296,86 @@ async def broadcast_promo_urgent(
         "recipient": target_group,
         "broadcast_text": broadcast_text,
     }
+
+
+class SendManualMessageRequest(BaseModel):
+    sender_phone: str
+    message: str
+
+
+class ReactivateBotRequest(BaseModel):
+    sender_phone: str
+
+
+@router.get("/conversations")
+async def list_conversations(db: AsyncSession = Depends(get_db)):
+    """Bandeja de conversaciones de WhatsApp para el panel de Chat Recepción del Dashboard."""
+    res = await db.execute(select(WhatsAppConversation).order_by(WhatsAppConversation.updated_at.desc()))
+    conversations = list(res.scalars().all())
+    return {
+        "total_unread": sum(c.unread_count or 0 for c in conversations),
+        "conversations": [
+            {
+                "sender_phone": c.sender_phone,
+                "player_name": c.player_name,
+                "last_message": c.last_message,
+                "unread_count": c.unread_count,
+                "is_bot_paused": c.is_bot_paused,
+                "updated_at": c.updated_at.isoformat() if c.updated_at else None,
+            }
+            for c in conversations
+        ],
+    }
+
+
+@router.get("/conversations/{phone}/messages")
+async def get_conversation_messages(phone: str, db: AsyncSession = Depends(get_db)):
+    """Historial de mensajes de una conversación; marca los mensajes como leídos al abrirla."""
+    norm_phone = normalize_phone(phone)
+    res = await db.execute(select(WhatsAppConversation).where(WhatsAppConversation.sender_phone == norm_phone))
+    conv = res.scalars().first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversación no encontrada.")
+
+    conv.unread_count = 0
+    await db.commit()
+
+    return {
+        "sender_phone": conv.sender_phone,
+        "player_name": conv.player_name,
+        "is_bot_paused": conv.is_bot_paused,
+        "messages": [
+            {"direction": m.direction, "body": m.body, "created_at": m.created_at.isoformat()}
+            for m in conv.messages
+        ],
+    }
+
+
+@router.post("/send-manual-message")
+async def send_manual_message(
+    payload: SendManualMessageRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """El asesor de recepción responde manualmente desde el Dashboard; despacha vía Graph API de Meta."""
+    sent = await send_whatsapp_message(to_phone=payload.sender_phone, message_body=payload.message)
+    await log_conversation_message(db, payload.sender_phone, payload.message, direction="staff")
+    return {"status": "sent" if sent else "simulated", "sender_phone": payload.sender_phone}
+
+
+@router.post("/reactivate")
+async def reactivate_bot(
+    payload: ReactivateBotRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Reactiva el asistente IA (is_bot_paused=False) y le devuelve el control con un mensaje de despedida del asesor."""
+    farewell = (
+        "🤖 ¡Listo! Nuestro asesor te ayudó por aquí. A partir de ahora retomo la conversación, "
+        "¿en qué más te puedo colaborar?"
+    )
+    await set_conversation_paused(db, payload.sender_phone, False)
+    await log_conversation_message(db, payload.sender_phone, farewell, direction="bot")
+    await send_whatsapp_message(to_phone=payload.sender_phone, message_body=farewell)
+    return {"status": "reactivated", "sender_phone": payload.sender_phone}
 
 
 

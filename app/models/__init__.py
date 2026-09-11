@@ -20,6 +20,7 @@ from app.models.user import User, UserRole
 from app.models.audit import AuditLog
 from app.models.product import Product, Order, OrderItem, Sale
 from app.models.access import ClubPresence
+from app.models.whatsapp_conversation import WhatsAppConversation, WhatsAppMessage
 
 __all__ = [
     "Club",
@@ -43,6 +44,8 @@ __all__ = [
     "OrderItem",
     "Sale",
     "ClubPresence",
+    "WhatsAppConversation",
+    "WhatsAppMessage",
     "SlotMode",
     "SlotStatus",
     "HoldStatus",

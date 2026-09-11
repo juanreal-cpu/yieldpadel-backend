@@ -2355,6 +2355,10 @@
             <span class="w-4 text-center text-xs shrink-0 opacity-70">👥</span>
             <span class="truncate">CRM</span>
           </button>
+          <button id="btn-nav-inbox" onclick="switchMainView('inbox')" class="sidebar-link w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+            <span class="flex items-center gap-2"><span>💬</span><span>Chat Recepción</span></span>
+            <span id="inbox-unread-badge" class="hidden px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full">0</span>
+          </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-wallet-ledger" onclick="switchMainView('view-wallet-ledger')" title="Auditoría Capital Points">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🪙</span>
             <span class="truncate">Capital Points</span>
@@ -2969,9 +2973,50 @@
         </div>
 
         <!-- ======================================================== -->
-        <!-- VISTA 4: 🪙 AUDITORÍA CAPITAL POINTS                    -->
+        <!-- VISTA: 💬 CHAT RECEPCIÓN / BANDEJA HUMANA WHATSAPP        -->
         <!-- ======================================================== -->
-        <div id="view-wallet-ledger" class="view-section hidden">
+        <div id="view-inbox" class="view-section hidden p-6">
+          <div class="mb-4">
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">💬 Chat Recepción</h2>
+            <p class="text-xs text-slate-500 mt-1">Conversaciones de WhatsApp derivadas a un asesor humano. Responde manualmente o reactiva al asistente IA.</p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[70vh]">
+            <!-- Panel Izquierdo: Lista de chats pendientes -->
+            <div class="lg:col-span-1 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+              <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Conversaciones</span>
+                <button type="button" onclick="window.fetchInboxConversations()" class="text-xs text-slate-500 hover:text-slate-900" title="Actualizar">↻</button>
+              </div>
+              <div id="inbox-conversation-list" class="flex-1 overflow-y-auto divide-y divide-slate-100">
+                <div class="p-4 text-center text-xs text-slate-400">Cargando conversaciones...</div>
+              </div>
+            </div>
+
+            <!-- Panel Derecho: Ventana de conversación en vivo -->
+            <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+              <div id="inbox-chat-header" class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div>
+                  <span id="inbox-chat-title" class="text-sm font-bold text-slate-900">Selecciona una conversación</span>
+                  <div id="inbox-chat-subtitle" class="text-[11px] text-slate-500"></div>
+                </div>
+                <button type="button" id="btn-inbox-reactivate" onclick="window.reactivateInboxBot()" class="hidden px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-lg hover:bg-emerald-100 transition">
+                  🤖 Reactivar Asistente IA
+                </button>
+              </div>
+              <div id="inbox-messages-container" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50">
+                <div class="text-center text-xs text-slate-400 mt-8">Selecciona una conversación de la izquierda para ver el historial.</div>
+              </div>
+              <div class="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
+                <input type="text" id="inbox-manual-message-input" placeholder="Escribe una respuesta manual..." class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" disabled>
+                <button type="button" id="btn-inbox-send" onclick="window.sendInboxManualMessage()" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition disabled:opacity-50" disabled>
+                  Enviar Mensaje
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
           <div class="max-w-7xl mx-auto px-2 py-6">
             <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -6204,6 +6249,9 @@
         if (activeName === 'calendar' && typeof fetchSlots === 'function') fetchSlots();
         if ((activeName === 'physical-map' || rawId === 'physical-map') && typeof window.fetchLiveCourtMap === 'function') {
           window.fetchLiveCourtMap();
+        }
+        if ((activeName === 'inbox' || rawId === 'inbox') && typeof window.fetchInboxConversations === 'function') {
+          window.fetchInboxConversations();
         }
         if (activeName === 'wallet-ledger' || rawId === 'wallet-ledger' || rawId === 'view-wallet-ledger') {
           if (typeof window.loadWalletLedger === 'function') {
@@ -13750,6 +13798,135 @@ Jugador: ${checkData.player_name}`);
 
     window.fetchLiveCourtMap();
     setInterval(() => { window.fetchLiveCourtMap(); }, 45000);
+
+    // =========================================================================
+    // MODULO: 💬 CHAT RECEPCIÓN (BANDEJA HUMANA DE WHATSAPP)
+    // =========================================================================
+    window.inboxSelectedPhone = null;
+    window.inboxConversationsCache = [];
+
+    function escapeHtmlInbox(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    window.fetchInboxConversations = async function() {
+      try {
+        const res = await fetch('/api/v1/whatsapp/conversations');
+        if (!res.ok) return;
+        const data = await res.json();
+        window.inboxConversationsCache = data.conversations || [];
+
+        const badge = document.getElementById('inbox-unread-badge');
+        if (badge) {
+          const total = data.total_unread || 0;
+          badge.textContent = total > 99 ? '99+' : String(total);
+          badge.classList.toggle('hidden', total <= 0);
+        }
+        window.renderInboxConversationList();
+      } catch (e) {
+        // Silencioso: el inbox simplemente no se actualiza en este ciclo
+      }
+    };
+
+    window.renderInboxConversationList = function() {
+      const list = document.getElementById('inbox-conversation-list');
+      if (!list) return;
+      const conversations = window.inboxConversationsCache || [];
+      if (conversations.length === 0) {
+        list.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No hay conversaciones registradas todavía.</div>';
+        return;
+      }
+      list.innerHTML = conversations.map(c => {
+        const isActive = c.sender_phone === window.inboxSelectedPhone;
+        const pausedBadge = c.is_bot_paused ? '<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-100 text-rose-700 rounded-full">🔴 Bot Pausado</span>' : '';
+        const unreadBadge = c.unread_count > 0 ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-500 text-white rounded-full">${c.unread_count}</span>` : '';
+        return `
+          <div onclick="window.selectInboxConversation('${c.sender_phone}')" class="p-3 cursor-pointer hover:bg-slate-50 transition ${isActive ? 'bg-emerald-50/60' : ''}">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-slate-900 truncate">${escapeHtmlInbox(c.player_name || c.sender_phone)}</span>
+              ${unreadBadge}
+            </div>
+            <div class="text-[11px] text-slate-500 truncate mt-0.5">${escapeHtmlInbox(c.last_message || '')}</div>
+            <div class="mt-1">${pausedBadge}</div>
+          </div>`;
+      }).join('');
+    };
+
+    window.selectInboxConversation = async function(phone) {
+      window.inboxSelectedPhone = phone;
+      window.renderInboxConversationList();
+      const input = document.getElementById('inbox-manual-message-input');
+      const sendBtn = document.getElementById('btn-inbox-send');
+      if (input) input.disabled = false;
+      if (sendBtn) sendBtn.disabled = false;
+
+      try {
+        const res = await fetch(`/api/v1/whatsapp/conversations/${encodeURIComponent(phone)}/messages`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const titleEl = document.getElementById('inbox-chat-title');
+        const subtitleEl = document.getElementById('inbox-chat-subtitle');
+        if (titleEl) titleEl.textContent = data.player_name || data.sender_phone;
+        if (subtitleEl) subtitleEl.textContent = data.sender_phone;
+
+        const reactivateBtn = document.getElementById('btn-inbox-reactivate');
+        if (reactivateBtn) reactivateBtn.classList.toggle('hidden', !data.is_bot_paused);
+
+        const container = document.getElementById('inbox-messages-container');
+        if (container) {
+          const msgs = data.messages || [];
+          container.innerHTML = msgs.map(m => {
+            const isIncoming = m.direction === 'incoming';
+            const bubbleColor = isIncoming ? 'bg-white border border-slate-200 text-slate-900' : (m.direction === 'staff' ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white');
+            const align = isIncoming ? 'justify-start' : 'justify-end';
+            return `<div class="flex ${align}"><div class="max-w-[75%] px-3 py-2 rounded-xl text-xs ${bubbleColor} shadow-xs">${escapeHtmlInbox(m.body)}</div></div>`;
+          }).join('');
+          container.scrollTop = container.scrollHeight;
+        }
+        window.fetchInboxConversations();
+      } catch (e) {
+        // Silencioso
+      }
+    };
+
+    window.sendInboxManualMessage = async function() {
+      const input = document.getElementById('inbox-manual-message-input');
+      const phone = window.inboxSelectedPhone;
+      if (!input || !phone || !input.value.trim()) return;
+      const message = input.value.trim();
+      input.value = '';
+      try {
+        await fetch('/api/v1/whatsapp/send-manual-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender_phone: phone, message }),
+        });
+        window.selectInboxConversation(phone);
+      } catch (e) {
+        if (typeof window.showDarkToast === 'function') {
+          window.showDarkToast('Error', 'No se pudo enviar el mensaje manual.');
+        }
+      }
+    };
+
+    window.reactivateInboxBot = async function() {
+      const phone = window.inboxSelectedPhone;
+      if (!phone) return;
+      try {
+        await fetch('/api/v1/whatsapp/reactivate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender_phone: phone }),
+        });
+        window.selectInboxConversation(phone);
+      } catch (e) {
+        // Silencioso
+      }
+    };
+
+    setInterval(() => { window.fetchInboxConversations(); }, 20000);
+    window.fetchInboxConversations();
 
   
 

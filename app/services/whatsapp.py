@@ -27,6 +27,7 @@ from app.models.slot import ClientTier, SlotMode, SlotStatus, TimeSlot
 from app.models.incident import PlayerIncident
 from app.models.customer import Customer
 from app.models.membership import MembershipPlan
+from app.models.whatsapp_conversation import WhatsAppConversation, WhatsAppMessage
 
 logger = logging.getLogger("yieldpadel.whatsapp")
 
@@ -168,11 +169,10 @@ CONFIRMATION_GRACE_MINUTES = 10
 # -----------------------------------------------------------------------------
 
 SESSION_TTL_MINUTES = 10
-HUMAN_HANDOFF_PAUSE_MINUTES = 15
 MAX_UNKNOWN_RETRIES = 2
 
 # Estado temporal por número: {"expires_at", "awaiting_sport", "sport", "last_offered_slots",
-# "last_slot_id", "paused_for_human", "paused_until", "unknown_retry_count"}
+# "pending_mode_slot_id", "last_slot_id", "unknown_retry_count"}
 CONVERSATION_SESSIONS: Dict[str, dict] = {}
 
 SPORT_CHOICE_MAP = {
@@ -207,12 +207,7 @@ def get_session(phone: str) -> dict:
     now = get_bogota_now()
     session = CONVERSATION_SESSIONS.get(key)
     if session and session.get("expires_at") and session["expires_at"] < now:
-        # Expiró la memoria conversacional (no la pausa por handoff humano, que tiene su propio vencimiento)
-        paused_until = session.get("paused_until")
-        session = {
-            "paused_for_human": bool(paused_until and paused_until > now),
-            "paused_until": paused_until,
-        }
+        session = {}
         CONVERSATION_SESSIONS[key] = session
     if session is None:
         session = {}
@@ -221,27 +216,71 @@ def get_session(phone: str) -> dict:
     return session
 
 
-def is_paused_for_human(phone: str) -> bool:
-    """True si el número tiene respuestas automáticas pausadas por un handoff humano reciente (15 min)."""
-    key = normalize_phone(phone)
-    session = CONVERSATION_SESSIONS.get(key)
-    if not session:
-        return False
-    paused_until = session.get("paused_until")
-    if session.get("paused_for_human") and paused_until and paused_until > get_bogota_now():
-        return True
-    if paused_until and paused_until <= get_bogota_now():
-        session["paused_for_human"] = False
-        session["paused_until"] = None
-    return False
+async def get_or_create_conversation(
+    db: AsyncSession,
+    sender_phone: str,
+    player_name: Optional[str] = None,
+) -> WhatsAppConversation:
+    """Obtiene (o crea) la fila de bandeja de WhatsApp para un número, usada por el inbox del Dashboard."""
+    norm_phone = normalize_phone(sender_phone)
+    res = await db.execute(select(WhatsAppConversation).where(WhatsAppConversation.sender_phone == norm_phone))
+    conv = res.scalars().first()
+    if not conv:
+        conv = WhatsAppConversation(sender_phone=norm_phone, player_name=player_name, unread_count=0, is_bot_paused=False)
+        db.add(conv)
+        await db.flush()
+    elif player_name and not conv.player_name:
+        conv.player_name = player_name
+    return conv
 
 
-def trigger_human_handoff(phone: str) -> None:
-    """Marca el número como derivado a asesor humano, pausando respuestas automáticas por 15 minutos."""
+async def log_conversation_message(
+    db: AsyncSession,
+    sender_phone: str,
+    body: str,
+    direction: str,
+    player_name: Optional[str] = None,
+    increment_unread: bool = False,
+) -> WhatsAppConversation:
+    """Registra un mensaje (incoming/bot/staff) en el historial y actualiza el resumen de la conversación."""
+    conv = await get_or_create_conversation(db, sender_phone, player_name=player_name)
+    db.add(WhatsAppMessage(conversation_id=conv.id, direction=direction, body=body or ""))
+    conv.last_message = (body or "")[:500]
+    if increment_unread:
+        conv.unread_count = (conv.unread_count or 0) + 1
+    await db.commit()
+    return conv
+
+
+async def is_conversation_paused(db: AsyncSession, sender_phone: str) -> bool:
+    """True si la bandeja tiene is_bot_paused=True (asesor humano aténdiendo manualmente desde el Dashboard)."""
+    norm_phone = normalize_phone(sender_phone)
+    res = await db.execute(select(WhatsAppConversation).where(WhatsAppConversation.sender_phone == norm_phone))
+    conv = res.scalars().first()
+    return bool(conv and conv.is_bot_paused)
+
+
+async def set_conversation_paused(
+    db: AsyncSession,
+    sender_phone: str,
+    paused: bool,
+    player_name: Optional[str] = None,
+) -> WhatsAppConversation:
+    """Activa/desactiva la pausa del bot para un número (derivación a humano / reactivación desde el Dashboard)."""
+    conv = await get_or_create_conversation(db, sender_phone, player_name=player_name)
+    conv.is_bot_paused = paused
+    if not paused:
+        conv.unread_count = 0
+    await db.commit()
+    return conv
+
+
+async def trigger_human_handoff(db: Optional[AsyncSession], phone: str, player_name: Optional[str] = None) -> None:
+    """Marca la conversación como derivada a asesor humano (is_bot_paused=True) y limpia el conteo de reintentos."""
     session = get_session(phone)
-    session["paused_for_human"] = True
-    session["paused_until"] = get_bogota_now() + timedelta(minutes=HUMAN_HANDOFF_PAUSE_MINUTES)
     session["unknown_retry_count"] = 0
+    if db is not None:
+        await set_conversation_paused(db, phone, True, player_name=player_name)
 
 
 def is_human_handoff_request(text: str) -> bool:
@@ -1441,7 +1480,7 @@ async def process_incoming_whatsapp_message(
     Orquestador principal de mensajes entrantes.
     Resuelve el texto citado desde context si no viene explícito.
     """
-    if is_paused_for_human(sender_phone):
+    if await is_conversation_paused(db, sender_phone):
         return ""
 
     if not quoted_text and context:
@@ -1619,7 +1658,8 @@ async def offer_slots_for_sport(
     sport: str,
     target_date: Optional[date] = None,
 ) -> str:
-    """Lista los turnos AVAILABLE de un deporte y guarda los índices ofrecidos en la sesión para reserva por número."""
+    """Lista turnos libres (AVAILABLE) y partidos abiertos con cupo (SPLIT_MATCH incompleto) de un deporte,
+    guardando los índices ofrecidos en la sesión para reservar/unirse por número."""
     today = get_bogota_today()
     now_bogota = get_bogota_now()
     d = target_date or today
@@ -1631,13 +1671,14 @@ async def offer_slots_for_sport(
         .where(
             TimeSlot.date == d,
             TimeSlot.sport_type == sport,
-            cast(TimeSlot.status, String) == "AVAILABLE",
+            cast(TimeSlot.status, String).in_(["AVAILABLE", "PARTIALLY_BOOKED"]),
             TimeSlot.slot_type == "MATCH",
         )
         .order_by(TimeSlot.start_time.asc())
     )
     res = await db.execute(stmt)
     slots = list(res.scalars().all())
+    slots = [s for s in slots if len(to_participants_list(s.players_names)) < (s.capacity or 4)]
     if d == today:
         current_time = now_bogota.time()
         slots = [s for s in slots if s.start_time > current_time]
@@ -1656,8 +1697,13 @@ async def offer_slots_for_sport(
         c_name = s.court.name if s.court else "Cancha"
         st = s.start_time.strftime("%I:%M %p").lstrip("0")
         et = s.end_time.strftime("%I:%M %p").lstrip("0")
-        price = f"${int(s.total_price or 0):,}".replace(",", ".")
-        lines.append(f"{i}. {st} - {et} | {c_name} - {price} COP")
+        capacity = s.capacity or 4
+        count = len(to_participants_list(s.players_names))
+        if count > 0:
+            lines.append(f"{i}. {st} - {et} | {c_name} - Partido abierto ({count}/{capacity} cupos)")
+        else:
+            price = f"${int(s.total_price or 0):,}".replace(",", ".")
+            lines.append(f"{i}. {st} - {et} | {c_name} - {price} COP")
         offered[i] = s.id
 
     session["last_offered_slots"] = offered
@@ -1665,20 +1711,66 @@ async def offer_slots_for_sport(
     return (
         f"{emoji} *Turnos libres de {sport.title()} para {day_label}:*\n"
         f"{lines_str}\n\n"
-        f"Responde con el *número* de la opción para apartarla de inmediato."
+        f"Responde con el *número* de la opción para apartarla (o unirte a un partido abierto) de inmediato."
     )
 
 
-async def book_slot_for_phone(
+async def book_full_court(
     db: AsyncSession,
     slot_id: int,
     sender_phone: str,
     sender_name: Optional[str] = None,
 ) -> str:
-    """Ejecuta la reserva real de un turno para el número que escribe (status pasa a PARTIALLY_BOOKED/FULLY_BOOKED)."""
-    res = await db.execute(
-        select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id)
+    """Modalidad 1: Cancha Completa. Reserva los 4 cupos para el grupo cerrado del que escribe."""
+    res = await db.execute(select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id))
+    slot = res.scalar_one_or_none()
+    if not slot:
+        return "Ese turno ya no existe. ¿Quieres ver otras opciones disponibles?"
+
+    participants = to_participants_list(slot.players_names)
+    if participants:
+        return "Ese turno ya tiene jugadores inscritos y no puede reservarse como cancha completa. ¿Quieres ver otras opciones?"
+
+    norm_phone = normalize_phone(sender_phone)
+    display_name = sender_name or mask_phone(sender_phone)
+    capacity = slot.capacity or 4
+
+    slot.mode = SlotMode.FULL_COURT
+    slot.players_names = [{
+        "spot_index": 1,
+        "phone": norm_phone,
+        "display_name": display_name,
+        "client_tier": "ESTANDAR",
+        "host_phone": None,
+    }]
+    slot.booked_spots = capacity
+    slot.status = SlotStatus.FULLY_BOOKED
+    await db.commit()
+
+    c_name = slot.court.name if slot.court else "tu cancha"
+    st = slot.start_time.strftime("%I:%M %p").lstrip("0")
+    et = slot.end_time.strftime("%I:%M %p").lstrip("0")
+    price = f"${int(slot.total_price or 0):,}".replace(",", ".")
+    return (
+        f"✅ *¡CANCHA COMPLETA RESERVADA!* 🎾\n\n"
+        f"• Pista: {c_name}\n"
+        f"• Horario: {st} - {et}\n"
+        f"• Valor total: {price} COP\n\n"
+        f"Los 4 cupos quedaron apartados para tu grupo cerrado. ¡Nos vemos en la pista!"
     )
+
+
+async def join_or_create_split_match(
+    db: AsyncSession,
+    slot_id: int,
+    sender_phone: str,
+    sender_name: Optional[str] = None,
+) -> str:
+    """
+    Modalidad 2 / unión a partido abierto: agrega al jugador como N/4 en modo SPLIT_MATCH.
+    Notifica reactivamente a los inscritos previos y, al llegar a 4/4, cierra el partido y avisa a todos.
+    """
+    res = await db.execute(select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id))
     slot = res.scalar_one_or_none()
     if not slot:
         return "Ese turno ya no existe. ¿Quieres ver otras opciones disponibles?"
@@ -1688,9 +1780,11 @@ async def book_slot_for_phone(
     if any(p.get("phone") and normalize_phone(p["phone"]) == norm_phone for p in participants):
         return "Ya tienes un cupo reservado en ese turno. ¡Nos vemos en la pista! 🎾"
 
-    if slot.status == SlotStatus.BLOCKED or len(participants) >= (slot.capacity or 4):
+    capacity = slot.capacity or 4
+    if slot.status == SlotStatus.BLOCKED or len(participants) >= capacity:
         return "Lo sentimos, ese turno ya no está disponible. ¿Quieres ver otras opciones?"
 
+    previous_participants = list(participants)
     display_name = sender_name or mask_phone(sender_phone)
     participants.append({
         "spot_index": len(participants) + 1,
@@ -1700,15 +1794,65 @@ async def book_slot_for_phone(
         "host_phone": None,
     })
 
+    new_count = len(participants)
+    is_full = new_count >= capacity
+
+    slot.mode = SlotMode.SPLIT_MATCH
     slot.players_names = participants
-    slot.booked_spots = len(participants)
-    slot.status = SlotStatus.FULLY_BOOKED if len(participants) >= (slot.capacity or 4) else SlotStatus.PARTIALLY_BOOKED
+    slot.booked_spots = new_count
+    slot.status = SlotStatus.FULLY_BOOKED if is_full else SlotStatus.PARTIALLY_BOOKED
     await db.commit()
 
     c_name = slot.court.name if slot.court else "tu cancha"
     st = slot.start_time.strftime("%I:%M %p").lstrip("0")
     et = slot.end_time.strftime("%I:%M %p").lstrip("0")
-    return f"✅ ¡Listo! Reservaste el turno de {st} - {et} en *{c_name}*. ¡Nos vemos en la pista! 🎾"
+
+    if is_full:
+        price_each = f"{int((slot.total_price or 0) / capacity):,}".replace(",", ".")
+        closing_msg = (
+            "✅ *¡PARTIDO CERRADO Y CONFIRMADO (4/4)!* 🎾\n"
+            "Todos los cupos están cubiertos. ¡Ahora sí, los esperamos en la pista!\n\n"
+            f"💳 ¿Cómo prefieres pagar tu parte (${price_each} COP)?\n"
+            "• Responde *'LINK'* para enviarte enlace de pago digital.\n"
+            "• Responde *'CLUB'* para pagar directamente en recepción al llegar."
+        )
+        for p in previous_participants:
+            p_phone = p.get("phone")
+            if p_phone:
+                await send_whatsapp_message(to_phone=p_phone, message_body=closing_msg)
+        return closing_msg
+
+    cres = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+    cust = cres.scalars().first()
+    new_category = cust.category if cust else "4ta"
+
+    notify_msg = (
+        f"🎾 *¡Nuevo jugador confirmado en tu partido!* {display_name} ({new_category}) "
+        f"se acaba de sumar. Cupos: ({new_count}/{capacity})."
+    )
+    for p in previous_participants:
+        p_phone = p.get("phone")
+        if p_phone:
+            await send_whatsapp_message(to_phone=p_phone, message_body=notify_msg)
+
+    if new_count == 1:
+        return (
+            "📋 *¡CUPO APARTADO - PARTIDO ABIERTO (1/4)!* 🎾\n\n"
+            f"• Pista: {c_name}\n"
+            f"• Horario: {st} - {et}\n"
+            f"• Tu posición: 🎾 1. {display_name}\n"
+            f"• Quedan {capacity - 1} cupos libres.\n\n"
+            "⚠️ *REGLA IMPORTANTE:* Si el partido no completa los 4 jugadores faltando 30 minutos para el inicio, "
+            "la cancha podrá ser reasignada o liberada por el club.\n"
+            "Te avisaremos por este chat a medida que otros jugadores se anoten."
+        )
+
+    return (
+        f"📋 *¡Cupo confirmado!* Ahora son *{new_count}/{capacity}* jugadores en el partido.\n"
+        f"• Pista: {c_name}\n"
+        f"• Horario: {st} - {et}\n\n"
+        "Te avisaremos por este chat cuando se complete el partido."
+    )
 
 
 async def handle_sport_and_booking_flow(
@@ -1718,14 +1862,38 @@ async def handle_sport_and_booking_flow(
     clean: str,
     session: dict,
 ) -> Optional[str]:
-    """Orquesta: preguntar deporte -> listar turnos -> reservar por número de opción."""
+    """Orquesta: preguntar deporte -> listar turnos -> elegir modalidad (Cancha Completa vs Cuarto de Cancha) -> reservar."""
+    mode_choice = re.match(r"^\s*([12])\s*$", clean)
+    if mode_choice and session.get("pending_mode_slot_id"):
+        slot_id = session.pop("pending_mode_slot_id")
+        if mode_choice.group(1) == "1":
+            return await book_full_court(db, slot_id, sender_phone, sender_name)
+        return await join_or_create_split_match(db, slot_id, sender_phone, sender_name)
+
     bare_number = re.match(r"^\s*([1-9])\s*$", clean)
     if bare_number and session.get("last_offered_slots"):
         idx = int(bare_number.group(1))
         slot_id = session["last_offered_slots"].get(idx)
         if not slot_id:
             return "Esa opción no está disponible. Por favor elige uno de los números de la lista enviada."
-        return await book_slot_for_phone(db, slot_id, sender_phone, sender_name)
+
+        res = await db.execute(select(TimeSlot).where(TimeSlot.id == slot_id))
+        slot = res.scalar_one_or_none()
+        if not slot:
+            return "Ese turno ya no existe. ¿Quieres ver otras opciones disponibles?"
+
+        if len(to_participants_list(slot.players_names)) > 0:
+            # Ya hay un partido abierto en curso para ese turno: unirse directamente (mismo modo SPLIT_MATCH)
+            return await join_or_create_split_match(db, slot_id, sender_phone, sender_name)
+
+        # Turno virgen: preguntar la modalidad antes de reservar
+        session["pending_mode_slot_id"] = slot_id
+        return (
+            "🎾 *¿Cómo prefieres apartar el turno?*\n"
+            "1️⃣ *Cancha Completa:* Reservas los 4 cupos para tu grupo cerrado.\n"
+            "2️⃣ *Mi Cupo (1/4 de Cancha):* Abres convocatoria pública con tu raqueta y esperas a que otros 3 jugadores se sumen.\n"
+            "Responde con *1* o *2*."
+        )
 
     sport_choice = detect_sport_choice(clean)
 
@@ -1742,6 +1910,7 @@ async def handle_sport_and_booking_flow(
         return ASK_SPORT_MESSAGE
 
     return None
+
 
 
 SOCIAL_QUERY_REGEX = re.compile(r"qui[eé]nes?\s+(son|est[aá]n|hay|juegan)|qui[eé]n\s+m[aá]s\s+va", re.IGNORECASE)
@@ -2003,11 +2172,11 @@ async def generate_concierge_reply(
     """
     clean = (message_text or "").strip()
 
-    if is_paused_for_human(sender_phone):
+    if db is not None and await is_conversation_paused(db, sender_phone):
         return ""
 
     if is_human_handoff_request(clean):
-        trigger_human_handoff(sender_phone)
+        await trigger_human_handoff(db, sender_phone, player_name=sender_name)
         return HUMAN_HANDOFF_MESSAGE
 
     session = get_session(sender_phone)
@@ -2055,7 +2224,7 @@ async def generate_concierge_reply(
     # No hubo coincidencia en ningún handler ni respuesta útil de Gemini: contar reintento fallido
     session["unknown_retry_count"] = session.get("unknown_retry_count", 0) + 1
     if session["unknown_retry_count"] >= MAX_UNKNOWN_RETRIES:
-        trigger_human_handoff(sender_phone)
+        await trigger_human_handoff(db, sender_phone, player_name=sender_name)
         return HUMAN_HANDOFF_MESSAGE
     return _local_concierge_fallback(clean)
 
