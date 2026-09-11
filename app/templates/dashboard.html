@@ -2332,6 +2332,13 @@
             <span class="w-4 text-center text-xs shrink-0 opacity-70">📅</span>
             <span class="truncate">Calendario</span>
           </button>
+          <button type="button" onclick="switchMainView('inbox')" id="btn-nav-inbox" class="sidebar-link w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer">
+            <span class="flex items-center gap-2">
+              <span class="text-sm">💬</span>
+              <span class="font-bold">Chat Recepción</span>
+            </span>
+            <span id="inbox-unread-badge" class="px-2 py-0.5 text-[10px] font-black rounded-full bg-rose-500 text-white shadow-sm">LIVE</span>
+          </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-tournaments" onclick="switchMainView('tournaments')" title="Torneos Americanos">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🏆</span>
             <span class="truncate">Torneos</span>
@@ -2354,10 +2361,6 @@
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-crm" onclick="switchMainView('crm')" title="CRM Jugadores">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">👥</span>
             <span class="truncate">CRM</span>
-          </button>
-          <button id="btn-nav-inbox" onclick="switchMainView('inbox')" class="sidebar-link w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-            <span class="flex items-center gap-2"><span>💬</span><span>Chat Recepción</span></span>
-            <span id="inbox-unread-badge" class="hidden px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full">0</span>
           </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-wallet-ledger" onclick="switchMainView('view-wallet-ledger')" title="Auditoría Capital Points">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🪙</span>
@@ -2975,42 +2978,46 @@
         <!-- ======================================================== -->
         <!-- VISTA: 💬 CHAT RECEPCIÓN / BANDEJA HUMANA WHATSAPP        -->
         <!-- ======================================================== -->
-        <div id="view-inbox" class="view-section hidden p-6">
-          <div class="mb-4">
-            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">💬 Chat Recepción</h2>
-            <p class="text-xs text-slate-500 mt-1">Conversaciones de WhatsApp derivadas a un asesor humano. Responde manualmente o reactiva al asistente IA.</p>
+        <div id="view-inbox" class="view-section hidden w-full px-6 py-6 space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div>
+              <h2 class="text-xl font-black text-slate-900">💬 Bandeja de Entrada & Atención Asesor</h2>
+              <p class="text-xs text-slate-500 font-medium">Conversaciones pausadas donde el cliente requiere intervención de recepción.</p>
+            </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[70vh]">
-            <!-- Panel Izquierdo: Lista de chats pendientes -->
-            <div class="lg:col-span-1 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
-              <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Conversaciones</span>
-                <button type="button" onclick="window.fetchInboxConversations()" class="text-xs text-slate-500 hover:text-slate-900" title="Actualizar">↻</button>
-              </div>
-              <div id="inbox-conversation-list" class="flex-1 overflow-y-auto divide-y divide-slate-100">
-                <div class="p-4 text-center text-xs text-slate-400">Cargando conversaciones...</div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[75vh]">
+            <!-- Columna Izquierda: Conversaciones activas -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col h-full">
+              <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Chats Pendientes</div>
+              <div id="inbox-conversations-list" class="space-y-2 overflow-y-auto flex-1 pr-1">
+                <!-- Se llena dinámicamente con las sesiones pausadas -->
               </div>
             </div>
 
-            <!-- Panel Derecho: Ventana de conversación en vivo -->
-            <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
-              <div id="inbox-chat-header" class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                <div>
-                  <span id="inbox-chat-title" class="text-sm font-bold text-slate-900">Selecciona una conversación</span>
-                  <div id="inbox-chat-subtitle" class="text-[11px] text-slate-500"></div>
+            <!-- Columna Derecha: Chat interactivo -->
+            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-full overflow-hidden">
+              <div id="inbox-chat-header" class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold flex items-center justify-center text-xs">WA</div>
+                  <div>
+                    <div id="inbox-chat-player-name" class="text-sm font-bold text-slate-900">Selecciona una conversación</div>
+                    <div id="inbox-chat-phone" class="text-[11px] text-slate-500 font-medium">--</div>
+                  </div>
                 </div>
-                <button type="button" id="btn-inbox-reactivate" onclick="window.reactivateInboxBot()" class="hidden px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-lg hover:bg-emerald-100 transition">
-                  🤖 Reactivar Asistente IA
+                <button type="button" id="btn-resume-bot" onclick="resumeBotForCurrentChat()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm hidden">
+                  🤖 Reactivar Bot
                 </button>
               </div>
-              <div id="inbox-messages-container" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50">
-                <div class="text-center text-xs text-slate-400 mt-8">Selecciona una conversación de la izquierda para ver el historial.</div>
+
+              <div id="inbox-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50">
+                <!-- Historial de mensajes -->
               </div>
+
               <div class="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
-                <input type="text" id="inbox-manual-message-input" placeholder="Escribe una respuesta manual..." class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" disabled>
-                <button type="button" id="btn-inbox-send" onclick="window.sendInboxManualMessage()" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition disabled:opacity-50" disabled>
-                  Enviar Mensaje
+                <input type="text" id="inbox-reply-input" placeholder="Escribe tu respuesta al cliente..." class="flex-1 px-4 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-slate-900 outline-none">
+                <button type="button" onclick="sendManualReplyFromInbox()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm">
+                  Enviar
                 </button>
               </div>
             </div>
@@ -6250,8 +6257,8 @@
         if ((activeName === 'physical-map' || rawId === 'physical-map') && typeof window.fetchLiveCourtMap === 'function') {
           window.fetchLiveCourtMap();
         }
-        if ((activeName === 'inbox' || rawId === 'inbox') && typeof window.fetchInboxConversations === 'function') {
-          window.fetchInboxConversations();
+        if ((activeName === 'inbox' || rawId === 'inbox') && typeof window.loadInboxConversations === 'function') {
+          window.loadInboxConversations();
         }
         if (activeName === 'wallet-ledger' || rawId === 'wallet-ledger' || rawId === 'view-wallet-ledger') {
           if (typeof window.loadWalletLedger === 'function') {
@@ -13809,31 +13816,25 @@ Jugador: ${checkData.player_name}`);
       return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    window.fetchInboxConversations = async function() {
+    async function loadInboxConversations() {
       try {
         const res = await fetch('/api/v1/whatsapp/conversations');
         if (!res.ok) return;
         const data = await res.json();
         window.inboxConversationsCache = data.conversations || [];
-
-        const badge = document.getElementById('inbox-unread-badge');
-        if (badge) {
-          const total = data.total_unread || 0;
-          badge.textContent = total > 99 ? '99+' : String(total);
-          badge.classList.toggle('hidden', total <= 0);
-        }
-        window.renderInboxConversationList();
+        renderInboxConversationsList();
       } catch (e) {
         // Silencioso: el inbox simplemente no se actualiza en este ciclo
       }
-    };
+    }
+    window.loadInboxConversations = loadInboxConversations;
 
-    window.renderInboxConversationList = function() {
-      const list = document.getElementById('inbox-conversation-list');
+    function renderInboxConversationsList() {
+      const list = document.getElementById('inbox-conversations-list');
       if (!list) return;
       const conversations = window.inboxConversationsCache || [];
       if (conversations.length === 0) {
-        list.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No hay conversaciones registradas todavía.</div>';
+        list.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No hay conversaciones pendientes de asesor.</div>';
         return;
       }
       list.innerHTML = conversations.map(c => {
@@ -13841,7 +13842,7 @@ Jugador: ${checkData.player_name}`);
         const pausedBadge = c.is_bot_paused ? '<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-100 text-rose-700 rounded-full">🔴 Bot Pausado</span>' : '';
         const unreadBadge = c.unread_count > 0 ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-500 text-white rounded-full">${c.unread_count}</span>` : '';
         return `
-          <div onclick="window.selectInboxConversation('${c.sender_phone}')" class="p-3 cursor-pointer hover:bg-slate-50 transition ${isActive ? 'bg-emerald-50/60' : ''}">
+          <div onclick="selectInboxConversation('${c.sender_phone}')" class="p-3 rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-50 transition ${isActive ? 'bg-emerald-50/60 border-emerald-200' : ''}">
             <div class="flex items-center justify-between gap-2">
               <span class="text-xs font-bold text-slate-900 truncate">${escapeHtmlInbox(c.player_name || c.sender_phone)}</span>
               ${unreadBadge}
@@ -13850,28 +13851,24 @@ Jugador: ${checkData.player_name}`);
             <div class="mt-1">${pausedBadge}</div>
           </div>`;
       }).join('');
-    };
+    }
 
-    window.selectInboxConversation = async function(phone) {
+    async function selectInboxConversation(phone) {
       window.inboxSelectedPhone = phone;
-      window.renderInboxConversationList();
-      const input = document.getElementById('inbox-manual-message-input');
-      const sendBtn = document.getElementById('btn-inbox-send');
-      if (input) input.disabled = false;
-      if (sendBtn) sendBtn.disabled = false;
+      renderInboxConversationsList();
 
       try {
         const res = await fetch(`/api/v1/whatsapp/conversations/${encodeURIComponent(phone)}/messages`);
         if (!res.ok) return;
         const data = await res.json();
 
-        const titleEl = document.getElementById('inbox-chat-title');
-        const subtitleEl = document.getElementById('inbox-chat-subtitle');
-        if (titleEl) titleEl.textContent = data.player_name || data.sender_phone;
-        if (subtitleEl) subtitleEl.textContent = data.sender_phone;
+        const nameEl = document.getElementById('inbox-chat-player-name');
+        const phoneEl = document.getElementById('inbox-chat-phone');
+        if (nameEl) nameEl.textContent = data.player_name || data.sender_phone;
+        if (phoneEl) phoneEl.textContent = data.sender_phone;
 
-        const reactivateBtn = document.getElementById('btn-inbox-reactivate');
-        if (reactivateBtn) reactivateBtn.classList.toggle('hidden', !data.is_bot_paused);
+        const resumeBtn = document.getElementById('btn-resume-bot');
+        if (resumeBtn) resumeBtn.classList.toggle('hidden', !data.is_bot_paused);
 
         const container = document.getElementById('inbox-messages-container');
         if (container) {
@@ -13884,14 +13881,15 @@ Jugador: ${checkData.player_name}`);
           }).join('');
           container.scrollTop = container.scrollHeight;
         }
-        window.fetchInboxConversations();
+        loadInboxConversations();
       } catch (e) {
         // Silencioso
       }
-    };
+    }
+    window.selectInboxConversation = selectInboxConversation;
 
-    window.sendInboxManualMessage = async function() {
-      const input = document.getElementById('inbox-manual-message-input');
+    async function sendManualReplyFromInbox() {
+      const input = document.getElementById('inbox-reply-input');
       const phone = window.inboxSelectedPhone;
       if (!input || !phone || !input.value.trim()) return;
       const message = input.value.trim();
@@ -13902,15 +13900,16 @@ Jugador: ${checkData.player_name}`);
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sender_phone: phone, message }),
         });
-        window.selectInboxConversation(phone);
+        selectInboxConversation(phone);
       } catch (e) {
         if (typeof window.showDarkToast === 'function') {
           window.showDarkToast('Error', 'No se pudo enviar el mensaje manual.');
         }
       }
-    };
+    }
+    window.sendManualReplyFromInbox = sendManualReplyFromInbox;
 
-    window.reactivateInboxBot = async function() {
+    async function resumeBotForCurrentChat() {
       const phone = window.inboxSelectedPhone;
       if (!phone) return;
       try {
@@ -13919,16 +13918,15 @@ Jugador: ${checkData.player_name}`);
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sender_phone: phone }),
         });
-        window.selectInboxConversation(phone);
+        selectInboxConversation(phone);
       } catch (e) {
         // Silencioso
       }
-    };
+    }
+    window.resumeBotForCurrentChat = resumeBotForCurrentChat;
 
-    setInterval(() => { window.fetchInboxConversations(); }, 20000);
-    window.fetchInboxConversations();
-
-  
+    setInterval(() => { loadInboxConversations(); }, 20000);
+    loadInboxConversations();
 
     // =========================================================================
     // MODULO: 🎓 ACADEMIA DE PÁDEL & CLASES
