@@ -2273,9 +2273,9 @@
     <aside id="sidebar" class="fixed top-0 left-0 h-screen w-48 z-40 bg-[#0e1015] border-r border-[#1f2430] flex flex-col justify-between py-3 px-2 select-none overflow-y-hidden">
       <div>
         <!-- Logo & Marca -->
-        <div id="sidebar-logo-container" class="flex items-center gap-2 px-2 pb-3 mb-1 border-b border-[#1f2430]/60 shrink-0">
-          <div class="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-white font-bold text-[10px] shrink-0">Y</div>
-          <span class="font-bold text-white text-xs tracking-tight">YieldPadel</span>
+        <div id="sidebar-logo-container" class="flex items-center gap-2.5 px-2 pb-3 mb-1 border-b border-[#1f2430]/60 shrink-0">
+          <div class="w-6 h-6 rounded-md bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-xs shrink-0">Y</div>
+          <span class="font-bold text-white text-xs tracking-tight select-none !opacity-100 !text-white">YieldPadel</span>
         </div>
 
         <!-- Menú Vertical de Navegación -->
@@ -2351,14 +2351,14 @@
       </div>
 
       <!-- Pie del Sidebar -->
-      <div class="pt-2 border-t border-[#1f2430]/60 flex flex-col gap-0.5 shrink-0">
-        <div class="flex items-center gap-2 px-2 py-0.5">
-          <span class="live-dot shrink-0"></span>
-          <span class="truncate text-[10px] text-[#606980] font-medium">API Live (Bogotá)</span>
+      <div class="pt-2 mt-auto border-t border-[#1f2430]/60 flex flex-col gap-1">
+        <div class="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+          <span class="truncate">API Live (Bogotá)</span>
         </div>
-        <button onclick="fetchSlots()" class="nav-item sidebar-link w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" title="Refrescar turnos en vivo">
-          <span class="w-4 text-center text-xs shrink-0 opacity-70">↻</span>
-          <span class="truncate">Refrescar</span>
+        <button type="button" onclick="fetchSlots()" class="sidebar-link w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition" title="Refrescar turnos en vivo">
+          <span class="w-4 text-center">🔄</span>
+          <span>Refrescar</span>
         </button>
         <button onclick="window.logoutSession()" class="nav-item sidebar-link w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-rose-400 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" title="Cerrar sesión segura">
           <span class="w-4 text-center text-xs shrink-0 opacity-70">🚪</span>
