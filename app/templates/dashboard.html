@@ -379,12 +379,9 @@
     .executive-banner {
       background-color: #0F172A;
       color: #F8FAFC;
-      padding: 1.25rem 2rem;
+      padding: 0.625rem 1.25rem;
       border-bottom: 1px solid #1E293B;
       box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
-      position: sticky;
-      top: 0;
-      z-index: 45;
     }
 
     .banner-header {
@@ -439,21 +436,29 @@
     /* Fila de 5 Tarjetas KPIs Compactas */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(170px, 1fr));
-      gap: 0.85rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.625rem;
+      width: 100%;
+      align-items: center;
     }
 
-    @media (max-width: 1400px) {
+    @media (min-width: 768px) {
       .kpi-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .kpi-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
       }
     }
 
     .kpi-card {
-      background-color: rgba(30, 41, 59, 0.9);
+      background-color: rgba(30, 41, 59, 0.8);
       border: 1px solid rgba(51, 65, 85, 0.6);
-      border-radius: 10px;
-      padding: 0.85rem 1rem;
+      border-radius: 0.75rem;
+      padding: 0.625rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -465,8 +470,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.68rem;
-      font-weight: 600;
+      font-size: 0.625rem;
+      font-weight: 700;
       color: #94A3B8;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -486,12 +491,18 @@
     .kpi-tag-purple { background: rgba(168, 85, 247, 0.15); color: #D8B4FE; border: 1px solid rgba(216, 180, 254, 0.25); }
 
     .kpi-value {
-      font-size: 1.5rem;
-      font-weight: 600;
+      font-size: 1rem;
+      font-weight: 900;
       color: #FFFFFF;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       margin: 0.15rem 0;
       letter-spacing: -0.02em;
+    }
+
+    @media (min-width: 640px) {
+      .kpi-value {
+        font-size: 1.125rem;
+      }
     }
 
     .kpi-val-green { color: #FFFFFF; }
@@ -500,9 +511,9 @@
     .kpi-val-purple { color: #FFFFFF; }
 
     .kpi-sub {
-      font-size: 0.72rem;
+      font-size: 0.625rem;
       color: #94A3B8;
-      font-weight: 400;
+      font-weight: 500;
     }
 
     .kpi-progress {
@@ -2046,9 +2057,13 @@
       /* ESTILOS REFORZADOS BARRA DE CONTROL SAAS LIMPIA */
     .sidebar-nav-item.active {
       background-color: #F1F5F9 !important; /* slate-100 */
-      color: #0F172A !important; /* slate-900 */
-      font-weight: 500 !important; /* font-medium */
-      box-shadow: inset 3px 0 0 #0284C7;
+      color: #020617 !important; /* slate-950, nunca blanco */
+      font-weight: 700 !important; /* font-bold */
+      border-left: 4px solid #0F172A !important;
+      box-shadow: none;
+    }
+    .sidebar-nav-item.active span {
+      color: #020617 !important;
     }
 
     .sport-pill {
@@ -2176,13 +2191,13 @@
   <div id="app-container" class="flex h-screen bg-slate-50 overflow-hidden w-full">
 
     <!-- 1. SIDEBAR FIJO A LA IZQUIERDA (w-64) -->
-    <aside id="sidebar" class="w-64 h-screen bg-slate-900 border-r border-slate-800 flex flex-col justify-between overflow-y-auto text-slate-300 shrink-0">
+    <aside id="sidebar" class="w-64 h-screen bg-white border-r border-slate-200 flex flex-col justify-between overflow-y-auto text-slate-600 shrink-0">
       <div class="p-3">
         <!-- Logo & Marca -->
         <div class="sidebar-brand mb-3 p-2">
-          <a href="/dashboard" class="brand-title flex items-center gap-2 text-white font-extrabold text-base">
+          <a href="/dashboard" class="brand-title flex items-center gap-2 text-slate-900 font-extrabold text-base">
             <span class="brand-icon text-lg">⚡</span>
-            <span class="brand-name text-white">Afluenc.IA</span>
+            <span class="brand-name text-slate-900">Afluenc.IA</span>
             <span class="brand-badge text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-bold">YieldPadel</span>
           </a>
           <div class="brand-sub text-[11px] text-slate-400 mt-1 font-medium">
@@ -2193,69 +2208,69 @@
         <!-- Menú Vertical de Navegación -->
         <nav class="space-y-1" id="main-sidebar-nav">
           <!-- GRUPO 1: OPERACIÓN EN SEDE -->
-          <div class="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Operación en Sede</div>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-sm transition active" id="btn-nav-calendar" onclick="switchMainView('calendar')">
+          <div class="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400 select-none">Operación en Sede</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto text-xs font-bold text-slate-950 bg-slate-100 border-l-4 border-slate-900 rounded-r-lg shadow-sm transition active" id="btn-nav-calendar" onclick="switchMainView('calendar')">
             <span class="w-5 text-center text-xs">📅</span>
-            <span>Matriz Calendario</span>
+            <span style="color: #020617 !important;">Matriz Calendario</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-tournaments" onclick="switchMainView('tournaments')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-tournaments" onclick="switchMainView('tournaments')">
             <span class="w-5 text-center text-xs">🏆</span>
             <span>Torneos Americanos</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-pos" onclick="switchMainView('pos')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-pos" onclick="switchMainView('pos')">
             <span class="w-5 text-center text-xs">🛒</span>
             <span>Tienda & Barra (POS)</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-access" onclick="switchMainView('access')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-access" onclick="switchMainView('access')">
             <span class="w-5 text-center text-xs">🚪</span>
             <span>Acceso & Presencia en Club</span>
           </button>
 
           <!-- GRUPO 2: CLIENTES & FIDELIZACIÓN -->
-          <div class="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Clientes & Fidelización</div>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-crm" onclick="switchMainView('crm')">
+          <div class="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400 select-none">Clientes & Fidelización</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-crm" onclick="switchMainView('crm')">
             <span class="w-5 text-center text-xs">👥</span>
             <span>CRM Jugadores</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-wallet-ledger" onclick="switchMainView('view-wallet-ledger')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-wallet-ledger" onclick="switchMainView('view-wallet-ledger')">
             <span class="w-5 text-center text-xs">🪙</span>
             <span>Auditoría Capital Points</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-memberships" onclick="switchMainView('memberships')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-memberships" onclick="switchMainView('memberships')">
             <span class="w-5 text-center text-xs">💎</span>
             <span>Membresías del Club</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-academy" onclick="switchMainView('academy')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-academy" onclick="switchMainView('academy')">
             <span class="w-5 text-center text-xs">🎓</span>
             <span>Academia de Pádel</span>
           </button>
 
           <!-- GRUPO 3: INTELIGENCIA & MERCADO -->
-          <div class="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Inteligencia & Mercado</div>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-radar" onclick="switchMainView('radar')">
+          <div class="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400 select-none">Inteligencia & Mercado</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-radar" onclick="switchMainView('radar')">
             <span class="w-5 text-center text-xs">📈</span>
             <span>Radar de Precios</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-competitors" onclick="switchMainView('competitors')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-competitors" onclick="switchMainView('competitors')">
             <span class="w-5 text-center text-xs">🏢</span>
             <span>Benchmark Competencia</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-yield" onclick="switchMainView('yield')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-yield" onclick="switchMainView('yield')">
             <span class="w-5 text-center text-xs">💡</span>
             <span>Motor de Yield</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-analytics" onclick="switchMainView('analytics')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-analytics" onclick="switchMainView('analytics')">
             <span class="w-5 text-center text-xs">📊</span>
             <span>Métricas & Ocupación</span>
           </button>
 
           <!-- GRUPO 4: ADMINISTRACIÓN -->
-          <div class="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Administración</div>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-config" onclick="switchMainView('config')">
+          <div class="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400 select-none">Administración</div>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-config" onclick="switchMainView('config')">
             <span class="w-5 text-center text-xs">⚙️</span>
             <span>Configuración del Club</span>
           </button>
-          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition" id="btn-nav-audit" onclick="switchMainView('audit')">
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2.5 px-3 py-1.5 mx-auto rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" id="btn-nav-audit" onclick="switchMainView('audit')">
             <span class="w-5 text-center text-xs">🛡️</span>
             <span>Auditoría & Usuarios</span>
           </button>
@@ -2263,22 +2278,22 @@
       </div>
 
       <!-- Pie del Sidebar -->
-      <div class="sidebar-footer p-3 pt-4 mt-4 border-t border-slate-800">
+      <div class="sidebar-footer p-3 pt-4 mt-4 border-t border-slate-200">
         <div class="api-live-badge mb-2">
           <span class="live-dot"></span>
-          <span class="text-xs text-slate-300 font-medium">🟢 API Live (Bogotá)</span>
+          <span class="text-xs text-slate-600 font-medium">🟢 API Live (Bogotá)</span>
         </div>
-        <button onclick="fetchSlots()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Refrescar turnos en vivo">
+        <button onclick="fetchSlots()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition" title="Refrescar turnos en vivo">
           ↻ Refrescar Datos
         </button>
-        <button onclick="window.logoutSession()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg text-rose-400 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-900/50 transition mt-2" title="Cerrar sesión segura">
+        <button onclick="window.logoutSession()" class="btn-refresh-sidebar w-full py-1.5 px-3 text-xs font-semibold rounded-lg text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition mt-2" title="Cerrar sesión segura">
           🚪 Cerrar Sesión
         </button>
       </div>
     </aside>
 
     <!-- 2. CONTENIDO PRINCIPAL SAAS -->
-    <main id="main-content" class="flex-1 overflow-y-auto p-6 bg-slate-50">
+    <main id="main-content" class="flex-1 overflow-y-auto p-6 bg-slate-50 w-full max-w-full overflow-x-hidden">
 
       <!-- ======================================================== -->
       <!-- 2. BANNER EJECUTIVO SUPERIOR (HEADER OSCURO #0F172A)     -->
@@ -2311,7 +2326,7 @@
         </div>
 
         <!-- Fila de 5 Tarjetas KPIs Compactas -->
-        <div class="kpi-grid">
+        <div class="kpi-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 w-full items-center">
           <!-- KPI 1: Clientes Activos -->
           <div class="kpi-card">
             <div class="kpi-label">
