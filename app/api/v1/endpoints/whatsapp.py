@@ -24,6 +24,7 @@ from app.services.whatsapp import (
     set_conversation_paused,
 )
 from app.models.whatsapp_conversation import WhatsAppConversation
+from app.models.customer import Customer
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
@@ -330,7 +331,7 @@ async def list_conversations(db: AsyncSession = Depends(get_db)):
 
 @router.get("/conversations/{phone}/messages")
 async def get_conversation_messages(phone: str, db: AsyncSession = Depends(get_db)):
-    """Historial de mensajes de una conversación; marca los mensajes como leídos al abrirla."""
+    """Historial de mensajes de una conversación; marca los mensajes como leídos al abrirla e incluye mini-perfil CRM."""
     norm_phone = normalize_phone(phone)
     res = await db.execute(select(WhatsAppConversation).where(WhatsAppConversation.sender_phone == norm_phone))
     conv = res.scalars().first()
@@ -340,10 +341,25 @@ async def get_conversation_messages(phone: str, db: AsyncSession = Depends(get_d
     conv.unread_count = 0
     await db.commit()
 
+    cres = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+    customer = cres.scalars().first()
+    crm_profile = None
+    if customer:
+        days_left = None
+        if customer.membership_end_date:
+            days_left = (customer.membership_end_date - get_bogota_today()).days
+        crm_profile = {
+            "category": customer.category,
+            "membership_tier": customer.membership_tier,
+            "membership_days_left": days_left,
+            "wallet_balance": customer.wallet_balance,
+        }
+
     return {
         "sender_phone": conv.sender_phone,
         "player_name": conv.player_name,
         "is_bot_paused": conv.is_bot_paused,
+        "crm_profile": crm_profile,
         "messages": [
             {"direction": m.direction, "body": m.body, "created_at": m.created_at.isoformat()}
             for m in conv.messages
@@ -363,14 +379,15 @@ async def send_manual_message(
 
 
 @router.post("/reactivate")
+@router.post("/resume-bot")
 async def reactivate_bot(
     payload: ReactivateBotRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Reactiva el asistente IA (is_bot_paused=False) y le devuelve el control con un mensaje de despedida del asesor."""
+    """Devuelve el control al Asistente IA (is_bot_paused=False) con el mensaje formal de cierre del asesor humano."""
     farewell = (
-        "🤖 ¡Listo! Nuestro asesor te ayudó por aquí. A partir de ahora retomo la conversación, "
-        "¿en qué más te puedo colaborar?"
+        "👋 *El asesor de recepción ha cerrado la consulta.* A partir de este momento nuestro Asistente IA "
+        "vuelve a estar activo para colaborarte con disponibilidad, reservas y servicios del club. 🎾"
     )
     await set_conversation_paused(db, payload.sender_phone, False)
     await log_conversation_message(db, payload.sender_phone, farewell, direction="bot")

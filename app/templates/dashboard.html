@@ -2997,17 +2997,24 @@
 
             <!-- Columna Derecha: Chat interactivo -->
             <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-full overflow-hidden">
-              <div id="inbox-chat-header" class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold flex items-center justify-center text-xs">WA</div>
-                  <div>
-                    <div id="inbox-chat-player-name" class="text-sm font-bold text-slate-900">Selecciona una conversación</div>
-                    <div id="inbox-chat-phone" class="text-[11px] text-slate-500 font-medium">--</div>
+              <div id="inbox-chat-header" class="p-4 border-b border-slate-200 bg-slate-50 space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold flex items-center justify-center text-xs">WA</div>
+                    <div>
+                      <div id="inbox-chat-player-name" class="text-sm font-bold text-slate-900">Selecciona una conversación</div>
+                      <div id="inbox-chat-phone" class="text-[11px] text-slate-500 font-medium">--</div>
+                    </div>
                   </div>
+                  <button type="button" id="btn-handback-bot" onclick="handbackChatToBot()" class="hidden px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer transition">
+                    <span>🤖</span> <span>Devolver al Bot IA</span>
+                  </button>
                 </div>
-                <button type="button" id="btn-resume-bot" onclick="resumeBotForCurrentChat()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm hidden">
-                  🤖 Reactivar Bot
-                </button>
+                <div id="inbox-crm-mini-card" class="hidden flex items-center gap-2 flex-wrap">
+                  <span id="inbox-crm-category" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-200 text-slate-700">--</span>
+                  <span id="inbox-crm-membership" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-purple-100 text-purple-700 border border-purple-200">--</span>
+                  <span id="inbox-crm-wallet" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 border border-amber-200">🪙 --</span>
+                </div>
               </div>
 
               <div id="inbox-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50">
@@ -3016,14 +3023,18 @@
 
               <div class="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
                 <input type="text" id="inbox-reply-input" placeholder="Escribe tu respuesta al cliente..." class="flex-1 px-4 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-slate-900 outline-none">
-                <button type="button" onclick="sendManualReplyFromInbox()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm">
-                  Enviar
+                <button type="button" onclick="sendManualReplyFromInbox()" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer flex-shrink-0">
+                  <span>Enviar</span> <span>🚀</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- ======================================================== -->
+        <!-- VISTA 4: 🪙 AUDITORÍA CAPITAL POINTS                    -->
+        <!-- ======================================================== -->
+        <div id="view-wallet-ledger" class="view-section hidden">
           <div class="max-w-7xl mx-auto px-2 py-6">
             <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -6204,6 +6215,14 @@
 
       // 1. Ocultar todas las vistas en main
       document.querySelectorAll('main > div[id^="view-"], div[id^="view-"], .view-section').forEach(el => el.classList.add('hidden'));
+
+      // 1b. Aislamiento estricto del Chat Recepción: fuerza el ocultamiento explícito de las demás vistas principales
+      if (cleanId === 'inbox' || rawId === 'inbox') {
+        ['#view-calendar', '#view-wallet-ledger', '#view-crm', '#view-audit', '#view-radar', '#view-yield', '#view-config', '#view-pos', '#view-access'].forEach(sel => {
+          const el = document.querySelector(sel);
+          if (el) el.classList.add('hidden');
+        });
+      }
 
       // 2. Buscar elemento por id exacto o prefijando 'view-'
       let target = document.getElementById(cleanId);
@@ -13839,7 +13858,9 @@ Jugador: ${checkData.player_name}`);
       }
       list.innerHTML = conversations.map(c => {
         const isActive = c.sender_phone === window.inboxSelectedPhone;
-        const pausedBadge = c.is_bot_paused ? '<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-100 text-rose-700 rounded-full">🔴 Bot Pausado</span>' : '';
+        const statusBadge = c.is_bot_paused
+          ? '<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-100 text-rose-700 rounded-full">🔴 Bot Pausado</span>'
+          : '<span class="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 rounded-full">🟢 Atendida por Bot</span>';
         const unreadBadge = c.unread_count > 0 ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-500 text-white rounded-full">${c.unread_count}</span>` : '';
         return `
           <div onclick="selectInboxConversation('${c.sender_phone}')" class="p-3 rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-50 transition ${isActive ? 'bg-emerald-50/60 border-emerald-200' : ''}">
@@ -13848,7 +13869,7 @@ Jugador: ${checkData.player_name}`);
               ${unreadBadge}
             </div>
             <div class="text-[11px] text-slate-500 truncate mt-0.5">${escapeHtmlInbox(c.last_message || '')}</div>
-            <div class="mt-1">${pausedBadge}</div>
+            <div class="mt-1">${statusBadge}</div>
           </div>`;
       }).join('');
     }
@@ -13867,16 +13888,39 @@ Jugador: ${checkData.player_name}`);
         if (nameEl) nameEl.textContent = data.player_name || data.sender_phone;
         if (phoneEl) phoneEl.textContent = data.sender_phone;
 
-        const resumeBtn = document.getElementById('btn-resume-bot');
-        if (resumeBtn) resumeBtn.classList.toggle('hidden', !data.is_bot_paused);
+        const handbackBtn = document.getElementById('btn-handback-bot');
+        if (handbackBtn) handbackBtn.classList.toggle('hidden', !data.is_bot_paused);
+
+        // Mini-tarjeta CRM: categoría, membresía + días restantes, saldo de Capital Points
+        const crmCard = document.getElementById('inbox-crm-mini-card');
+        const crm = data.crm_profile;
+        if (crmCard) {
+          if (crm) {
+            crmCard.classList.remove('hidden');
+            const categoryEl = document.getElementById('inbox-crm-category');
+            const membershipEl = document.getElementById('inbox-crm-membership');
+            const walletEl = document.getElementById('inbox-crm-wallet');
+            if (categoryEl) categoryEl.textContent = crm.category || '4ta';
+            if (membershipEl) {
+              const tier = crm.membership_tier || 'ESTANDAR';
+              const daysLabel = (crm.membership_days_left !== null && crm.membership_days_left !== undefined)
+                ? `${crm.membership_days_left} días` : 'sin vigencia';
+              membershipEl.textContent = `${tier} · ${daysLabel}`;
+            }
+            if (walletEl) walletEl.textContent = `🪙 ${Math.round(crm.wallet_balance || 0).toLocaleString('es-CO')} pts`;
+          } else {
+            crmCard.classList.add('hidden');
+          }
+        }
 
         const container = document.getElementById('inbox-messages-container');
         if (container) {
           const msgs = data.messages || [];
           container.innerHTML = msgs.map(m => {
-            const isIncoming = m.direction === 'incoming';
-            const bubbleColor = isIncoming ? 'bg-white border border-slate-200 text-slate-900' : (m.direction === 'staff' ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white');
-            const align = isIncoming ? 'justify-start' : 'justify-end';
+            const isStaff = m.direction === 'staff';
+            // Cliente y Bot: burbuja blanca con texto oscuro visible; Recepción: burbuja verde alineada a la derecha
+            const bubbleColor = isStaff ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-800';
+            const align = isStaff ? 'justify-end' : 'justify-start';
             return `<div class="flex ${align}"><div class="max-w-[75%] px-3 py-2 rounded-xl text-xs ${bubbleColor} shadow-xs">${escapeHtmlInbox(m.body)}</div></div>`;
           }).join('');
           container.scrollTop = container.scrollHeight;
@@ -13909,21 +13953,24 @@ Jugador: ${checkData.player_name}`);
     }
     window.sendManualReplyFromInbox = sendManualReplyFromInbox;
 
-    async function resumeBotForCurrentChat() {
+    async function handbackChatToBot() {
       const phone = window.inboxSelectedPhone;
       if (!phone) return;
       try {
-        await fetch('/api/v1/whatsapp/reactivate', {
+        await fetch('/api/v1/whatsapp/resume-bot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sender_phone: phone }),
         });
         selectInboxConversation(phone);
+        if (typeof window.showDarkToast === 'function') {
+          window.showDarkToast('Atención Finalizada', 'La conversación volvió al Asistente IA');
+        }
       } catch (e) {
         // Silencioso
       }
     }
-    window.resumeBotForCurrentChat = resumeBotForCurrentChat;
+    window.handbackChatToBot = handbackChatToBot;
 
     setInterval(() => { loadInboxConversations(); }, 20000);
     loadInboxConversations();
