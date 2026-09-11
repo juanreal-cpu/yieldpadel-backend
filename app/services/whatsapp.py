@@ -60,6 +60,99 @@ def is_transactional_message(text: str) -> bool:
         return False
     return bool("🎾" in text or JOIN_REGEX.search(text) or DROP_REGEX.search(text))
 
+
+# Saludos cortos y estrictos: solo estos disparan el mensaje institucional fijo de bienvenida
+GREETING_ONLY_PATTERNS = [
+    r"^hola+$",
+    r"^ho+la+$",
+    r"^buenas?$",
+    r"^buen[oa]s?\s+d[ií]as?$",
+    r"^buenas?\s+tardes?$",
+    r"^buenas?\s+noches?$",
+    r"^inicio$",
+    r"^start$",
+    r"^hey$",
+    r"^hi$",
+    r"^saludos$",
+]
+GREETING_ONLY_REGEX = re.compile("|".join(GREETING_ONLY_PATTERNS), re.IGNORECASE)
+
+QUICK_AVAILABILITY_KEYWORDS = [
+    r"\breservas?\b",
+    r"\bdisponibilidad\b",
+    r"\bturnos?\b",
+    r"\bcanchas?\s+libres?\b",
+    r"\bhorarios?\b",
+]
+QUICK_AVAILABILITY_REGEX = re.compile("|".join(QUICK_AVAILABILITY_KEYWORDS), re.IGNORECASE)
+
+WELCOME_MESSAGE = (
+    "🎾 *¡Hola! Bienvenido a Capital Pádel Club* 🎾\n\n"
+    "Somos el equipo de Capital Pádel Club, sede Complejo Maloka en Bogotá. "
+    "Con gusto te ayudamos con reservas, torneos o servicios del club.\n\n"
+    "¿En qué te podemos colaborar hoy?"
+)
+
+
+def is_simple_greeting(text: str) -> bool:
+    """True solo si el mensaje ES, en su totalidad, un saludo corto ('hola', 'buenas', 'buenos días', 'inicio', 'start', etc.)."""
+    if not text:
+        return False
+    clean = text.strip().lower()
+    clean = re.sub(r"[^\w\sáéíóúñ]", "", clean, flags=re.UNICODE).strip()
+    if not clean or len(clean.split()) > 3:
+        return False
+    return bool(GREETING_ONLY_REGEX.match(clean))
+
+
+def _local_concierge_fallback(clean_text: str) -> str:
+    """Respuestas de conocimiento del club sin depender de Gemini (usadas si la IA no está configurada o falla)."""
+    t = clean_text.lower()
+    if re.search(r"\bcu[aá]nt[ao]s?\b.*\bcanchas?\b|\bcanchas?\b.*\btienen\b", t):
+        return (
+            "🎾 *Nuestras instalaciones en Capital Pádel Club:*\n\n"
+            "• 5 canchas de pádel (4 azules + 1 negra)\n"
+            "• 2 pistas de pickleball 🏓\n"
+            "• 1 cancha de arena para vóley 🏐\n"
+            "• Sala de consolas 🎮\n\n"
+            "¿Quieres que te muestre la disponibilidad de hoy?"
+        )
+    if re.search(r"\bservicios?\b|\bqu[eé]\s+hay\b|\bofrecen\b", t):
+        return (
+            "🏆 *Servicios de Capital Pádel Club:*\n\n"
+            "• Tienda/POS: venta y alquiler de palas y bolas 🎾\n"
+            "• Bar / Cafetería\n"
+            "• Vestieres\n"
+            "• Parqueadero cubierto 🚗\n"
+            "• Torneos Americanos, Academia y partidos abiertos comunitarios\n\n"
+            "¿Te gustaría conocer horarios o disponibilidad?"
+        )
+    if re.search(r"\bprecios?\b|\bvalor(es)?\b|\bcu[aá]nto\s+cuesta\b|\btarifas?\b", t):
+        return (
+            "💰 *Tarifas en Capital Pádel Club:*\n\n"
+            "Nuestras tarifas varían según la franja horaria (valle/pico) y la cancha. "
+            "Escribe *'disponibilidad'* o *'turnos hoy'* y te muestro los horarios con su precio exacto en COP. 🎾"
+        )
+    if re.search(r"\bd[oó]nde\b|\bubicad[oa]s?\b|\bdirecci[oó]n\b|\bqueda[n]?\b", t):
+        return (
+            "📍 *Ubicación de Capital Pádel Club:*\n\n"
+            "Estamos en el Complejo Maloka, Bogotá D.C. ¡Te esperamos! 🎾"
+        )
+    if re.search(r"\bhorarios?\b|\ba\s+qu[eé]\s+hora\b|\babren\b|\bcierran\b", t):
+        return (
+            "⌚ *Horario de Capital Pádel Club:*\n\n"
+            "Todos los días de 06:00 a.m. a 12:00 a.m. (medianoche). "
+            "El último turno inicia a las 22:00/22:30. 🎾"
+        )
+    return (
+        "🎾 *Capital Pádel Club* 🎾\n\n"
+        "Puedo ayudarte con reservas, torneos o servicios del club. Por ejemplo, pregúntame:\n"
+        "• *'cuántas canchas tienen'*\n"
+        "• *'qué servicios hay'*\n"
+        "• *'disponibilidad de hoy'*\n\n"
+        "¡Cuéntame en qué te ayudo! 🏆"
+    )
+
 # Cache en memoria de mensajes enviados y recibidos por ID (wamid) para resolver citas
 MESSAGES_CACHE: Dict[str, str] = {}
 
@@ -1279,15 +1372,7 @@ async def process_incoming_whatsapp_message(
     elif intent == "LIST":
         return await process_list_intent(db, sender_phone, sender_name, raw_text)
     else:
-        return (
-            "🎾 *Asistente de Capital Pádel Club* 🎾\n\n"
-            "Puedes consultar y responder a las convocatorias con los siguientes comandos:\n"
-            "• *'qué horas hay'* o *'canchas libres'* para consultar la disponibilidad y tarifas del día.\n"
-            "• *'voy'*, *'entro'* o *'me anoto'* (incluso citando la convocatoria) para apartar un cupo.\n"
-            "• *'me bajo'* o *'cancelo'* para liberar tu cupo previamente reservado.\n"
-            "• O pega la lista actualizada de jugadores para sincronizar el partido.\n\n"
-            "¡Nos vemos en la pista! 🏆"
-        )
+        return await generate_concierge_reply(message_text=raw_text, sender_phone=sender_phone, db=db)
 
 
 async def process_availability_query(
@@ -1370,6 +1455,57 @@ async def process_availability_query(
     )
 
 
+async def generate_quick_availability_reply(
+    db: AsyncSession,
+    target_date: Optional[date] = None,
+) -> str:
+    """
+    Respuesta compacta (3-4 turnos) para preguntas rápidas de disponibilidad
+    ('reservas', 'disponibilidad', 'turnos', 'canchas libres', 'horarios').
+    """
+    today = get_bogota_today()
+    now_bogota = get_bogota_now()
+    d = target_date or today
+    day_label = "hoy" if d == today else "mañana"
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date == d,
+            cast(TimeSlot.status, String) == "AVAILABLE",
+            TimeSlot.slot_type == "MATCH",
+        )
+        .order_by(TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    if d == today:
+        current_time = now_bogota.time()
+        slots = [s for s in slots if s.start_time > current_time]
+
+    if not slots:
+        if d == today:
+            return "Por el momento todas las canchas están reservadas para hoy. ¿Te gustaría consultar para mañana?"
+        return "Por el momento todas las canchas están reservadas para mañana. ¿Deseas consultar otra fecha?"
+
+    lines = []
+    for s in slots[:4]:
+        c_name = s.court.name if s.court else "Cancha"
+        st = s.start_time.strftime("%I:%M %p").lstrip("0")
+        et = s.end_time.strftime("%I:%M %p").lstrip("0")
+        price = f"${int(s.total_price or 0):,}".replace(",", ".")
+        lines.append(f"• {st} - {et} ({c_name} - {price} COP)")
+
+    lines_str = "\n".join(lines)
+    return (
+        f"🎾 *Turnos libres para {day_label} en Capital Pádel Club:*\n"
+        f"{lines_str}\n\n"
+        f"Escribe la hora que prefieres para apartarla de inmediato."
+    )
+
+
 async def generate_concierge_reply(
     message_text: str,
     sender_phone: str,
@@ -1377,25 +1513,25 @@ async def generate_concierge_reply(
 ) -> str:
     """
     Concierge conversacional (Gemini) con conocimiento institucional del club.
-    Si el mensaje pregunta por disponibilidad, delega en la consulta real a time_slots
-    en lugar de improvisar horarios. Para el resto (saludo, info general, precios),
-    responde con el tono cálido definido en CONCIERGE_SYSTEM_INSTRUCTION.
+    - Saludo corto y estricto ('hola', 'buenas', 'inicio', 'start'...) -> mensaje de bienvenida fijo.
+    - Pregunta de disponibilidad/reservas -> consulta real a time_slots (formato compacto).
+    - Resto de preguntas en lenguaje natural -> Gemini (o base de conocimiento local si Gemini no está disponible).
     """
     clean = (message_text or "").strip()
 
-    if db is not None and detect_intent(clean) == "AVAILABILITY":
-        return await process_availability_query(db, query_text=clean)
+    if is_simple_greeting(clean):
+        return WELCOME_MESSAGE
+
+    if db is not None and (detect_intent(clean) == "AVAILABILITY" or QUICK_AVAILABILITY_REGEX.search(clean)):
+        target_date = get_bogota_today()
+        if re.search(r"\bma[ñn]ana\b", clean, re.IGNORECASE):
+            target_date = target_date + timedelta(days=1)
+        return await generate_quick_availability_reply(db, target_date=target_date)
 
     api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
     if not genai or not api_key:
-        logger.warning("Gemini no configurado (falta google-generativeai o GEMINI_API_KEY); usando respuesta de respaldo.")
-        return (
-            "🎾 *¡Hola! Bienvenido a Capital Pádel Club* 🎾\n\n"
-            "📍 Estamos en el Complejo Maloka, Bogotá D.C.\n"
-            "⌚ Horario: Lunes a Domingo de 06:00 a 24:00 (último turno 22:00/22:30).\n"
-            "🏆 Contamos con 5 canchas de pádel, 2 de pickleball, cancha de arena para vóley y sala de consolas.\n\n"
-            "Cuéntame en qué te podemos ayudar: reservas, torneos o servicios del club."
-        )
+        logger.warning("Gemini no configurado (falta google-generativeai o GEMINI_API_KEY); usando base de conocimiento local.")
+        return _local_concierge_fallback(clean)
 
     try:
         model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
@@ -1411,13 +1547,7 @@ async def generate_concierge_reply(
         return ai_text
     except Exception as exc:
         logger.error(f"Error generando respuesta de concierge IA para {sender_phone}: {exc}", exc_info=True)
-        return (
-            "🎾 *Capital Pádel Club* 🎾\n\n"
-            "En este momento nuestro asistente virtual no está disponible, pero con gusto te ayudamos:\n"
-            "• Escribe *'qué horas hay'* para ver disponibilidad de hoy.\n"
-            "• Escribe *'voy'* o *'me bajo'* para gestionar tu cupo en un partido.\n\n"
-            "Un miembro de nuestro equipo te contactará en breve. ¡Gracias por tu paciencia! 🏆"
-        )
+        return _local_concierge_fallback(clean)
 
 
 async def generate_availability_broadcast(
