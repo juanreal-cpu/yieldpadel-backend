@@ -405,324 +405,183 @@ async def get_club_benchmark(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        # 1. BÚSQUEDA RESILIENTE MULTIFORMATO
-        clean_name = club_name.replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').strip()
-        words = clean_name.split()
-        token = words[0].lower() if words else clean_name.lower() # ej: 'vtx' o 'padel'
-        slug = clean_name.lower().replace(' ', '_')
-        search_pattern = f"%{clean_name.lower()}%"
+        # Extraer tokens de búsqueda tolerantes
+        clean = club_name.lower().replace('pádel', '').replace('padel', '').replace('_', ' ').strip()
+        words = [w for w in clean.split() if w not in ('la', 'el', 'los', 'las', 'de', 'del', 'club', 'center')]
+        token = words[0] if words else (clean.split()[0] if clean else club_name.lower().strip())
         token_pattern = f"%{token}%"
-        orig_pattern = f"%{club_name.strip()}%"
 
-        is_capital_or_maloka = ('capital' in clean_name.lower() or 'maloka' in clean_name.lower())
-
-        where_club_filter = """
-            (
-                LOWER(TRIM(club_name)) = LOWER(TRIM(:clean_name))
-                OR LOWER(TRIM(club_name)) = LOWER(TRIM(:orig_name))
-                OR LOWER(club_name) ILIKE :clean_pattern
-                OR LOWER(club_name) ILIKE :orig_pattern
-                OR LOWER(club_name) ILIKE :token_pattern
-                OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :slug_pattern
-                OR (LOWER(:clean_name) LIKE '%capital%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
-                OR (LOWER(:clean_name) LIKE '%maloka%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
-            )
-        """
-
-        params = {
-            "orig_name": club_name.strip(),
-            "clean_name": clean_name,
-            "orig_pattern": orig_pattern,
-            "clean_pattern": search_pattern,
-            "token_pattern": token_pattern,
-            "slug_pattern": f"%{slug}%"
-        }
-
-        # 1. CONSULTA DEFENSIVA AGREGADA (CERO DIVISION BY ZERO)
-        q_stats = text(f"""
+        # 1. Consulta de Métricas Generales (Directo de competitor_market_slots)
+        q_stats = text("""
             SELECT 
-                COUNT(*) AS total_monitored,
-                COALESCE(ROUND(AVG(NULLIF(price_per_player, 0))), 0) AS avg_price,
-                COALESCE(MAX(spots_count), 4) AS max_spots
+                COUNT(*) as total_monitored,
+                COALESCE(ROUND(AVG(NULLIF(price_per_player, 0))), 0) as avg_price,
+                MIN(message_date) as oldest_date,
+                MAX(message_date) as newest_date
             FROM competitor_market_slots
-            WHERE {where_club_filter}
+            WHERE LOWER(club_name) ILIKE :token_pattern;
         """)
-        res_stats = (await db.execute(q_stats, params)).mappings().first()
-        total_slots = int(res_stats["total_monitored"]) if res_stats and res_stats["total_monitored"] else 0
-        raw_avg = float(res_stats["avg_price"]) if (res_stats and res_stats["avg_price"]) else 0.0
+        res_stats = (await db.execute(q_stats, {"token_pattern": token_pattern})).mappings().first()
+        total_monitored = int(res_stats["total_monitored"]) if res_stats and res_stats["total_monitored"] else 0
+        avg_price = float(res_stats["avg_price"]) if res_stats and res_stats["avg_price"] else 0.0
 
-        # Fallback si se consulta Capital Pádel / Maloka y no hay datos en competitor_market_slots
-        if is_capital_or_maloka and total_slots == 0:
+        # Fallback local para Capital / Maloka si no hay en slots de competencia
+        if total_monitored == 0 and ('capital' in club_name.lower() or 'maloka' in club_name.lower()):
             q_local = text("""
                 SELECT 
                     COUNT(*) AS total_slots,
                     COALESCE(ROUND(AVG(price_per_player_cop)), 0) AS avg_price
                 FROM time_slots
-                WHERE club_id = 1 OR club_id IS NULL
+                WHERE club_id = 1 OR club_id IS NULL;
             """)
             res_local = (await db.execute(q_local)).mappings().first()
             if res_local and res_local["total_slots"]:
-                total_slots = int(res_local["total_slots"])
-                raw_avg = float(res_local["avg_price"]) if res_local["avg_price"] else 45000.0
+                total_monitored = int(res_local["total_slots"])
+                avg_price = float(res_local["avg_price"]) if res_local["avg_price"] else 45000.0
 
-        has_data = total_slots > 0
+        has_data = total_monitored > 0
 
-        # 2. Desglose para la Grilla Matricial (Sin conversión o casteo de fechas en SQL)
-        matrix_rows = []
-        if has_data:
-            q_matrix = text(f"""
-                SELECT 
-                    COALESCE(time_slot, 'General') AS raw_slot,
-                    'Lun' AS dia_code,
-                    COALESCE(
-                        NULLIF(ROUND(AVG(price_per_player)), 0),
-                        NULLIF(ROUND(AVG(price_total / NULLIF(spots_count, 0))), 0),
-                        45000
-                    ) AS precio,
-                    COUNT(*) AS total
-                FROM competitor_market_slots
-                WHERE {where_club_filter}
-                  AND (price_per_player > 0 OR price_total > 0)
-                GROUP BY raw_slot
-                ORDER BY raw_slot ASC;
-            """)
-            try:
-                matrix_rows = [dict(r) for r in (await db.execute(q_matrix, params)).mappings().all()]
-            except Exception as e_mat:
-                logger.warning(f"Error consultando matrix para {club_name}: {e_mat}")
-                matrix_rows = []
+        # 2. Consulta de Grilla Matricial y Ocupación
+        q_grid = text("""
+            SELECT 
+                COALESCE(NULLIF(time_slot, ''), 'Sin horario') as slot_time,
+                COUNT(*) as matches_count,
+                COALESCE(ROUND(AVG(NULLIF(price_per_player, 0))), 0) as slot_avg_price
+            FROM competitor_market_slots
+            WHERE LOWER(club_name) ILIKE :token_pattern
+            GROUP BY time_slot
+            ORDER BY matches_count DESC
+            LIMIT 10;
+        """)
+        raw_grid = [dict(r) for r in (await db.execute(q_grid, {"token_pattern": token_pattern})).mappings().all()] if has_data else []
+        pricing_rows = []
+        for g in raw_grid:
+            st = g["slot_time"]
+            cnt = int(g["matches_count"])
+            pr = float(g["slot_avg_price"]) if g["slot_avg_price"] else (avg_price or 45000.0)
+            pricing_rows.append({
+                "slot_time": st,
+                "franja": st,
+                "standard_time_slot": st,
+                "matches_count": cnt,
+                "partidos": cnt,
+                "slot_avg_price": pr,
+                "tarifa_club": pr,
+                "club_avg_price": pr,
+                "tarifa_capital": 45000.0,
+                "brecha": pr - 45000.0,
+                "gap_cop": pr - 45000.0,
+                "tipo_dia": "Todos los días"
+            })
 
-        # 3. Directorio de Jugadores Frecuentes (COALESCE defensivo)
+        # 3. Consulta de Directorio de Jugadores
+        # Primero intentar desde competitor_market_slots directamente
         q_players = text("""
             SELECT 
-                p.player_name,
-                COALESCE(p.detected_category, '4ta') AS category,
-                COALESCE(NULLIF(p.player_phone, ''), 'Sin WhatsApp') AS phone,
-                COALESCE(p.total_matches_played, 0) AS total_matches_played
-            FROM market_player_profiles p
-            WHERE (
-                LOWER(TRIM(p.frequent_club)) = LOWER(TRIM(:clean_name))
-                OR LOWER(TRIM(p.frequent_club)) = LOWER(TRIM(:orig_name))
-                OR LOWER(p.frequent_club) ILIKE :clean_pattern
-                OR LOWER(p.frequent_club) ILIKE :orig_pattern
-                OR LOWER(p.frequent_club) ILIKE :token_pattern
-                OR REPLACE(LOWER(p.frequent_club), ' ', '_') ILIKE :slug_pattern
-                OR (LOWER(:clean_name) LIKE '%capital%' AND (LOWER(p.frequent_club) LIKE '%capital%' OR LOWER(p.frequent_club) LIKE '%maloka%'))
-                OR (LOWER(:clean_name) LIKE '%maloka%' AND (LOWER(p.frequent_club) LIKE '%capital%' OR LOWER(p.frequent_club) LIKE '%maloka%'))
-            )
-            ORDER BY p.total_matches_played DESC
-            LIMIT 25;
+                COALESCE(players, 'Comunidad Padel') as player_name,
+                COALESCE(category, '4ta') as detected_category,
+                COUNT(*) as total_matches
+            FROM competitor_market_slots
+            WHERE LOWER(club_name) ILIKE :token_pattern
+              AND players IS NOT NULL AND players != ''
+            GROUP BY players, category
+            ORDER BY total_matches DESC
+            LIMIT 15;
         """)
-        try:
-            player_rows = [dict(r) for r in (await db.execute(q_players, params)).mappings().all()]
-        except Exception as e_pl:
-            logger.warning(f"Error consultando players para {club_name}: {e_pl}")
-            player_rows = []
+        players_rows = [dict(r) for r in (await db.execute(q_players, {"token_pattern": token_pattern})).mappings().all()] if has_data else []
 
-        # Extraer jugadores desde competitor_market_slots para complementar
-        if has_data and len(player_rows) < 15:
-            try:
-                q_slot_players = text(f"""
-                    SELECT 
-                        TRIM(p_name) AS player_name,
-                        '4ta' AS category,
-                        'Sin WhatsApp' AS phone,
-                        COUNT(*) AS total_matches_played
-                    FROM competitor_market_slots s,
-                         LATERAL unnest(string_to_array(s.players, ',')) AS p_name
-                    WHERE {where_club_filter}
-                      AND LENGTH(TRIM(p_name)) > 2
-                    GROUP BY TRIM(p_name)
-                    ORDER BY total_matches_played DESC
-                    LIMIT 30;
-                """)
-                fallback_players = [dict(r) for r in (await db.execute(q_slot_players, params)).mappings().all()]
-                existing_names = {p["player_name"].lower() for p in player_rows}
-                for fp in fallback_players:
-                    if fp["player_name"].lower() not in existing_names:
-                        player_rows.append(fp)
-                        existing_names.add(fp["player_name"].lower())
-            except Exception:
-                pass
+        # Si no arrojó o arrojó pocos, complementar con market_player_profiles
+        if len(players_rows) < 5:
+            q_crm_players = text("""
+                SELECT 
+                    player_name,
+                    COALESCE(detected_category, '4ta') as detected_category,
+                    COALESCE(player_phone, '') as phone,
+                    COALESCE(total_matches_played, 1) as total_matches
+                FROM market_player_profiles
+                WHERE LOWER(frequent_club) ILIKE :token_pattern
+                ORDER BY total_matches_played DESC
+                LIMIT 15;
+            """)
+            crm_rows = [dict(r) for r in (await db.execute(q_crm_players, {"token_pattern": token_pattern})).mappings().all()]
+            existing_names = {p["player_name"].lower() for p in players_rows}
+            for cr in crm_rows:
+                if cr["player_name"].lower() not in existing_names:
+                    players_rows.append(cr)
+                    existing_names.add(cr["player_name"].lower())
 
-        # 4. Historial de Torneos Americanos (ORDER BY id DESC LIMIT 20, sin parseo ni casteo de fecha)
-        q_tournaments = text(f"""
+        # Normalizar objetos de jugadores para máxima compatibilidad
+        for p in players_rows:
+            p["player_name"] = str(p.get("player_name") or "Jugador Padel")
+            p["detected_category"] = p.get("detected_category") or p.get("category") or "4ta"
+            p["category"] = p["detected_category"]
+            p["total_matches"] = int(p.get("total_matches") or p.get("total_matches_played") or 1)
+            p["total_matches_played"] = p["total_matches"]
+            p["phone"] = p.get("phone") or ""
+
+        # Grilla matricial para compatibilidad
+        matrix_rows = []
+        for r in pricing_rows:
+            matrix_rows.append({
+                "raw_slot": r["slot_time"],
+                "franja": r["slot_time"],
+                "dia_code": "Lun",
+                "precio": r["slot_avg_price"],
+                "total": r["matches_count"]
+            })
+
+        # Torneos recientes de muestra
+        q_tournaments = text("""
             SELECT 
                 COALESCE(NULLIF(message_date, ''), 'N/A') AS fecha,
                 COALESCE(time_slot, 'General') AS hora,
                 COALESCE(NULLIF(category, ''), 'Torneo Americano') AS tipo,
-                COALESCE(
-                    NULLIF(ROUND(price_per_player), 0),
-                    NULLIF(ROUND(price_total / NULLIF(spots_count, 0)), 0),
-                    0
-                ) AS precio,
+                COALESCE(NULLIF(ROUND(price_per_player), 0), 0) AS precio,
                 CASE WHEN is_closed THEN 'Sí' ELSE 'En curso' END AS cerrado,
                 COALESCE(is_closed, FALSE) AS is_full
             FROM competitor_market_slots
-            WHERE {where_club_filter}
-              AND (
-                category ILIKE '%americano%' 
-                OR raw_message ILIKE '%americano%' 
-                OR players ILIKE '%americano%' 
-                OR spots_count > 4
-              )
+            WHERE LOWER(club_name) ILIKE :token_pattern
             ORDER BY id DESC
-            LIMIT 20;
+            LIMIT 15;
         """)
         try:
-            tournament_rows = [dict(r) for r in (await db.execute(q_tournaments, params)).mappings().all()] if has_data else []
-        except Exception as e_tourn:
-            logger.warning(f"Error consultando torneos para {club_name}: {e_tourn}")
+            tournament_rows = [dict(r) for r in (await db.execute(q_tournaments, {"token_pattern": token_pattern})).mappings().all()] if has_data else []
+        except Exception:
             tournament_rows = []
 
-        # 5. Cálculo de Brecha respecto al promedio de Capital Pádel
-        q_cap = text("""
-            SELECT COALESCE(ROUND(AVG(NULLIF(price_per_player, 0))), 0) AS capital_avg
-            FROM competitor_market_slots
-            WHERE club_name ILIKE '%capital%' OR club_name ILIKE '%maloka%'
-        """)
-        res_cap = (await db.execute(q_cap)).scalar()
-        capital_avg = float(res_cap) if res_cap and res_cap > 0 else 45000.0
-
-        if not has_data:
-            avg_price = 0.0
-            diff = 0.0
-        elif is_capital_or_maloka:
-            avg_price = raw_avg if raw_avg > 0 else capital_avg
-            diff = 0.0
-        else:
-            avg_price = raw_avg
-            diff = (avg_price - capital_avg)
-
-        # 6. Analítica de Curva y Velocidad de Llenado (Lead Time 1/4 a 4/4)
-        fill_velocity = {
-            "manana": {
-                "periodo": "Mañana (06:00 - 12:00)",
-                "avg_hours": 4.5,
-                "avg_display": "4.5 horas",
-                "velocidad": "Moderada",
-                "pct_cerrado": 72.0
-            },
-            "tarde": {
-                "periodo": "Tarde (12:00 - 18:00)",
-                "avg_hours": 2.2,
-                "avg_display": "2.2 horas",
-                "velocidad": "Rápida",
-                "pct_cerrado": 88.5
-            },
-            "noche": {
-                "periodo": "Prime Time Noche (18:00 - 23:00)",
-                "avg_hours": 0.6,
-                "avg_display": "36 minutos",
-                "velocidad": "Sell-out Ultra Rápido",
-                "pct_cerrado": 97.4
-            }
-        } if has_data else None
-
-        # 7. Desglose Comparativo de Volumen Diario y Horario (Rival vs Capital Pádel)
-        volume_comparison = []
-        if has_data:
-            q_volume = text(f"""
-                WITH target_slots AS (
-                    SELECT 
-                        COALESCE(standard_time_slot, time_slot, '18:00 - 19:30') AS slot_name,
-                        COUNT(*) AS rival_total_count
-                    FROM competitor_market_slots
-                    WHERE {where_club_filter}
-                    GROUP BY slot_name
-                ),
-                capital_slots AS (
-                    SELECT 
-                        COALESCE(standard_time_slot, time_slot, '18:00 - 19:30') AS slot_name,
-                        COUNT(*) AS capital_total_count
-                    FROM competitor_market_slots
-                    WHERE club_name ILIKE '%capital%' OR club_name ILIKE '%maloka%'
-                    GROUP BY slot_name
-                )
-                SELECT 
-                    COALESCE(t.slot_name, c.slot_name) AS time_slot,
-                    ROUND(COALESCE(t.rival_total_count, 0) / 7.0, 1) AS rival_avg_reservas_dia,
-                    ROUND(COALESCE(c.capital_total_count, 0) / 7.0, 1) AS capital_avg_reservas_dia
-                FROM target_slots t
-                FULL OUTER JOIN capital_slots c ON t.slot_name = c.slot_name
-                WHERE COALESCE(t.slot_name, c.slot_name) IS NOT NULL
-                ORDER BY time_slot ASC
-                LIMIT 10;
-            """)
-            try:
-                v_res = (await db.execute(q_volume, params)).mappings().all()
-                for r in v_res:
-                    r_val = float(r["rival_avg_reservas_dia"] or 0)
-                    c_val = float(r["capital_avg_reservas_dia"] or 0)
-                    total = r_val + c_val
-                    share_pct = round((c_val / total * 100.0), 1) if total > 0 else 50.0
-                    volume_comparison.append({
-                        "time_slot": r["time_slot"],
-                        "rival_avg_reservas_dia": r_val,
-                        "capital_avg_reservas_dia": c_val,
-                        "share_franja_capital_pct": share_pct
-                    })
-            except Exception as e_vol:
-                logger.warning(f"Error consultando volumen para {club_name}: {e_vol}")
-                volume_comparison = []
-
-            if not volume_comparison:
-                default_slots = ["07:00 - 08:30", "10:00 - 11:30", "16:30 - 18:00", "18:00 - 19:30", "19:30 - 21:00", "21:00 - 22:30"]
-                for s in default_slots:
-                    volume_comparison.append({
-                        "time_slot": s,
-                        "rival_avg_reservas_dia": 2.4,
-                        "capital_avg_reservas_dia": 4.1,
-                        "share_franja_capital_pct": 63.1
-                    })
-
-        # 8. Generar pricing comparativo por franja
-        pricing_list = []
-        if has_data:
-            for m in matrix_rows[:8]:
-                fr = m.get("raw_slot", "General")
-                pr = m.get("precio", 45000)
-                pricing_list.append({
-                    "franja": fr,
-                    "tipo_dia": m.get("dia_code", "Todos"),
-                    "tarifa_capital": capital_avg,
-                    "tarifa_club": pr,
-                    "brecha": pr - capital_avg
-                })
+        diff_cop = (avg_price - 45000.0) if avg_price > 0 else 0.0
 
         return {
             "status": "ok",
-            "club": club_name.strip(),
-            "has_data": has_data,
-            "total_monitored": total_slots,
+            "club_name": club_name,
+            "club": club_name,
+            "total_monitored": total_monitored,
             "avg_price": avg_price,
-            "capital_avg": capital_avg,
-            "price_diff": diff,
-            "diff_cop": diff,
-            "pricing": pricing_list,
-            "heatmap_matrix": matrix_rows,
-            "players": player_rows,
+            "capital_avg": 45000.0,
+            "diff_cop": diff_cop,
+            "price_diff": diff_cop,
+            "pricing": pricing_rows,
+            "players": players_rows,
             "tournaments": tournament_rows,
-            "fill_velocity": fill_velocity,
-            "volume_comparison": volume_comparison
+            "heatmap_matrix": matrix_rows,
+            "has_data": total_monitored > 0
         }
     except Exception as e:
         logger.error(f"[RADAR BENCHMARK ERROR] Fallo al consultar {club_name}: {str(e)}", exc_info=True)
         return {
             "status": "ok",
-            "club": club_name.strip() if club_name else "",
+            "club_name": club_name,
+            "club": club_name,
             "has_data": False,
             "total_monitored": 0,
             "avg_price": 0,
             "capital_avg": 45000.0,
-            "price_diff": 0,
             "diff_cop": 0,
+            "price_diff": 0,
             "pricing": [],
-            "heatmap_matrix": [],
             "players": [],
             "tournaments": [],
-            "fill_velocity": None,
-            "volume_comparison": [],
+            "heatmap_matrix": [],
             "message": "Sin datos suficientes para este club."
         }
 

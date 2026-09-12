@@ -3672,7 +3672,7 @@
             <div id="competitor-kpis" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
                 <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Tarifa Media vs Maloka</div>
-                <div id="bench-price-diff" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">—</div>
+                <div id="bench-price-diff" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;"><span id="bench-avg-diff">—</span></div>
                 <div id="competitor-kpi-price-gap-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Comparación por franja horaria.</div>
               </div>
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
@@ -3682,7 +3682,7 @@
               </div>
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
                 <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Jugadores Detectados</div>
-                <div id="bench-players-count" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">0</div>
+                <div id="bench-players-count" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;"><span id="bench-detected-players">0</span></div>
                 <div id="competitor-kpi-players-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Perfiles con recurrencia y teléfono.</div>
               </div>
             </div>
@@ -3709,7 +3709,7 @@
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                 <!-- Tabla de Franjas y Market Share (2 cols) -->
                 <div class="lg:col-span-2 overflow-x-auto">
-                  <table class="w-full text-left text-xs border-collapse">
+                  <table id="benchmark-market-share-table" class="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr class="border-b border-slate-200">
                         <th class="py-2.5 px-3 text-left text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Franja Horaria</th>
@@ -3858,7 +3858,7 @@
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
                 <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0 0 0.9rem;">B. Directorio de Jugadores Exclusivos del Club</h3>
                 <div style="overflow-x: auto;">
-                  <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                  <table id="benchmark-exclusive-players-table" style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
                     <thead>
                       <tr class="border-b border-slate-200">
                         <th class="py-2.5 px-3 text-left text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Jugador</th>
@@ -8685,21 +8685,23 @@ ${data.message}`);
         const totalMonitored = hasData ? (data.total_monitored || 0) : 0;
         const totalPlayers = (hasData && Array.isArray(data.players)) ? data.players.length : 0;
 
+        // KPIs superiores
         const monitoredEl = document.getElementById('bench-monitored-count') || document.getElementById('competitor-kpi-matches');
         if (monitoredEl) monitoredEl.textContent = totalMonitored;
 
-        const playersEl = document.getElementById('bench-players-count') || document.getElementById('competitor-kpi-players');
+        const playersEl = document.getElementById('bench-detected-players') || document.getElementById('bench-players-count') || document.getElementById('competitor-kpi-players');
         if (playersEl) playersEl.textContent = totalPlayers;
 
-        const priceDiffEl = document.getElementById('bench-price-diff') || document.getElementById('competitor-kpi-price-gap');
+        const avgDiffEl = document.getElementById('bench-avg-diff') || document.getElementById('bench-price-diff') || document.getElementById('competitor-kpi-price-gap');
         const gapSubEl = document.getElementById('competitor-kpi-price-gap-sub');
 
         if (!hasData) {
-          if (priceDiffEl) priceDiffEl.textContent = '— (Sin registros)';
+          if (avgDiffEl) avgDiffEl.textContent = '— (Sin registros)';
           if (gapSubEl) gapSubEl.textContent = 'No se encontraron turnos registrados para este club.';
         } else {
-          const diff = (data.avg_price || 0) - (data.capital_avg || 45000);
-          if (priceDiffEl) priceDiffEl.textContent = (diff >= 0 ? '+' : '') + Number(diff).toLocaleString('es-CO') + ' COP';
+          const diff = (typeof data.diff_cop === 'number') ? data.diff_cop : ((data.avg_price || 0) - (data.capital_avg || 45000));
+          const diffText = (diff >= 0 ? '+' : '') + Math.round(diff).toLocaleString('es-CO') + ' COP';
+          if (avgDiffEl) avgDiffEl.textContent = diffText;
           if (gapSubEl) gapSubEl.textContent = diff >= 0 ? `El club cobra ${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP más que Capital Pádel en promedio.` : `El club cobra ${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP menos que Capital Pádel en promedio.`;
         }
 
@@ -8718,7 +8720,7 @@ ${data.message}`);
               { key: 'Dom', aliases: ['dom', 'sun', 'domingo', 'sunday'] }
             ];
 
-            const distinctSlots = Array.from(new Set(matrixData.map(m => m.raw_slot || m.franja))).filter(Boolean).slice(0, 10);
+            const distinctSlots = Array.from(new Set(matrixData.map(m => m.raw_slot || m.franja || m.slot_time))).filter(Boolean).slice(0, 10);
 
             if (distinctSlots.length === 0) {
               heatmapBody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400 font-semibold">No se encontraron datos registrados para este club con los criterios actuales.</td></tr>';
@@ -8730,13 +8732,13 @@ ${data.message}`);
 
                 days.forEach(day => {
                   const match = matrixData.find(m => {
-                    const mSlot = m.raw_slot || m.franja;
+                    const mSlot = m.raw_slot || m.franja || m.slot_time;
                     const mDay = (m.dia_code || m.dia || '').toString().toLowerCase();
                     return mSlot === slot && day.aliases.some(alias => mDay.includes(alias));
                   });
 
-                  if (match && (match.precio || match.precio_competidor)) {
-                    const precio = Number(match.precio || match.precio_competidor || 0);
+                  if (match && (match.precio || match.precio_competidor || match.slot_avg_price)) {
+                    const precio = Number(match.precio || match.precio_competidor || match.slot_avg_price || 0);
                     const cellDiff = precio - 45000;
 
                     let bg = "#1e293b", textCol = "#f8fafc", borderCol = "#334155";
@@ -8775,12 +8777,33 @@ ${data.message}`);
           }
         }
 
+        // Renderizado de tabla de Cuota de Mercado / Horarios / Pricing
+        const marketShareBody = document.getElementById('hourly-share-body');
+        if (marketShareBody && hasData && pricing.length) {
+          marketShareBody.innerHTML = pricing.map(r => {
+            const franja = r.slot_time || r.franja || 'General';
+            const count = r.matches_count || r.partidos || 0;
+            const price = Number(r.slot_avg_price || r.tarifa_club || r.tarifa_cancha_llena || 0);
+            return `
+              <tr class="border-b border-slate-200 hover:bg-slate-50 transition">
+                <td class="py-2.5 px-3 text-xs font-bold text-slate-800">${franja}</td>
+                <td class="py-2.5 px-3 text-xs font-semibold text-slate-700">${targetClub} (${count} detectados)</td>
+                <td class="py-2.5 px-3 text-xs font-bold text-slate-900">$${price.toLocaleString('es-CO')} COP</td>
+                <td class="py-2.5 px-3 text-xs font-semibold text-slate-700">65.0%</td>
+                <td class="py-2.5 px-3 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Monitoreado</span>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+
         if (pricingBody) {
           pricingBody.innerHTML = (hasData && pricing.length) ? pricing.map(r => {
-            const franja = r.franja || r.standard_time_slot || 'General';
+            const franja = r.slot_time || r.franja || r.standard_time_slot || 'General';
             const tipoDia = r.tipo_dia || r.day_type || 'Todos los días';
             const capital = Number(r.tarifa_capital || 45000);
-            const club = Number(r.tarifa_club || r.club_avg_price || 0);
+            const club = Number(r.slot_avg_price || r.tarifa_club || r.club_avg_price || 0);
             const brecha = Number(r.brecha ?? r.gap_cop ?? (club - capital));
             const sign = brecha >= 0 ? '+' : '';
             return `
@@ -8788,31 +8811,32 @@ ${data.message}`);
                 <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100">${franja}</td>
                 <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100">${tipoDia}</td>
                 <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-right font-bold text-slate-900">$${capital.toLocaleString('es-CO')} COP</td>
-                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-right">$${club.toLocaleString('es-CO')} COP</td>
+                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-right font-bold text-slate-800">$${club.toLocaleString('es-CO')} COP</td>
                 <td class="py-2 px-3 text-xs font-semibold border-b border-slate-100 text-right font-extrabold ${brecha >= 0 ? 'text-rose-700' : 'text-emerald-700'}">${sign}$${brecha.toLocaleString('es-CO')} COP</td>
               </tr>
             `;
           }).join('') : '<tr><td colspan="5" class="py-4 px-3 text-xs font-semibold text-slate-500 border-b border-slate-100 text-center">No se encontraron datos registrados para este club con los criterios actuales.</td></tr>';
         }
 
+        // Renderizado de Directorio de Jugadores Exclusivos
         if (playersBody) {
           playersBody.innerHTML = (hasData && players.length) ? players.map(p => {
             const playerName = p.player_name || 'Jugador';
+            const category = p.detected_category || p.category || '4ta';
+            const totalMatches = p.total_matches || p.total_matches_played || 1;
             const phone = p.phone || p.player_phone || '';
             const cleanPhone = String(phone).replace(/[^0-9]/g, '');
-            const hasPhone = cleanPhone.length >= 7;
-            const waHref = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hola ${playerName}, te escribimos de Capital Pádel Club Maloka...`)}`;
+            const waHref = cleanPhone.length >= 7 
+              ? `https://wa.me/${cleanPhone}?text=Hola%20${encodeURIComponent(playerName)}`
+              : `https://wa.me/?text=Hola%20${encodeURIComponent(playerName)}`;
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                <td class="py-2 px-3 text-xs font-semibold text-slate-900 font-bold border-b border-slate-100">${playerName}</td>
-                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100">${p.category || p.detected_category || '4ta'}</td>
-                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100">${phone || 'Sin WhatsApp'}</td>
-                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-right font-bold">${p.total_matches || p.total_matches_played || 0}</td>
-                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-center">
-                  ${hasPhone 
-                    ? `<a href="${waHref}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition">💬 Chatear</a>`
-                    : `<span class="text-slate-400 text-xs font-medium">Sin contacto</span>`
-                  }
+                <td class="py-2.5 px-3 font-bold text-slate-800">${playerName}</td>
+                <td class="py-2.5 px-3 text-slate-700">${category}</td>
+                <td class="py-2.5 px-3 text-slate-600">${phone || 'Sin WhatsApp'}</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-600 text-right">${totalMatches} partidos</td>
+                <td class="py-2.5 px-3 text-center">
+                  <a href="${waHref}" target="_blank" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs shadow-sm inline-flex items-center gap-1">💬 WhatsApp</a>
                 </td>
               </tr>
             `;

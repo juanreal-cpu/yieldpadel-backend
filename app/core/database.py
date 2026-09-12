@@ -37,8 +37,14 @@ def clean_db_url(raw: str) -> str:
         if "sslmode=" in url and "ssl=" not in url:
             url = url.replace("sslmode=require", "ssl=require")
         elif "ssl=" not in url and not url.startswith("sqlite"):
-            sep = "&" if "?" in url else "?"
-            url = f"{url}{sep}ssl=require"
+            # Verificar si hay query string después de la ruta de la base de datos
+            # Evitar falsos positivos si la contraseña contiene '?'
+            from sqlalchemy.engine.url import make_url
+            parsed = make_url(url)
+            if parsed.query:
+                url = f"{url}&ssl=require"
+            else:
+                url = f"{url}?ssl=require"
 
     return url
 
