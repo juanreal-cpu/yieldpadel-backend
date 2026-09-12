@@ -756,4 +756,168 @@ async def record_challenge_winner(
     }
 
 
+@router.get(
+    "/{tournament_id}/participants",
+    summary="Listar participantes inscritos en un torneo americano",
+)
+async def get_tournament_participants(
+    tournament_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retorna la lista detallada de participantes de un torneo americano,
+    buscando por key de torneo ('Nombre___Fecha___Hora') o slot_id.
+    """
+    slots: List[TimeSlot] = []
+
+    # 1. Si tournament_id tiene el formato "t_name___date___time"
+    if "___" in tournament_id:
+        parts = tournament_id.split("___")
+        t_name = parts[0]
+        t_date_str = parts[1] if len(parts) > 1 else None
+        t_time_str = parts[2] if len(parts) > 2 else None
+
+        stmt = select(TimeSlot).options(
+            selectinload(TimeSlot.court),
+            selectinload(TimeSlot.holds),
+            selectinload(TimeSlot.bookings),
+        ).where(TimeSlot.slot_type.in_(["AMERICANO", "TOURNAMENT"]))
+
+        if t_name:
+            stmt = stmt.where(TimeSlot.tournament_name == t_name)
+        if t_date_str:
+            stmt = stmt.where(TimeSlot.date == to_date_obj(t_date_str))
+        if t_time_str:
+            stmt = stmt.where(TimeSlot.start_time == to_time_obj(t_time_str))
+
+        res = await db.execute(stmt)
+        slots = list(res.scalars().all())
+    else:
+        # Intentar por slot_id numérico o por nombre
+        if tournament_id.isdigit():
+            s_res = await db.execute(
+                select(TimeSlot).options(
+                    selectinload(TimeSlot.court),
+                    selectinload(TimeSlot.holds),
+                    selectinload(TimeSlot.bookings),
+                ).where(TimeSlot.id == int(tournament_id))
+            )
+            slot_found = s_res.scalar_one_or_none()
+            if slot_found:
+                if slot_found.tournament_name and slot_found.date:
+                    stmt = select(TimeSlot).options(
+                        selectinload(TimeSlot.court),
+                        selectinload(TimeSlot.holds),
+                        selectinload(TimeSlot.bookings),
+                    ).where(
+                        TimeSlot.tournament_name == slot_found.tournament_name,
+                        TimeSlot.date == slot_found.date,
+                        TimeSlot.start_time == slot_found.start_time,
+                    )
+                    slots = list((await db.execute(stmt)).scalars().all())
+                else:
+                    slots = [slot_found]
+        if not slots:
+            stmt = select(TimeSlot).options(
+                selectinload(TimeSlot.court),
+                selectinload(TimeSlot.holds),
+                selectinload(TimeSlot.bookings),
+            ).where(TimeSlot.tournament_name.ilike(f"%{tournament_id}%"))
+            slots = list((await db.execute(stmt)).scalars().all())
+
+    if not slots:
+        return {
+            "status": "success",
+            "tournament_id": tournament_id,
+            "tournament_name": "Torneo",
+            "participants": [],
+            "total_registered": 0,
+            "max_capacity": 16,
+        }
+
+    first_slot = slots[0]
+    tournament_name = first_slot.tournament_name or "Torneo Americano"
+    total_cap = sum(s.capacity or 4 for s in slots)
+
+    # Cargar clientes en memoria para verificar categoría y teléfono
+    cust_res = await db.execute(select(Customer))
+    all_customers = cust_res.scalars().all()
+    cust_by_name = {c.name.strip().lower(): c for c in all_customers if c.name}
+    cust_by_phone = {c.phone.strip(): c for c in all_customers if c.phone}
+
+    participants_map: Dict[str, dict] = {}
+
+    for s in slots:
+        # 1. Participantes desde s.players_names
+        p_list = to_participants_list(s.players_names)
+        for p in p_list:
+            p_name = (p.get("display_name") or p.get("name") or "Jugador").strip()
+            if not p_name or p_name.lower() in ("jugador", "pala libre", "cupo libre"):
+                continue
+            norm_name = p_name.lower()
+            p_phone = p.get("phone") or ""
+            matched_cust = cust_by_name.get(norm_name) or cust_by_phone.get(p_phone)
+
+            payment_status = "PAGADO"
+            category = (matched_cust.category if matched_cust else None) or s.category or "4ta"
+            phone = (matched_cust.phone if matched_cust else None) or p_phone or "No registrado"
+            tier = (matched_cust.membership_tier if matched_cust else None) or p.get("client_tier") or "ESTANDAR"
+
+            participants_map[norm_name] = {
+                "name": p_name,
+                "phone": phone,
+                "category": category,
+                "membership_tier": tier,
+                "payment_status": payment_status,
+                "spot_index": len(participants_map) + 1,
+            }
+
+        # 2. Bookings asociados
+        for b in s.bookings or []:
+            b_name = (b.customer_name or "").strip()
+            if not b_name:
+                continue
+            norm_name = b_name.lower()
+            if norm_name not in participants_map:
+                matched_cust = cust_by_name.get(norm_name)
+                participants_map[norm_name] = {
+                    "name": b_name,
+                    "phone": (matched_cust.phone if matched_cust else None) or getattr(b, "customer_phone", "") or "No registrado",
+                    "category": (matched_cust.category if matched_cust else None) or s.category or "4ta",
+                    "membership_tier": (matched_cust.membership_tier if matched_cust else None) or "ESTANDAR",
+                    "payment_status": getattr(b, "payment_status", "PAGADO") or "PAGADO",
+                    "spot_index": len(participants_map) + 1,
+                }
+
+        # 3. Holds activos
+        for h in s.holds or []:
+            if h.status == HoldStatus.ACTIVE and h.customer_phone:
+                h_phone = h.customer_phone.strip()
+                matched_cust = cust_by_phone.get(h_phone)
+                name = (matched_cust.name if matched_cust else None) or f"Reserva {h_phone[-4:]}"
+                norm_name = name.lower()
+                if norm_name not in participants_map:
+                    participants_map[norm_name] = {
+                        "name": name,
+                        "phone": h_phone,
+                        "category": (matched_cust.category if matched_cust else None) or s.category or "4ta",
+                        "membership_tier": (matched_cust.membership_tier if matched_cust else None) or "ESTANDAR",
+                        "payment_status": getattr(h, "payment_status", "PENDIENTE") or "PENDIENTE",
+                        "spot_index": len(participants_map) + 1,
+                    }
+
+    participants = list(participants_map.values())
+
+    return {
+        "status": "success",
+        "tournament_id": tournament_id,
+        "tournament_name": tournament_name,
+        "date": str(first_slot.date),
+        "start_time": str(first_slot.start_time),
+        "total_registered": len(participants),
+        "max_capacity": total_cap,
+        "participants": participants,
+    }
+
+
 

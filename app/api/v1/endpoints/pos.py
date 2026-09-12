@@ -189,13 +189,22 @@ async def add_stock(
 # Endpoints de Canchas Activas y Turnos en Juego
 # ----------------------------------------------------
 @router.get("/orders/active-slots", summary="Listar canchas activas y turnos en juego hoy")
+@router.get("/active-turn-slots", summary="Listar canchas activas y turnos en juego hoy (alias)")
 async def get_active_slots(db: AsyncSession = Depends(get_db)):
-    """Obtiene las canchas con turnos asignados u ocupados para gestionar consumos de barra."""
+    """
+    Obtiene las canchas con turnos asignados u ocupados para gestionar consumos de barra:
+    - Fecha estrictamente = hoy.
+    - Turnos en curso o pasados (start_time <= hora actual) con jugadores/reservas y no liquidados (closed_at is None).
+    - Turnos futuros (start_time > hora actual) que estén cerrados/confirmados 4/4 (booked_spots >= 4 o FULLY_BOOKED) y no liquidados.
+    - Prohibido mostrar turnos vacíos (booked_spots == 0 y AVAILABLE).
+    """
     try:
         await ensure_seed_products(db)
-        today_date = date.today()
+        from app.core.timezone import get_bogota_today, get_bogota_now
+        today_date = get_bogota_today()
+        now_t = get_bogota_now().time()
 
-        # Obtener todas las canchas
+        # Obtener todas las canchas activas
         courts_stmt = select(Court).where(Court.is_active == True).order_by(Court.name)
         res_courts = await db.execute(courts_stmt)
         courts = res_courts.scalars().all()
@@ -222,27 +231,48 @@ async def get_active_slots(db: AsyncSession = Depends(get_db)):
                 slots_by_court[c_id] = []
             slots_by_court[c_id].append(s)
 
-        # Pre-identificar slot seleccionado para cada cancha
+        # Pre-identificar slot seleccionado para cada cancha según las reglas estrictas
         selected_slots_map: Dict[str, Optional[TimeSlot]] = {}
         all_slot_ids = []
-        now_t = datetime.now().time()
 
         for court in courts:
             c_id = str(court.id)
             court_slots = slots_by_court.get(c_id, [])
             sel: Optional[TimeSlot] = None
+
+            # 1. Buscar turno en curso (start_time <= now_t <= end_time) que tenga jugadores y no liquidado
             for s in court_slots:
                 if s.start_time <= now_t <= s.end_time:
-                    sel = s
-                    break
+                    has_players = bool(s.players_names) or (s.booked_spots and s.booked_spots > 0)
+                    is_settled = s.closed_at is not None
+                    if has_players and not is_settled:
+                        sel = s
+                        break
+
+            # 2. Si no hay turno en curso activo, buscar el turno más reciente pasado no liquidado con jugadores
             if not sel:
-                occupied = [
-                    s
-                    for s in court_slots
-                    if s.status in [SlotStatus.PARTIALLY_BOOKED, SlotStatus.FULLY_BOOKED]
-                    or bool(s.players_names)
+                past_unsettled = [
+                    s for s in court_slots
+                    if s.start_time <= now_t
+                    and (bool(s.players_names) or (s.booked_spots and s.booked_spots > 0))
+                    and s.closed_at is None
+                    and s.status != SlotStatus.AVAILABLE
                 ]
-                sel = occupied[0] if occupied else (court_slots[0] if court_slots else None)
+                if past_unsettled:
+                    # El más reciente hacia atrás
+                    sel = past_unsettled[-1]
+
+            # 3. Si no hay pasados con jugadores no liquidados, buscar el próximo turno futuro confirmado 4/4 y no liquidado
+            if not sel:
+                future_confirmed = [
+                    s for s in court_slots
+                    if s.start_time > now_t
+                    and (s.booked_spots >= 4 or s.status == SlotStatus.FULLY_BOOKED)
+                    and s.closed_at is None
+                ]
+                if future_confirmed:
+                    sel = future_confirmed[0]
+
             selected_slots_map[c_id] = sel
             if sel:
                 all_slot_ids.append(sel.id)
@@ -482,6 +512,29 @@ async def create_or_add_order(
     order.total_amount += total_added
     await db.commit()
     await db.refresh(order)
+
+    # Registro en DailyAccountingLedger si la orden se cobró de inmediato
+    if order.payment_status == "PAID" and order.total_amount > 0:
+        try:
+            from app.core.timezone import get_bogota_today
+            ledger_entry = DailyAccountingLedger(
+                date=get_bogota_today(),
+                customer_name=order.customer_name or "Cliente Barra",
+                concept="TIENDA",
+                details=f"Venta Directa POS Orden #{order.id} ({order.customer_name})",
+                payment_method="EFECTIVO",
+                amount_cash=order.total_amount,
+                amount_card=Decimal("0.00"),
+                amount_digital=Decimal("0.00"),
+                total_amount=order.total_amount,
+                operator="Recepcionista Turno",
+                slot_id=order.slot_id,
+                order_id=order.id,
+            )
+            db.add(ledger_entry)
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"Error registrando venta POS en DailyAccountingLedger: {e}")
 
     # Log de Auditoría Operativa
     try:

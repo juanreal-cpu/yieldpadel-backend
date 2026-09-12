@@ -477,4 +477,15 @@ async def reactivate_bot(
     return {"status": "reactivated", "sender_phone": payload.sender_phone}
 
 
+@router.get("/challenges-lookup", summary="Lookup de retos y partidos para WhatsApp")
+async def whatsapp_challenges_lookup_route(
+    phone: Optional[str] = Query(None, description="Teléfono del cliente que consulta"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retorna duelos pendientes y partidos confirmados 4/4 para pronóstico y apuestas."""
+    from app.api.v1.endpoints.challenges import challenges_lookup
+    return await challenges_lookup(phone=phone, db=db)
+
+
+
 
