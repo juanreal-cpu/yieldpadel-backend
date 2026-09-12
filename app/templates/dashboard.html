@@ -3710,12 +3710,12 @@
                 <div class="lg:col-span-2 overflow-x-auto">
                   <table class="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
-                        <th class="py-2">Franja Horaria</th>
-                        <th class="py-2">Club Líder (Sell-Out)</th>
-                        <th class="py-2">Tarifa Cancha Llena</th>
-                        <th class="py-2">Market Share Capital</th>
-                        <th class="py-2 text-center">Acción</th>
+                      <tr class="border-b border-slate-200">
+                        <th class="py-2.5 px-3 text-left text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Franja Horaria</th>
+                        <th class="py-2.5 px-3 text-left text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Club Líder (Sell-Out)</th>
+                        <th class="py-2.5 px-3 text-left text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Tarifa Cancha Llena</th>
+                        <th class="py-2.5 px-3 text-left text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Market Share Capital</th>
+                        <th class="py-2.5 px-3 text-center text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Acción</th>
                       </tr>
                     </thead>
                     <tbody id="hourly-share-body" class="divide-y divide-slate-800">
@@ -3756,6 +3756,12 @@
                   </div>
                 </div>
 
+                <!-- Barra de leyenda informativa de la matriz -->
+                <div class="mb-3 px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2">
+                  <span class="text-amber-400 font-bold">💡 Leyenda:</span>
+                  <span>[ <strong>Valor Superior</strong> = Tarifa por persona del rival ] &nbsp;|&nbsp; [ <strong>Valor Inferior (+/-)</strong> = Diferencia frente a Capital Pádel ($45.000 COP) ]</span>
+                </div>
+
                 <!-- Grid contenedor con scroll horizontal limpio -->
                 <div style="background-color: #020617 !important; border-color: #1e293b !important;" class="w-full border rounded-2xl p-4 shadow-xl overflow-x-auto text-slate-200">
                   <table class="w-full text-left border-collapse min-w-[700px]" id="benchmark-heatmap-table">
@@ -3775,6 +3781,76 @@
                       <tr><td colspan="8" class="text-center py-8 text-slate-500">Selecciona un club para visualizar su grilla matricial de paridad.</td></tr>
                     </tbody>
                   </table>
+                </div>
+              </div>
+
+              <!-- NUEVO: TIEMPO PROMEDIO DE LLENADO (LEAD TIME 1/4 A 4/4) & VOLUMEN COMPARATIVO -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Curva y Tiempo de Llenado -->
+                <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.2rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0;">⏱️ Tiempo Promedio de Llenado (1/4 a 4/4 Cerrado)</h3>
+                    <span class="text-[11px] font-black px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Lead Time</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mb-4">Velocidad de sell-out desde la apertura de convocatoria hasta el cierre completo de la pista:</p>
+                  
+                  <div class="space-y-3" id="fill-velocity-container">
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <div class="text-xs font-extrabold text-slate-800">Mañana (06:00 - 12:00)</div>
+                        <div class="text-[11px] text-slate-500">Velocidad Moderada (72% sell-out)</div>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-sm font-black text-slate-900 font-mono">4.5 hrs</span>
+                        <div class="text-[10px] text-slate-400 font-medium">promedio de llenado</div>
+                      </div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <div class="text-xs font-extrabold text-slate-800">Tarde (12:00 - 18:00)</div>
+                        <div class="text-[11px] text-emerald-600 font-bold">Velocidad Rápida (88% sell-out)</div>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-sm font-black text-slate-900 font-mono">2.2 hrs</span>
+                        <div class="text-[10px] text-slate-400 font-medium">promedio de llenado</div>
+                      </div>
+                    </div>
+                    <div class="p-3 bg-rose-50/60 rounded-xl border border-rose-100 flex items-center justify-between">
+                      <div>
+                        <div class="text-xs font-extrabold text-rose-950">Prime Time Noche (18:00 - 23:00)</div>
+                        <div class="text-[11px] text-rose-600 font-black">⚡ Ultra Rápido (97% sell-out)</div>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-sm font-black text-rose-700 font-mono">36 mins</span>
+                        <div class="text-[10px] text-rose-500 font-medium">promedio de llenado</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Comparativa de Volumen Diario y Horario -->
+                <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.2rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0;">📊 Volumen & Cuota de Mercado por Franja</h3>
+                    <span class="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Rival vs Capital</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mb-3">Promedio de reservas por día y porcentaje captado por Capital Pádel:</p>
+                  
+                  <div class="overflow-x-auto max-h-56">
+                    <table class="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 text-[11px] uppercase">
+                          <th class="py-2 px-2.5">Franja</th>
+                          <th class="py-2 px-2 text-right">Rival/Día</th>
+                          <th class="py-2 px-2 text-right">Capital/Día</th>
+                          <th class="py-2 px-2.5 text-right">Cuota Capital</th>
+                        </tr>
+                      </thead>
+                      <tbody id="volume-comparison-body" class="divide-y divide-slate-100">
+                        <tr><td colspan="4" class="py-6 text-center text-slate-400">Cargando desglose de volumen...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
 
@@ -8663,9 +8739,10 @@ ${data.message}`);
 
                   rowHtml += `
                     <td class="py-2 px-1 text-center">
-                      <div style="background-color: ${bg} !important; color: ${textCol} !important; border: 1px solid ${borderCol} !important;" class="flex flex-col items-center justify-center p-2 rounded-xl shadow-md min-w-[70px] transition transform hover:scale-105 cursor-pointer">
+                      <div style="background-color: ${bg} !important; color: ${textCol} !important; border: 1px solid ${borderCol} !important;" class="flex flex-col items-center justify-center p-2 rounded-xl shadow-md min-w-[75px] transition transform hover:scale-105 cursor-pointer">
+                        <span class="text-[9px] uppercase tracking-tighter opacity-80">Rival</span>
                         <span style="color: ${textCol} !important;" class="text-xs font-black">$${precio.toLocaleString('es-CO')}</span>
-                        <span style="color: ${textCol} !important; opacity: 0.9;" class="text-[10px] font-bold">${cellDiff >= 0 ? '+' : ''}$${cellDiff.toLocaleString('es-CO')}</span>
+                        <span style="color: ${textCol} !important;" class="text-[10px] font-bold mt-0.5">${cellDiff >= 0 ? '+' : ''}$${cellDiff.toLocaleString('es-CO')} vs Capital</span>
                       </div>
                     </td>`;
                 } else {
@@ -8706,17 +8783,22 @@ ${data.message}`);
 
         if (playersBody) {
           playersBody.innerHTML = players.length ? players.map(p => {
-            const phone = p.phone || 'Sin WhatsApp';
-            const digits = String(phone).replace(/[^0-9]/g, '');
-            const waLink = digits ? `https://wa.me/${digits}?text=${encodeURIComponent(`Hola ${p.player_name || 'jugador'}, te escribimos de Capital Pádel Club`)}` : 'https://wa.me/?text=' + encodeURIComponent(`Hola ${p.player_name || 'jugador'}, te escribimos de Capital Pádel Club`);
+            const playerName = p.player_name || 'Jugador';
+            const phone = p.phone || p.player_phone || '';
+            const cleanPhone = String(phone).replace(/[^0-9]/g, '');
+            const hasPhone = cleanPhone.length >= 7;
+            const waHref = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hola ${playerName}, te escribimos de Capital Pádel Club Maloka...`)}`;
             return `
               <tr style="border-bottom: 1px solid #E2E8F0;">
-                <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${p.player_name || 'Jugador'}</td>
-                <td style="padding: 0.8rem 0.7rem; color: #334155;">${p.detected_category || 'General'}</td>
-                <td style="padding: 0.8rem 0.7rem; color: #334155;">${phone}</td>
-                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155; font-weight: 700;">${p.total_matches_played || 0}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${playerName}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${p.category || p.detected_category || '4ta'}</td>
+                <td style="padding: 0.8rem 0.7rem; color: #334155;">${phone || 'Sin WhatsApp'}</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: right; color: #334155; font-weight: 700;">${p.total_matches || p.total_matches_played || 0}</td>
                 <td style="padding: 0.8rem 0.7rem; text-align: center;">
-                  <a href="${waLink}" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(5, 150, 105, 0.8); color: #FFFFFF; border-radius: 8px; padding: 0.38rem 0.7rem; font-size: 0.7rem; font-weight: 800; text-decoration: none; box-shadow: 0 6px 14px rgba(16, 185, 129, 0.15);">💬 WhatsApp</a>
+                  ${hasPhone 
+                    ? `<a href="${waHref}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition">💬 Chatear</a>`
+                    : `<span class="text-slate-400 text-xs font-medium">Sin contacto</span>`
+                  }
                 </td>
               </tr>
             `;
@@ -8729,16 +8811,75 @@ ${data.message}`);
             const hora = t.hora || t.raw_time_slot || 'N/A';
             const tipo = t.tipo || t.standard_category || 'Americano';
             const precio = Number(t.precio ?? t.price_per_player ?? 0);
+            const fullIcon = (t.cerrado === 'Sí' || t.is_full) ? '✅ Sí' : '⏳ En curso';
             return `
               <tr style="border-bottom: 1px solid #E2E8F0;">
                 <td style="padding: 0.8rem 0.7rem; color: #0F172A; font-weight: 700;">${fecha}</td>
                 <td style="padding: 0.8rem 0.7rem; color: #334155;">${hora}</td>
                 <td style="padding: 0.8rem 0.7rem; color: #334155;">${tipo}</td>
                 <td style="padding: 0.8rem 0.7rem; text-align: right; color: #0F172A; font-weight: 700;">$${precio.toLocaleString('es-CO')} COP</td>
-                <td style="padding: 0.8rem 0.7rem; text-align: center;">✅</td>
+                <td style="padding: 0.8rem 0.7rem; text-align: center; font-weight: bold;">${fullIcon}</td>
               </tr>
             `;
           }).join('') : '<tr><td colspan="5" style="padding: 1.8rem; text-align: center; color: #64748B;">Sin torneos registrados para este club.</td></tr>';
+        }
+
+        // Renderizado de Velocidad de Llenado (Lead Time)
+        const velContainer = document.getElementById('fill-velocity-container');
+        if (velContainer && data.fill_velocity) {
+          const v = data.fill_velocity;
+          velContainer.innerHTML = `
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-extrabold text-slate-800">${v.manana?.periodo || 'Mañana (06:00 - 12:00)'}</div>
+                <div class="text-[11px] text-slate-500">${v.manana?.velocidad || 'Velocidad Moderada'} (${v.manana?.pct_cerrado || 72}% sell-out)</div>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-black text-slate-900 font-mono">${v.manana?.avg_display || '4.5 hrs'}</span>
+                <div class="text-[10px] text-slate-400 font-medium">promedio de llenado</div>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-extrabold text-slate-800">${v.tarde?.periodo || 'Tarde (12:00 - 18:00)'}</div>
+                <div class="text-[11px] text-emerald-600 font-bold">${v.tarde?.velocidad || 'Velocidad Rápida'} (${v.tarde?.pct_cerrado || 88}% sell-out)</div>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-black text-slate-900 font-mono">${v.tarde?.avg_display || '2.2 hrs'}</span>
+                <div class="text-[10px] text-slate-400 font-medium">promedio de llenado</div>
+              </div>
+            </div>
+            <div class="p-3 bg-rose-50/60 rounded-xl border border-rose-100 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-extrabold text-rose-950">${v.noche?.periodo || 'Prime Time Noche (18:00 - 23:00)'}</div>
+                <div class="text-[11px] text-rose-600 font-black">⚡ ${v.noche?.velocidad || 'Ultra Rápido'} (${v.noche?.pct_cerrado || 97}% sell-out)</div>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-black text-rose-700 font-mono">${v.noche?.avg_display || '36 mins'}</span>
+                <div class="text-[10px] text-rose-500 font-medium">promedio de llenado</div>
+              </div>
+            </div>
+          `;
+        }
+
+        // Renderizado de Desglose Comparativo de Volumen
+        const volumeBody = document.getElementById('volume-comparison-body');
+        if (volumeBody) {
+          const volList = Array.isArray(data.volume_comparison) ? data.volume_comparison : [];
+          volumeBody.innerHTML = volList.length ? volList.map(item => {
+            const share = item.share_franja_capital_pct || 0;
+            const isWinner = share >= 50;
+            return `
+              <tr class="hover:bg-slate-50 transition">
+                <td class="py-2.5 px-2.5 font-bold text-slate-800">${item.time_slot}</td>
+                <td class="py-2.5 px-2 text-right text-slate-600 font-mono">${Number(item.rival_avg_reservas_dia).toFixed(1)}</td>
+                <td class="py-2.5 px-2 text-right text-slate-900 font-extrabold font-mono">${Number(item.capital_avg_reservas_dia).toFixed(1)}</td>
+                <td class="py-2.5 px-2.5 text-right font-black ${isWinner ? 'text-emerald-600' : 'text-amber-600'}">
+                  ${share}%
+                </td>
+              </tr>
+            `;
+          }).join('') : '<tr><td colspan="4" class="py-6 text-center text-slate-400">Sin datos de volumen por franja.</td></tr>';
         }
 
         if (typeof window.loadHourlyIntelligence === 'function') {
