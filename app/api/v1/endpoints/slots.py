@@ -32,6 +32,7 @@ from app.services.whatsapp import (
     format_whatsapp_reply,
     send_whatsapp_message,
     log_conversation_message,
+    sanitize_phone,
 )
 import uuid
 from app.models.court import Court
@@ -992,6 +993,7 @@ async def seed_weekly_template(
                             slot_type="MATCH",
                             match_type="MATCH",
                             is_closed=False,
+                            is_tournament=False,
                             spots_count=0,
                             prize_money_cop=0,
                             prize_points=0,
@@ -999,6 +1001,7 @@ async def seed_weekly_template(
                             instructor_name=None,
                             is_promo=False,
                             sport_type=c_sport,
+                            recurrence_group_id=None,
                         )
                     )
 
@@ -1008,11 +1011,11 @@ async def seed_weekly_template(
                         if (court.id, d, ev["start_time"]) in protected_keys:
                             continue
                         mod_label = "Pareja Fija" if ev["modality"] == "PAREJA_FIJA" else "Individual"
-                        tournament_cat = ev.get("category") or "5ta"
+                        tournament_cat = str(ev.get("category") or ev.get("tournament_category") or "5ta")
                         cat_label = f"Americano {tournament_cat} ({mod_label})"
                         total_tournament_price = ev["entry_fee"] * 4
-                        p_money = int(ev.get("prize_money_cop") or 0)
-                        p_pts = int(ev.get("prize_points") or 0)
+                        p_money = int(re.sub(r'\D', '', str(ev.get('prize_money_cop', 0)))) if ev.get('prize_money_cop') else 0
+                        p_pts = int(re.sub(r'\D', '', str(ev.get('prize_points', 0)))) if ev.get('prize_points') else 0
                         sp_cnt = int(ev.get("spots_count") or (len(ev.get("courts", [1, 2, 3, 4])) * 4) or 8)
 
                         all_to_add.append(
@@ -1032,6 +1035,7 @@ async def seed_weekly_template(
                                 category=cat_label,
                                 status=SlotStatus.AVAILABLE,
                                 is_closed=False,
+                                is_tournament=True,
                                 spots_count=sp_cnt,
                                 match_type="AMERICANO",
                                 slot_type="AMERICANO",
@@ -1044,36 +1048,80 @@ async def seed_weekly_template(
                                 players_names=[],
                                 is_promo=False,
                                 sport_type="PADEL",
+                                recurrence_group_id=None,
                             )
                         )
                         ev_desc = f"{d.strftime('%Y-%m-%d')}: {ev['name']} ({ev['start_time'].strftime('%H:%M')} - {ev['end_time'].strftime('%H:%M')})"
                         if ev_desc not in scheduled_events:
                             scheduled_events.append(ev_desc)
 
+        created_slots = []
         if all_to_add:
-            db.add_all(all_to_add)
-
-        await db.commit()
+            try:
+                db.add_all(all_to_add)
+                await db.commit()
+                created_slots = all_to_add
+            except Exception as e:
+                logger.error(f"[SEED TEMPLATE ERROR] {traceback.format_exc()}")
+                await db.rollback()
+                # Fallback: Inserción básica limpia de time_slots
+                fallback_slots = []
+                for s in all_to_add:
+                    fallback_slots.append(
+                        TimeSlot(
+                            club_id=1,
+                            court_id=s.court_id,
+                            date=s.date,
+                            start_time=s.start_time,
+                            end_time=s.end_time,
+                            total_price=s.total_price,
+                            price_total_cop=s.total_price,
+                            price_per_player_cop=s.price_per_player_cop,
+                            price=s.total_price,
+                            mode=s.mode,
+                            capacity=s.capacity or 4,
+                            booked_spots=0,
+                            category=s.category or "4ta",
+                            players_names=[],
+                            status=SlotStatus.AVAILABLE,
+                            slot_type=s.slot_type or "MATCH",
+                            match_type=s.match_type or "MATCH",
+                            is_closed=False,
+                            is_tournament=s.is_tournament,
+                            spots_count=s.spots_count or 0,
+                            prize_money_cop=int(s.prize_money_cop or 0),
+                            prize_points=int(s.prize_points or 0),
+                            tournament_category=str(s.tournament_category or "5ta"),
+                            tournament_type=s.tournament_type,
+                            tournament_name=s.tournament_name,
+                            sport_type=s.sport_type or "PADEL",
+                            recurrence_group_id=None,
+                        )
+                    )
+                db.add_all(fallback_slots)
+                await db.commit()
+                created_slots = fallback_slots
 
         return {
             "status": "ok",
-            "created_slots": len(all_to_add),
-            "slots_created": len(all_to_add),
-            "message": "Plantilla sembrada con éxito",
+            "created_count": len(created_slots),
+            "created_slots": len(created_slots),
+            "slots_created": len(created_slots),
+            "message": f"Se sembraron exitosamente {len(created_slots)} turnos de la jornada semanal.",
             "courts_count": len(courts),
             "days_count": len(dates_to_seed),
             "tournaments_scheduled": len(scheduled_events),
             "scheduled_events": scheduled_events,
         }
     except Exception as exc:
-        logger.error(f"Error en seed_weekly_template: {traceback.format_exc()}")
+        logger.error(f"[SEED TEMPLATE ERROR] {traceback.format_exc()}")
         await db.rollback()
         return JSONResponse(
             status_code=500,
             content={
                 "status": "error",
                 "message": f"Error al sembrar plantilla semanal: {str(exc)}",
-                "detail": traceback.format_exc(),
+                "detail": str(exc),
             },
         )
 
@@ -1434,34 +1482,39 @@ async def create_manual_booking(
 
         # Despacho transaccional por WhatsApp según modalidad de reserva
         if client_phone and not client_phone.startswith("+57-WA-") and not client_phone.startswith("+57-unknown"):
-            st_fmt = start_t.strftime("%I:%M %p").lstrip("0")
-            et_fmt = end_t.strftime("%I:%M %p").lstrip("0")
-            c_label = target_court.name
-            d_label = b_date.strftime("%d/%m/%Y")
-            price_cop = f"${int(total_price):,}".replace(",", ".")
+            target_phone = sanitize_phone(client_phone)
+            court_name = target_court.name
+            st_str = slot.start_time.strftime("%H:%M") if hasattr(slot.start_time, "strftime") else str(slot.start_time)[:5]
+            et_str = slot.end_time.strftime("%H:%M") if hasattr(slot.end_time, "strftime") else str(slot.end_time)[:5]
+            d_str = str(slot.date)
 
-            if mode_enum == SlotMode.FULL_COURT:
-                wa_body = (
+            if payload.mode == "FULL_COURT" or (payload.booked_spots and payload.booked_spots >= 4) or mode_enum == SlotMode.FULL_COURT or slot.booked_spots >= 4:
+                msg = (
                     f"✅ *¡RESERVA CONFIRMADA EN CAPITAL PÁDEL CLUB!* 🎾\n\n"
-                    f"• *Pista:* {c_label}\n"
-                    f"• *Horario:* {st_fmt} - {et_fmt}\n"
-                    f"• *Titular:* {client_name}\n\n"
-                    f"🔒 Tu pista ya quedó asegurada en nuestro sistema. ¡Te esperamos en la sede (Maloka)!"
+                    f"• *Pista:* {court_name}\n"
+                    f"• *Fecha:* {d_str}\n"
+                    f"• *Horario:* {st_str} - {et_str}\n"
+                    f"• *Titular:* {client_name}\n"
+                    f"• *Tarifa:* ${int(slot.total_price):,} COP\n\n"
+                    f"🔒 Tu pista ya quedó asegurada en el sistema. ¡Te esperamos en la sede (Maloka)!\n"
+                    f"Si necesitas cancelar o reprogramar, por favor hazlo con al menos 30 min de anticipación."
                 )
             else:
-                wa_body = (
-                    f"📋 *¡CUPO APARTADO (1/{cap})!* 🎾\n\n"
-                    f"• *Pista:* {c_label}\n"
-                    f"• *Horario:* {st_fmt} - {et_fmt}\n"
-                    f"• *Inscritos:* (1/{cap})\n\n"
-                    f"⚠️ *Aviso:* Si el turno no completa los {cap} jugadores a menos de 30 min, podrá ser reasignado. Te avisaremos cuando se sumen compañeros."
+                msg = (
+                    f"📋 *¡CUPO CONFIRMADO (1/4)!* 🎾\n\n"
+                    f"• *Pista:* {court_name}\n"
+                    f"• *Fecha:* {d_str}\n"
+                    f"• *Horario:* {st_str} - {et_str}\n"
+                    f"• *Jugador:* {client_name}\n"
+                    f"• *Cupos cubiertos:* ({slot.booked_spots}/4)\n\n"
+                    f"Te avisaremos por este chat a medida que otros jugadores confirmen su asistencia."
                 )
 
             try:
-                await send_whatsapp_message(to_phone=client_phone, message_body=wa_body)
-                await log_conversation_message(db, client_phone, wa_body, direction="bot", player_name=client_name)
+                await send_whatsapp_message(target_phone, msg)
+                await log_conversation_message(db, target_phone, msg, direction="bot", player_name=client_name)
             except Exception as wa_err:
-                logger.warning(f"Error enviando confirmación WhatsApp a {client_phone}: {wa_err}")
+                logger.warning(f"Error enviando confirmación WhatsApp a {target_phone}: {wa_err}")
 
         return {
             "status": "ok",

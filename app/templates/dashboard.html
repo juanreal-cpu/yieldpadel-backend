@@ -10511,8 +10511,17 @@ ${data.message}`);
         });
         const data = await res.json();
         if (res.ok) {
+          if (typeof closeModal === 'function') {
+            closeModal('modal-weekly-template');
+          }
           closeWeeklyTemplateModal();
-          alert(`✅ ${data.message || 'Semana programada con éxito'}\nTurnos generados: ${data.slots_created || 0}\nTorneos agendados: ${data.tournaments_scheduled || 0}`);
+          if (typeof showCustomToast === 'function') {
+            showCustomToast('🌱 Plantilla Sembrada', 'La agenda semanal se generó correctamente.', '✅');
+          } else if (typeof showDarkToast === 'function') {
+            showDarkToast('🌱 Plantilla Sembrada', 'La agenda semanal se generó correctamente.');
+          } else {
+            alert(`✅ ${data.message || 'Semana programada con éxito'}\nTurnos generados: ${data.created_count || data.slots_created || 0}`);
+          }
 
           // Sincronizar fecha y forzar Pádel para ver los turnos inmediatamente
           selectedDate = qDate;
@@ -10529,10 +10538,15 @@ ${data.message}`);
           if (typeof fetchSlots === 'function') await fetchSlots();
           if (typeof loadTournamentsList === 'function') loadTournamentsList();
           if (typeof addEvent === 'function') {
-            addEvent('Semana Programada', `${data.slots_created || 0} turnos creados con plantilla oficial`, 'green');
+            addEvent('Semana Programada', `${data.created_count || data.slots_created || 0} turnos creados con plantilla oficial`, 'green');
           }
         } else {
-          alert(`❌ Error al sembrar plantilla: ${data.detail || 'Error inesperado'}`);
+          const readableError = data.detail || data.message || 'Error inesperado al sembrar la plantilla semanal';
+          if (typeof showCustomToast === 'function') {
+            showCustomToast('Error al Sembrar', readableError, '❌');
+          } else {
+            alert(`❌ Error al sembrar plantilla: ${readableError}`);
+          }
         }
       } catch (err) {
         console.error('Error al sembrar plantilla semanal:', err);

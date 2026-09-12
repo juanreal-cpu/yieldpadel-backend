@@ -109,6 +109,7 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS spots_count INTEGER DEFAULT 0",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS match_type VARCHAR(50) DEFAULT 'MATCH'",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS tournament_name VARCHAR(150)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_tournament BOOLEAN DEFAULT FALSE",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS winners_names VARCHAR(255)",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS runner_up_names VARCHAR(255)",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_finished BOOLEAN DEFAULT FALSE",
