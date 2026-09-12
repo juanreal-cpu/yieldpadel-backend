@@ -7227,16 +7227,10 @@
     };
 
     // =========================================================================
-    window.DEFAULT_CRM_PLAYERS = window.DEFAULT_CRM_PLAYERS || [
-      { id: 1, name: "Juan Real Florez", phone: "+573132058547", email: "juan@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Reggaeton / Urbano", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Tapia)", membership_tier: "TAPIA", membership_plan_id: 1, plan_name: "TAPIA", americano_discount_pct: 40, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 1, total_bookings_completed: 24, ranking_points: 1850, titles_count: 5, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 2, name: "Camilo Real", phone: "+573001234567", email: "camilo@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Rock / Clásico", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Coello)", membership_tier: "COELLO", membership_plan_id: 2, plan_name: "COELLO", americano_discount_pct: 30, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 19, ranking_points: 1520, titles_count: 3, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 3, name: "David P", phone: "+573109876543", email: "david@yieldpadel.com", category: "3ra", gender: "Masculino", preferred_music: "Electrónica / House", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Socio VIP (Galán)", membership_tier: "GALAN", membership_plan_id: 3, plan_name: "GALAN", americano_discount_pct: 20, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 16, ranking_points: 1340, titles_count: 2, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 4, name: "Andrés Gómez", phone: "+573155551122", email: "andres@yieldpadel.com", category: "4ta", gender: "Masculino", preferred_music: "Pop / Top Hits", preferred_play_time: "Mañana (06:00 - 10:00)", client_type: "Socio Matutino (Chingotto)", membership_tier: "CHINGOTTO", membership_plan_id: 4, plan_name: "CHINGOTTO", americano_discount_pct: 10, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 12, ranking_points: 980, titles_count: 1, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 5, name: "Mateo Ruiz", phone: "+573174443322", email: "mateo@yieldpadel.com", category: "5ta", gender: "Masculino", preferred_music: "Salsa / Crossover", preferred_play_time: "Mediodía (10:00 - 16:00)", client_type: "Socio Diurno (Lebrón)", membership_tier: "LEBRON", membership_plan_id: 5, plan_name: "LEBRON", americano_discount_pct: 20, includes_beverage_perk: true, membership_start_date: "2026-03-01", membership_end_date: "2026-03-31", academy_classes_used: 0, total_bookings_completed: 8, ranking_points: 750, titles_count: 0, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 6, name: "Sofía Martínez", phone: "+573187778899", email: "sofia@yieldpadel.com", category: "6ta", gender: "Femenino", preferred_music: "Pop / Top Hits", preferred_play_time: "Tarde/Noche (16:00 - 23:00)", client_type: "Estándar", membership_tier: "ESTANDAR", membership_plan_id: null, plan_name: null, americano_discount_pct: 0, includes_beverage_perk: false, membership_start_date: null, membership_end_date: null, academy_classes_used: 0, total_bookings_completed: 2, ranking_points: 210, titles_count: 0, is_first_visit: true, onboarding_status: "PENDING" }
-    ];
-    window.cachedPlayers = window.cachedPlayers || window.DEFAULT_CRM_PLAYERS;
-    window.allCRMCustomers = window.allCRMCustomers || window.DEFAULT_CRM_PLAYERS;
+    const DEFAULT_CRM_PLAYERS = [];
+    window.DEFAULT_CRM_PLAYERS = [];
+    window.cachedPlayers = [];
+    window.allCRMCustomers = [];
 
     window.renderCRMSearchDropdown = function(inputEl, dropdownEl, onSelectCallback) {
       if (!inputEl || !dropdownEl) return;
@@ -8300,17 +8294,9 @@ window.handleCRMSearch = window.filterCRMTable;
     }
     window.handleRegisterCustomerSubmit = handleRegisterCustomerSubmit;
 
-    const DEFAULT_CRM_PLAYERS = [
-      { id: 1, name: "Juan Real Florez", phone: "+573132058547", category: "4ta", client_type: "Socio VIP (Tapia)", membership_tier: "TAPIA", total_bookings_completed: 24, ranking_points: 1850, titles_count: 5, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 2, name: "Camilo Real", phone: "+573001234567", category: "4ta", client_type: "Socio VIP (Coello)", membership_tier: "COELLO", total_bookings_completed: 19, ranking_points: 1520, titles_count: 3, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 3, name: "David P", phone: "+573109876543", category: "3ra", client_type: "Socio VIP (Galán)", membership_tier: "GALAN", total_bookings_completed: 16, ranking_points: 1340, titles_count: 2, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 4, name: "Andrés Gómez", phone: "+573155551122", category: "4ta", client_type: "Socio Matutino (Chingotto)", membership_tier: "CHINGOTTO", total_bookings_completed: 12, ranking_points: 980, titles_count: 1, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 5, name: "Mateo Ruiz", phone: "+573174443322", category: "5ta", client_type: "Socio Diurno (Lebrón)", membership_tier: "LEBRON", total_bookings_completed: 8, ranking_points: 750, titles_count: 0, is_first_visit: false, onboarding_status: "WELCOMED" },
-      { id: 6, name: "Sofía Martínez", phone: "+573187778899", category: "6ta", client_type: "Estándar", membership_tier: "ESTANDAR", total_bookings_completed: 2, ranking_points: 210, titles_count: 0, is_first_visit: true, onboarding_status: "PENDING" }
-    ];
-    window.DEFAULT_CRM_PLAYERS = DEFAULT_CRM_PLAYERS;
-    window.cachedPlayers = window.cachedPlayers || DEFAULT_CRM_PLAYERS;
-    window.allCRMCustomers = window.allCRMCustomers || DEFAULT_CRM_PLAYERS;
+    window.DEFAULT_CRM_PLAYERS = [];
+    window.cachedPlayers = window.cachedPlayers || [];
+    window.allCRMCustomers = window.allCRMCustomers || [];
 
 
 async function loadCRMDirectory() {
@@ -8422,10 +8408,10 @@ async function loadCRMDirectory() {
         const newClients = customers.filter(c => Boolean(c.is_first_visit));
         const countBanner = document.getElementById('crm-first-visit-count');
         const chipsContainer = document.getElementById('crm-first-visit-chips');
-        if (countBanner) countBanner.textContent = `${newClients.length} nuevo${newClients.length === 1 ? '' : 's'}`;
+        if (countBanner) countBanner.textContent = newClients.length === 0 ? '0 nuevos' : `${newClients.length} nuevo${newClients.length === 1 ? '' : 's'}`;
         if (chipsContainer) {
           if (newClients.length === 0) {
-            chipsContainer.innerHTML = '<div style="font-size: 0.75rem; color: #78350F;">No hay clientes en primera visita pendientes en este filtro.</div>';
+            chipsContainer.innerHTML = '<div class="text-xs text-slate-400 py-1 font-medium">No hay clientes nuevos en primera visita.</div>';
           } else {
             chipsContainer.innerHTML = newClients.map(c => `
               <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: #FFFFFF; border: 1px solid #FCD34D; border-radius: 999px; padding: 0.25rem 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
@@ -8446,8 +8432,8 @@ async function loadCRMDirectory() {
           window.cachedPlayers = [];
           tbody.innerHTML = `
             <tr>
-              <td colspan="10" class="py-12 text-center text-slate-400 text-sm font-semibold">
-                🎾 No hay socios registrados en el CRM. Agrega tu primer cliente con '+ Nuevo Jugador'.
+              <td colspan="11" class="py-12 text-center text-slate-400 text-sm font-semibold">
+                🎾 No hay socios registrados en el CRM. Utiliza '+ Registrar Jugador' para ingresar el primer cliente.
               </td>
             </tr>
           `;
@@ -16018,7 +16004,7 @@ Jugador: ${checkData.player_name}`);
         const top = data.top_predictors || [];
 
         if (top.length === 0) {
-          container.innerHTML = '<div class="p-3 bg-white rounded-2xl border border-slate-200 text-center text-xs text-slate-400 col-span-full">No hay pronósticos registrados este mes aún.</div>';
+          container.innerHTML = '<div class="col-span-5 py-4 text-center text-xs text-slate-400 font-medium">Sin pronósticos registrados este mes. Los aciertos se mostrarán aquí cuando la comunidad vote en los partidos de Reto.</div>';
           return;
         }
 
