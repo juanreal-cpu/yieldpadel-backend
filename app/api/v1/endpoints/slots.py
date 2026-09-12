@@ -54,7 +54,6 @@ from app.schemas.slot import (
     CreateAmericanoRequest,
     ClubConfigRequest,
     WeeklyTemplateSeedRequest,
-    ManualBookingRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -1126,6 +1125,25 @@ async def seed_weekly_template(
         )
 
 
+class ManualBookingRequest(BaseModel):
+    court_id: Union[str, int, uuid.UUID]
+    date: Union[str, date]
+    start_time: str
+    duration_minutes: Optional[int] = 90
+    mode: Optional[str] = "FULL_COURT"
+    client_name: str
+    client_phone: str
+    price: Optional[Union[float, Decimal]] = None
+    category: Optional[str] = "4ta"
+    client_tier: Optional[str] = "ESTANDAR"
+    sport_type: Optional[str] = "PADEL"
+    booked_spots: Optional[int] = None
+    spots_count: Optional[int] = None
+    is_recurring: Optional[bool] = False
+    recurrence_weeks: Optional[int] = 4
+    recurrence_group_id: Optional[Union[str, uuid.UUID]] = None
+
+
 @router.post("/manual-booking", status_code=status.HTTP_200_OK)
 async def create_manual_booking(
     payload: ManualBookingRequest,
@@ -1235,6 +1253,10 @@ async def create_manual_booking(
             "customer_id": customer.id,
         }
 
+        req_booked = getattr(payload, 'booked_spots', None) or getattr(payload, 'spots_count', None)
+        if not req_booked:
+            req_booked = cap if (payload.mode or "FULL_COURT").upper() == "FULL_COURT" else 1
+
         mode_enum = SlotMode.FULL_COURT if (payload.mode or "FULL_COURT").upper() == "FULL_COURT" else SlotMode.SPLIT_MATCH
 
         # 5. Soporte para Reservas Periódicas / Recurrentes (is_recurring == True)
@@ -1260,18 +1282,19 @@ async def create_manual_booking(
                     if c_slot.status == SlotStatus.BLOCKED or c_slot.slot_type in ("MAINTENANCE", "BLOCKED"):
                         raise HTTPException(
                             status_code=status.HTTP_409_CONFLICT,
-                            detail=f"⚠️ Conflicto recurrente en Semana {w_idx} ({target_dt.strftime('%Y-%m-%d')}): Cancha bloqueada por mantenimiento ({c_slot.start_time.strftime('%H:%M')} - {c_slot.end_time.strftime('%H:%M')}).",
+                            detail=f"⚠️ Cancha bloqueada en semana {w_idx} ({target_dt.strftime('%d/%m/%Y')}): En mantenimiento o bloqueada.",
                         )
-                    if c_slot.start_time != start_t and c_slot.status != SlotStatus.AVAILABLE:
-                        raise HTTPException(
-                            status_code=status.HTTP_409_CONFLICT,
-                            detail=f"⚠️ Conflicto recurrente en Semana {w_idx} ({target_dt.strftime('%Y-%m-%d')}): Cancha ocupada con reserva solapada ({c_slot.start_time.strftime('%H:%M')} - {c_slot.end_time.strftime('%H:%M')}).",
-                        )
-                    if c_slot.start_time == start_t:
+                    if c_slot.start_time != start_t:
+                        if c_slot.status != SlotStatus.AVAILABLE:
+                            raise HTTPException(
+                                status_code=status.HTTP_409_CONFLICT,
+                                detail=f"⚠️ Colisión en semana {w_idx} ({target_dt.strftime('%d/%m/%Y')}): Hay un turno activo de {c_slot.start_time.strftime('%H:%M')} a {c_slot.end_time.strftime('%H:%M')}.",
+                            )
+                    else:
                         if c_slot.status == SlotStatus.FULLY_BOOKED or (c_slot.booked_spots and c_slot.booked_spots >= (c_slot.capacity or cap)):
                             raise HTTPException(
                                 status_code=status.HTTP_409_CONFLICT,
-                                detail=f"⚠️ Conflicto recurrente en Semana {w_idx} ({target_dt.strftime('%Y-%m-%d')}): Esta franja ({start_t.strftime('%H:%M')} - {end_t.strftime('%H:%M')}) ya está 100% reservada.",
+                                detail=f"⚠️ Cancha ocupada en semana {w_idx} ({target_dt.strftime('%d/%m/%Y')}): Turno de {start_t.strftime('%H:%M')} ya reservado al 100%.",
                             )
                         if mode_enum == SlotMode.FULL_COURT:
                             c_players = list(c_slot.players_names or [])
@@ -1279,12 +1302,12 @@ async def create_manual_booking(
                             if len(others) > 0 or c_slot.booked_spots > 0:
                                 raise HTTPException(
                                     status_code=status.HTTP_409_CONFLICT,
-                                    detail=f"⚠️ Conflicto recurrente en Semana {w_idx} ({target_dt.strftime('%Y-%m-%d')}): Ya hay jugadores inscritos en esa franja.",
+                                    detail=f"⚠️ Conflicto en semana {w_idx} ({target_dt.strftime('%d/%m/%Y')}): La cancha completa fue solicitada pero ya cuenta con {len(others)} jugador(es) inscritos.",
                                 )
 
-            # B) Sin colisiones -> Crear / Actualizar los slots del lote
-            recurrence_val: Optional[uuid.UUID] = None
-            if getattr(payload, "recurrence_group_id", None):
+            # B) Crear o asociar los slots de la serie recurrente
+            recurrence_val = None
+            if payload.recurrence_group_id:
                 try:
                     recurrence_val = uuid.UUID(str(payload.recurrence_group_id))
                 except (ValueError, TypeError):
@@ -1292,6 +1315,7 @@ async def create_manual_booking(
             if recurrence_val is None:
                 recurrence_val = uuid.uuid4()
             created_slots = []
+
             for target_dt in recurrence_dates:
                 ex_stmt = (
                     select(TimeSlot)
@@ -1324,12 +1348,12 @@ async def create_manual_booking(
                         target_slot.status = SlotStatus.FULLY_BOOKED
                     else:
                         target_slot.mode = SlotMode.SPLIT_MATCH
-                        target_slot.booked_spots = len(curr_players)
+                        target_slot.booked_spots = max(len(curr_players), int(req_booked))
                         target_slot.status = SlotStatus.FULLY_BOOKED if target_slot.booked_spots >= target_slot.capacity else SlotStatus.PARTIALLY_BOOKED
                     created_slots.append(target_slot)
                 else:
-                    booked_spots = cap if mode_enum == SlotMode.FULL_COURT else 1
-                    st_status = SlotStatus.FULLY_BOOKED if booked_spots >= cap else SlotStatus.PARTIALLY_BOOKED
+                    booked_spots_val = cap if mode_enum == SlotMode.FULL_COURT else int(req_booked)
+                    st_status = SlotStatus.FULLY_BOOKED if booked_spots_val >= cap else SlotStatus.PARTIALLY_BOOKED
                     new_slot = TimeSlot(
                         club_id=1,
                         court_id=target_court.id,
@@ -1342,7 +1366,7 @@ async def create_manual_booking(
                         price=total_price,
                         mode=mode_enum,
                         capacity=cap,
-                        booked_spots=booked_spots,
+                        booked_spots=booked_spots_val,
                         status=st_status,
                         category=payload.category or "4ta",
                         players_names=[dict(player_entry)],
@@ -1448,12 +1472,12 @@ async def create_manual_booking(
                 slot.status = SlotStatus.FULLY_BOOKED
             else:
                 slot.mode = SlotMode.SPLIT_MATCH
-                slot.booked_spots = len(curr_players)
+                slot.booked_spots = max(len(curr_players), int(req_booked))
                 slot.status = SlotStatus.FULLY_BOOKED if slot.booked_spots >= slot.capacity else SlotStatus.PARTIALLY_BOOKED
         else:
             # Crear TimeSlot nuevo puntual
-            booked_spots = cap if mode_enum == SlotMode.FULL_COURT else 1
-            st_status = SlotStatus.FULLY_BOOKED if booked_spots >= cap else SlotStatus.PARTIALLY_BOOKED
+            booked_spots_val = cap if mode_enum == SlotMode.FULL_COURT else int(req_booked)
+            st_status = SlotStatus.FULLY_BOOKED if booked_spots_val >= cap else SlotStatus.PARTIALLY_BOOKED
             slot = TimeSlot(
                 club_id=1,
                 court_id=target_court.id,
@@ -1466,7 +1490,7 @@ async def create_manual_booking(
                 price=total_price,
                 mode=mode_enum,
                 capacity=cap,
-                booked_spots=booked_spots,
+                booked_spots=booked_spots_val,
                 status=st_status,
                 category=payload.category or "4ta",
                 players_names=[player_entry],
@@ -1488,7 +1512,7 @@ async def create_manual_booking(
             et_str = slot.end_time.strftime("%H:%M") if hasattr(slot.end_time, "strftime") else str(slot.end_time)[:5]
             d_str = str(slot.date)
 
-            if payload.mode == "FULL_COURT" or (payload.booked_spots and payload.booked_spots >= 4) or mode_enum == SlotMode.FULL_COURT or slot.booked_spots >= 4:
+            if payload.mode == "FULL_COURT" or req_booked >= 4 or mode_enum == SlotMode.FULL_COURT or slot.booked_spots >= 4:
                 msg = (
                     f"✅ *¡RESERVA CONFIRMADA EN CAPITAL PÁDEL CLUB!* 🎾\n\n"
                     f"• *Pista:* {court_name}\n"

@@ -239,17 +239,19 @@ class WeeklyTemplateSeedRequest(BaseModel):
 
 
 class ManualBookingRequest(BaseModel):
-    court_id: Union[str, uuid.UUID, int]
-    sport_type: Optional[str] = "PADEL"
-    date: Union[dt_date, str]
+    court_id: Union[str, int, uuid.UUID]
+    date: Union[str, dt_date]
     start_time: str
     duration_minutes: Optional[int] = 90
     mode: Optional[str] = "FULL_COURT"
     client_name: str
     client_phone: str
-    price: Optional[Decimal] = None
+    price: Optional[Union[float, Decimal]] = None
     category: Optional[str] = "4ta"
     client_tier: Optional[str] = "ESTANDAR"
+    sport_type: Optional[str] = "PADEL"
+    booked_spots: Optional[int] = None
+    spots_count: Optional[int] = None
     is_recurring: Optional[bool] = False
     recurrence_weeks: Optional[int] = 4
     recurrence_group_id: Optional[Union[str, uuid.UUID]] = None
