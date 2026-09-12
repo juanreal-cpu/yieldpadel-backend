@@ -83,3 +83,24 @@ class PredictionLeaderboard(Base):
     )
 
     customer = relationship("Customer", backref="monthly_leaderboards", lazy="selectin")
+
+
+class SlotChallengeVote(Base):
+    __tablename__ = "slot_challenges_votes"
+    __table_args__ = (
+        UniqueConstraint("slot_id", "player_phone", name="uq_slot_challenge_vote_slot_phone"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    slot_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("time_slots.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    player_phone: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    vote: Mapped[str] = mapped_column(String(20), nullable=False)  # 'POINTS', 'GATORADE', 'FRIENDLY'
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    slot = relationship("TimeSlot", backref="challenge_votes", lazy="selectin")

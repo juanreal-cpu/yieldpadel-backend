@@ -2350,6 +2350,10 @@
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🥇</span>
             <span class="truncate">Torneos Oficiales</span>
           </button>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-challenges" onclick="switchMainView('challenges')" title="Retos Oficiales & Votación">
+            <span class="w-4 text-center text-xs shrink-0 opacity-70">⚔️</span>
+            <span class="truncate">Retos Oficiales</span>
+          </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-pos" onclick="switchMainView('pos')" title="Tienda & Barra (POS)">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🛒</span>
             <span class="truncate">Tienda & POS</span>
@@ -2808,6 +2812,99 @@
                 <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.5rem; text-align: center; color: #64748B; grid-column: 1/-1;">
                   Sin torneos finalizados aún.
                 </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VISTA: ⚔️ RETOS OFICIALES DE PÁDEL & VOTACIÓN COMUNITARIA -->
+        <!-- ======================================================== -->
+        <div id="view-challenges" class="view-section hidden w-full px-6 py-6 space-y-6 overflow-x-hidden">
+          <div class="max-w-7xl mx-auto space-y-6">
+            
+            <!-- Encabezado Superior -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 rounded-3xl text-white shadow-lg border border-slate-700/60">
+              <div class="space-y-1">
+                <div class="flex items-center gap-3">
+                  <span class="text-3xl">⚔️</span>
+                  <div>
+                    <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                      Retos Oficiales de Pádel
+                      <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">Exclusivo Pádel</span>
+                    </h2>
+                    <p class="text-xs text-slate-300 font-medium mt-0.5">
+                      Partidos cerrados 4/4 con parejas ratificadas por consenso unánime. Pronósticos comunitarios (+3 pts) y ranking oficial (+30 pts).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2.5">
+                <button type="button" onclick="loadChallengesView()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-slate-700">
+                  <span>🔄</span> <span>Actualizar Retos</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- KPIs de Retos -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-slate-500 uppercase">Retos Activos Hoy</span>
+                  <div class="text-2xl font-black text-slate-900 mt-1" id="kpi-ch-active-today">0</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-lg">🎾</div>
+              </div>
+
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-slate-500 uppercase">Aciertos Comunidad</span>
+                  <div class="text-2xl font-black text-emerald-600 mt-1" id="kpi-ch-community-hits">0</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-lg">🎯</div>
+              </div>
+
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-slate-500 uppercase">Puntos Distribuidos</span>
+                  <div class="text-2xl font-black text-purple-600 mt-1" id="kpi-ch-points-total">0</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-black text-lg">🪙</div>
+              </div>
+            </div>
+
+            <!-- Tabla de Retos Confirmados -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <span>🎾</span> <span>Cartelera de Retos Confirmados (Duplas Definidas)</span>
+                </h3>
+                <span class="text-xs text-slate-500 font-medium">Vota vía WhatsApp enviando: <code class="bg-slate-100 px-1.5 py-0.5 rounded font-bold text-slate-800">VOTO [ID] PAREJA A</code></span>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-500 font-extrabold uppercase tracking-wider text-[11px] border-b border-slate-200">
+                      <th class="p-3.5 pl-6">ID & Horario</th>
+                      <th class="p-3.5">Cancha</th>
+                      <th class="p-3.5 text-center">Pareja A</th>
+                      <th class="p-3.5 text-center">VS</th>
+                      <th class="p-3.5 text-center">Pareja B</th>
+                      <th class="p-3.5">Condición del Reto</th>
+                      <th class="p-3.5 text-center">Votos Comunidad</th>
+                      <th class="p-3.5 text-center">Estado</th>
+                      <th class="p-3.5 pr-6 text-center">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="challenges-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                    <tr>
+                      <td colspan="9" class="p-8 text-center text-slate-400 italic">Cargando retos confirmados...</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -6805,6 +6902,9 @@
         }
         if ((activeName === 'inbox' || rawId === 'inbox') && typeof window.loadInboxConversations === 'function') {
           window.loadInboxConversations();
+        }
+        if ((activeName === 'challenges' || rawId === 'challenges' || rawId === 'view-challenges') && typeof window.loadChallengesView === 'function') {
+          window.loadChallengesView();
         }
         if (activeName === 'wallet-ledger' || rawId === 'wallet-ledger' || rawId === 'view-wallet-ledger') {
           if (typeof window.loadWalletLedger === 'function') {
@@ -11858,26 +11958,28 @@ ${data.message}`);
     }
 
     async function removePlayerFromSlot(slotId, playerIndex, playerPhone) {
-      if (!confirm('¿Deseas retirar a este jugador del turno?')) {
+      if (!confirm('¿Deseas dar de baja a este jugador del turno? Se verificará la política temporal (<30 min penalidad).')) {
         return;
       }
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/remove-player`, {
+        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/cancel-player`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             player_index: playerIndex,
-            player_phone: playerPhone || ''
+            player_phone: playerPhone || '',
+            reason: 'Baja solicitada desde Dashboard'
           })
         });
         const data = await res.json();
         if (res.ok) {
+          const penaltyText = data.penalty_applied ? ' (⚠️ Baja tardía con penalidad)' : ' (✅ Sin penalidad)';
           if (typeof window.showDarkToast === 'function') {
-            window.showDarkToast('Jugador Retirado', '✅ Jugador retirado del turno exitosamente');
+            window.showDarkToast('Jugador Retirado', `✅ Jugador retirado del turno${penaltyText}`);
           } else if (typeof addEvent === 'function') {
-            addEvent('Baja Realizada', `Jugador retirado de Pista #${slotId}`, 'red');
+            addEvent('Baja Realizada', `Jugador retirado de Pista #${slotId}${penaltyText}`, 'red');
           } else {
-            alert('✅ Jugador retirado exitosamente');
+            alert(`✅ Jugador retirado del turno${penaltyText}`);
           }
           if (typeof fetchSlots === 'function') {
             await fetchSlots();
@@ -11887,7 +11989,7 @@ ${data.message}`);
         }
       } catch (err) {
         console.error('Error in removePlayerFromSlot:', err);
-        alert('Error de conexión al retirar al jugador');
+        alert(err.message || 'Error de conexión al retirar al jugador');
       }
     }
     window.removePlayerFromSlot = removePlayerFromSlot;
@@ -14016,6 +14118,119 @@ ${data.message}`);
       });
     }
     window.copyChallengeWhatsApp = copyChallengeWhatsApp;
+
+    async function loadChallengesView() {
+      const tbody = document.getElementById('challenges-table-body');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400 italic">Cargando retos confirmados de pádel...</td></tr>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/challenges/list?limit=50`);
+        const data = await res.json();
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-rose-500 font-bold">Error cargando retos: ${data.detail || 'Error desconocido'}</td></tr>`;
+          return;
+        }
+
+        const kpis = data.kpis || {};
+        const elActive = document.getElementById('kpi-ch-active-today');
+        const elHits = document.getElementById('kpi-ch-community-hits');
+        const elPts = document.getElementById('kpi-ch-points-total');
+        if (elActive) elActive.textContent = kpis.active_challenges_today || 0;
+        if (elHits) elHits.textContent = kpis.community_hits_count || 0;
+        if (elPts) elPts.textContent = kpis.points_awarded_total || 0;
+
+        const challenges = data.challenges || [];
+        if (challenges.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="9" class="p-8 text-center text-slate-400 font-medium">
+                No hay retos oficiales activos en este momento.<br>
+                <span class="text-[11px] text-slate-400">Cuando un partido 4/4 cierre y los 4 jugadores voten por la misma modalidad, aparecerá aquí publicado.</span>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = challenges.map(ch => {
+          const isEnJuego = ch.status === 'EN_JUEGO';
+          const isFinalizado = ch.status === 'FINALIZADO';
+          const statusBadge = isEnJuego
+            ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">🟢 EN JUEGO</span>`
+            : (isFinalizado 
+                ? `<span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-extrabold text-[10px]">🏁 FINALIZADO</span>`
+                : `<span class="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 font-extrabold text-[10px]">📅 PROGRAMADO</span>`);
+
+          return `
+            <tr class="hover:bg-slate-50/80 transition">
+              <td class="p-3.5 pl-6 font-bold text-slate-900">
+                #${ch.slot_id}<br/>
+                <span class="text-[11px] text-slate-400 font-normal">${ch.date} ${ch.time}</span>
+              </td>
+              <td class="p-3.5 font-semibold text-slate-700">${escapeHtml(ch.court_name)}</td>
+              <td class="p-3.5 text-center font-extrabold text-indigo-700 bg-indigo-50/50 rounded-lg">${escapeHtml(ch.team_a)}</td>
+              <td class="p-3.5 text-center font-black text-slate-400 text-xs">VS</td>
+              <td class="p-3.5 text-center font-extrabold text-purple-700 bg-purple-50/50 rounded-lg">${escapeHtml(ch.team_b)}</td>
+              <td class="p-3.5 font-bold text-amber-900">
+                <span class="inline-flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">${escapeHtml(ch.bet)}</span>
+              </td>
+              <td class="p-3.5 text-center">
+                <div class="flex items-center justify-center gap-1 text-[11px] font-bold">
+                  <span class="text-indigo-600 font-mono">${ch.votes_a} (${ch.pct_a}%)</span>
+                  <span class="text-slate-300">|</span>
+                  <span class="text-purple-600 font-mono">${ch.votes_b} (${ch.pct_b}%)</span>
+                </div>
+              </td>
+              <td class="p-3.5 text-center">${statusBadge}</td>
+              <td class="p-3.5 pr-6 text-center">
+                <div class="inline-flex items-center gap-1.5">
+                  <button type="button" onclick="submitCommunityVote(${ch.slot_id}, 'TEAM_A')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] font-bold transition shadow-xs" title="Votar Pareja A (+3 pts)">
+                    Votar A
+                  </button>
+                  <button type="button" onclick="submitCommunityVote(${ch.slot_id}, 'TEAM_B')" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-[11px] font-bold transition shadow-xs" title="Votar Pareja B (+3 pts)">
+                    Votar B
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error in loadChallengesView:', err);
+        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-rose-500 font-bold">Error de conexión al cargar retos.</td></tr>`;
+      }
+    }
+    window.loadChallengesView = loadChallengesView;
+
+    async function submitCommunityVote(slotId, team) {
+      const phonePrompt = prompt('Ingresa tu número celular de WhatsApp para registrar el voto y sumar puntos (+3 pts):');
+      if (!phonePrompt || !phonePrompt.trim()) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/challenges/vote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slot_id: slotId,
+            phone: phonePrompt.trim(),
+            predicted_winner: team
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ ${data.message || '¡Pronóstico registrado exitosamente!'}`);
+          loadChallengesView();
+        } else {
+          alert(data.detail || data.message || 'No fue posible registrar tu pronóstico');
+        }
+      } catch (err) {
+        console.error('Error in submitCommunityVote:', err);
+        alert('Error de conexión al registrar el pronóstico.');
+      }
+    }
+    window.submitCommunityVote = submitCommunityVote;
 
     function openWhatsAppChallenge() {
       const text = document.getElementById('challenge-message-preview').value;

@@ -110,6 +110,12 @@ class TimeSlot(Base):
     # Soporte Multideporte
     sport_type: Mapped[str] = mapped_column(String(50), default="PADEL", nullable=False)
 
+    # Campos de Retos Oficiales (Challenge State Machine)
+    is_challenge: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    challenge_bet: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    team_a_names: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    team_b_names: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+
     # Campos de compatibilidad y control por club
     club_id: Mapped[Optional[int]] = mapped_column(Integer, default=1, nullable=True)
     price_total_cop: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)

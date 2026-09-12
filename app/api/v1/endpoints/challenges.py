@@ -1,4 +1,4 @@
-﻿from datetime import datetime, date
+from datetime import datetime, date
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -46,11 +46,10 @@ async def list_challenges(
         select(TimeSlot)
         .options(selectinload(TimeSlot.court))
         .where(
-            or_(
-                TimeSlot.slot_type.in_(["RETO", "CHALLENGE"]),
-                TimeSlot.status == SlotStatus.FULLY_BOOKED,
-                TimeSlot.booked_spots >= 4,
-            )
+            TimeSlot.sport_type == "PADEL",
+            TimeSlot.is_challenge == True,
+            TimeSlot.team_a_names.isnot(None),
+            TimeSlot.team_b_names.isnot(None),
         )
         .order_by(TimeSlot.date.desc(), TimeSlot.start_time.desc())
         .limit(limit)
@@ -78,11 +77,8 @@ async def list_challenges(
     points_awarded_total = 0
 
     for s in slots:
-        participants = to_participants_list(s.players_names)
-        names = [p.get("display_name", "Jugador") for p in participants if p.get("display_name")]
-        
-        team_a = " / ".join(names[:2]) if len(names) >= 2 else (names[0] if names else "Pareja A")
-        team_b = " / ".join(names[2:4]) if len(names) >= 4 else (names[2] if len(names) > 2 else "Pareja B")
+        team_a = s.team_a_names or "Pareja A"
+        team_b = s.team_b_names or "Pareja B"
 
         v = preds_map.get(s.id, {"A": 0, "B": 0})
         total_v = v["A"] + v["B"]
@@ -98,6 +94,12 @@ async def list_challenges(
         if s.is_finished and s.winners_names:
             official_res = f"Ganó: {s.winners_names}"
 
+        bet_desc = "🏆 Puntos de Ranking (+30 pts)"
+        if s.challenge_bet == "GATORADE":
+            bet_desc = "🥤 Reto Gatorade (Hidratación en Barra)"
+        elif s.challenge_bet == "POINTS":
+            bet_desc = "🏆 Puntos de Ranking (+30 pts)"
+
         items.append({
             "id": s.id,
             "slot_id": s.id,
@@ -106,7 +108,8 @@ async def list_challenges(
             "court_name": c_name,
             "team_a": team_a,
             "team_b": team_b,
-            "bet": "🍔 Hamburguesa Tato & Pola (+30 pts)" if s.slot_type in ("RETO", "CHALLENGE") else "🏆 Puntos de Ranking (+30 pts)",
+            "bet": bet_desc,
+            "challenge_bet": s.challenge_bet or "POINTS",
             "votes_a": v["A"],
             "votes_b": v["B"],
             "pct_a": pct_a,

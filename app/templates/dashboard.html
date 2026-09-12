@@ -2350,6 +2350,10 @@
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🥇</span>
             <span class="truncate">Torneos Oficiales</span>
           </button>
+          <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-challenges" onclick="switchMainView('challenges')" title="Retos Oficiales & Votación">
+            <span class="w-4 text-center text-xs shrink-0 opacity-70">⚔️</span>
+            <span class="truncate">Retos Oficiales</span>
+          </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-pos" onclick="switchMainView('pos')" title="Tienda & Barra (POS)">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🛒</span>
             <span class="truncate">Tienda & POS</span>
@@ -2368,9 +2372,6 @@
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-crm" onclick="switchMainView('crm')" title="CRM Jugadores">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">👥</span>
             <span class="truncate">CRM</span>
-          </button>
-          <button id="btn-nav-challenges" onclick="switchMainView('challenges')" class="sidebar-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer" title="Retos Deportivos & Apuestas">
-            <span>⚔️</span> <span class="font-bold">Retos & Apuestas</span>
           </button>
           <button class="nav-item sidebar-link sidebar-nav-item w-full flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-medium text-[#94a3b8] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer" id="btn-nav-wallet-ledger" onclick="switchMainView('view-wallet-ledger')" title="Auditoría Capital Points">
             <span class="w-4 text-center text-xs shrink-0 opacity-70">🪙</span>
@@ -2707,41 +2708,38 @@
         <!-- VISTA: 📍 MAPA FÍSICO 2D DEL CLUB (Tiempo Real, Independiente) -->
         <!-- ======================================================== -->
         <div id="view-physical-map" class="view-section hidden px-5 py-4 space-y-4">
-          <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden max-w-5xl mx-auto">
-            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-200 bg-slate-50">
+          <div class="rounded-2xl border border-slate-800/90 bg-[#0b101b] shadow-2xl overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-slate-800/70">
               <div class="flex items-center gap-2.5">
-                <span class="text-sm font-black text-slate-900">📍 Distribución Física del Club (Tiempo Real 3x3)</span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-[10px] font-extrabold text-emerald-800">
-                  <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                <span class="text-sm font-black text-white">📍 Distribución Física del Club (Tiempo Real)</span>
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold text-emerald-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse"></span>
                   EN VIVO (Bogotá)
                 </span>
               </div>
-              <button type="button" onclick="window.fetchLiveCourtMap()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg shadow-xs transition" title="Refrescar mapa">
+              <button type="button" onclick="window.fetchLiveCourtMap()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/60 hover:bg-slate-800 border border-slate-700 rounded-lg transition" title="Refrescar mapa">
                 <span>↻</span><span>Actualizar</span>
               </button>
             </div>
 
-            <div class="grid grid-cols-3 gap-4 max-w-5xl mx-auto p-4" id="physical-map-grid">
-              <!-- Fila 1: Canchas 1, 2, 3 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 p-4 rounded-2xl bg-[#0b101b] border border-slate-800/90 shadow-2xl" id="physical-map-grid">
               <div class="live-court-cell" data-court-number="1"></div>
               <div class="live-court-cell" data-court-number="2"></div>
               <div class="live-court-cell" data-court-number="3"></div>
 
-              <!-- Fila 2: Cancha 4, Recepción / Tienda / Bar Central, Cancha 5 Negra -->
               <div class="live-court-cell" data-court-number="4"></div>
 
-              <!-- Celda Central Fija: Tienda / Bar Counter -->
-              <div class="bg-amber-100 border-2 border-amber-300 text-slate-800 rounded-xl p-3 flex flex-col justify-center items-center text-center shadow-xs min-h-[140px]">
-                <span class="text-[10px] font-black uppercase tracking-wider text-amber-900">🏢 Tienda, Bar & Recepción</span>
-                <span class="text-3xl font-black text-slate-900 mt-1 font-mono" id="live-occupancy-count">0</span>
-                <span class="text-[10px] text-slate-600 font-bold">Personas en Sede</span>
-                <span class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-200 border border-emerald-400 text-[9px] font-extrabold text-emerald-900">🖐️ Huellero Activo</span>
-                <span class="mt-1 text-[9px] text-slate-500 font-medium" id="live-access-today">Actualizado hace instantes</span>
+              <!-- Celda Central Fija: Recepción -->
+              <div class="bg-[#0a0e17] border-2 border-amber-500/40 text-white rounded-xl p-3 flex flex-col justify-center items-center text-center">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">🏢 Recepción, Bar &amp; Control de Acceso</span>
+                <span class="text-3xl font-black text-white mt-1" id="live-occupancy-count">0</span>
+                <span class="text-[10px] text-slate-400 font-medium">Personas en Sede</span>
+                <span class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-bold text-emerald-400">🖐️ Huellero Activo</span>
+                <span class="mt-1 text-[9px] text-slate-500" id="live-access-today">Actualizado hace instantes</span>
               </div>
 
               <div class="live-court-cell" data-court-number="5"></div>
 
-              <!-- Fila 3: Pista Pickleball 1 (Cancha 6), Cancha Vóley (Cancha 8), Pista Pickleball 2 (Cancha 7) -->
               <div class="live-court-cell" data-court-number="6"></div>
               <div class="live-court-cell" data-court-number="8"></div>
               <div class="live-court-cell" data-court-number="7"></div>
@@ -2795,7 +2793,7 @@
                 </h3>
                 <span id="tourn-upcoming-count" style="font-size: 0.75rem; color: #7C3AED; font-weight: 700; background: #F3E8FF; padding: 0.15rem 0.55rem; border-radius: 999px;">0 torneos</span>
               </div>
-              <div id="tournaments-upcoming-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-4 w-full">
+              <div id="tournaments-upcoming-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
                 <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 2rem; text-align: center; color: #64748B; grid-column: 1/-1;">
                   Cargando torneos activos...
                 </div>
@@ -2810,7 +2808,7 @@
                 </h3>
                 <span id="tourn-past-count" style="font-size: 0.75rem; color: #64748B; font-weight: 700; background: #F1F5F9; padding: 0.15rem 0.55rem; border-radius: 999px;">0 torneos</span>
               </div>
-              <div id="tournaments-past-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-4 w-full">
+              <div id="tournaments-past-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
                 <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1.5rem; text-align: center; color: #64748B; grid-column: 1/-1;">
                   Sin torneos finalizados aún.
                 </div>
@@ -2821,101 +2819,95 @@
         </div>
 
         <!-- ======================================================== -->
-        <!-- VISTA: ⚔️ RETOS & APUESTAS / GAMIFICACIÓN (#view-challenges) -->
+        <!-- VISTA: ⚔️ RETOS OFICIALES DE PÁDEL & VOTACIÓN COMUNITARIA -->
         <!-- ======================================================== -->
-        <div id="view-challenges" class="view-section hidden max-w-7xl mx-auto px-6 py-6 space-y-6">
-          <!-- Header de Retos -->
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-2xl shrink-0">
-                ⚔️
+        <div id="view-challenges" class="view-section hidden w-full px-6 py-6 space-y-6 overflow-x-hidden">
+          <div class="max-w-7xl mx-auto space-y-6">
+            
+            <!-- Encabezado Superior -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 rounded-3xl text-white shadow-lg border border-slate-700/60">
+              <div class="space-y-1">
+                <div class="flex items-center gap-3">
+                  <span class="text-3xl">⚔️</span>
+                  <div>
+                    <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                      Retos Oficiales de Pádel
+                      <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">Exclusivo Pádel</span>
+                    </h2>
+                    <p class="text-xs text-slate-300 font-medium mt-0.5">
+                      Partidos cerrados 4/4 con parejas ratificadas por consenso unánime. Pronósticos comunitarios (+3 pts) y ranking oficial (+30 pts).
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Retos Deportivos, Duelos 4/4 & Pola Comunitaria</h2>
-                <p class="text-xs text-slate-500 mt-0.5">
-                  Gestión de desafíos entre parejas, apuestas lúdicas autorizadas, votación comunitaria y asignación de puntos (+30 pts ganador / +3 pts acierto).
-                </p>
+
+              <div class="flex items-center gap-2.5">
+                <button type="button" onclick="loadChallengesView()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-slate-700">
+                  <span>🔄</span> <span>Actualizar Retos</span>
+                </button>
               </div>
             </div>
 
-            <div class="flex items-center gap-2 flex-wrap">
-              <button type="button" onclick="loadChallengesData()" class="px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition inline-flex items-center gap-1.5 shadow-xs">
-                <span>🔄</span> <span>Actualizar Duelos</span>
-              </button>
-              <button type="button" onclick="openVotePredictionModal()" class="px-4 py-2 text-xs font-extrabold text-slate-950 bg-amber-400 hover:bg-amber-500 rounded-xl transition inline-flex items-center gap-1.5 shadow-xs">
-                <span>🗳️</span> <span>Votar en Pola Comunitaria</span>
-              </button>
-            </div>
-          </div>
+            <!-- KPIs de Retos -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-slate-500 uppercase">Retos Activos Hoy</span>
+                  <div class="text-2xl font-black text-slate-900 mt-1" id="kpi-ch-active-today">0</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-lg">🎾</div>
+              </div>
 
-          <!-- Tarjetas KPI -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Retos Activos Hoy</span>
-                <span class="text-lg">⚔️</span>
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-slate-500 uppercase">Aciertos Comunidad</span>
+                  <div class="text-2xl font-black text-emerald-600 mt-1" id="kpi-ch-community-hits">0</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-lg">🎯</div>
               </div>
-              <div class="mt-3 flex items-baseline gap-2">
-                <span id="kpi-challenges-active" class="text-3xl font-black text-slate-900 font-mono">0</span>
-                <span class="text-xs text-amber-700 font-extrabold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">En pista / Por jugar</span>
-              </div>
-            </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Aciertos Comunidad</span>
-                <span class="text-lg">🎯</span>
-              </div>
-              <div class="mt-3 flex items-baseline gap-2">
-                <span id="kpi-challenges-hits" class="text-3xl font-black text-emerald-600 font-mono">0</span>
-                <span class="text-xs text-emerald-700 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Pronósticos acertados</span>
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-slate-500 uppercase">Puntos Distribuidos</span>
+                  <div class="text-2xl font-black text-purple-600 mt-1" id="kpi-ch-points-total">0</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-black text-lg">🪙</div>
               </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Puntos Otorgados</span>
-                <span class="text-lg">🏆</span>
+            <!-- Tabla de Retos Confirmados -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <span>🎾</span> <span>Cartelera de Retos Confirmados (Duplas Definidas)</span>
+                </h3>
+                <span class="text-xs text-slate-500 font-medium">Vota vía WhatsApp enviando: <code class="bg-slate-100 px-1.5 py-0.5 rounded font-bold text-slate-800">VOTO [ID] PAREJA A</code></span>
               </div>
-              <div class="mt-3 flex items-baseline gap-2">
-                <span id="kpi-challenges-points" class="text-3xl font-black text-indigo-600 font-mono">0 pts</span>
-                <span class="text-xs text-indigo-700 font-extrabold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">+30 reto / +3 pola</span>
-              </div>
-            </div>
-          </div>
 
-          <!-- Tabla de Histórico de Retos y Partidos 4/4 -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 class="text-sm font-extrabold text-slate-900">Cartelera de Duelos & Histórico de Partidos</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Partidos confirmados 4/4 con porcentaje de votación comunitaria e incentivos.</p>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-500 font-extrabold uppercase tracking-wider text-[11px] border-b border-slate-200">
+                      <th class="p-3.5 pl-6">ID & Horario</th>
+                      <th class="p-3.5">Cancha</th>
+                      <th class="p-3.5 text-center">Pareja A</th>
+                      <th class="p-3.5 text-center">VS</th>
+                      <th class="p-3.5 text-center">Pareja B</th>
+                      <th class="p-3.5">Condición del Reto</th>
+                      <th class="p-3.5 text-center">Votos Comunidad</th>
+                      <th class="p-3.5 text-center">Estado</th>
+                      <th class="p-3.5 pr-6 text-center">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="challenges-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                    <tr>
+                      <td colspan="9" class="p-8 text-center text-slate-400 italic">Cargando retos confirmados...</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <span class="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                100% Integrado con WhatsApp
-              </span>
             </div>
 
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
-                    <th class="py-3 px-4">Turno / Cancha</th>
-                    <th class="py-3 px-4">Pareja A</th>
-                    <th class="py-3 px-4">Pareja B</th>
-                    <th class="py-3 px-4">Apuesta / Incentivo</th>
-                    <th class="py-3 px-4 text-center">% Votos A / B</th>
-                    <th class="py-3 px-4 text-center">Resultado Oficial</th>
-                    <th class="py-3 px-4 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="challenges-table-body" class="divide-y divide-slate-100">
-                  <tr>
-                    <td colspan="7" class="py-8 text-center text-slate-400 italic">Cargando cartelera de retos y duelos...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
 
@@ -3777,7 +3769,7 @@
             <div id="competitor-kpis" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
                 <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Tarifa Media vs Maloka</div>
-                <div id="bench-price-diff" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;"><span id="bench-avg-diff">—</span></div>
+                <div id="bench-price-diff" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">—</div>
                 <div id="competitor-kpi-price-gap-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Comparación por franja horaria.</div>
               </div>
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
@@ -3787,7 +3779,7 @@
               </div>
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1rem 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);">
                 <div style="font-size: 0.7rem; font-weight: 800; color: #64748B; letter-spacing: 0.08em; text-transform: uppercase;">Jugadores Detectados</div>
-                <div id="bench-players-count" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;"><span id="bench-detected-players">0</span></div>
+                <div id="bench-players-count" style="font-size: 1.8rem; font-weight: 900; color: #0F172A; margin-top: 0.4rem; font-family: ui-monospace, monospace;">0</div>
                 <div id="competitor-kpi-players-sub" style="font-size: 0.72rem; color: #64748B; margin-top: 0.25rem;">Perfiles con recurrencia y teléfono.</div>
               </div>
             </div>
@@ -3814,7 +3806,7 @@
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                 <!-- Tabla de Franjas y Market Share (2 cols) -->
                 <div class="lg:col-span-2 overflow-x-auto">
-                  <table id="benchmark-market-share-table" class="w-full text-left text-xs border-collapse">
+                  <table class="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr class="border-b border-slate-200">
                         <th class="py-2.5 px-3 text-left text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Franja Horaria</th>
@@ -3963,7 +3955,7 @@
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 1.1rem; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.04);">
                 <h3 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0 0 0.9rem;">B. Directorio de Jugadores Exclusivos del Club</h3>
                 <div style="overflow-x: auto;">
-                  <table id="benchmark-exclusive-players-table" style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                  <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
                     <thead>
                       <tr class="border-b border-slate-200">
                         <th class="py-2.5 px-3 text-left text-xs font-black uppercase tracking-wider text-slate-800 bg-slate-100 border-b border-slate-200">Jugador</th>
@@ -4458,9 +4450,15 @@
                   </div>
                 </div>
 
-                  <button type="button" id="btn-process-pos-sale" onclick="processQuickSaleCheckout()" class="w-full mt-4 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-md flex items-center justify-between cursor-pointer transition">
-                    <span class="flex items-center gap-2"><span>💳</span> <span>Cobrar Venta</span></span>
-                    <span id="pos-total-display">$0 COP</span>
+                <!-- Footer Total y Cobro -->
+                <div class="pt-4 border-t border-slate-100 space-y-3">
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="font-bold text-slate-600">Total a Cobrar:</span>
+                    <span id="quick-sale-total-display" class="text-2xl font-black text-slate-900 font-mono">$0 COP</span>
+                  </div>
+
+                  <button type="button" onclick="submitQuickSale()" id="btn-submit-quick-sale" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                    <span>💳</span> <span>Cobrar y Registrar Pedido</span>
                   </button>
                 </div>
               </div>
@@ -6905,6 +6903,9 @@
         if ((activeName === 'inbox' || rawId === 'inbox') && typeof window.loadInboxConversations === 'function') {
           window.loadInboxConversations();
         }
+        if ((activeName === 'challenges' || rawId === 'challenges' || rawId === 'view-challenges') && typeof window.loadChallengesView === 'function') {
+          window.loadChallengesView();
+        }
         if (activeName === 'wallet-ledger' || rawId === 'wallet-ledger' || rawId === 'view-wallet-ledger') {
           if (typeof window.loadWalletLedger === 'function') {
             window.loadWalletLedger();
@@ -6913,11 +6914,6 @@
         if (activeName === 'accounting' || rawId === 'accounting' || rawId === 'view-accounting') {
           if (typeof window.loadDailyAccountingLedger === 'function') {
             window.loadDailyAccountingLedger();
-          }
-        }
-        if (activeName === 'challenges' || rawId === 'challenges' || rawId === 'view-challenges') {
-          if (typeof window.loadChallengesData === 'function') {
-            window.loadChallengesData();
           }
         }
         if (activeName === 'radar' || rawId === 'radar') {
@@ -8789,23 +8785,21 @@ ${data.message}`);
         const totalMonitored = hasData ? (data.total_monitored || 0) : 0;
         const totalPlayers = (hasData && Array.isArray(data.players)) ? data.players.length : 0;
 
-        // KPIs superiores
         const monitoredEl = document.getElementById('bench-monitored-count') || document.getElementById('competitor-kpi-matches');
         if (monitoredEl) monitoredEl.textContent = totalMonitored;
 
-        const playersEl = document.getElementById('bench-detected-players') || document.getElementById('bench-players-count') || document.getElementById('competitor-kpi-players');
+        const playersEl = document.getElementById('bench-players-count') || document.getElementById('competitor-kpi-players');
         if (playersEl) playersEl.textContent = totalPlayers;
 
-        const avgDiffEl = document.getElementById('bench-avg-diff') || document.getElementById('bench-price-diff') || document.getElementById('competitor-kpi-price-gap');
+        const priceDiffEl = document.getElementById('bench-price-diff') || document.getElementById('competitor-kpi-price-gap');
         const gapSubEl = document.getElementById('competitor-kpi-price-gap-sub');
 
         if (!hasData) {
-          if (avgDiffEl) avgDiffEl.textContent = '— (Sin registros)';
+          if (priceDiffEl) priceDiffEl.textContent = '— (Sin registros)';
           if (gapSubEl) gapSubEl.textContent = 'No se encontraron turnos registrados para este club.';
         } else {
-          const diff = (typeof data.diff_cop === 'number') ? data.diff_cop : ((data.avg_price || 0) - (data.capital_avg || 45000));
-          const diffText = (diff >= 0 ? '+' : '') + Math.round(diff).toLocaleString('es-CO') + ' COP';
-          if (avgDiffEl) avgDiffEl.textContent = diffText;
+          const diff = (data.avg_price || 0) - (data.capital_avg || 45000);
+          if (priceDiffEl) priceDiffEl.textContent = (diff >= 0 ? '+' : '') + Number(diff).toLocaleString('es-CO') + ' COP';
           if (gapSubEl) gapSubEl.textContent = diff >= 0 ? `El club cobra ${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP más que Capital Pádel en promedio.` : `El club cobra ${Math.abs(Math.round(diff)).toLocaleString('es-CO')} COP menos que Capital Pádel en promedio.`;
         }
 
@@ -8824,7 +8818,7 @@ ${data.message}`);
               { key: 'Dom', aliases: ['dom', 'sun', 'domingo', 'sunday'] }
             ];
 
-            const distinctSlots = Array.from(new Set(matrixData.map(m => m.raw_slot || m.franja || m.slot_time))).filter(Boolean).slice(0, 10);
+            const distinctSlots = Array.from(new Set(matrixData.map(m => m.raw_slot || m.franja))).filter(Boolean).slice(0, 10);
 
             if (distinctSlots.length === 0) {
               heatmapBody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400 font-semibold">No se encontraron datos registrados para este club con los criterios actuales.</td></tr>';
@@ -8836,13 +8830,13 @@ ${data.message}`);
 
                 days.forEach(day => {
                   const match = matrixData.find(m => {
-                    const mSlot = m.raw_slot || m.franja || m.slot_time;
+                    const mSlot = m.raw_slot || m.franja;
                     const mDay = (m.dia_code || m.dia || '').toString().toLowerCase();
                     return mSlot === slot && day.aliases.some(alias => mDay.includes(alias));
                   });
 
-                  if (match && (match.precio || match.precio_competidor || match.slot_avg_price)) {
-                    const precio = Number(match.precio || match.precio_competidor || match.slot_avg_price || 0);
+                  if (match && (match.precio || match.precio_competidor)) {
+                    const precio = Number(match.precio || match.precio_competidor || 0);
                     const cellDiff = precio - 45000;
 
                     let bg = "#1e293b", textCol = "#f8fafc", borderCol = "#334155";
@@ -8881,33 +8875,12 @@ ${data.message}`);
           }
         }
 
-        // Renderizado de tabla de Cuota de Mercado / Horarios / Pricing
-        const marketShareBody = document.getElementById('hourly-share-body');
-        if (marketShareBody && hasData && pricing.length) {
-          marketShareBody.innerHTML = pricing.map(r => {
-            const franja = r.slot_time || r.franja || 'General';
-            const count = r.matches_count || r.partidos || 0;
-            const price = Number(r.slot_avg_price || r.tarifa_club || r.tarifa_cancha_llena || 0);
-            return `
-              <tr class="border-b border-slate-200 hover:bg-slate-50 transition">
-                <td class="py-2.5 px-3 text-xs font-bold text-slate-800">${franja}</td>
-                <td class="py-2.5 px-3 text-xs font-semibold text-slate-700">${targetClub} (${count} detectados)</td>
-                <td class="py-2.5 px-3 text-xs font-bold text-slate-900">$${price.toLocaleString('es-CO')} COP</td>
-                <td class="py-2.5 px-3 text-xs font-semibold text-slate-700">65.0%</td>
-                <td class="py-2.5 px-3 text-center">
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Monitoreado</span>
-                </td>
-              </tr>
-            `;
-          }).join('');
-        }
-
         if (pricingBody) {
           pricingBody.innerHTML = (hasData && pricing.length) ? pricing.map(r => {
-            const franja = r.slot_time || r.franja || r.standard_time_slot || 'General';
+            const franja = r.franja || r.standard_time_slot || 'General';
             const tipoDia = r.tipo_dia || r.day_type || 'Todos los días';
             const capital = Number(r.tarifa_capital || 45000);
-            const club = Number(r.slot_avg_price || r.tarifa_club || r.club_avg_price || 0);
+            const club = Number(r.tarifa_club || r.club_avg_price || 0);
             const brecha = Number(r.brecha ?? r.gap_cop ?? (club - capital));
             const sign = brecha >= 0 ? '+' : '';
             return `
@@ -8915,37 +8888,31 @@ ${data.message}`);
                 <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100">${franja}</td>
                 <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100">${tipoDia}</td>
                 <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-right font-bold text-slate-900">$${capital.toLocaleString('es-CO')} COP</td>
-                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-right font-bold text-slate-800">$${club.toLocaleString('es-CO')} COP</td>
+                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-right">$${club.toLocaleString('es-CO')} COP</td>
                 <td class="py-2 px-3 text-xs font-semibold border-b border-slate-100 text-right font-extrabold ${brecha >= 0 ? 'text-rose-700' : 'text-emerald-700'}">${sign}$${brecha.toLocaleString('es-CO')} COP</td>
               </tr>
             `;
           }).join('') : '<tr><td colspan="5" class="py-4 px-3 text-xs font-semibold text-slate-500 border-b border-slate-100 text-center">No se encontraron datos registrados para este club con los criterios actuales.</td></tr>';
         }
 
-        // Renderizado de Directorio de Jugadores Exclusivos
         if (playersBody) {
           playersBody.innerHTML = (hasData && players.length) ? players.map(p => {
             const playerName = p.player_name || 'Jugador';
-            const category = p.detected_category || p.category || '4ta';
-            const totalMatches = p.total_matches || p.total_matches_played || 1;
             const phone = p.phone || p.player_phone || '';
-            const cleanDigits = String(phone).replace(/[^0-9]/g, '');
-            const hasWa = cleanDigits.length >= 10;
-            const waHref = hasWa
-              ? `https://wa.me/${cleanDigits}?text=Hola%20${encodeURIComponent(playerName)},%20te%20escribimos%20de%20Capital%20P%C3%A1del%20Club.%20%C2%A1Te%20invitamos%20a%20conocer%20nuestras%20instalaciones!`
-              : '#';
-            const phoneDisplay = phone ? phone : '<span class="text-slate-400 text-xs font-medium">Sin WhatsApp</span>';
-            const waAction = hasWa
-              ? `<a href="${waHref}" target="_blank" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs shadow-sm inline-flex items-center gap-1 transition">💬 Contactar</a>`
-              : `<span class="text-slate-400 text-xs font-medium">—</span>`;
+            const cleanPhone = String(phone).replace(/[^0-9]/g, '');
+            const hasPhone = cleanPhone.length >= 7;
+            const waHref = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hola ${playerName}, te escribimos de Capital Pádel Club Maloka...`)}`;
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                <td class="py-2.5 px-3 font-bold text-slate-800">${playerName}</td>
-                <td class="py-2.5 px-3 text-slate-700">${category}</td>
-                <td class="py-2.5 px-3 text-slate-600">${phoneDisplay}</td>
-                <td class="py-2.5 px-3 font-semibold text-slate-600 text-right">${totalMatches} partidos</td>
-                <td class="py-2.5 px-3 text-center">
-                  ${waAction}
+                <td class="py-2 px-3 text-xs font-semibold text-slate-900 font-bold border-b border-slate-100">${playerName}</td>
+                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100">${p.category || p.detected_category || '4ta'}</td>
+                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100">${phone || 'Sin WhatsApp'}</td>
+                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-right font-bold">${p.total_matches || p.total_matches_played || 0}</td>
+                <td class="py-2 px-3 text-xs font-semibold text-slate-700 border-b border-slate-100 text-center">
+                  ${hasPhone 
+                    ? `<a href="${waHref}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition">💬 Chatear</a>`
+                    : `<span class="text-slate-400 text-xs font-medium">Sin contacto</span>`
+                  }
                 </td>
               </tr>
             `;
@@ -11991,26 +11958,28 @@ ${data.message}`);
     }
 
     async function removePlayerFromSlot(slotId, playerIndex, playerPhone) {
-      if (!confirm('¿Deseas retirar a este jugador del turno?')) {
+      if (!confirm('¿Deseas dar de baja a este jugador del turno? Se verificará la política temporal (<30 min penalidad).')) {
         return;
       }
       try {
-        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/remove-player`, {
+        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/cancel-player`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             player_index: playerIndex,
-            player_phone: playerPhone || ''
+            player_phone: playerPhone || '',
+            reason: 'Baja solicitada desde Dashboard'
           })
         });
         const data = await res.json();
         if (res.ok) {
+          const penaltyText = data.penalty_applied ? ' (⚠️ Baja tardía con penalidad)' : ' (✅ Sin penalidad)';
           if (typeof window.showDarkToast === 'function') {
-            window.showDarkToast('Jugador Retirado', '✅ Jugador retirado del turno exitosamente');
+            window.showDarkToast('Jugador Retirado', `✅ Jugador retirado del turno${penaltyText}`);
           } else if (typeof addEvent === 'function') {
-            addEvent('Baja Realizada', `Jugador retirado de Pista #${slotId}`, 'red');
+            addEvent('Baja Realizada', `Jugador retirado de Pista #${slotId}${penaltyText}`, 'red');
           } else {
-            alert('✅ Jugador retirado exitosamente');
+            alert(`✅ Jugador retirado del turno${penaltyText}`);
           }
           if (typeof fetchSlots === 'function') {
             await fetchSlots();
@@ -12020,7 +11989,7 @@ ${data.message}`);
         }
       } catch (err) {
         console.error('Error in removePlayerFromSlot:', err);
-        alert('Error de conexión al retirar al jugador');
+        alert(err.message || 'Error de conexión al retirar al jugador');
       }
     }
     window.removePlayerFromSlot = removePlayerFromSlot;
@@ -12533,9 +12502,6 @@ ${data.message}`);
             <p>📅 <strong>${t.date}</strong> | ⏰ <strong>${t.start_time} - ${t.end_time}</strong></p>
             <p>📍 ${courtsStr}</p>
             <p>👥 Inscritos: <strong>${bookedCount}/${capCount}</strong> cupos</p>
-            <button type="button" onclick="viewTournamentParticipants('${t.id || slotIdsStr}')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline mt-2 flex items-center gap-1 cursor-pointer">
-              👥 Ver Inscritos (${bookedCount}/${capCount})
-            </button>
             ${isPast && t.winners_names ? `<p class="text-amber-700 font-semibold mt-1">🏆 Ganadores: ${t.winners_names}</p>` : ''}
           </div>
           <div class="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
@@ -12598,62 +12564,6 @@ ${data.message}`);
       if (modal) modal.classList.add('active');
     }
     window.openJoinAmericanoModal = openJoinAmericanoModal;
-
-    async function viewTournamentParticipants(tournamentId) {
-      const modal = document.getElementById('modal-tournament-participants');
-      const listContainer = document.getElementById('mtp-participants-list');
-      const titleEl = document.getElementById('mtp-tournament-title');
-      const subEl = document.getElementById('mtp-tournament-subtitle');
-
-      if (!modal || !listContainer) return;
-      modal.style.display = 'flex';
-      listContainer.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400 italic">Cargando participantes...</td></tr>';
-
-      try {
-        const res = await fetch(`/api/v1/tournaments/${encodeURIComponent(tournamentId)}/participants`);
-        if (!res.ok) {
-          listContainer.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-rose-500 font-bold">Error cargando lista de inscritos.</td></tr>';
-          return;
-        }
-        const data = await res.json();
-        if (titleEl) titleEl.textContent = `${data.tournament_name || 'Torneo Americano'} (${data.total_registered || 0}/${data.max_capacity || 16})`;
-        if (subEl) subEl.textContent = `Fecha: ${data.date || 'Hoy'} • Inicio: ${data.start_time || ''}`;
-
-        const parts = data.participants || [];
-        if (parts.length === 0) {
-          listContainer.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400 italic">No hay jugadores inscritos en este torneo aún.</td></tr>';
-          return;
-        }
-
-        listContainer.innerHTML = parts.map((p, idx) => `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="py-2.5 px-3 font-mono text-slate-400 font-bold">${idx + 1}</td>
-            <td class="py-2.5 px-3 font-extrabold text-slate-900">${escapeHtml(p.name)}</td>
-            <td class="py-2.5 px-3 font-mono text-slate-600">${escapeHtml(p.phone || '—')}</td>
-            <td class="py-2.5 px-3">
-              <span class="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
-                ${escapeHtml(p.category || '4ta')}
-              </span>
-            </td>
-            <td class="py-2.5 px-3 text-center">
-              <span class="px-2.5 py-0.5 text-[10px] font-black rounded-full ${p.payment_status === 'PAGADO' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
-                ${p.payment_status || 'PAGADO'}
-              </span>
-            </td>
-          </tr>
-        `).join('');
-      } catch (err) {
-        console.error('Error fetching tournament participants:', err);
-        listContainer.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-rose-500 font-bold">Fallo de conexión al cargar participantes.</td></tr>';
-      }
-    }
-    window.viewTournamentParticipants = viewTournamentParticipants;
-
-    function closeTournamentParticipantsModal() {
-      const modal = document.getElementById('modal-tournament-participants');
-      if (modal) modal.style.display = 'none';
-    }
-    window.closeTournamentParticipantsModal = closeTournamentParticipantsModal;
 
     window.handleJoinTournCRMSearch = function(e, playerNum) {
       const input = e && e.target ? e.target : document.getElementById(playerNum === 1 ? 'join-p1-name' : 'join-p2-name');
@@ -14014,25 +13924,20 @@ ${data.message}`);
     function renderQuickSaleCart() {
       const container = document.getElementById('quick-sale-cart-items');
       const totalDisplay = document.getElementById('quick-sale-total-display');
-      const posTotalDisplay = document.getElementById('pos-total-display');
-      const btnCobrar = document.getElementById('btn-process-pos-sale') || document.getElementById('btn-submit-quick-sale');
+      const btnCobrar = document.getElementById('btn-submit-quick-sale');
       if (!container) return;
 
       if (window.quickSaleCart.length === 0) {
         container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs italic">El carrito está vacío. Añade productos desde el catálogo.</div>';
         if (totalDisplay) totalDisplay.textContent = '$0 COP';
-        if (posTotalDisplay) posTotalDisplay.textContent = '$0 COP';
         if (btnCobrar) {
           btnCobrar.disabled = true;
-          btnCobrar.classList.add('opacity-50', 'cursor-not-allowed');
+          btnCobrar.innerHTML = '<span>💳</span> <span>Confirmar y Cobrar Venta ($0 COP)</span>';
         }
         return;
       }
 
-      if (btnCobrar) {
-        btnCobrar.disabled = false;
-        btnCobrar.classList.remove('opacity-50', 'cursor-not-allowed');
-      }
+      if (btnCobrar) btnCobrar.disabled = false;
 
       const memSelect = document.getElementById('quick-sale-membership-select') || document.getElementById('pos-customer-membership');
       const isMember = memSelect && memSelect.value !== 'ESTANDAR';
@@ -14074,36 +13979,24 @@ ${data.message}`);
 
       container.innerHTML = html;
       if (totalDisplay) totalDisplay.textContent = formatCOP(total);
-      if (posTotalDisplay) posTotalDisplay.textContent = formatCOP(total);
+      if (btnCobrar) btnCobrar.innerHTML = `<span>💳</span> <span>Confirmar y Cobrar Venta (${formatCOP(total)})</span>`;
     }
     window.renderQuickSaleCart = renderQuickSaleCart;
 
-    async function processQuickSaleCheckout() {
-      if (!window.quickSaleCart || window.quickSaleCart.length === 0) {
-        if (typeof showCustomToast === 'function') {
-          showCustomToast('Carrito Vacío', 'Agrega productos al carrito antes de cobrar.', '⚠️');
-        } else {
-          alert('El carrito está vacío. Agrega productos desde el catálogo.');
-        }
+    async function submitQuickSale() {
+      if (window.quickSaleCart.length === 0) {
+        alert('El carrito está vacío.');
         return;
       }
-
       const searchEl = document.getElementById('pos-customer-search');
       const custName = (searchEl && searchEl.value.trim()) ||
                        (document.getElementById('quick-sale-customer-name') && document.getElementById('quick-sale-customer-name').value.trim()) ||
                        'Cliente Mostrador';
-      const custId = window.selectedPosCustomerId || null;
-      const memSelect = document.getElementById('quick-sale-membership-select') || document.getElementById('pos-customer-membership');
-      const tier = memSelect ? memSelect.value : 'ESTANDAR';
-
       const items = window.quickSaleCart.map(it => ({
         product_id: it.product_id,
         quantity: it.quantity,
         is_perk: Boolean(it.is_perk)
       }));
-
-      const btn = document.getElementById('btn-process-pos-sale') || document.getElementById('btn-submit-quick-sale');
-      if (btn) btn.disabled = true;
 
       try {
         const res = await fetch('/api/v1/pos/orders/create', {
@@ -14111,9 +14004,7 @@ ${data.message}`);
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             slot_id: null,
-            customer_id: custId,
             customer_name: custName,
-            customer_tier: tier,
             items: items,
             payment_status: 'PAID'
           })
@@ -14122,42 +14013,22 @@ ${data.message}`);
         if (res.ok) {
           const data = await res.json();
           window.quickSaleCart = [];
-          if (searchEl) searchEl.value = '';
-          window.selectedPosCustomerId = null;
-          const badge = document.getElementById('pos-customer-badge');
-          if (badge) { badge.classList.add('hidden'); badge.style.display = 'none'; }
           renderQuickSaleCart();
-          if (typeof loadPOSData === 'function') loadPOSData();
-
-          // Actualizar métrica 'Total Facturado Hoy' en tiempo real
-          const kpiBilled = document.getElementById('kpi-pos-billed-today');
-          if (kpiBilled && data.total_amount) {
-            const currentVal = parseInt(kpiBilled.textContent.replace(/[^0-9]/g, ''), 10) || 0;
-            kpiBilled.textContent = formatCOP(currentVal + Number(data.total_amount));
-          }
-
-          if (typeof showCustomToast === 'function') {
-            showCustomToast('Venta POS Cobrada', `Cliente: ${data.customer_name || custName} • ${formatCOP(data.total_amount)}`, '💳');
-          } else {
-            alert(`✅ Venta POS cobrada exitosamente por ${formatCOP(data.total_amount)}.`);
-          }
-
+          loadPOSData();
+          showCustomToast('Venta POS Cobrada', `Cliente: ${data.customer_name || custName} • Cobro: ${formatCOP(data.total_amount)}`, '💳');
           if (typeof window.logAuditEvent === 'function') {
-            window.logAuditEvent('VENTA_POS', 'Order', data.order_id || 'POS', `Venta directa mostrador a ${data.customer_name || custName} por ${formatCOP(data.total_amount)}`);
+            window.logAuditEvent('VENTA_POS', 'Order', data.order_id || 'POS', `Venta mostrador a ${data.customer_name || custName} por ${formatCOP(data.total_amount)}`);
           }
         } else {
           const err = await res.json();
-          alert('Error al registrar venta: ' + (err.detail || 'Fallo en la operación'));
+          alert('Error al registrar venta rápida: ' + (err.detail || 'Fallo en la operación'));
         }
       } catch (err) {
         console.error('Error registrando venta rápida:', err);
-        alert('Fallo de conexión al registrar la venta rápida.');
-      } finally {
-        if (btn) btn.disabled = false;
+        alert('Fallo de conexión al registrar venta rápida.');
       }
     }
-    window.processQuickSaleCheckout = processQuickSaleCheckout;
-    window.submitQuickSale = processQuickSaleCheckout;
+    window.submitQuickSale = submitQuickSale;
 
     // ========================================================
     // MÓDULO DE RETOS EN EL CRM JUGADORES
@@ -14248,6 +14119,119 @@ ${data.message}`);
     }
     window.copyChallengeWhatsApp = copyChallengeWhatsApp;
 
+    async function loadChallengesView() {
+      const tbody = document.getElementById('challenges-table-body');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400 italic">Cargando retos confirmados de pádel...</td></tr>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/challenges/list?limit=50`);
+        const data = await res.json();
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-rose-500 font-bold">Error cargando retos: ${data.detail || 'Error desconocido'}</td></tr>`;
+          return;
+        }
+
+        const kpis = data.kpis || {};
+        const elActive = document.getElementById('kpi-ch-active-today');
+        const elHits = document.getElementById('kpi-ch-community-hits');
+        const elPts = document.getElementById('kpi-ch-points-total');
+        if (elActive) elActive.textContent = kpis.active_challenges_today || 0;
+        if (elHits) elHits.textContent = kpis.community_hits_count || 0;
+        if (elPts) elPts.textContent = kpis.points_awarded_total || 0;
+
+        const challenges = data.challenges || [];
+        if (challenges.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="9" class="p-8 text-center text-slate-400 font-medium">
+                No hay retos oficiales activos en este momento.<br>
+                <span class="text-[11px] text-slate-400">Cuando un partido 4/4 cierre y los 4 jugadores voten por la misma modalidad, aparecerá aquí publicado.</span>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = challenges.map(ch => {
+          const isEnJuego = ch.status === 'EN_JUEGO';
+          const isFinalizado = ch.status === 'FINALIZADO';
+          const statusBadge = isEnJuego
+            ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">🟢 EN JUEGO</span>`
+            : (isFinalizado 
+                ? `<span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-extrabold text-[10px]">🏁 FINALIZADO</span>`
+                : `<span class="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 font-extrabold text-[10px]">📅 PROGRAMADO</span>`);
+
+          return `
+            <tr class="hover:bg-slate-50/80 transition">
+              <td class="p-3.5 pl-6 font-bold text-slate-900">
+                #${ch.slot_id}<br/>
+                <span class="text-[11px] text-slate-400 font-normal">${ch.date} ${ch.time}</span>
+              </td>
+              <td class="p-3.5 font-semibold text-slate-700">${escapeHtml(ch.court_name)}</td>
+              <td class="p-3.5 text-center font-extrabold text-indigo-700 bg-indigo-50/50 rounded-lg">${escapeHtml(ch.team_a)}</td>
+              <td class="p-3.5 text-center font-black text-slate-400 text-xs">VS</td>
+              <td class="p-3.5 text-center font-extrabold text-purple-700 bg-purple-50/50 rounded-lg">${escapeHtml(ch.team_b)}</td>
+              <td class="p-3.5 font-bold text-amber-900">
+                <span class="inline-flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">${escapeHtml(ch.bet)}</span>
+              </td>
+              <td class="p-3.5 text-center">
+                <div class="flex items-center justify-center gap-1 text-[11px] font-bold">
+                  <span class="text-indigo-600 font-mono">${ch.votes_a} (${ch.pct_a}%)</span>
+                  <span class="text-slate-300">|</span>
+                  <span class="text-purple-600 font-mono">${ch.votes_b} (${ch.pct_b}%)</span>
+                </div>
+              </td>
+              <td class="p-3.5 text-center">${statusBadge}</td>
+              <td class="p-3.5 pr-6 text-center">
+                <div class="inline-flex items-center gap-1.5">
+                  <button type="button" onclick="submitCommunityVote(${ch.slot_id}, 'TEAM_A')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] font-bold transition shadow-xs" title="Votar Pareja A (+3 pts)">
+                    Votar A
+                  </button>
+                  <button type="button" onclick="submitCommunityVote(${ch.slot_id}, 'TEAM_B')" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-[11px] font-bold transition shadow-xs" title="Votar Pareja B (+3 pts)">
+                    Votar B
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error in loadChallengesView:', err);
+        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-rose-500 font-bold">Error de conexión al cargar retos.</td></tr>`;
+      }
+    }
+    window.loadChallengesView = loadChallengesView;
+
+    async function submitCommunityVote(slotId, team) {
+      const phonePrompt = prompt('Ingresa tu número celular de WhatsApp para registrar el voto y sumar puntos (+3 pts):');
+      if (!phonePrompt || !phonePrompt.trim()) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/challenges/vote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slot_id: slotId,
+            phone: phonePrompt.trim(),
+            predicted_winner: team
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ ${data.message || '¡Pronóstico registrado exitosamente!'}`);
+          loadChallengesView();
+        } else {
+          alert(data.detail || data.message || 'No fue posible registrar tu pronóstico');
+        }
+      } catch (err) {
+        console.error('Error in submitCommunityVote:', err);
+        alert('Error de conexión al registrar el pronóstico.');
+      }
+    }
+    window.submitCommunityVote = submitCommunityVote;
+
     function openWhatsAppChallenge() {
       const text = document.getElementById('challenge-message-preview').value;
       if (!text) return;
@@ -14309,117 +14293,6 @@ ${data.message}`);
       }
     }
     window.submitChallengeWinner = submitChallengeWinner;
-
-    // ========================================================
-    // MÓDULO DE RETOS & GAMIFICACIÓN (#view-challenges)
-    // ========================================================
-    async function loadChallengesData() {
-      const tbody = document.getElementById('challenges-table-body');
-      const kpiActive = document.getElementById('kpi-challenges-active');
-      const kpiHits = document.getElementById('kpi-challenges-hits');
-      const kpiPoints = document.getElementById('kpi-challenges-points');
-
-      if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400 italic">Cargando retos y partidos 4/4...</td></tr>';
-      }
-
-      try {
-        const res = await fetch('/api/v1/challenges/list?limit=25');
-        if (!res.ok) {
-          if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-rose-500 font-bold">Error consultando retos.</td></tr>';
-          return;
-        }
-
-        const data = await res.json();
-        const kpis = data.kpis || {};
-        if (kpiActive) kpiActive.textContent = kpis.active_challenges_today ?? 0;
-        if (kpiHits) kpiHits.textContent = kpis.community_hits_count ?? 0;
-        if (kpiPoints) kpiPoints.textContent = `${kpis.points_awarded_total ?? 0} pts`;
-
-        const challenges = data.challenges || [];
-        if (!tbody) return;
-
-        if (challenges.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400 italic">No hay retos ni partidos cerrados 4/4 registrados aún.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = challenges.map(ch => {
-          const isFinished = ch.status === 'FINALIZADO';
-          return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="py-3 px-4">
-                <div class="font-extrabold text-slate-900">${escapeHtml(ch.court_name)}</div>
-                <div class="text-[11px] text-slate-500 font-mono">📅 ${ch.date} • ⏰ ${ch.time}</div>
-                <span class="inline-block mt-0.5 px-2 py-0.2 rounded text-[9px] font-black ${isFinished ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-800 animate-pulse'}">
-                  ${ch.status}
-                </span>
-              </td>
-              <td class="py-3 px-4">
-                <div class="font-bold text-slate-900 flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                  <span>${escapeHtml(ch.team_a)}</span>
-                </div>
-                <div class="text-[10px] text-indigo-700 font-extrabold">${ch.pct_a}% votos (${ch.votes_a})</div>
-              </td>
-              <td class="py-3 px-4">
-                <div class="font-bold text-slate-900 flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span>${escapeHtml(ch.team_b)}</span>
-                </div>
-                <div class="text-[10px] text-emerald-700 font-extrabold">${ch.pct_b}% votos (${ch.votes_b})</div>
-              </td>
-              <td class="py-3 px-4 font-bold text-amber-900">
-                <span class="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs inline-block">
-                  ${escapeHtml(ch.bet)}
-                </span>
-              </td>
-              <td class="py-3 px-4 text-center">
-                <div class="w-28 bg-slate-200 rounded-full h-2.5 mx-auto overflow-hidden flex">
-                  <div class="bg-indigo-600 h-2.5" style="width: ${ch.pct_a}%;"></div>
-                  <div class="bg-emerald-500 h-2.5" style="width: ${ch.pct_b}%;"></div>
-                </div>
-                <div class="text-[10px] text-slate-500 font-mono mt-1 font-bold">${ch.pct_a}% vs ${ch.pct_b}%</div>
-              </td>
-              <td class="py-3 px-4 text-center">
-                ${isFinished ? `
-                  <span class="px-2.5 py-1 text-xs font-black rounded-lg bg-amber-100 text-amber-900 border border-amber-300">
-                    🏆 ${escapeHtml(ch.winner_names || 'Resuelto')}
-                  </span>
-                ` : `
-                  <span class="px-2 py-0.5 text-xs font-extrabold rounded-md bg-slate-100 text-slate-600">
-                    Pendiente
-                  </span>
-                `}
-              </td>
-              <td class="py-3 px-4 text-right">
-                <button type="button" onclick="broadcastWhatsAppChallenge('${ch.slot_id}', '${escapeHtml(ch.team_a).replace(/'/g, "\\'")}', '${escapeHtml(ch.team_b).replace(/'/g, "\\'")}', '${escapeHtml(ch.bet).replace(/'/g, "\\'")}', '${ch.date}', '${ch.time}', '${escapeHtml(ch.court_name).replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-extrabold shadow-xs transition inline-flex items-center gap-1 cursor-pointer" title="Difundir en Grupo de WhatsApp">
-                  <span>📲</span> <span>Difundir Votación</span>
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      } catch (err) {
-        console.error('Error cargando retos:', err);
-        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-rose-500 font-bold">Fallo de conexión al cargar cartelera de retos.</td></tr>';
-      }
-    }
-    window.loadChallengesData = loadChallengesData;
-
-    function broadcastWhatsAppChallenge(slotId, teamA, teamB, bet, dateStr, timeStr, courtName) {
-      const text = `🔥 *¡DUELO CONFIRMADO EN CAPITAL PÁDEL!* 🔥\n\n` +
-        `⚔️ *${teamA}* 🆚 *${teamB}*\n` +
-        `📅 Fecha: ${dateStr} a las ${timeStr}\n` +
-        `📍 Pista: ${courtName} (Turno #${slotId})\n` +
-        `🍔 *Incentivo:* ${bet}\n` +
-        `🏆 *Puntos:* +30 pts de ranking al ganador • +3 pts en la Pola si aciertas el resultado.\n\n` +
-        `👉 *¿Quién se lleva la victoria?* Vota ahora desde tu app o responde este mensaje con tu equipo favorito.`;
-
-      const url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
-      window.open(url, '_blank');
-    }
-    window.broadcastWhatsAppChallenge = broadcastWhatsAppChallenge;
 
 
     // ========================================================
@@ -15887,10 +15760,10 @@ Jugador: ${checkData.player_name}`);
 
     function getCourtSurfaceClasses(courtNumber, sportType) {
       const n = parseInt(courtNumber, 10);
-      if (sportType === 'VOLLEYBALL' || n === 8) return 'bg-emerald-100 border-2 border-emerald-300 text-slate-800 shadow-xs min-h-[140px]';
-      if (sportType === 'PICKLEBALL' || n === 6 || n === 7) return 'bg-slate-200 border-2 border-slate-400 text-slate-900 shadow-xs min-h-[140px]';
-      if (n === 5) return 'bg-slate-200 border-2 border-slate-400 text-slate-900 shadow-xs min-h-[140px]';
-      return 'bg-sky-100 border-2 border-sky-300 text-slate-800 shadow-xs min-h-[140px]';
+      if (sportType === 'VOLLEYBALL' || n === 8) return 'bg-[#1b6b3e] border-2 border-emerald-500';
+      if (sportType === 'PICKLEBALL' || n === 6 || n === 7) return 'bg-[#181a20] border-2 border-slate-600';
+      if (n === 5) return 'bg-[#12141a] border-2 border-slate-700';
+      return 'bg-[#004b99] border-2 border-[#0066cc]'; // Padel Central 1-4, superficie WPT
     }
 
     function renderLiveCourtCell(court, courtNumber) {
@@ -15908,38 +15781,39 @@ Jugador: ${checkData.player_name}`);
       let bodyHtml = '';
 
       if (status === 'OPEN_MATCH') {
-        glowClasses = 'ring-2 ring-amber-400';
-        badgeHtml = `<span class="inline-flex items-center text-[10px] font-extrabold text-amber-900 bg-amber-200 px-2 py-0.5 rounded-full border border-amber-300">🟡 Cupos ${count}/${capacity}</span>`;
+        glowClasses = 'ring-2 ring-amber-500/70 shadow-[0_0_10px_rgba(245,158,11,0.25)]';
+        badgeHtml = `<span class="text-[10px] font-bold text-amber-300 bg-black/40 px-1.5 py-0.5 rounded">🟡 Cupos ${count}/${capacity}</span>`;
         bodyHtml = `
-          <div class="text-[11px] text-slate-800 font-bold truncate mt-1 bg-white/80 rounded px-1.5 py-0.5">${names.join(', ') || 'Sin jugadores registrados'}</div>
-          <button type="button" onclick="event.stopPropagation(); window.openLiveMapSlot(${court.slot_id ? `'${court.slot_id}'` : 'null'})" class="relative z-10 mt-2 w-full text-[10px] font-extrabold text-amber-900 bg-amber-300 border border-amber-400 rounded-lg py-1 hover:bg-amber-400 transition shadow-xs">+ Sumar</button>`;
+          <div class="text-[10px] text-white/90 truncate mt-1 bg-black/30 rounded px-1">${names.join(', ') || 'Sin jugadores registrados'}</div>
+          <button type="button" onclick="event.stopPropagation(); window.openLiveMapSlot(${court.slot_id ? `'${court.slot_id}'` : 'null'})" class="relative z-10 mt-2 w-full text-[10px] font-bold text-amber-200 bg-amber-500/20 border border-amber-400/60 rounded-md py-1 hover:bg-amber-500/30 transition">+ Sumar</button>`;
       } else if (status === 'FULL_MATCH') {
-        glowClasses = 'ring-2 ring-blue-400';
-        badgeHtml = `<span class="inline-flex items-center text-[10px] font-extrabold text-blue-900 bg-blue-200 px-2 py-0.5 rounded-full border border-blue-300">🔵 En Juego (${count}/${capacity})</span>`;
+        glowClasses = 'ring-2 ring-cyan-400/80 shadow-[0_0_12px_rgba(0,217,245,0.3)]';
+        badgeHtml = `<span class="text-[10px] font-bold text-cyan-200 bg-black/40 px-1.5 py-0.5 rounded">🔵 En Juego (${count}/${capacity})</span>`;
         bodyHtml = `
-          <div class="text-[11px] text-slate-900 font-extrabold truncate mt-1 bg-white/80 rounded px-1.5 py-0.5">${names.join(', ') || '—'}</div>
-          <div class="text-[10px] font-bold text-blue-900 mt-1">⏱️ Faltan ${court.time_remaining_minutes || 0} min</div>`;
+          <div class="text-[10px] text-white/90 truncate mt-1 bg-black/30 rounded px-1">${names.join(', ') || '—'}</div>
+          <div class="text-[10px] font-bold text-cyan-200 mt-1">⏱️ Faltan ${court.time_remaining_minutes || 0} min</div>`;
       } else if (status === 'CLASS') {
-        glowClasses = 'ring-2 ring-purple-400';
-        badgeHtml = `<span class="inline-flex items-center text-[10px] font-extrabold text-purple-900 bg-purple-200 px-2 py-0.5 rounded-full border border-purple-300">🟣 Academia</span>`;
-        bodyHtml = `<div class="text-[11px] text-slate-900 font-bold truncate mt-1 bg-white/80 rounded px-1.5 py-0.5">${names.join(', ') || 'Academia de Pádel'}</div>`;
+        glowClasses = 'ring-2 ring-purple-400/70';
+        badgeHtml = `<span class="text-[10px] font-bold text-purple-200 bg-black/40 px-1.5 py-0.5 rounded">🟣 Clase / Academia</span>`;
+        bodyHtml = `<div class="text-[10px] text-white/90 truncate mt-1 bg-black/30 rounded px-1">${names.join(', ') || 'Academia de Pádel'}</div>`;
       } else if (status === 'MAINTENANCE') {
         glowClasses = 'opacity-60 grayscale';
-        badgeHtml = `<span class="inline-flex items-center text-[10px] font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded-full border border-slate-300">⚪ Mantenimiento</span>`;
-        bodyHtml = `<div class="text-[11px] text-slate-600 mt-1 font-medium">Pista no disponible</div>`;
+        badgeHtml = `<span class="text-[10px] font-bold text-slate-300 bg-black/40 px-1.5 py-0.5 rounded">⚪ Mantenimiento</span>`;
+        bodyHtml = `<div class="text-[10px] text-white/70 mt-1">Pista no disponible</div>`;
       } else {
-        glowClasses = 'hover:border-emerald-500';
-        badgeHtml = `<span class="inline-flex items-center text-[10px] font-extrabold text-emerald-900 bg-emerald-200 px-2 py-0.5 rounded-full border border-emerald-300">🟢 Libre</span>`;
-        bodyHtml = `<div class="text-[11px] text-slate-700 font-bold mt-1">Desde ${price}</div>`;
+        glowClasses = 'ring-1 ring-dashed ring-emerald-400/50';
+        badgeHtml = `<span class="text-[10px] font-bold text-emerald-200 bg-black/40 px-1.5 py-0.5 rounded">🟢 Libre</span>`;
+        bodyHtml = `<div class="text-[10px] text-white/80 mt-1">Desde ${price}</div>`;
       }
 
       return `
-        <div class="live-court-card relative overflow-hidden rounded-xl p-3 cursor-pointer transition flex flex-col justify-between ${surfaceClasses} ${glowClasses}" ${clickAttr} title="${court.court_name || ''}">
+        <div class="live-court-card relative overflow-hidden rounded-xl p-2.5 cursor-pointer transition ${surfaceClasses} ${glowClasses}" ${clickAttr} title="${court.court_name || ''}">
+          <div class="absolute left-2 right-2 top-1/2 -translate-y-1/2 border-t-2 border-dashed border-white/40 pointer-events-none"></div>
           <div class="relative flex items-center justify-between gap-1">
-            <span class="text-xs font-black text-slate-900 truncate">${sportIcon} ${court.court_name || ''}</span>
+            <span class="text-[11px] font-bold text-white truncate drop-shadow">${sportIcon} ${court.court_name || ''}</span>
           </div>
           <div class="relative mt-1">${badgeHtml}</div>
-          <div class="relative mt-1">${bodyHtml}</div>
+          <div class="relative">${bodyHtml}</div>
         </div>`;
     }
 
@@ -18744,48 +18618,6 @@ PARTIDO CERRADO</textarea>
           </button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- MODAL: 👥 VER PARTICIPANTES INSCRITOS EN TORNEO -->
-  <div id="modal-tournament-participants" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999; backdrop-filter: blur(2px);">
-    <div style="background: #FFFFFF; border-radius: 20px; width: 92%; max-width: 600px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); max-height: 90vh; overflow-y: auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
-        <div>
-          <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
-            <span>👥</span> <span id="mtp-tournament-title">Participantes Inscritos</span>
-          </h3>
-          <p class="text-xs text-slate-500 mt-0.5" id="mtp-tournament-subtitle">Detalle de deportistas registrados y estado de pago.</p>
-        </div>
-        <button type="button" onclick="closeTournamentParticipantsModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
-      </div>
-
-      <div class="space-y-3">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
-                <th class="py-2.5 px-3">#</th>
-                <th class="py-2.5 px-3">Jugador / Pareja</th>
-                <th class="py-2.5 px-3">Teléfono</th>
-                <th class="py-2.5 px-3">Categoría</th>
-                <th class="py-2.5 px-3 text-center">Estado Pago</th>
-              </tr>
-            </thead>
-            <tbody id="mtp-participants-list" class="divide-y divide-slate-100">
-              <tr>
-                <td colspan="5" class="py-6 text-center text-slate-400 italic">Cargando participantes...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="flex justify-end pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeTournamentParticipantsModal()" class="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
-            Cerrar
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 

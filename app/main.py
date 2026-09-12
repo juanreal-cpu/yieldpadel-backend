@@ -70,6 +70,12 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE yield_bookings ADD COLUMN client_tier VARCHAR(50) DEFAULT 'STANDARD'",
                     "ALTER TABLE yield_bookings ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PAID'",
                     "ALTER TABLE yield_bookings ADD COLUMN transaction_id VARCHAR(100)",
+                    "ALTER TABLE customers ADD COLUMN late_cancellations INTEGER DEFAULT 0",
+                    "ALTER TABLE time_slots ADD COLUMN is_challenge BOOLEAN DEFAULT 0",
+                    "ALTER TABLE time_slots ADD COLUMN challenge_bet VARCHAR(50)",
+                    "ALTER TABLE time_slots ADD COLUMN team_a_names VARCHAR(200)",
+                    "ALTER TABLE time_slots ADD COLUMN team_b_names VARCHAR(200)",
+                    "CREATE TABLE IF NOT EXISTS slot_challenges_votes (id INTEGER PRIMARY KEY AUTOINCREMENT, slot_id INTEGER, player_phone VARCHAR(50), vote VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
                     "ALTER TABLE users ADD COLUMN club_id VARCHAR(50) DEFAULT '2756f34a-7d24-4815-9f7e-6ed125ea5de7'",
                 ]
                 for stmt in sqlite_statements:
@@ -95,6 +101,10 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS runner_up_names VARCHAR(255)",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_finished BOOLEAN DEFAULT FALSE",
                     "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS sport_type VARCHAR(50) DEFAULT 'PADEL'",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS is_challenge BOOLEAN DEFAULT FALSE",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS challenge_bet VARCHAR(50)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS team_a_names VARCHAR(200)",
+                    "ALTER TABLE time_slots ADD COLUMN IF NOT EXISTS team_b_names VARCHAR(200)",
                     # courts
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS sport_type VARCHAR(50) DEFAULT 'PADEL'",
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS max_capacity INTEGER DEFAULT 4",
@@ -102,6 +112,7 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS club_id UUID",
                     "ALTER TABLE courts ADD COLUMN IF NOT EXISTS is_indoor BOOLEAN DEFAULT FALSE",
                     # customers
+                    "ALTER TABLE customers ADD COLUMN IF NOT EXISTS late_cancellations INTEGER DEFAULT 0",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_tier VARCHAR(50) DEFAULT 'ESTANDAR'",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS gender VARCHAR(20)",
                     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS preferred_music VARCHAR(100)",
@@ -155,6 +166,8 @@ async def lifespan(app: FastAPI):
                     # order_items customer attribution
                     "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS customer_id INTEGER",
                     "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS customer_name VARCHAR(150) DEFAULT 'Mesa / Cuenta General'",
+                    # slot challenges votes
+                    "CREATE TABLE IF NOT EXISTS slot_challenges_votes (id SERIAL PRIMARY KEY, slot_id INTEGER REFERENCES time_slots(id) ON DELETE CASCADE, player_phone VARCHAR(50) NOT NULL, vote VARCHAR(20) NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), CONSTRAINT uq_slot_challenge_vote_slot_phone UNIQUE (slot_id, player_phone))",
                 ]
                 for stmt in pg_statements:
                     try:

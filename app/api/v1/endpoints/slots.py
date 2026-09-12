@@ -44,6 +44,7 @@ from app.schemas.slot import (
     DropPlayerRequest,
     DropPlayerResponse,
     RemovePlayerRequest,
+    CancelPlayerRequest,
     SlotParticipant,
     TimeSlotResponse,
     WhatsAppConvocatoriaRequest,
@@ -2719,6 +2720,201 @@ async def remove_player_from_slot(
         "slot_id": slot.id,
         "booked_spots": slot.booked_spots,
         "slot_status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
+    }
+
+
+@router.post("/{slot_id}/cancel-player", status_code=status.HTTP_200_OK)
+async def cancel_player_from_slot(
+    slot_id: int,
+    payload: CancelPlayerRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Cancela la participación de un jugador validando la ventana temporal de corte:
+    - Valida tiempo faltante (diff_minutes = (slot_dt - now_bogota).total_seconds() / 60)
+    - Si slot_datetime <= now: HTTP 400 'No se puede cancelar un partido que ya inició o finalizó.'
+    - Si diff_minutes < 30 (Baja Tardía):
+        * late_cancellations += 1 en Customer
+        * Si el cupo estaba pagado: no hay devolución automática
+        * WhatsApp al jugador: '⚠️ Tu baja se procesó a menos de 30 min. Aplica penalidad por costo operativo según políticas del club.'
+        * Alerta de reemplazo urgente al grupo de WhatsApp
+    - Si diff_minutes >= 30 (Baja Anticipada):
+        * Si el cupo estaba pagado: saldo a favor (wallet_balance += price_per_spot)
+        * WhatsApp al jugador: '✅ Tu cupo ha sido liberado sin penalidad. Tu saldo queda a favor.'
+    - Remueve al jugador de players_names, decrementa booked_spots, actualiza estado a PARTIALLY_BOOKED o AVAILABLE si queda 0.
+    """
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.holds), selectinload(TimeSlot.court))
+        .where(TimeSlot.id == slot_id)
+        .with_for_update()
+    )
+    res = await db.execute(stmt)
+    slot = res.scalar_one_or_none()
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El slot {slot_id} no existe.",
+        )
+
+    now_bogota = get_bogota_now()
+    slot_dt = datetime.combine(slot.date, slot.start_time).replace(tzinfo=BOGOTA_TZ)
+    diff_minutes = (slot_dt - now_bogota).total_seconds() / 60.0
+
+    if slot_dt <= now_bogota:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede cancelar un partido que ya inició o finalizó.",
+        )
+
+    participants = to_participants_list(slot.players_names)
+    if not participants:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El slot no contiene jugadores asignados.",
+        )
+
+    matched_idx = -1
+    matched_player = None
+
+    # 1. Matching por player_index
+    if payload.player_index is not None:
+        idx_cand = payload.player_index
+        if 0 <= idx_cand < len(participants):
+            matched_idx = idx_cand
+            matched_player = participants[idx_cand]
+        elif 1 <= idx_cand <= len(participants):
+            matched_idx = idx_cand - 1
+            matched_player = participants[matched_idx]
+
+    # 2. Matching por player_phone
+    if matched_idx == -1 and payload.player_phone:
+        norm_target = normalize_phone(payload.player_phone)
+        for i, p in enumerate(participants):
+            p_phone = normalize_phone(p.get("phone"))
+            h_phone = normalize_phone(p.get("host_phone"))
+            if (p_phone and p_phone == norm_target) or (h_phone and h_phone == norm_target):
+                matched_idx = i
+                matched_player = p
+                break
+
+    # 3. Fallback: Si solo hay 1 jugador
+    if matched_idx == -1 and len(participants) == 1:
+        matched_idx = 0
+        matched_player = participants[0]
+
+    if matched_idx == -1 or not matched_player:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontró al jugador especificado en el turno.",
+        )
+
+    removed = participants.pop(matched_idx)
+
+    # Re-indexar (1..N)
+    for i, p in enumerate(participants, start=1):
+        p["spot_index"] = i
+
+    slot.players_names = participants
+    slot.booked_spots = max(0, slot.booked_spots - 1)
+    if slot.booked_spots == 0:
+        slot.status = SlotStatus.AVAILABLE
+    else:
+        slot.status = SlotStatus.PARTIALLY_BOOKED
+    slot.closed_at = None
+
+    target_phone = payload.player_phone or removed.get("phone")
+    norm_phone = normalize_phone(target_phone) if target_phone else None
+
+    # Detectar si el cupo fue pagado
+    is_paid = False
+    player_payment_status = str(removed.get("payment_status") or "").upper()
+    if player_payment_status == "PAID":
+        is_paid = True
+    elif norm_phone:
+        for h in slot.holds:
+            if normalize_phone(h.customer_phone) == norm_phone:
+                if h.status in (HoldStatus.CONFIRMED, HoldStatus.ACTIVE) and str(h.payment_status).upper() == "PAID":
+                    is_paid = True
+                if h.status == HoldStatus.ACTIVE:
+                    h.status = HoldStatus.CANCELLED
+
+    # Buscar cliente en BD
+    cust: Optional[Customer] = None
+    if norm_phone:
+        c_res = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+        cust = c_res.scalars().first()
+
+    price_per_spot = float(slot.price_per_player_cop or (slot.total_price / (slot.capacity or 4)))
+    is_penalty = diff_minutes < 30.0
+    refund_amount = 0.0
+
+    if is_penalty:
+        # Baja Tardía (<30 min)
+        if cust:
+            cust.late_cancellations = (cust.late_cancellations or 0) + 1
+
+        wa_player_msg = (
+            "⚠️ Tu baja se procesó a menos de 30 min. "
+            "Aplica penalidad por costo operativo según políticas del club."
+        )
+
+        # Disparar alerta urgente de reemplazo al grupo
+        court_label = slot.court.name if slot.court else "Pista"
+        st_str = slot.start_time.strftime("%I:%M %p").lstrip("0")
+        et_str = slot.end_time.strftime("%I:%M %p").lstrip("0")
+        urgency_alert = (
+            "🚨 ¡SE BUSCA 1 JUGADOR URGENTE!\n"
+            f"Turno: {st_str} - {et_str} | {court_label}\n"
+            "Un cupo se acaba de liberar a menos de 30 min del partido. Responde 'VOY' para entrar a la pista."
+        )
+        group_id = os.getenv("WHATSAPP_GROUP_ID") or getattr(settings, "WHATSAPP_GROUP_ID", None)
+        if group_id:
+            try:
+                await send_whatsapp_message(to_phone=group_id, message_body=urgency_alert)
+            except Exception as e:
+                logger.error(f"Error despachando alerta de reemplazo urgente al grupo {group_id}: {e}")
+    else:
+        # Baja sin penalidad (>= 30 min)
+        if is_paid and cust:
+            cust.wallet_balance = (cust.wallet_balance or 0.0) + price_per_spot
+            refund_amount = price_per_spot
+
+        wa_player_msg = "✅ Tu cupo ha sido liberado sin penalidad. Tu saldo queda a favor."
+
+    await db.commit()
+    await db.refresh(slot)
+
+    # Notificar al jugador vía WhatsApp
+    if target_phone and not target_phone.startswith("+57-WA-") and not target_phone.startswith("+57-unknown") and not "#GUEST" in target_phone:
+        try:
+            player_disp = removed.get("display_name") or "Jugador"
+            full_msg = f"Hola {player_disp},\n\n{wa_player_msg}"
+            await send_whatsapp_message(to_phone=target_phone, message_body=full_msg)
+            await log_conversation_message(db, target_phone, full_msg, direction="bot", player_name=player_disp)
+        except Exception as err:
+            logger.warning(f"Error enviando WhatsApp de cancelación a {target_phone}: {err}")
+
+    try:
+        await log_activity(
+            db=db,
+            action="CANCEL_PLAYER",
+            entity_name="SLOT",
+            entity_id=str(slot.id),
+            details=f"Baja de '{removed.get('display_name')}' en slot #{slot.id}. Penalidad: {is_penalty}, Diff min: {round(diff_minutes, 1)}",
+            username_snapshot="Dashboard Operativo"
+        )
+    except Exception as e:
+        logger.warning(f"Error registrando auditoría en cancel_player_from_slot: {e}")
+
+    return {
+        "status": "ok",
+        "penalty_applied": is_penalty,
+        "diff_minutes": round(diff_minutes, 1),
+        "refund_amount": refund_amount,
+        "booked_spots": slot.booked_spots,
+        "slot_status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
+        "message": f"Baja procesada {'con penalidad (<30 min)' if is_penalty else 'sin penalidad'}."
     }
 
 

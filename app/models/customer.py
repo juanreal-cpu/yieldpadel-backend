@@ -66,8 +66,9 @@ class Customer(Base):
     promotion_recommended: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     recommended_category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-    # Monedero / Capital Points
+    # Monedero / Capital Points y Penalidades
     wallet_balance: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    late_cancellations: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

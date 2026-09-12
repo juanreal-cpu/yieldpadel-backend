@@ -27,6 +27,7 @@ from app.models.slot import ClientTier, SlotMode, SlotStatus, TimeSlot
 from app.models.incident import PlayerIncident
 from app.models.customer import Customer
 from app.models.membership import MembershipPlan
+from app.models.predictions import SlotChallengeVote, MatchPrediction, PredictedWinner, PredictionStatus
 from app.models.whatsapp_conversation import WhatsAppConversation, WhatsAppMessage
 
 logger = logging.getLogger("yieldpadel.whatsapp")
@@ -1287,6 +1288,50 @@ async def process_join_intent(
     await db.commit()
     await db.refresh(slot)
 
+    # 2. Notificación enriquecida a los demás compañeros del turno
+    try:
+        cust_res = await db.execute(select(Customer).where(Customer.phone == norm_sender))
+        joining_cust = cust_res.scalars().first()
+        player_cat = getattr(joining_cust, "category", "4ta") if joining_cust else "4ta"
+        player_pts = getattr(joining_cust, "ranking_points", 0) if joining_cust else 0
+
+        join_broadcast_msg = (
+            f"🎾 *¡Nuevo compañero en pista!*\n"
+            f"Se ha sumado: *{display_name}* | Categoría: *{player_cat}* | Ranking: *{player_pts} pts*.\n"
+            f"Cupos cubiertos: ({slot.booked_spots}/{slot.capacity})."
+        )
+
+        for p in participants:
+            p_ph = normalize_phone(p.get("phone"))
+            if p_ph and p_ph != norm_sender and not p_ph.startswith("+57-WA-") and not p_ph.startswith("+57-unknown") and not "#GUEST" in p_ph:
+                try:
+                    await send_whatsapp_message(to_phone=p_ph, message_body=join_broadcast_msg)
+                except Exception as b_err:
+                    logger.warning(f"Error enviando join broadcast a {p_ph}: {b_err}")
+    except Exception as e:
+        logger.warning(f"Error en broadcast enriquecido de nuevo jugador: {e}")
+
+    # 3. Protocolo de Reto Oficial si el partido se cerró (4/4)
+    if slot.booked_spots >= slot.capacity and getattr(slot, "sport_type", "PADEL") == "PADEL":
+        try:
+            survey_msg = (
+                f"🏆 *¡PARTIDO CERRADO (4/4)!* 🎾\n"
+                f"¿Desean jugar este partido en modalidad RETO OFICIAL?\n\n"
+                f"Respondan con el número de su preferencia:\n"
+                f"1️⃣ Reto por Puntos de Ranking (+30 pts al ganador)\n"
+                f"2️⃣ Reto Gatorade (el perdedor invita la hidratación en la barra)\n"
+                f"3️⃣ Partido Amistoso (sin reto)"
+            )
+            for p in participants:
+                p_ph = normalize_phone(p.get("phone"))
+                if p_ph and not p_ph.startswith("+57-WA-") and not p_ph.startswith("+57-unknown") and not "#GUEST" in p_ph:
+                    try:
+                        await send_whatsapp_message(to_phone=p_ph, message_body=survey_msg)
+                    except Exception as s_err:
+                        logger.warning(f"Error enviando encuesta de reto a {p_ph}: {s_err}")
+        except Exception as e:
+            logger.warning(f"Error despachando encuesta de reto unánime: {e}")
+
     logger.info(f"Player {norm_sender} ({display_name}) joined slot {slot.id} ({slot.booked_spots}/{slot.capacity})")
     return format_whatsapp_reply(slot)
 
@@ -1483,6 +1528,204 @@ async def process_list_intent(
     return conv_res.whatsapp_reply
 
 
+async def process_challenge_consensus_and_vote(
+    db: AsyncSession,
+    sender_phone: str,
+    raw_text: str,
+) -> Optional[str]:
+    """
+    Gestiona el protocolo de retos unánimes y votación comunitaria:
+    1. Votación de la comunidad: 'VOTO <slot_id> PAREJA A' o 'VOTO <slot_id> PAREJA B'
+    2. Votación de los 4 jugadores: '1'/'POINTS', '2'/'GATORADE', '3'/'FRIENDLY'
+    3. Definición de duplas: cuando los 4 votan igual y confirman parejas.
+    """
+    clean = (raw_text or "").strip()
+    norm_phone = normalize_phone(sender_phone)
+    if not norm_phone or not clean:
+        return None
+
+    # 1. Detección de voto comunitario ("VOTO {slot_id} PAREJA A/B")
+    vote_comm_match = re.search(r"^VOTO\s+(\d+)\s+PAREJA\s+([AB])\b", clean, re.IGNORECASE)
+    if vote_comm_match:
+        target_slot_id = int(vote_comm_match.group(1))
+        team_choice = vote_comm_match.group(2).upper()
+        predicted_enum = PredictedWinner.TEAM_A if team_choice == "A" else PredictedWinner.TEAM_B
+
+        s_stmt = select(TimeSlot).where(TimeSlot.id == target_slot_id)
+        s_res = await db.execute(s_stmt)
+        target_slot = s_res.scalar_one_or_none()
+        if not target_slot:
+            return f"⚠️ No se encontró el turno #{target_slot_id} para emitir tu voto."
+
+        c_res = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+        cust = c_res.scalars().first()
+        cust_id = cust.id if cust else 1
+
+        # Verificar si ya votó
+        p_stmt = select(MatchPrediction).where(
+            MatchPrediction.slot_id == target_slot_id,
+            MatchPrediction.customer_id == cust_id,
+        )
+        p_res = await db.execute(p_stmt)
+        existing_pred = p_res.scalars().first()
+        if existing_pred:
+            existing_pred.predicted_winner = predicted_enum
+        else:
+            new_pred = MatchPrediction(
+                slot_id=target_slot_id,
+                customer_id=cust_id,
+                predicted_winner=predicted_enum,
+                status=PredictionStatus.PENDING,
+                points_awarded=0,
+            )
+            db.add(new_pred)
+        await db.commit()
+        team_label = target_slot.team_a_names if team_choice == "A" else target_slot.team_b_names
+        team_desc = f"Pareja {team_choice}" + (f" ({team_label})" if team_label else "")
+        return f"🗳️ *¡VOTO REGISTRADO CON ÉXITO!*\nHas votado por *{team_desc}* para el partido #{target_slot_id}. ¡Si aciertan sumas +3 pts a tu ranking!"
+
+    # 2. Definición de duplas ("Pareja A: ... vs Pareja B: ...")
+    duplas_match = re.search(r"pareja\s*a\s*[:\-]\s*(.+?)\s*vs\s*pareja\s*b\s*[:\-]\s*(.+)", clean, re.IGNORECASE)
+    if duplas_match:
+        # Buscar el turno reciente de este jugador cerrado 4/4
+        now_bogota = get_bogota_now()
+        slots_res = await db.execute(
+            select(TimeSlot)
+            .where(
+                TimeSlot.date >= now_bogota.date(),
+                TimeSlot.booked_spots >= 4,
+                TimeSlot.sport_type == "PADEL",
+            )
+            .order_by(TimeSlot.date.asc(), TimeSlot.start_time.asc())
+        )
+        c_slots = slots_res.scalars().all()
+        target_s = None
+        for s in c_slots:
+            parts = to_participants_list(s.players_names)
+            if any(normalize_phone(p.get("phone")) == norm_phone for p in parts):
+                target_s = s
+                break
+
+        if target_s:
+            team_a = duplas_match.group(1).strip()
+            team_b = duplas_match.group(2).strip()
+            target_s.is_challenge = True
+            target_s.team_a_names = team_a
+            target_s.team_b_names = team_b
+            if not target_s.challenge_bet:
+                target_s.challenge_bet = "POINTS"
+            target_s.slot_type = "RETO"
+            await db.commit()
+            await db.refresh(target_s)
+
+            # Notificar a los 4 participantes
+            confirm_msg = (
+                f"🔥 *¡RETO CONFIRMADO Y PUBLICADO EN CARTELERA!* 🎾\n\n"
+                f"⚔️ *Pareja A:* {team_a}\n"
+                f"⚔️ *Pareja B:* {team_b}\n"
+                f"🏆 Condición: {target_s.challenge_bet}\n"
+                f"Buenas palas a ambas duplas. El público ya puede emitir sus pronósticos."
+            )
+            parts = to_participants_list(target_s.players_names)
+            for p in parts:
+                p_ph = normalize_phone(p.get("phone"))
+                if p_ph and not p_ph.startswith("+57-WA-") and not p_ph.startswith("+57-unknown") and not "#GUEST" in p_ph:
+                    try:
+                        await send_whatsapp_message(to_phone=p_ph, message_body=confirm_msg)
+                    except Exception:
+                        pass
+            return confirm_msg
+
+    # 3. Votación de modalidad de Reto (1, 2 o 3)
+    vote_val = None
+    if clean in ("1", "1️⃣", "RETO PUNTOS", "PUNTOS"):
+        vote_val = "POINTS"
+    elif clean in ("2", "2️⃣", "RETO GATORADE", "GATORADE"):
+        vote_val = "GATORADE"
+    elif clean in ("3", "3️⃣", "AMISTOSO", "PARTIDO AMISTOSO"):
+        vote_val = "FRIENDLY"
+
+    if vote_val:
+        # Buscar turno 4/4 activo donde este jugador esté inscrito
+        now_bogota = get_bogota_now()
+        slots_res = await db.execute(
+            select(TimeSlot)
+            .where(
+                TimeSlot.date >= now_bogota.date(),
+                TimeSlot.booked_spots >= 4,
+                TimeSlot.sport_type == "PADEL",
+            )
+            .order_by(TimeSlot.date.asc(), TimeSlot.start_time.asc())
+        )
+        c_slots = slots_res.scalars().all()
+        target_s = None
+        for s in c_slots:
+            parts = to_participants_list(s.players_names)
+            if any(normalize_phone(p.get("phone")) == norm_phone for p in parts):
+                target_s = s
+                break
+
+        if target_s:
+            # Registrar o actualizar voto
+            v_stmt = select(SlotChallengeVote).where(
+                SlotChallengeVote.slot_id == target_s.id,
+                SlotChallengeVote.player_phone == norm_phone,
+            )
+            v_res = await db.execute(v_stmt)
+            existing_vote = v_res.scalar_one_or_none()
+            if existing_vote:
+                existing_vote.vote = vote_val
+            else:
+                new_vote = SlotChallengeVote(
+                    slot_id=target_s.id,
+                    player_phone=norm_phone,
+                    vote=vote_val,
+                )
+                db.add(new_vote)
+            await db.commit()
+
+            # Consultar todos los votos del slot
+            all_votes_res = await db.execute(
+                select(SlotChallengeVote).where(SlotChallengeVote.slot_id == target_s.id)
+            )
+            all_votes = all_votes_res.scalars().all()
+
+            if len(all_votes) >= 4:
+                votes_set = {v.vote for v in all_votes}
+                # Unanimidad: los 4 votaron exactamente la misma opción
+                if len(votes_set) == 1 and ("POINTS" in votes_set or "GATORADE" in votes_set):
+                    chosen_option = list(votes_set)[0]
+                    target_s.is_challenge = True
+                    target_s.challenge_bet = chosen_option
+                    target_s.slot_type = "RETO"
+                    await db.commit()
+
+                    duplas_request_msg = (
+                        f"⚔️ *¡Todos de acuerdo en competir ({chosen_option})!* 🎾\n"
+                        f"Definan las parejas para asentar el reto oficial. "
+                        f"Respondan indicando la dupla (ej. 'Pareja A: Juan y Carlos vs Pareja B: David y Pipe')."
+                    )
+                    parts = to_participants_list(target_s.players_names)
+                    for p in parts:
+                        p_ph = normalize_phone(p.get("phone"))
+                        if p_ph and not p_ph.startswith("+57-WA-") and not p_ph.startswith("+57-unknown") and not "#GUEST" in p_ph:
+                            try:
+                                await send_whatsapp_message(to_phone=p_ph, message_body=duplas_request_msg)
+                            except Exception:
+                                pass
+                    return duplas_request_msg
+                elif "FRIENDLY" in votes_set or len(votes_set) > 1:
+                    target_s.is_challenge = False
+                    await db.commit()
+                    return "🎾 *Modalidad Confirmada:* Partido Amistoso sin reto competitivo. ¡A disfrutar la pista!"
+            else:
+                pending_count = 4 - len(all_votes)
+                opt_name = "Puntos de Ranking (+30)" if vote_val == "POINTS" else ("Reto Gatorade" if vote_val == "GATORADE" else "Amistoso")
+                return f"✅ Voto registrado para *{opt_name}*. Faltan {pending_count} compañero(s) por votar."
+
+    return None
+
+
 async def process_incoming_whatsapp_message(
     db: AsyncSession,
     sender_phone: str,
@@ -1520,6 +1763,10 @@ async def process_incoming_whatsapp_message(
     elif intent == "LIST":
         return await process_list_intent(db, sender_phone, sender_name, raw_text)
     else:
+        # Verificar flujo de consenso de retos o votación comunitaria antes del concierge general
+        challenge_reply = await process_challenge_consensus_and_vote(db, sender_phone, raw_text)
+        if challenge_reply:
+            return challenge_reply
         return await generate_concierge_reply(message_text=raw_text, sender_phone=sender_phone, db=db, sender_name=sender_name)
 
 
