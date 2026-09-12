@@ -10300,7 +10300,9 @@ ${data.message}`);
         } else if (isClass) {
           actionBtnHtml = `<span style="font-size: 0.65rem; color: #0284C7; font-weight: 700;">${sportIcon} ${slot.instructor_name || 'Profesor'}</span>`;
         } else if (isTournament) {
-          actionBtnHtml = `<span style="font-size: 0.65rem; color: #7C3AED; font-weight: 700;">🏆 Torneo Activo</span>`;
+          const tournNameSafe = (slot.tournament_name || 'Torneo Americano').replace(/'/g, "\\'");
+          const tournSlotIdsStr = String(slot.id);
+          actionBtnHtml = `<button type="button" onclick="event.stopPropagation(); openJoinAmericanoModal('${tournNameSafe}', '${slot.date}', '${slot.start_time}', '${tournSlotIdsStr}')" class="px-2 py-0.5 text-[10px] font-bold text-white bg-violet-600 hover:bg-violet-700 rounded transition shadow-xs">🏆 Ver Inscritos / Gestión</button>`;
         } else if (isFull) {
           actionBtnHtml = `<span class="px-2.5 py-1 text-xs font-bold text-slate-500 bg-slate-100 rounded-lg border border-slate-200">🔒 Turno Completo</span>`;
         }
@@ -10325,9 +10327,15 @@ ${data.message}`);
         let criticalBadgeHtml = isCriticalFlash ? '<span class="badge-critical-fire">🔥 CRÍTICO (&lt;3H)</span>' : '';
         let remateBtnHtml = isCriticalFlash ? `<button onclick="event.stopPropagation(); triggerSingleFlashPromo('${slot.id}', '${courtName}', '${slot.start_time}')" class="btn-card-remate-flash" title="Rematar con Promo Flash -25% por WhatsApp">⚡ Rematar Ahora</button>` : '';
 
-        const dblClickAttr = isAvailable 
-          ? `ondblclick="handleQuickSlotDblClick('${slot.id}', '${slot.court_id}', '${courtName.replace(/'/g, "\\'")}', '${slot.start_time}', '${slot.date}')"` 
-          : '';
+        let dblClickAttr = '';
+        let clickAttr = '';
+        if (isTournament) {
+          const tournNameSafe = (slot.tournament_name || 'Torneo Americano').replace(/'/g, "\\'");
+          const tournSlotIdsStr = String(slot.id);
+          clickAttr = `onclick="openJoinAmericanoModal('${tournNameSafe}', '${slot.date}', '${slot.start_time}', '${tournSlotIdsStr}')"`;
+        } else if (isAvailable) {
+          dblClickAttr = `ondblclick="handleQuickSlotDblClick('${slot.id}', '${slot.court_id}', '${courtName.replace(/'/g, "\\'")}', '${slot.start_time}', '${slot.date}')"`;
+        }
 
         let cardClass = '';
         if (isPastSlot) {
@@ -10339,6 +10347,7 @@ ${data.message}`);
         html += `
           <div class="matrix-slot-card ${themeClass} ${cardClass} ${isUrgentAlert ? 'urgent-alert-box' : ''} ${isCriticalFlash ? 'slot-on-fire' : ''}"
                style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum};"
+               ${clickAttr}
                ${dblClickAttr}>
             <div>
               <div class="card-top">
@@ -10830,8 +10839,8 @@ ${data.message}`);
             addEvent('Reserva Creada', `${nameVal} - ${data.court_name || ('Cancha ' + courtVal)} (${timeVal})`, 'green');
           }
         } else {
-          if (res.status === 409 || (data.detail && data.detail.includes('Cancha ocupada'))) {
-            alert('⚠️ Cancha ocupada: Ya existe una reserva en este horario.');
+          if (res.status === 409) {
+            alert(data.detail || '⚠️ Conflicto: Franja horaria no disponible para reserva particular.');
           } else {
             alert(`❌ Error al crear reserva: ${data.detail || data.message || 'Error en el servidor'}`);
           }

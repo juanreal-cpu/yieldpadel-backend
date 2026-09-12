@@ -1279,6 +1279,16 @@ async def create_manual_booking(
                 chk_res = await db.execute(chk_stmt)
                 clashes = chk_res.scalars().all()
                 for c_slot in clashes:
+                    if c_slot.slot_type in ("TOURNAMENT", "AMERICANO") or getattr(c_slot, "is_tournament", False) or getattr(c_slot, "tournament_type", None):
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"⚠️ Pista reservada para {c_slot.tournament_name or 'Torneo Americano'} en semana {w_idx} ({target_dt.strftime('%d/%m/%Y')}).",
+                        )
+                    if c_slot.slot_type in ("CLASS", "ACADEMY"):
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"⚠️ Pista asignada a Academia / Clase en semana {w_idx} ({target_dt.strftime('%d/%m/%Y')}).",
+                        )
                     if c_slot.status == SlotStatus.BLOCKED or c_slot.slot_type in ("MAINTENANCE", "BLOCKED"):
                         raise HTTPException(
                             status_code=status.HTTP_409_CONFLICT,
@@ -1412,14 +1422,28 @@ async def create_manual_booking(
 
         slot = None
         for s in overlapping_slots:
-            # A) Si la pista está en mantenimiento o bloqueada administrativamente
+            # REGLA 1: Pista asignada a Torneo Americano u Oficial
+            if s.slot_type in ("TOURNAMENT", "AMERICANO") or getattr(s, "is_tournament", False) or getattr(s, "tournament_type", None):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"⚠️ Pista reservada para {s.tournament_name or 'Torneo Americano'} ({s.start_time.strftime('%H:%M')} - {s.end_time.strftime('%H:%M')}). En este espacio no se pueden crear reservas particulares; para ingresar, inscríbete al torneo correspondiente."
+                )
+
+            # REGLA 2: Pista asignada a Academia / Clase
+            if s.slot_type in ("CLASS", "ACADEMY"):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"⚠️ Pista asignada a Academia / Clase ({s.start_time.strftime('%H:%M')} - {s.end_time.strftime('%H:%M')}). No está habilitada para alquiler libre."
+                )
+
+            # REGLA 3: Mantenimiento o Bloqueo Sede
             if s.status == SlotStatus.BLOCKED or s.slot_type in ("MAINTENANCE", "BLOCKED"):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"⚠️ Cancha bloqueada: La pista está en mantenimiento ({s.start_time.strftime('%H:%M')} - {s.end_time.strftime('%H:%M')})."
+                    detail=f"⚠️ Cancha bloqueada por mantenimiento o directriz de sede ({s.start_time.strftime('%H:%M')} - {s.end_time.strftime('%H:%M')})."
                 )
 
-            # B) Si el turno existente arranca a una hora DISTINTA pero se solapa (Colisión parcial)
+            # REGLA 4: Colisiones por horario y cupos
             if s.start_time != start_t:
                 # Si el turno solapado NO está libre, es una colisión prohibida
                 if s.status != SlotStatus.AVAILABLE:
@@ -1427,25 +1451,20 @@ async def create_manual_booking(
                         status_code=status.HTTP_409_CONFLICT,
                         detail=f"⚠️ Cancha ocupada: Ya existe una reserva activa en este horario ({s.start_time.strftime('%H:%M')} - {s.end_time.strftime('%H:%M')})."
                     )
-
-            # C) Si coincide exactamente la hora de inicio (s.start_time == start_t)
             else:
-                # Si ya está reservada al 100% como cancha completa o cupos llenos
-                if s.status == SlotStatus.FULLY_BOOKED or (s.booked_spots and s.booked_spots >= (s.capacity or cap)):
+                # Si coincide exactamente la hora pero ya es un turno reservado completo
+                if s.status in (SlotStatus.FULLY_BOOKED, SlotStatus.BOOKED) or (s.booked_spots and s.booked_spots >= (s.capacity or cap)):
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
-                        detail=f"⚠️ Cancha ocupada: Esta franja ({start_t.strftime('%H:%M')} - {end_t.strftime('%H:%M')}) ya está completamente reservada."
+                        detail="⚠️ Esta franja horaria ya cuenta con sus 4 cupos cubiertos o fue reservada completa."
                     )
                 
                 # Si se quiere reservar Cancha Completa pero ya hay otros jugadores inscritos
-                if mode_enum == SlotMode.FULL_COURT:
-                    curr_p = list(s.players_names or [])
-                    other_players = [p for p in curr_p if isinstance(p, dict) and p.get("phone") != client_phone]
-                    if len(other_players) > 0 or s.booked_spots > 0:
-                        raise HTTPException(
-                            status_code=status.HTTP_409_CONFLICT,
-                            detail=f"⚠️ Cancha ocupada: No puedes reservar Cancha Completa porque ya hay {len(other_players)} jugador(es) inscritos en esta franja."
-                        )
+                if mode_enum == SlotMode.FULL_COURT and s.booked_spots > 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="⚠️ No puedes reservar Cancha Completa porque ya hay jugadores con cupo individual en esta pista."
+                    )
 
                 # Si es un slot existente libre o con cupos libres para el mismo tipo, lo usamos
                 slot = s

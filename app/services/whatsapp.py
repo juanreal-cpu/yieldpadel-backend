@@ -1248,6 +1248,14 @@ async def process_join_intent(
             "Las inscripciones abiertas por WhatsApp están deshabilitadas para este horario. Comunícate directamente con recepción."
         )
 
+    if getattr(slot, "slot_type", "MATCH") in ("TOURNAMENT", "AMERICANO") or getattr(slot, "is_tournament", False) or getattr(slot, "tournament_type", None):
+        t_name = slot.tournament_name or "Torneo Americano"
+        return (
+            f"🏆 *Ese horario corresponde al Torneo Americano ({t_name})*. "
+            f"No es posible apartar cancha particular en esa franja. "
+            f"¿Deseas inscribirte al Americano? Responde *'AMERICANO'* para registrarte."
+        )
+
     participants = to_participants_list(slot.players_names)
     existing_phones = {normalize_phone(p.get("phone")) for p in participants if p.get("phone")}
 
@@ -1802,13 +1810,38 @@ async def process_availability_query(
     date_str = d.strftime("%d/%m/%Y")
     label_day = "Hoy" if d == today else d.strftime("%A").capitalize()
 
+    # Si el usuario cita o solicita una hora específica de un torneo americano
+    if query_text:
+        _, q_date, q_start, _ = parse_slot_info_from_text(query_text)
+        if q_start:
+            chk_d = q_date or d
+            tourn_stmt = select(TimeSlot).where(
+                TimeSlot.date == chk_d,
+                TimeSlot.start_time == q_start,
+                or_(
+                    TimeSlot.slot_type.in_(("TOURNAMENT", "AMERICANO")),
+                    TimeSlot.is_tournament == True,
+                    TimeSlot.tournament_type.isnot(None),
+                )
+            )
+            tourn_res = await db.execute(tourn_stmt)
+            tourn_slot = tourn_res.scalars().first()
+            if tourn_slot:
+                t_name = tourn_slot.tournament_name or "Torneo Americano"
+                return (
+                    f"🏆 *Ese horario corresponde al Torneo Americano ({t_name})*. "
+                    f"No es posible apartar cancha particular en esa franja. "
+                    f"¿Deseas inscribirte al Americano? Responde *'AMERICANO'* para registrarte."
+                )
+
     stmt = (
         select(TimeSlot)
         .options(selectinload(TimeSlot.court))
         .where(
             TimeSlot.date == d,
             cast(TimeSlot.status, String) == "AVAILABLE",
-            TimeSlot.slot_type == "MATCH",
+            TimeSlot.slot_type == "SPLIT_MATCH",
+            TimeSlot.is_tournament == False,
         )
         .order_by(TimeSlot.start_time.asc())
     )
@@ -2006,6 +2039,14 @@ async def book_full_court(
     if not slot:
         return "Ese turno ya no existe. ¿Quieres ver otras opciones disponibles?"
 
+    if getattr(slot, "slot_type", "MATCH") in ("TOURNAMENT", "AMERICANO") or getattr(slot, "is_tournament", False) or getattr(slot, "tournament_type", None):
+        t_name = slot.tournament_name or "Torneo Americano"
+        return (
+            f"🏆 *Ese horario corresponde al Torneo Americano ({t_name})*. "
+            f"No es posible apartar cancha particular en esa franja. "
+            f"¿Deseas inscribirte al Americano? Responde *'AMERICANO'* para registrarte."
+        )
+
     participants = to_participants_list(slot.players_names)
     if participants:
         return "Ese turno ya tiene jugadores inscritos y no puede reservarse como cancha completa. ¿Quieres ver otras opciones?"
@@ -2054,6 +2095,14 @@ async def join_or_create_split_match(
     slot = res.scalar_one_or_none()
     if not slot:
         return "Ese turno ya no existe. ¿Quieres ver otras opciones disponibles?"
+
+    if getattr(slot, "slot_type", "MATCH") in ("TOURNAMENT", "AMERICANO") or getattr(slot, "is_tournament", False) or getattr(slot, "tournament_type", None):
+        t_name = slot.tournament_name or "Torneo Americano"
+        return (
+            f"🏆 *Ese horario corresponde al Torneo Americano ({t_name})*. "
+            f"No es posible apartar cancha particular en esa franja. "
+            f"¿Deseas inscribirte al Americano? Responde *'AMERICANO'* para registrarte."
+        )
 
     participants = to_participants_list(slot.players_names)
     norm_phone = normalize_phone(sender_phone)
