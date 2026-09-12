@@ -9906,7 +9906,14 @@ ${data.message}`);
             container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa 'Programar Semana' para crearlos.</div>";
           }
         } else {
-          renderCalendarMatrix();
+          try {
+            renderCalendarMatrix();
+          } catch (renderErr) {
+            console.error('Error rendering calendar matrix:', renderErr);
+            if (container) {
+              container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>Hubo un inconveniente visualizando las tarjetas de la matriz. Por favor refresca la página.</div>";
+            }
+          }
         }
         if (typeof updateMetrics === 'function') updateMetrics();
       } catch (err) {
@@ -10126,12 +10133,18 @@ ${data.message}`);
         return;
       }
 
-      // Slot Cards
+      // Slot Cards & Style Variables
+      const pastBookedClass = 'opacity-60 bg-slate-100 border-slate-300 text-slate-500';
+      const pastAvailableClass = 'opacity-40 bg-slate-50 border-dashed border-slate-200 text-slate-400';
+      const activeBookedClass = 'bg-emerald-50 border-emerald-400 text-emerald-950 font-bold';
+      const activeAvailableClass = 'bg-white border-sky-300 text-slate-800 hover:border-sky-500';
+
       const { dateStr: todayStr, timeStr: currentTimeStr, hour: colHour, minute: colMin } = getColombiaDateTime();
       const isToday = (selectedDate === todayStr);
       const currentNowMin = colHour * 60 + colMin;
 
       visibleSlots.forEach(slot => {
+        try {
         let courtIdx = displayedCourts.findIndex(c => String(c.id) === String(slot.court_id));
         if (courtIdx === -1) {
           courtIdx = displayedCourts.findIndex(c => 
@@ -10360,9 +10373,16 @@ ${data.message}`);
           ? `ondblclick="handleQuickSlotDblClick('${slot.id}', '${slot.court_id}', '${courtName.replace(/'/g, "\\'")}', '${slot.start_time}', '${slot.date}')"` 
           : '';
 
+        let cardClass = '';
+        if (isPastSlot) {
+          cardClass = (slot.is_closed || (slot.booked_spots && slot.booked_spots > 0)) ? (pastBookedClass || 'opacity-60') : (pastAvailableClass || 'opacity-40');
+        } else {
+          cardClass = (slot.is_closed || (slot.booked_spots && slot.booked_spots >= 4)) ? (activeBookedClass || 'bg-emerald-50') : (activeAvailableClass || 'bg-white');
+        }
+
         html += `
-          <div class="matrix-slot-card ${themeClass} ${pastBookedClass} ${isUrgentAlert ? 'urgent-alert-box' : ''} ${isCriticalFlash ? 'slot-on-fire' : ''}"
-               style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum}; ${pastBookedStyle}"
+          <div class="matrix-slot-card ${themeClass} ${cardClass} ${isUrgentAlert ? 'urgent-alert-box' : ''} ${isCriticalFlash ? 'slot-on-fire' : ''}"
+               style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum};"
                ${dblClickAttr}>
             <div>
               <div class="card-top">
@@ -10399,6 +10419,9 @@ ${data.message}`);
             </div>
           </div>
         `;
+        } catch (slotErr) {
+          console.error(`Error rendering slot card #${slot ? slot.id : 'unknown'}:`, slotErr);
+        }
       });
 
       container.innerHTML = html;
