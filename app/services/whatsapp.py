@@ -428,6 +428,23 @@ MONTHS_MAP = {
 }
 
 
+def sanitize_phone(phone_str: Optional[str]) -> str:
+    """
+    Sanitiza el número telefónico para Meta Graph API Standard:
+    - Elimina cualquier caracter no numérico.
+    - Si empieza con '3' y tiene 10 dígitos (ej. 3132058547), antepone '57': '57' + clean.
+    - Si empieza con '57' y tiene 12 dígitos, lo deja tal cual.
+    """
+    if not phone_str:
+        return ""
+    clean = re.sub(r"\D", "", str(phone_str))
+    if len(clean) == 10 and clean.startswith("3"):
+        return "57" + clean
+    if len(clean) == 12 and clean.startswith("57"):
+        return clean
+    return clean
+
+
 def normalize_phone(phone: Optional[str]) -> str:
     """Estandariza números de teléfono al formato canónico +57..."""
     if not phone:
@@ -2952,10 +2969,12 @@ async def send_whatsapp_message(to_phone: str, message_body: str) -> bool:
     phone_number_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID") or getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", None)
     access_token = os.getenv("WHATSAPP_ACCESS_TOKEN") or getattr(settings, "WHATSAPP_ACCESS_TOKEN", None)
 
-    clean_to = to_phone.lstrip("+").strip()
+    clean_to = sanitize_phone(to_phone) or to_phone.lstrip("+").strip()
+
+    logger.info(f"[WHATSAPP OUTGOING MANUAL BOOKING] Enviando a {clean_to}...")
 
     if not phone_number_id or not access_token:
-        logger.warning("Faltan credenciales WHATSAPP_PHONE_NUMBER_ID o WHATSAPP_ACCESS_TOKEN.")
+        logger.warning(f"Faltan credenciales WHATSAPP_PHONE_NUMBER_ID o WHATSAPP_ACCESS_TOKEN. No se envió a {clean_to}.")
         print(f"[WHATSAPP OUTGOING] AVISO: Faltan credenciales en entorno. No se envió a {clean_to}.")
         print(f"[WHATSAPP OUTGOING PREVIEW a {clean_to}]:\n{message_body}\n")
         return False
@@ -2995,7 +3014,7 @@ async def send_whatsapp_message(to_phone: str, message_body: str) -> bool:
                     err_detail = resp.json()
                 except Exception:
                     err_detail = resp.text
-                logger.error(f"Error Meta Graph API ({resp.status_code}) enviando a {clean_to}: {err_detail}")
+                logger.error(f"[WHATSAPP ERROR] Error Meta Graph API ({resp.status_code}) enviando a {clean_to}: {err_detail}")
                 print(f"[WHATSAPP OUTGOING] ERROR Meta Graph API ({resp.status_code}) para {clean_to}: {err_detail}")
                 return False
     except Exception as exc:
