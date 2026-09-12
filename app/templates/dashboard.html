@@ -5327,9 +5327,14 @@
           </div>
         </div>
 
-        <div class="modal-actions">
-          <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-primary">Guardar Asignación</button>
+        <div class="modal-actions flex items-center justify-between gap-2">
+          <button type="button" onclick="resetSlotToAvailable(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1">
+            <span>🗑️</span> <span>Vaciar / Dejar Disponible</span>
+          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar Asignación</button>
+          </div>
         </div>
       </form>
     </div>
@@ -10351,12 +10356,14 @@ ${data.message}`);
         let criticalBadgeHtml = isCriticalFlash ? '<span class="badge-critical-fire">🔥 CRÍTICO (&lt;3H)</span>' : '';
         let remateBtnHtml = isCriticalFlash ? `<button onclick="event.stopPropagation(); triggerSingleFlashPromo('${slot.id}', '${courtName}', '${slot.start_time}')" class="btn-card-remate-flash" title="Rematar con Promo Flash -25% por WhatsApp">⚡ Rematar Ahora</button>` : '';
 
-        const pastBookedClass = isPastBooked ? 'opacity-50 card-past-booked' : '';
-        const pastBookedStyle = isPastBooked ? 'opacity: 0.5;' : '';
+        const dblClickAttr = isAvailable 
+          ? `ondblclick="handleQuickSlotDblClick('${slot.id}', '${slot.court_id}', '${courtName.replace(/'/g, "\\'")}', '${slot.start_time}', '${slot.date}')"` 
+          : '';
 
         html += `
           <div class="matrix-slot-card ${themeClass} ${pastBookedClass} ${isUrgentAlert ? 'urgent-alert-box' : ''} ${isCriticalFlash ? 'slot-on-fire' : ''}"
-               style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum}; ${pastBookedStyle}">
+               style="grid-row: ${rowStart} / span ${rowSpan}; grid-column: ${colNum}; ${pastBookedStyle}"
+               ${dblClickAttr}>
             <div>
               <div class="card-top">
                 <span class="card-time">${slot.start_time} - ${slot.end_time}</span>
@@ -10547,16 +10554,36 @@ ${data.message}`);
     window.seedWeeklySlots = seedWeeklySlots;
     window.seedFiveCourts = seedWeeklySlots;
 
+    // Manejo de Doble Clic en Franjas Disponibles de la Grilla
+    window.handleQuickSlotDblClick = function(slotId, courtId, courtName, startTime, date) {
+      const cleanCourt = courtName || 'Cancha';
+      const cleanTime = startTime || '';
+      const cleanDate = date || selectedDate || getColombiaTodayString();
+      if (confirm(`¿Deseas crear una nueva reserva en ${cleanCourt} a las ${cleanTime} (${cleanDate})?`)) {
+        openManualBookingModal({
+          court_id: courtId,
+          date: cleanDate,
+          start_time: cleanTime,
+          slot_id: slotId
+        });
+      }
+    };
+
     // ========================================================
     // MODAL RESERVA PUNTUAL INDIVIDUAL DIRECTA
     // ========================================================
-    function openManualBookingModal() {
+    function openManualBookingModal(defaults = {}) {
       const modal = document.getElementById('modal-manual-booking');
       if (!modal) return;
 
       const dateInput = document.getElementById('mb-date');
       if (dateInput) {
-        dateInput.value = (typeof selectedDate !== 'undefined' && selectedDate) ? selectedDate : getColombiaTodayString();
+        dateInput.value = (defaults && defaults.date) ? defaults.date : ((typeof selectedDate !== 'undefined' && selectedDate) ? selectedDate : getColombiaTodayString());
+      }
+
+      const timeInput = document.getElementById('mb-start-time');
+      if (timeInput && defaults && defaults.start_time) {
+        timeInput.value = defaults.start_time.substring(0, 5);
       }
 
       // Reset campos CRM y alertas
@@ -10618,6 +10645,10 @@ ${data.message}`);
         if (opts) {
           courtSelect.innerHTML = opts;
         }
+      }
+
+      if (courtSelect && defaults && defaults.court_id) {
+        courtSelect.value = String(defaults.court_id);
       }
 
       modal.classList.add('active');
@@ -11576,6 +11607,42 @@ ${data.message}`);
       if (modal) modal.classList.remove('active');
     }
     window.closeReserveOrBlockModal = closeReserveOrBlockModal;
+
+    async function resetSlotToAvailable(slotId) {
+      if (!slotId) {
+        alert('Identificador de turno inválido.');
+        return;
+      }
+      if (!confirm('¿Estás seguro de que deseas vaciar y liberar este turno? Se borrarán los jugadores asignados y volverá a estar disponible.')) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/v1/slots/${slotId}/reset-to-available`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'ok') {
+          if (typeof window.showCustomToast === 'function') {
+            window.showCustomToast('Turno Liberado', 'La cancha quedó libre para nuevas reservas.', '🟢');
+          } else if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('Turno Liberado', 'La cancha quedó libre para nuevas reservas.');
+          } else {
+            alert('✅ Turno liberado y disponible nuevamente.');
+          }
+          closeReserveOrBlockModal();
+          if (typeof fetchSlots === 'function') {
+            await fetchSlots();
+          }
+        } else {
+          alert(`❌ Error al liberar turno: ${data.detail || data.message || 'Error en el servidor'}`);
+        }
+      } catch (err) {
+        console.error('Error al liberar turno:', err);
+        alert('❌ Error de conexión al intentar liberar el turno.');
+      }
+    }
+    window.resetSlotToAvailable = resetSlotToAvailable;
 
     function onSlotTypeChange(val) {
       const instrGroup = document.getElementById('rb-instructor-group');

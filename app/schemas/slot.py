@@ -251,4 +251,5 @@ class ManualBookingRequest(BaseModel):
     category: Optional[str] = "4ta"
     client_tier: Optional[str] = "ESTANDAR"
     is_recurring: Optional[bool] = False
-    recurrence_weeks: Optional[int] = 4
+    recurrence_weeks: Optional[int] = 4
+    recurrence_group_id: Optional[Union[str, uuid.UUID]] = None

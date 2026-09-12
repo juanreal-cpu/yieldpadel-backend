@@ -1235,7 +1235,14 @@ async def create_manual_booking(
                                 )
 
             # B) Sin colisiones -> Crear / Actualizar los slots del lote
-            recurrence_group_id = str(uuid.uuid4())
+            recurrence_val: Optional[uuid.UUID] = None
+            if getattr(payload, "recurrence_group_id", None):
+                try:
+                    recurrence_val = uuid.UUID(str(payload.recurrence_group_id))
+                except (ValueError, TypeError):
+                    recurrence_val = None
+            if recurrence_val is None:
+                recurrence_val = uuid.uuid4()
             created_slots = []
             for target_dt in recurrence_dates:
                 ex_stmt = (
@@ -1256,7 +1263,7 @@ async def create_manual_booking(
                     target_slot.price = total_price
                     target_slot.price_per_player_cop = total_price / (target_slot.capacity or cap)
                     target_slot.sport_type = sport
-                    target_slot.recurrence_group_id = recurrence_group_id
+                    target_slot.recurrence_group_id = recurrence_val
                     curr_players = list(target_slot.players_names or [])
                     if not any(isinstance(p, dict) and p.get("phone") == client_phone for p in curr_players):
                         p_entry = dict(player_entry)
@@ -1295,7 +1302,7 @@ async def create_manual_booking(
                         instructor_name=None,
                         is_promo=False,
                         sport_type=sport,
-                        recurrence_group_id=recurrence_group_id,
+                        recurrence_group_id=recurrence_val,
                     )
                     db.add(new_slot)
                     created_slots.append(new_slot)
@@ -1304,7 +1311,7 @@ async def create_manual_booking(
             return {
                 "status": "ok",
                 "is_recurring": True,
-                "recurrence_group_id": recurrence_group_id,
+                "recurrence_group_id": str(recurrence_val),
                 "weeks_booked": weeks,
                 "message": f"Reserva fija confirmada por {weeks} semanas consecutivas.",
                 "dates": [str(d) for d in recurrence_dates],
@@ -1480,6 +1487,57 @@ async def create_manual_booking(
         raise HTTPException(
             status_code=500,
             detail=f"Error al procesar reserva manual: {str(exc)}",
+        )
+
+
+@router.post("/{slot_id}/reset-to-available", summary="Resetear y vaciar turno a Disponible")
+async def reset_slot_to_available(
+    slot_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Libera un turno por completo, reseteando cupos, jugadores y estado a AVAILABLE.
+    """
+    try:
+        stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id)
+        res = await db.execute(stmt)
+        slot = res.scalars().first()
+        if not slot:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+
+        slot.status = SlotStatus.AVAILABLE
+        slot.booked_spots = 0
+        slot.players_names = []
+        slot.mode = SlotMode.SPLIT_MATCH
+        slot.is_closed = False
+        if hasattr(slot, "customer_name"):
+            slot.customer_name = None
+        if hasattr(slot, "customer_phone"):
+            slot.customer_phone = None
+        if hasattr(slot, "instructor_name"):
+            slot.instructor_name = None
+        if hasattr(slot, "slot_type"):
+            slot.slot_type = "MATCH"
+        if hasattr(slot, "recurrence_group_id"):
+            slot.recurrence_group_id = None
+
+        await db.commit()
+        await db.refresh(slot)
+
+        return {
+            "status": "ok",
+            "message": "Turno liberado y disponible nuevamente.",
+            "slot_id": slot.id,
+            "slot_status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Error en reset_slot_to_available: {traceback.format_exc()}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al resetear turno a disponible: {str(exc)}",
         )
 
 
