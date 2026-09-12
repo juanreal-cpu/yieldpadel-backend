@@ -8342,8 +8342,8 @@ async function loadCRMDirectory() {
           console.warn("Fetch CRM falló, usando datos base:", fetchErr);
         }
 
-        if (!customers || !Array.isArray(customers) || customers.length === 0) {
-          customers = DEFAULT_CRM_PLAYERS;
+        if (!customers || !Array.isArray(customers)) {
+          customers = [];
         }
         window.allCRMCustomers = customers;
         window.cachedPlayers = customers;
@@ -8438,10 +8438,15 @@ async function loadCRMDirectory() {
         }
 
         if (!customers || customers.length === 0) {
-          const emptyMsg = currentCRMSegment === 'PLAYING_NOW' 
-            ? 'No hay jugadores en pista en este momento.' 
-            : 'No hay jugadores registrados con los filtros seleccionados.';
-          tbody.innerHTML = `<tr><td colspan="10" style="padding: 2.5rem; text-align: center; color: #64748B;">${emptyMsg}</td></tr>`;
+          window.allCRMCustomers = [];
+          window.cachedPlayers = [];
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="10" class="py-12 text-center text-slate-400 text-sm font-semibold">
+                🎾 No hay socios registrados en el CRM. Agrega tu primer cliente con '+ Nuevo Jugador'.
+              </td>
+            </tr>
+          `;
           return;
         }
 
@@ -8592,152 +8597,7 @@ async function loadCRMDirectory() {
         filterCRMTable();
       } catch (err) {
         console.error('Error loading CRM directory:', err);
-        try {
-          let h = '';
-          DEFAULT_CRM_PLAYERS.forEach((c, idx) => {
-            const pos = idx + 1;
-            let posClass = 'badge-rank-other';
-            if (pos === 1) posClass = 'badge-rank-1';
-            else if (pos === 2) posClass = 'badge-rank-2';
-            else if (pos === 3) posClass = 'badge-rank-3';
-
-            const isVip = (c.client_type || '').toLowerCase().includes('vip') || (c.client_type || '').toLowerCase().includes('socio');
-            const typeBadge = isVip
-              ? '<span style="font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;">VIP</span>'
-              : `<span style="font-size: 0.65rem; color: #64748B;">${c.client_type || 'Estándar'}</span>`;
-
-            const diceBearFallback = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.name || 'Padel')}&backgroundColor=0f172a,10b981&textColor=ffffff`;
-            const playerRoleBadge = c.is_minor
-              ? '<span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 inline-flex items-center gap-1 shadow-sm">👦 Semillero Kids</span>'
-              : (isVip
-                ? '<span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center gap-1 shadow-sm">💎 Socio VIP</span>'
-                : '<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-1 shadow-sm">👤 Estándar</span>');
-
-            // Membresía y Vigencia
-            const tier = (c.membership_tier || 'ESTANDAR').toUpperCase();
-            let memValidityBadge = '';
-            if (tier === 'ESTANDAR') {
-              memValidityBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-100 text-slate-500 border border-slate-200">Estándar</span>`;
-            } else {
-              let daysLeft = 30;
-              let statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-              let statusText = '🟢 Activa';
-              if (c.membership_end_date) {
-                const today = new Date();
-                const end = new Date(c.membership_end_date);
-                daysLeft = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                if (daysLeft < 0) {
-                  statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
-                  statusText = '🔴 Vencida';
-                } else if (daysLeft <= 5) {
-                  statusBadge = 'bg-amber-100 text-amber-800 border-amber-300';
-                  statusText = `🟠 Expira en ${daysLeft}d`;
-                } else {
-                  statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-                  statusText = `🟢 ${daysLeft}d`;
-                }
-              }
-              memValidityBadge = `
-                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                  <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">${tier}</span>
-                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${statusBadge}">${statusText}</span>
-                </div>
-              `;
-            }
-
-            // Género
-            const gender = c.gender || 'No especificado';
-            const genderBadge = (gender === 'Femenino')
-              ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-pink-50 text-pink-700 border border-pink-200">👩 F</span>'
-              : ((gender === 'Masculino')
-                ? '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-50 text-blue-700 border border-blue-200">👨 M</span>'
-                : `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-50 text-slate-600 border border-slate-200">🧑 ${gender}</span>`);
-
-            // Música y Horario Chips
-            const musicChip = c.preferred_music
-              ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">🎵 ${c.preferred_music}</span>`
-              : '<span class="text-slate-400 text-xs">-</span>';
-
-            const timeChip = c.preferred_play_time
-              ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">⏰ ${c.preferred_play_time}</span>`
-              : '<span class="text-slate-400 text-xs">-</span>';
-
-            h += `
-              <tr style="border-bottom: 1px solid #F1F5F9;">
-                <td style="padding: 0.85rem 1rem;">
-                  <span class="badge-rank ${posClass}">${pos}</span>
-                </td>
-                <td style="padding: 0.85rem 1rem;">
-                  <div class="flex items-start gap-3 flex-shrink-0" style="display: flex; align-items: flex-start; gap: 0.75rem; flex-shrink: 0;">
-                    <img src="${(c.avatar_url && c.avatar_url.trim() !== '') ? c.avatar_url : diceBearFallback}" 
-                         alt="${(c.name || 'Jugador').replace(/"/g, '&quot;')}" 
-                         onclick="window.openCustomerModal('edit', ${c.id})" 
-                         class="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-sm bg-slate-900 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition flex-shrink-0" 
-                         style="width: 3rem; height: 3rem; border-radius: 9999px; object-fit: cover; border: 2px solid #10B981; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12); background: #0F172A; flex-shrink: 0;"
-                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt || 'Jugador') + '&background=0D8ABC&color=fff';">
-                    <div class="flex flex-col items-start min-w-0" style="display: flex; flex-direction: column; align-items: flex-start; min-width: 0;">
-                      <div class="flex items-center gap-2 flex-wrap" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <span class="font-extrabold text-slate-900 text-sm leading-tight hover:text-emerald-600 cursor-pointer" onclick="window.openCustomerModal('edit', ${c.id})" style="font-weight: 800; color: #0F172A; font-size: 0.875rem; line-height: 1.25; cursor: pointer;">${c.name}</span>
-                        ${playerRoleBadge}
-                        ${c.is_playing_now ? `
-                          <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; display: inline-flex; align-items: center; gap: 0.25rem;">
-                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span>
-                            En ${c.active_court_name}
-                          </span>
-                        ` : ''}
-                      </div>
-                      <span class="text-xs text-slate-500 font-medium leading-normal" style="font-size: 0.75rem; color: #64748B; font-weight: 500; line-height: 1.4;">${c.phone || '-'}</span>
-                      ${typeBadge ? `<div style="margin-top: 0.2rem;">${typeBadge}</div>` : ''}
-                    </div>
-                  </div>
-                </td>
-                <td style="padding: 0.85rem 1rem;">
-                  ${genderBadge}
-                </td>
-                <td style="padding: 0.85rem 1rem;">
-                  ${musicChip}
-                </td>
-                <td style="padding: 0.85rem 1rem;">
-                  ${timeChip}
-                </td>
-                <td style="padding: 0.85rem 1rem;">
-                  ${memValidityBadge}
-                </td>
-                <td style="padding: 0.85rem 1rem;">
-                  <span style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
-                    ${c.category || '4ta'}
-                  </span>
-                </td>
-                <td style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: #0F172A;">
-                  ${c.total_bookings_completed || 0} turnos
-                </td>
-                <td style="padding: 0.85rem 1rem;">
-                  <div style="display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start;">
-                    <span style="font-weight: 800; color: #7C3AED; font-size: 0.95rem;">
-                      ${c.ranking_points || 0} pts
-                    </span>
-                  </div>
-                </td>
-                <td class="px-4 py-3 font-extrabold text-amber-600 text-sm">
-                  🪙 ${Number(c.wallet_balance || 0).toLocaleString('es-CO')} pts
-                </td>
-                <td style="padding: 0.85rem 1rem; text-align: center; min-width: 180px;">
-                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; min-width: 0;">
-                    <button type="button" onclick="window.openCustomerModal('edit', ${c.id})" style="padding: 0.3rem 0.7rem; font-size: 0.75rem; font-weight: 700; background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; border-radius: 0.5rem; cursor: pointer; white-space: nowrap;" title="Editar Perfil CRM">
-                      ✏️ Editar
-                    </button>
-                    <button type="button" onclick="openChallengeModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" style="padding: 0.3rem 0.7rem; font-size: 0.75rem; font-weight: 700; background: #F59E0B; color: #FFFFFF; border: none; border-radius: 0.5rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.2rem; white-space: nowrap;" title="Lanzar Reto Oficial">
-                      <span>⚔️</span> <span>Retar</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            `;
-          });
-          tbody.innerHTML = h;
-        } catch (e) {
-          tbody.innerHTML = '<tr><td colspan="10" style="padding: 2rem; text-align: center; color: #64748B;">No hay datos de jugadores disponibles.</td></tr>';
-        }
+        tbody.innerHTML = '<tr><td colspan="10" style="padding: 2.5rem; text-align: center; color: #EF4444; font-weight: 600;">⚠️ Error de conexión al cargar socios del CRM. Por favor reintenta en unos momentos.</td></tr>';
       }
     }
 
