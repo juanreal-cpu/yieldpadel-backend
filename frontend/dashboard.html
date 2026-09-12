@@ -9972,8 +9972,11 @@ ${data.message}`);
           isCriticalFlash = false;
         }
 
+        const currentCourtObj = displayedCourts[courtIdx] || {};
+        const courtName = slot.court_name || (slot.court ? slot.court.name : '') || currentCourtObj.name || `Pista ${courtIdx + 1}`;
+
         let criticalBadgeHtml = isCriticalFlash ? '<span class="badge-critical-fire">🔥 CRÍTICO (&lt;3H)</span>' : '';
-        let remateBtnHtml = isCriticalFlash ? `<button onclick="triggerFlashPromoForSlot(${slot.id})" class="btn-card-remate-flash" title="Rematar con Promo Flash -25% por WhatsApp">⚡ Rematar Ahora</button>` : '';
+        let remateBtnHtml = isCriticalFlash ? `<button onclick="event.stopPropagation(); triggerSingleFlashPromo('${slot.id}', '${courtName}', '${slot.start_time}')" class="btn-card-remate-flash" title="Rematar con Promo Flash -25% por WhatsApp">⚡ Rematar Ahora</button>` : '';
 
         const pastBookedClass = isPastBooked ? 'opacity-50 card-past-booked' : '';
         const pastBookedStyle = isPastBooked ? 'opacity: 0.5;' : '';
@@ -13282,6 +13285,34 @@ ${data.message}`);
     window.confirmPOSCheckout = confirmPOSCheckout;
 
     // --- Activación de Remate Flash (-25%) ---
+    function triggerSingleFlashPromo(slotId, courtName, startTime) {
+      if (!slotId) return;
+      const ok = confirm(`¿Aplicar Remate Flash (-25%) a ${courtName} a las ${startTime} y notificar a jugadores frecuentes?`);
+      if (!ok) return;
+
+      fetch(`/api/v1/slots/${slotId}/apply-flash-promo`, { method: 'POST' })
+        .then(r => {
+          if (!r.ok) throw new Error('Fallo en la petición de remate flash');
+          return r.json();
+        })
+        .then(data => {
+          const newPriceVal = Number(data.new_price || data.discounted_price || 0);
+          if (typeof showCustomToast === 'function') {
+            showCustomToast('⚡ Remate Aplicado', `Tarifa reducida a $${newPriceVal.toLocaleString('es-CO')} COP y difusión enviada.`, '🔥');
+          } else if (typeof showDarkToast === 'function') {
+            showDarkToast('⚡ Remate Aplicado', `Tarifa reducida a $${newPriceVal.toLocaleString('es-CO')} COP y difusión enviada.`);
+          } else {
+            alert(`⚡ Remate Aplicado: Tarifa reducida a $${newPriceVal.toLocaleString('es-CO')} COP y difusión enviada.`);
+          }
+          if (typeof fetchSlots === 'function') fetchSlots();
+        })
+        .catch(err => {
+          console.error('Error al aplicar remate a este turno:', err);
+          alert('Error al aplicar remate a este turno.');
+        });
+    }
+    window.triggerSingleFlashPromo = triggerSingleFlashPromo;
+
     async function triggerFlashPromo(slotId) {
       if (!slotId) return;
       const ok = confirm("⚡ Remate Flash: Se aplicará un 25% de descuento sobre la tarifa base de este turno y se actualizará su precio inmediatamente. ¿Deseas activarlo?");

@@ -1516,6 +1516,20 @@ async def apply_flash_promo(
                 if ph and not ph.startswith("+57-WA-") and not ph.startswith("+57-unknown"):
                     recurrent_phones.add(ph)
 
+    # Consultar también en customers por franja preferida coincidente si faltan números
+    if len(recurrent_phones) < 5:
+        hour_prefix = f"{slot.start_time.hour:02d}:"
+        cust_stmt = select(Customer.phone).where(
+            Customer.phone.is_not(None),
+            Customer.phone != "",
+            (Customer.preferred_play_time.ilike(f"%{hour_prefix}%") | Customer.notes.ilike(f"%{hour_prefix}%"))
+        ).limit(10)
+        cust_res = await db.execute(cust_stmt)
+        for c_phone in cust_res.scalars().all():
+            ph = normalize_phone(c_phone)
+            if ph:
+                recurrent_phones.add(ph)
+
     st_str = slot.start_time.strftime("%I:%M %p").lstrip("0")
     et_str = slot.end_time.strftime("%I:%M %p").lstrip("0")
     c_name = slot.court.name if slot.court else "Cancha"
@@ -1549,6 +1563,7 @@ async def apply_flash_promo(
         "court_name": c_name,
         "original_price": float(original_price),
         "discounted_price": float(discounted_price),
+        "new_price": float(discounted_price),
         "is_promo": slot.is_promo,
         "recurrent_players_notified": notified_count,
     }
