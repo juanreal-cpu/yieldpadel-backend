@@ -3810,41 +3810,111 @@
         <!-- ======================================================== -->
         <!-- VISTA 5: 💡 MOTOR DE YIELD & INDICADORES                -->
         <!-- ======================================================== -->
+        <!-- ======================================================== -->
+        <!-- VISTA 5: 💡 MOTOR DE YIELD & INDICADORES                -->
+        <!-- ======================================================== -->
         <div id="view-yield" class="view-section hidden">
-          <div style="max-width: 1050px; margin: 0 auto;">
-            <div style="margin-bottom: 1.5rem;">
+          <div style="max-width: 1100px; margin: 0 auto;" class="space-y-6">
+            <div style="margin-bottom: 1rem;">
               <h2 style="font-size: 1.35rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem;">
-                <span>💡</span> Motor de Yield & Indicadores Clave
+                <span>🧠</span> Motor Econométrico de Yield Management & Dynamic Pricing
               </h2>
               <p style="font-size: 0.8rem; color: #64748B; margin-top: 0.25rem;">
-                Monitoreo de ingresos por cancha disponible (RevPAST), ocupación y tarifas efectivas.
+                Optimización algorítmica de tarifas basada en probabilidad histórica de llenado (\(P_{fill}\)), elasticidad (\(e = -1.2\)), Lead Time sigmoidal y benchmark de competencia local.
               </p>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-              <div class="sidebar-card">
-                <div class="sidebar-title">
-                  <span>RevPAST Proyectado</span>
-                  <span style="color: #059669; font-weight: 700; font-size: 0.72rem;">Meta: $1.5M</span>
+            <!-- KPI Cards Superiores -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+              <div class="sidebar-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">RevPAST Proyectado</span>
+                  <span style="color: #059669; font-weight: 700; font-size: 0.72rem;" class="bg-emerald-50 px-2 py-0.5 rounded">Meta: $1.5M</span>
                 </div>
-                <div style="font-size: 1.8rem; font-weight: 800; color: #0284C7; font-family: ui-monospace, monospace;">$1.200.000 COP</div>
-                <p style="font-size: 0.75rem; color: #64748B; margin-top: 0.5rem;">
+                <div style="font-size: 1.6rem; font-weight: 800; color: #0284C7; font-family: ui-monospace, monospace; margin-top: 0.25rem;">$1.200.000 COP</div>
+                <p style="font-size: 0.72rem; color: #64748B; margin-top: 0.35rem;">
                   Ingreso promedio generado por cancha activa durante la jornada.
                 </p>
-                <div class="kpi-progress" style="height: 8px; margin-top: 0.75rem;">
-                  <div class="kpi-progress-bar" style="width: 80%;"></div>
+                <div class="kpi-progress" style="height: 6px; margin-top: 0.5rem; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                  <div class="kpi-progress-bar" style="width: 80%; height: 100%; background: #0284C7;"></div>
                 </div>
               </div>
 
-              <div class="sidebar-card">
-                <div class="sidebar-title">
-                  <span>Regla Last-Minute Activa</span>
-                  <span style="color: #EF4444; font-weight: 700; font-size: 0.72rem;">Promo Flash</span>
+              <div class="sidebar-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Regla Last-Minute</span>
+                  <span style="color: #EF4444; font-weight: 700; font-size: 0.72rem;" class="bg-rose-50 px-2 py-0.5 rounded">Promo Flash</span>
                 </div>
-                <div style="font-size: 1.2rem; font-weight: 800; color: #EF4444;">-25% de Descuento</div>
-                <p style="font-size: 0.75rem; color: #64748B; margin-top: 0.5rem;">
-                  Se activa automáticamente cuando faltan menos de 3 horas para el turno y la pista sigue disponible.
+                <div style="font-size: 1.4rem; font-weight: 800; color: #EF4444; margin-top: 0.25rem;">-25% a -30% Máx</div>
+                <p style="font-size: 0.72rem; color: #64748B; margin-top: 0.35rem;">
+                  Decaimiento sigmoide (\(L_t\)) cuando faltan &lt; 3h para el turno libre hoy.
                 </p>
+              </div>
+
+              <div class="sidebar-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Elasticidad de Demanda</span>
+                  <span style="color: #6366F1; font-weight: 700; font-size: 0.72rem;" class="bg-indigo-50 px-2 py-0.5 rounded">\(e = -1.2\)</span>
+                </div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #4338CA; margin-top: 0.25rem;">Multiplicador Cuantitativo</div>
+                <p style="font-size: 0.72rem; color: #64748B; margin-top: 0.35rem;">
+                  \(Multiplier = (P_{fill} / 0.70)^{1 / |e|}\). Capado si competencia es &gt; 15% más barata.
+                </p>
+              </div>
+
+              <div class="sidebar-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Piso de Seguridad</span>
+                  <span style="color: #D97706; font-weight: 700; font-size: 0.72rem;" class="bg-amber-50 px-2 py-0.5 rounded">Garantía Margen</span>
+                </div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #D97706; font-family: ui-monospace, monospace; margin-top: 0.25rem;">$60.000 COP</div>
+                <p style="font-size: 0.72rem; color: #64748B; margin-top: 0.35rem;">
+                  Tarifa piso por cancha. Redondeo automático al millar más cercano ($1.000 COP).
+                </p>
+              </div>
+            </div>
+
+            <!-- Desglose Analítico y Tabla de Sugerencias de Precios en Vivo -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <span>⚡</span> Tabla de Optimización y Recomendación de Precios por Turno
+                  </h3>
+                  <p class="text-xs text-slate-500">
+                    Inspección del precio actual vs tarifa óptima calculada por el motor econométrico para la jornada seleccionada.
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="loadYieldRecommendationsTable()" class="px-3 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                    <span>🔄</span> Actualizar Análisis
+                  </button>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse" style="font-size: 0.78rem;">
+                  <thead>
+                    <tr class="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold">
+                      <th class="py-2.5 px-3">Hora / Turno</th>
+                      <th class="py-2.5 px-3">Deporte</th>
+                      <th class="py-2.5 px-3 text-right">Tarifa Actual</th>
+                      <th class="py-2.5 px-3 text-center">P_fill (8 Semanas)</th>
+                      <th class="py-2.5 px-3 text-right">Benchmark Mercado</th>
+                      <th class="py-2.5 px-3 text-right">Precio Sugerido</th>
+                      <th class="py-2.5 px-3 text-center">Variación</th>
+                      <th class="py-2.5 px-3">Veredicto Analítico</th>
+                      <th class="py-2.5 px-3 text-center">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="yield-recommendations-tbody" class="divide-y divide-slate-100">
+                    <tr>
+                      <td colspan="9" class="py-6 text-center text-slate-400">
+                        Haga clic en 'Actualizar Análisis' para cargar las recomendaciones econométricas.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -9933,6 +10003,11 @@ ${data.message}`);
               <div>
                 <div class="card-price">${priceFormatted}</div>
                 ${priceSubHtml}
+                ${!isPastSlot ? `
+                  <button type="button" onclick="event.stopPropagation(); inspectAndApplySmartPrice(${slot.id})" class="mt-1 px-1.5 py-0.5 text-[9px] font-black rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer flex items-center gap-1" title="Ver análisis econométrico de Yield Management">
+                    <span>🧠</span> <span>Yield IA</span>
+                  </button>
+                ` : ''}
               </div>
               <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
                 ${actionBtnHtml}
@@ -16729,6 +16804,166 @@ Jugador: ${checkData.player_name}`);
         alert('Fallo de conexión al guardar el perfil del jugador.');
       }
     };
+
+    // =========================================================================
+    // MODULO: 🧠 YIELD MANAGEMENT & DYNAMIC PRICING ENGINE (Frontend JS)
+    // =========================================================================
+    window.yieldRecommendationsCache = [];
+
+    async function loadYieldRecommendationsTable() {
+      const tbody = document.getElementById('yield-recommendations-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="py-6 text-center text-slate-500 font-bold">
+            <span class="animate-spin inline-block mr-2">⚙️</span> Calculando recomendaciones econométricas en tiempo real...
+          </td>
+        </tr>
+      `;
+
+      try {
+        const dVal = window.selectedDate || (typeof getColombiaTodayString === 'function' ? getColombiaTodayString() : new Date().toISOString().split('T')[0]);
+        const sVal = window.currentSport || 'PADEL';
+        const res = await fetch(`/api/v1/yield/recommendations/active?date_str=${encodeURIComponent(dVal)}&sport=${encodeURIComponent(sVal)}`);
+        if (!res.ok) throw new Error('Error al cargar recomendaciones de yield');
+        const data = await res.json();
+        const list = data.recommendations || [];
+        window.yieldRecommendationsCache = list;
+
+        if (list.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="9" class="py-6 text-center text-slate-400">
+                No hay turnos activos para ${dVal} (${sVal}).
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = list.map(r => {
+          const deltaColor = r.delta_cop > 0 ? 'text-emerald-600 font-black' : (r.delta_cop < 0 ? 'text-rose-600 font-black' : 'text-slate-500 font-bold');
+          const deltaSign = r.delta_cop > 0 ? '+' : '';
+          const pFillPct = Math.round((r.metrics?.historical_fill_rate || 0) * 100);
+          
+          let verdictBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-slate-100 text-slate-700">MANTENER</span>';
+          if (r.analytical_verdict === 'SUBIR_TARIFA') {
+            verdictBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">🚀 CAPTURAR MARGEN</span>';
+          } else if (r.analytical_verdict === 'REBAJAR_LIQUIDACION') {
+            verdictBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-800">⚡ REMATE FLASH</span>';
+          }
+
+          return `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="py-2.5 px-3 font-mono font-bold text-slate-800">${r.start_time}</td>
+              <td class="py-2.5 px-3 font-semibold text-slate-600">${r.sport_type}</td>
+              <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-700">$${Number(r.current_price).toLocaleString('es-CO')}</td>
+              <td class="py-2.5 px-3 text-center font-mono font-bold text-indigo-700">${pFillPct}%</td>
+              <td class="py-2.5 px-3 text-right font-mono text-slate-500">$${Number(r.metrics?.competitor_benchmark_avg || 0).toLocaleString('es-CO')}</td>
+              <td class="py-2.5 px-3 text-right font-mono font-black text-indigo-900 bg-indigo-50/50">$${Number(r.recommended_price).toLocaleString('es-CO')}</td>
+              <td class="py-2.5 px-3 text-center font-mono text-xs ${deltaColor}">
+                ${deltaSign}${Number(r.delta_cop).toLocaleString('es-CO')} (${deltaSign}${r.delta_pct}%)
+              </td>
+              <td class="py-2.5 px-3">
+                <div class="flex items-center gap-1.5">
+                  ${verdictBadge}
+                </div>
+                <div class="text-[10px] text-slate-500 mt-0.5 max-w-xs truncate" title="${escapeHtml(r.reasoning_narrative || '')}">
+                  ${escapeHtml(r.reasoning_narrative || '')}
+                </div>
+              </td>
+              <td class="py-2.5 px-3 text-center">
+                <button type="button" onclick="applySmartPrice(${r.slot_id}, ${r.recommended_price})" class="px-3 py-1 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition cursor-pointer">
+                  Aplicar
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('Error cargando tabla de yield:', err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="py-6 text-center text-rose-500 font-bold">
+              Fallo al cargar recomendaciones econométricas. Intente de nuevo.
+            </td>
+          </tr>
+        `;
+      }
+    }
+    window.loadYieldRecommendationsTable = loadYieldRecommendationsTable;
+
+    async function inspectAndApplySmartPrice(slotId) {
+      if (!slotId) return;
+      try {
+        const res = await fetch(`/api/v1/yield/recommendation/${slotId}`);
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Error obteniendo recomendación: ' + (err.detail || 'Fallo'));
+          return;
+        }
+        const data = await res.json();
+        const r = data.data;
+        const msg = `🧠 RECOMENDACIÓN ECONOMÉTRICA YIELD IA
+-----------------------------------------
+Turno: ${r.date} a las ${r.start_time} (${r.sport_type})
+Tarifa Actual: $${Number(r.current_price).toLocaleString('es-CO')} COP
+Tarifa Óptima Sugerida: $${Number(r.recommended_price).toLocaleString('es-CO')} COP
+Variación: ${r.delta_cop > 0 ? '+' : ''}$${Number(r.delta_cop).toLocaleString('es-CO')} (${r.delta_pct}%)
+
+📊 FACTORES CUANTITATIVOS:
+• Probabilidad Llenado (P_fill): ${Math.round(r.metrics.historical_fill_rate * 100)}%
+• Benchmark Competencia: $${Number(r.metrics.competitor_benchmark_avg).toLocaleString('es-CO')} COP
+• Factor Urgencia Sigmoide (L_t): ${r.metrics.urgency_factor}
+• Veredicto: ${r.analytical_verdict}
+
+💡 Justificación: ${r.reasoning_narrative}
+
+¿Deseas aplicar esta tarifa optimizada ($${Number(r.recommended_price).toLocaleString('es-CO')} COP) inmediatamente a este turno?`;
+
+        if (confirm(msg)) {
+          await applySmartPrice(slotId, r.recommended_price, r.reasoning_narrative);
+        }
+      } catch (e) {
+        console.error('Error en inspectAndApplySmartPrice:', e);
+        alert('Error consultando el motor econométrico.');
+      }
+    }
+    window.inspectAndApplySmartPrice = inspectAndApplySmartPrice;
+
+    async function applySmartPrice(slotId, recommendedPrice, reason) {
+      try {
+        const res = await fetch('/api/v1/yield/apply-smart-price', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slot_id: slotId,
+            recommended_price: recommendedPrice,
+            reason: reason || 'Ajuste cuantitativo aprobado desde el Dashboard'
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('Tarifa Dinámica Aplicada', data.message || `Nuevo precio: $${Number(recommendedPrice).toLocaleString('es-CO')} COP`);
+          } else {
+            alert(`✅ ${data.message}`);
+          }
+          if (typeof fetchSlots === 'function') fetchSlots();
+          if (typeof loadYieldRecommendationsTable === 'function') loadYieldRecommendationsTable();
+        } else {
+          const err = await res.json();
+          alert('Error al aplicar tarifa: ' + (err.detail || 'Fallo en la operación'));
+        }
+      } catch (err) {
+        console.error('Error en applySmartPrice:', err);
+        alert('Fallo de conexión al aplicar el precio dinámico.');
+      }
+    }
+    window.applySmartPrice = applySmartPrice;
 
 </script>
   <!-- BOTÓN FLOTANTE: ASISTENTE WHATSAPP BOT -->

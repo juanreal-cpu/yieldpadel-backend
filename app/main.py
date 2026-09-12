@@ -239,7 +239,7 @@ async def serve_dashboard(request: Request):
     return response
 
 
-from app.api.v1.endpoints import whatsapp, radar
+from app.api.v1.endpoints import whatsapp, radar, yield_pricing
 from app.core.database import get_db
 from app.schemas.slot import ClubConfigRequest
 from app.api.v1.endpoints.slots import update_club_configuration, get_club_configuration
@@ -249,6 +249,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(whatsapp.router, prefix="/api/v1/whatsapp", tags=["whatsapp"])
 app.include_router(radar.router, prefix="/api/v1/radar", tags=["Radar & Market Analytics"])
+app.include_router(yield_pricing.router, prefix="/api/v1/yield", tags=["Yield Management"])
 
 
 @app.post("/api/v1/admin/club-settings", tags=["admin"])

@@ -303,11 +303,11 @@ async def get_price_comparison(
         SELECT
             standard_time_slot,
             is_weekend,
-            ROUND(MAX(CASE WHEN LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%' THEN price_per_player END), 2) AS tarifa_capital_padel,
-            ROUND(AVG(CASE WHEN NOT (LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%') THEN price_per_player END), 2) AS tarifa_promedio_competencia,
+            ROUND(MAX(CASE WHEN (LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' OR LOWER(CAST(club_name AS TEXT)) LIKE '%maloka%') THEN price_per_player END), 2) AS tarifa_capital_padel,
+            ROUND(AVG(CASE WHEN NOT (LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' OR LOWER(CAST(club_name AS TEXT)) LIKE '%maloka%') THEN price_per_player END), 2) AS tarifa_promedio_competencia,
             ROUND(
-                MAX(CASE WHEN LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%' THEN price_per_player END)
-                - AVG(CASE WHEN NOT (LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' AND LOWER(CAST(club_name AS TEXT)) LIKE '%padel%') THEN price_per_player END),
+                MAX(CASE WHEN (LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' OR LOWER(CAST(club_name AS TEXT)) LIKE '%maloka%') THEN price_per_player END)
+                - AVG(CASE WHEN NOT (LOWER(CAST(club_name AS TEXT)) LIKE '%capital%' OR LOWER(CAST(club_name AS TEXT)) LIKE '%maloka%') THEN price_per_player END),
                 2
             ) AS brecha_precio_cop
         FROM v_competitor_market_clean
@@ -386,6 +386,8 @@ async def get_clubs_list(db: AsyncSession = Depends(get_db)):
           AND club_name NOT ILIKE '%convocatoria%' 
           AND club_name NOT ILIKE '%categoría%'
           AND club_name NOT ILIKE '%chat%'
+          AND club_name NOT ILIKE '%capital%'
+          AND club_name NOT ILIKE '%maloka%'
         ORDER BY club_name ASC
         """
     )
@@ -400,6 +402,8 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
     slug = clean.lower().replace(' ', '_').replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u')
     search_pattern = f"%{slug.replace('_', '%')}%"
 
+    is_capital_or_maloka = ('capital' in clean.lower() or 'maloka' in clean.lower())
+
     # 1. Total monitoreado y tarifa promedio del club
     q_stats = text("""
         SELECT 
@@ -410,10 +414,26 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
            OR club_name ILIKE :club_name
            OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :slug
            OR LOWER(club_name) ILIKE :pattern
+           OR (LOWER(:club_name) LIKE '%capital%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
+           OR (LOWER(:club_name) LIKE '%maloka%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
     """)
     res_stats = (await db.execute(q_stats, {"club_name": clean, "slug": f"%{slug}%", "pattern": search_pattern})).mappings().first()
     total_slots = res_stats["total_slots"] if res_stats else 0
     avg_price = float(res_stats["avg_price"]) if res_stats else 0
+
+    # Fallback si se consulta Capital Pádel / Maloka y no hay datos en competitor_market_slots
+    if is_capital_or_maloka and total_slots == 0:
+        q_local = text("""
+            SELECT 
+                COUNT(*) AS total_slots,
+                COALESCE(ROUND(AVG(price_per_player_cop)), 0) AS avg_price
+            FROM time_slots
+            WHERE club_id = 1 OR club_id IS NULL
+        """)
+        res_local = (await db.execute(q_local)).mappings().first()
+        if res_local and res_local["total_slots"]:
+            total_slots = res_local["total_slots"]
+            avg_price = float(res_local["avg_price"]) if res_local["avg_price"] else 45000.0
 
     # 2. Desglose para la Grilla Matricial Térmica (Franja x Día)
     q_matrix = text("""
@@ -426,7 +446,13 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
             ROUND(AVG(price_per_player)) AS precio,
             COUNT(*) AS total
         FROM competitor_market_slots
-        WHERE (club_name = :club_name OR club_name ILIKE :club_name OR LOWER(club_name) ILIKE :pattern)
+        WHERE (
+            club_name = :club_name 
+            OR club_name ILIKE :club_name 
+            OR LOWER(club_name) ILIKE :pattern
+            OR (LOWER(:club_name) LIKE '%capital%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
+            OR (LOWER(:club_name) LIKE '%maloka%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
+        )
           AND price_per_player > 0
         GROUP BY raw_slot, dia_code
         ORDER BY raw_slot ASC;
@@ -444,18 +470,29 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
         WHERE p.frequent_club = :club_name 
            OR p.frequent_club ILIKE :club_name
            OR LOWER(p.frequent_club) ILIKE :pattern
+           OR (LOWER(:club_name) LIKE '%capital%' AND (LOWER(p.frequent_club) LIKE '%capital%' OR LOWER(p.frequent_club) LIKE '%maloka%'))
+           OR (LOWER(:club_name) LIKE '%maloka%' AND (LOWER(p.frequent_club) LIKE '%capital%' OR LOWER(p.frequent_club) LIKE '%maloka%'))
         ORDER BY p.total_matches_played DESC
         LIMIT 25;
     """)
     try:
         player_rows = [dict(r) for r in (await db.execute(q_players, {"club_name": clean, "pattern": search_pattern})).mappings().all()]
     except Exception:
-        # Fallback si la columna en DB se llama diferente
         player_rows = []
 
-    # 4. Cálculo de Brecha respecto a Capital Pádel ($45.000 COP)
-    capital_avg = 45000
-    diff = (avg_price - capital_avg) if total_slots > 0 else 0
+    # 4. Cálculo de Brecha respecto al promedio de Capital Pádel
+    q_cap = text("""
+        SELECT COALESCE(ROUND(AVG(price_per_player)), 0) AS capital_avg
+        FROM competitor_market_slots
+        WHERE club_name ILIKE '%capital%' OR club_name ILIKE '%maloka%'
+    """)
+    res_cap = (await db.execute(q_cap)).scalar()
+    capital_avg = float(res_cap) if res_cap and res_cap > 0 else 45000.0
+
+    if is_capital_or_maloka:
+        diff = 0.0
+    else:
+        diff = (avg_price - capital_avg) if total_slots > 0 else 0.0
 
     return {
         "status": "ok",
