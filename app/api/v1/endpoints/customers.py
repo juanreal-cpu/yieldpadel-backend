@@ -52,6 +52,8 @@ class CustomerResponse(BaseModel):
     americano_discount_pct: int = 0
     includes_beverage_perk: bool = False
     wallet_balance: float = 0.0
+    is_recent: bool = False
+    last_booking_date: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -140,6 +142,13 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         americano_discount_pct = tier_discounts.get(tier_upper, 0)
         includes_beverage_perk = tier_upper in ["TAPIA", "COELLO", "GALAN", "CHINGOTTO", "LEBRON", "ORO", "PLATA"]
 
+    today = date.today()
+    is_recent = False
+    lb_date = getattr(c, "last_booking_date", None)
+    if lb_date:
+        diff_days = (today - lb_date).days
+        is_recent = 0 <= diff_days <= 7
+
     return CustomerResponse(
         id=c.id,
         name=c.name,
@@ -176,6 +185,8 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         americano_discount_pct=americano_discount_pct,
         includes_beverage_perk=includes_beverage_perk,
         wallet_balance=float(c.wallet_balance if hasattr(c, 'wallet_balance') and c.wallet_balance is not None else 0.0),
+        is_recent=is_recent,
+        last_booking_date=lb_date.isoformat() if lb_date else None,
     )
 
 
@@ -395,6 +406,8 @@ async def list_all_customers(
             stmt = stmt.where(Customer.total_bookings_completed > 0, Customer.is_first_visit == False)
         elif seg_upper in ["KIDS", "MENORES"]:
             stmt = stmt.where(Customer.is_minor == True)
+        elif seg_upper in ["RECENT", "RECIENTES"]:
+            stmt = stmt.where(Customer.last_booking_date.isnot(None), Customer.last_booking_date >= (date.today() - timedelta(days=7)))
         elif seg_upper in ["VIP", "MEMBER"]:
             stmt = stmt.where(
                 or_(

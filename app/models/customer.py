@@ -57,6 +57,7 @@ class Customer(Base):
     total_bookings_completed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_first_visit: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     onboarding_status: Mapped[str] = mapped_column(String(50), default="PENDING", nullable=False)  # PENDING, WELCOMED, MEMBER_OFFERED
+    last_booking_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     # Sistema de Ranking, Títulos y Ascensos Automáticos
     ranking_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
