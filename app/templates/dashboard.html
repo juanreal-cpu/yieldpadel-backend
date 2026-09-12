@@ -6416,6 +6416,29 @@
 
 
   <script>
+    // ========================================================
+    // EXPONER NAVEGACIÓN GLOBAL ANTES DE CUALQUIER OTRA LÓGICA
+    // ========================================================
+    window.switchMainView = function(viewName) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById('view-' + viewName) || document.getElementById(viewName);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.sidebar-link').forEach(btn => {
+        btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
+        btn.classList.add('text-slate-600');
+      });
+      const activeBtn = document.getElementById('btn-nav-' + viewName);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
+        activeBtn.classList.remove('text-slate-600');
+      }
+    };
+    function switchMainView(viewName) {
+      if (typeof window.switchMainView === 'function') {
+        window.switchMainView(viewName);
+      }
+    }
 
     // ========================================================
     // 0. FECHA LOCAL COLOMBIA Y NAVEGACIÓN GLOBAL AL INICIO
@@ -9827,6 +9850,7 @@ ${data.message}`);
         const playerList = (slot.participants && slot.participants.length > 0) 
           ? slot.participants 
           : (slot.players_names ? slot.players_names.map(n => (typeof n === 'object' ? n : { display_name: n, name: n })) : []);
+        if (playerList && playerList.length > 0) {
           playersHtml = '<div class="card-players" style="max-height: 120px; overflow-y: auto;">';
           playerList.forEach((p, playerIndex) => {
             const pName = p.display_name || p.name || 'Jugador';
@@ -9841,7 +9865,7 @@ ${data.message}`);
             playersHtml += `
               <div class="card-player-item" onclick="openPlayerOnboardingProtocol(${slot.id}, ${JSON.stringify(pName)}, ${JSON.stringify(pPhone)}, ${isFirst}, ${JSON.stringify(pStatus)}, ${pCustId})" style="cursor: pointer;" title="${isFirst ? 'Cliente nuevo: Clic para abrir Protocolo Nuevo Cliente' : 'Gestionar jugador'}">
                 <span class="inline-flex items-center gap-1">${sportIcon} ${pName} ${firstBadge}</span>
-                <button onclick="event.stopPropagation(); removePlayerFromSlot('${slot.id}', ${playerIndex}, '${pPhone}')" class="btn-card-drop" title="Dar de baja">✕</button>
+                <button type="button" onclick="event.stopPropagation(); window.removePlayerFromSlot('${slot.id}', ${playerIndex}, '${pPhone}')" class="btn-card-drop" title="Dar de baja">✕</button>
               </div>
             `;
           });
