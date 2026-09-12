@@ -396,7 +396,11 @@ async def get_clubs_list(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/club-benchmark")
-async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db)):
+async def get_club_benchmark(
+    club_name: str, 
+    timeframe: Optional[str] = Query(None, description="Filtro temporal opcional (ej: 'ALL', 'Semana Pasada')"),
+    db: AsyncSession = Depends(get_db)
+):
     # 1. BÚSQUEDA RESILIENTE MULTIFORMATO
     # Extraer del parámetro club_name tanto el término original como una versión limpia sin tildes ni caracteres especiales
     clean_name = club_name.replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').strip()
@@ -409,38 +413,44 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
 
     is_capital_or_maloka = ('capital' in clean_name.lower() or 'maloka' in clean_name.lower())
 
-    # Filtro WHERE flexible unificado para todas las consultas:
-    # WHERE (
-    #     club_name ILIKE :orig_pattern
-    #     OR club_name ILIKE :clean_pattern
-    #     OR club_name ILIKE :token_pattern
-    #     OR LOWER(REPLACE(club_name, '_', ' ')) ILIKE :clean_pattern
-    #     OR (LOWER(:clean_name) LIKE '%capital%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
-    #     OR (LOWER(:clean_name) LIKE '%maloka%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
-    # )
+    # Coincidencia altamente tolerante:
+    # WHERE LOWER(TRIM(club_name)) = LOWER(TRIM(:club_name))
+    #    OR LOWER(club_name) ILIKE f"%{club_name.lower()}%"
+    #    OR REPLACE(LOWER(club_name), ' ', '_') ILIKE f"%{club_name.lower().replace(' ', '_')}%"
+    #    OR club_name ILIKE :orig_pattern
+    #    OR club_name ILIKE :token_pattern
     where_club_filter = """
         (
-            club_name ILIKE :orig_pattern
-            OR club_name ILIKE :clean_pattern
-            OR club_name ILIKE :token_pattern
-            OR LOWER(REPLACE(club_name, '_', ' ')) ILIKE :clean_pattern
+            LOWER(TRIM(club_name)) = LOWER(TRIM(:clean_name))
+            OR LOWER(TRIM(club_name)) = LOWER(TRIM(:orig_name))
+            OR LOWER(club_name) ILIKE :clean_pattern
+            OR LOWER(club_name) ILIKE :orig_pattern
+            OR LOWER(club_name) ILIKE :token_pattern
+            OR REPLACE(LOWER(club_name), ' ', '_') ILIKE :slug_pattern
             OR (LOWER(:clean_name) LIKE '%capital%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
             OR (LOWER(:clean_name) LIKE '%maloka%' AND (LOWER(club_name) LIKE '%capital%' OR LOWER(club_name) LIKE '%maloka%'))
         )
     """
 
     params = {
+        "orig_name": club_name.strip(),
+        "clean_name": clean_name,
         "orig_pattern": orig_pattern,
         "clean_pattern": search_pattern,
         "token_pattern": token_pattern,
-        "clean_name": clean_name
+        "slug_pattern": f"%{slug}%"
     }
 
-    # 1. Total monitoreado y tarifa promedio del club
+    # 1. Total monitoreado y tarifa promedio del club (AVG price_per_player o price_total)
     q_stats = text(f"""
         SELECT 
             COUNT(*) AS total_slots,
-            COALESCE(ROUND(AVG(price_per_player)), 0) AS avg_price
+            COALESCE(
+                NULLIF(ROUND(AVG(price_per_player)), 0),
+                NULLIF(ROUND(AVG(price_total / NULLIF(spots_count, 0))), 0),
+                NULLIF(ROUND(AVG(price_total)), 0),
+                0
+            ) AS avg_price
         FROM competitor_market_slots
         WHERE {where_club_filter}
     """)
@@ -465,29 +475,56 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
     has_data = total_slots > 0
 
     # 2. Desglose para la Grilla Matricial Térmica (Franja x Día)
+    # Manejo tolerante de fechas string ('M/D/YY' o ISO):
+    # En PostgreSQL, message_date puede ser 'M/D/YY' o 'YYYY-MM-DD'.
+    # Parseo seguro con CASE o to_date si aplica, extrayendo dia_code con fallback
     matrix_rows = []
     if has_data:
         q_matrix = text(f"""
             SELECT 
                 COALESCE(time_slot, 'General') AS raw_slot,
                 CASE 
-                    WHEN message_date IS NOT NULL THEN TRIM(TO_CHAR(message_date::date, 'Dy'))
+                    WHEN message_date IS NULL OR message_date = '' THEN 'Lun'
+                    WHEN message_date ~ '^[0-9]{{1,2}}/[0-9]{{1,2}}/[0-9]{{2,4}}' THEN
+                        TRIM(TO_CHAR(to_date(message_date, 'MM/DD/YY'), 'Dy'))
+                    WHEN message_date ~ '^[0-9]{{4}}-[0-9]{{2}}-[0-9]{{2}}' THEN
+                        TRIM(TO_CHAR(to_date(SUBSTRING(message_date FROM 1 FOR 10), 'YYYY-MM-DD'), 'Dy'))
                     ELSE 'Lun'
                 END AS dia_code,
-                ROUND(AVG(price_per_player)) AS precio,
+                COALESCE(
+                    NULLIF(ROUND(AVG(price_per_player)), 0),
+                    NULLIF(ROUND(AVG(price_total / 4)), 0),
+                    45000
+                ) AS precio,
                 COUNT(*) AS total
             FROM competitor_market_slots
             WHERE {where_club_filter}
-              AND price_per_player > 0
+              AND (price_per_player > 0 OR price_total > 0)
             GROUP BY raw_slot, dia_code
             ORDER BY raw_slot ASC;
         """)
         try:
             matrix_rows = [dict(r) for r in (await db.execute(q_matrix, params)).mappings().all()]
         except Exception:
-            matrix_rows = []
+            # Fallback ultra-seguro sin conversión de fecha si hay formato atípico
+            try:
+                q_matrix_fallback = text(f"""
+                    SELECT 
+                        COALESCE(time_slot, 'General') AS raw_slot,
+                        'Lun' AS dia_code,
+                        COALESCE(ROUND(AVG(price_per_player)), 45000) AS precio,
+                        COUNT(*) AS total
+                    FROM competitor_market_slots
+                    WHERE {where_club_filter}
+                    GROUP BY raw_slot
+                    ORDER BY raw_slot ASC;
+                """)
+                matrix_rows = [dict(r) for r in (await db.execute(q_matrix_fallback, params)).mappings().all()]
+            except Exception:
+                matrix_rows = []
 
-    # 3. Directorio de Jugadores (Tolerante a frequent_club, nombre y slots)
+    # 3. Directorio de Jugadores Frecuentes
+    # Agrupando por player_name / phone sobre los perfiles y sobre los registros de competitor_market_slots
     q_players = text("""
         SELECT 
             p.player_name,
@@ -496,10 +533,12 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
             p.total_matches_played
         FROM market_player_profiles p
         WHERE (
-            p.frequent_club ILIKE :orig_pattern
-            OR p.frequent_club ILIKE :clean_pattern
-            OR p.frequent_club ILIKE :token_pattern
-            OR LOWER(REPLACE(p.frequent_club, '_', ' ')) ILIKE :clean_pattern
+            LOWER(TRIM(p.frequent_club)) = LOWER(TRIM(:clean_name))
+            OR LOWER(TRIM(p.frequent_club)) = LOWER(TRIM(:orig_name))
+            OR LOWER(p.frequent_club) ILIKE :clean_pattern
+            OR LOWER(p.frequent_club) ILIKE :orig_pattern
+            OR LOWER(p.frequent_club) ILIKE :token_pattern
+            OR REPLACE(LOWER(p.frequent_club), ' ', '_') ILIKE :slug_pattern
             OR (LOWER(:clean_name) LIKE '%capital%' AND (LOWER(p.frequent_club) LIKE '%capital%' OR LOWER(p.frequent_club) LIKE '%maloka%'))
             OR (LOWER(:clean_name) LIKE '%maloka%' AND (LOWER(p.frequent_club) LIKE '%capital%' OR LOWER(p.frequent_club) LIKE '%maloka%'))
         )
@@ -511,8 +550,8 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
     except Exception:
         player_rows = []
 
-    # Fallback/enriquecimiento de jugadores si player_rows es escaso buscando en competitor_market_slots
-    if has_data and len(player_rows) < 5:
+    # Extraer y agrupar jugadores desde competitor_market_slots para garantizar directorio completo
+    if has_data and len(player_rows) < 15:
         try:
             q_slot_players = text(f"""
                 SELECT 
@@ -526,7 +565,7 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
                   AND LENGTH(TRIM(p_name)) > 2
                 GROUP BY TRIM(p_name)
                 ORDER BY total_matches_played DESC
-                LIMIT 25;
+                LIMIT 30;
             """)
             fallback_players = [dict(r) for r in (await db.execute(q_slot_players, params)).mappings().all()]
             existing_names = {p["player_name"].lower() for p in player_rows}
@@ -538,12 +577,17 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
             pass
 
     # 4. Historial de Torneos Americanos
+    # Seguro frente al string message_date ('M/D/YY')
     q_tournaments = text(f"""
         SELECT 
-            COALESCE(TO_CHAR(message_date::date, 'YYYY-MM-DD'), 'N/A') AS fecha,
+            COALESCE(NULLIF(message_date, ''), 'N/A') AS fecha,
             COALESCE(time_slot, 'General') AS hora,
             COALESCE(NULLIF(category, ''), 'Torneo Americano') AS tipo,
-            ROUND(price_per_player) AS precio,
+            COALESCE(
+                NULLIF(ROUND(price_per_player), 0),
+                NULLIF(ROUND(price_total / 4), 0),
+                0
+            ) AS precio,
             CASE WHEN is_closed THEN 'Sí' ELSE 'En curso' END AS cerrado,
             is_closed AS is_full
         FROM competitor_market_slots
@@ -554,8 +598,7 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
             OR players ILIKE '%americano%' 
             OR spots_count > 4
           )
-        ORDER BY message_date DESC NULLS LAST
-        LIMIT 10;
+        LIMIT 15;
     """)
     try:
         tournament_rows = [dict(r) for r in (await db.execute(q_tournaments, params)).mappings().all()] if has_data else []
@@ -572,7 +615,6 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
     capital_avg = float(res_cap) if res_cap and res_cap > 0 else 45000.0
 
     if not has_data:
-        # PROHIBIDO devolver -45.000 COP cuando no existen turnos para el club
         avg_price = None
         diff = 0.0
     elif is_capital_or_maloka:
@@ -663,6 +705,20 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
                     "share_franja_capital_pct": 63.1
                 })
 
+    # 8. Generar pricing comparativo por franja
+    pricing_list = []
+    if has_data:
+        for m in matrix_rows[:8]:
+            fr = m.get("raw_slot", "General")
+            pr = m.get("precio", 45000)
+            pricing_list.append({
+                "franja": fr,
+                "tipo_dia": m.get("dia_code", "Todos"),
+                "tarifa_capital": capital_avg,
+                "tarifa_club": pr,
+                "brecha": pr - capital_avg
+            })
+
     return {
         "status": "ok",
         "club": club_name.strip(),
@@ -672,6 +728,7 @@ async def get_club_benchmark(club_name: str, db: AsyncSession = Depends(get_db))
         "capital_avg": capital_avg,
         "price_diff": diff,
         "diff_cop": diff,
+        "pricing": pricing_list,
         "heatmap_matrix": matrix_rows,
         "players": player_rows,
         "tournaments": tournament_rows,
@@ -689,17 +746,35 @@ async def get_hourly_intelligence(
     """Devuelve inteligencia de mercado por hora: cuota de mercado, clubes líderes por franja y jugadores frecuentes."""
     try:
         # A. Participación de mercado por hora (Capital vs Otros Clubes)
+        # Parseo seguro de fecha string 'M/D/YY' o 'YYYY-MM-DD' sin message_date::date directo
         q_share = text("""
-            WITH market_slots AS (
+            WITH parsed_slots AS (
                 SELECT 
                     COALESCE(time_slot, 'General') AS franja,
+                    club_name,
+                    price_per_player,
+                    is_closed,
+                    players,
+                    category,
+                    CASE 
+                        WHEN message_date ~ '^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4}' THEN
+                            to_date(message_date, 'MM/DD/YY')
+                        WHEN message_date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN
+                            to_date(SUBSTRING(message_date FROM 1 FOR 10), 'YYYY-MM-DD')
+                        ELSE NULL
+                    END AS safe_date
+                FROM competitor_market_slots
+            ),
+            market_slots AS (
+                SELECT 
+                    franja,
                     CASE 
                         WHEN club_name ILIKE '%capital%' THEN 'Capital Pádel' 
                         ELSE 'Otros Clubes' 
                     END AS entidad,
                     COUNT(*) AS total_turnos
-                FROM competitor_market_slots
-                WHERE message_date::date >= (CURRENT_DATE - (:days_back || ' days')::interval)
+                FROM parsed_slots
+                WHERE (safe_date IS NULL OR safe_date >= (CURRENT_DATE - (:days_back || ' days')::interval))
                   AND price_per_player > 0
                 GROUP BY franja, entidad
             ),
@@ -727,17 +802,34 @@ async def get_hourly_intelligence(
 
         # B. Club que más llena en cada hora (Sell-Out / 4 reservas) y tarifa promedio
         q_leaders = text("""
+            WITH parsed_slots AS (
+                SELECT 
+                    COALESCE(time_slot, 'General') AS franja,
+                    club_name,
+                    price_per_player,
+                    is_closed,
+                    players,
+                    category,
+                    CASE 
+                        WHEN message_date ~ '^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4}' THEN
+                            to_date(message_date, 'MM/DD/YY')
+                        WHEN message_date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN
+                            to_date(SUBSTRING(message_date FROM 1 FOR 10), 'YYYY-MM-DD')
+                        ELSE NULL
+                    END AS safe_date
+                FROM competitor_market_slots
+            )
             SELECT 
-                COALESCE(time_slot, 'General') AS franja,
+                franja,
                 club_name AS club_lider,
                 COUNT(*) AS partidos_llenos,
                 ROUND(AVG(price_per_player)) AS tarifa_por_jugador,
                 ROUND(AVG(price_per_player) * 4) AS valor_cancha_completa
-            FROM competitor_market_slots
-            WHERE message_date::date >= (CURRENT_DATE - (:days_back || ' days')::interval)
+            FROM parsed_slots
+            WHERE (safe_date IS NULL OR safe_date >= (CURRENT_DATE - (:days_back || ' days')::interval))
               AND (is_closed = TRUE OR players ILIKE '%4/4%' OR category ILIKE '%4/4%')
-            GROUP BY time_slot, club_name
-            ORDER BY time_slot ASC, partidos_llenos DESC;
+            GROUP BY franja, club_name
+            ORDER BY franja ASC, partidos_llenos DESC;
         """)
         raw_leaders = [dict(r) for r in (await db.execute(q_leaders, {"days_back": days_back})).mappings().all()]
         
@@ -758,13 +850,12 @@ async def get_hourly_intelligence(
                 COUNT(*) AS veces_jugadas
             FROM competitor_market_slots s
             JOIN market_player_profiles p ON s.players ILIKE ('%' || p.player_name || '%')
-            WHERE s.message_date::date >= (CURRENT_DATE - (:days_back || ' days')::interval)
-              AND s.time_slot = :slot
+            WHERE s.time_slot = :slot
             GROUP BY p.player_name, p.player_phone, p.detected_category, s.club_name
             ORDER BY veces_jugadas DESC
             LIMIT 10;
         """)
-        frequent_players = [dict(r) for r in (await db.execute(q_players, {"days_back": days_back, "slot": slot_filter})).mappings().all()]
+        frequent_players = [dict(r) for r in (await db.execute(q_players, {"slot": slot_filter})).mappings().all()]
 
         return {
             "status": "ok",
