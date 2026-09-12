@@ -210,6 +210,12 @@ class DropPlayerRequest(BaseModel):
     sender_phone: str
 
 
+class RemovePlayerRequest(BaseModel):
+    player_index: Optional[int] = None
+    player_phone: Optional[str] = None
+    player_name: Optional[str] = None
+
+
 class DropPlayerResponse(BaseModel):
     message: str
     slot_id: int

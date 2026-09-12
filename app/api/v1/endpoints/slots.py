@@ -43,6 +43,7 @@ from app.schemas.slot import (
     CourtResponse,
     DropPlayerRequest,
     DropPlayerResponse,
+    RemovePlayerRequest,
     SlotParticipant,
     TimeSlotResponse,
     WhatsAppConvocatoriaRequest,
@@ -1410,29 +1411,19 @@ async def create_manual_booking(
 
             if mode_enum == SlotMode.FULL_COURT:
                 wa_body = (
-                    f"✅ *¡RESERVA CONFIRMADA - CANCHA COMPLETA!* 🎾\n\n"
-                    f"Hola {client_name}, tu reserva ha quedado confirmada:\n"
-                    f"• Sede: Capital Pádel Club (Complejo Maloka)\n"
-                    f"• Pista: {c_label}\n"
-                    f"• Fecha: {d_label}\n"
-                    f"• Horario: {st_fmt} - {et_fmt}\n"
-                    f"• Valor total: {price_cop} COP\n\n"
-                    f"Los {cap} cupos están reservados para tu grupo cerrado.\n"
-                    f"¡Te esperamos en la pista! 🎾"
+                    f"✅ *¡RESERVA CONFIRMADA EN CAPITAL PÁDEL CLUB!* 🎾\n\n"
+                    f"• *Pista:* {c_label}\n"
+                    f"• *Horario:* {st_fmt} - {et_fmt}\n"
+                    f"• *Titular:* {client_name}\n\n"
+                    f"🔒 Tu pista ya quedó asegurada en nuestro sistema. ¡Te esperamos en la sede (Maloka)!"
                 )
             else:
-                share_cop = f"${int(total_price / cap):,}".replace(",", ".")
                 wa_body = (
-                    f"📋 *¡CUPO RESERVADO - PARTIDO ABIERTO (1/{cap})!* 🎾\n\n"
-                    f"Hola {client_name}, apartamos tu cupo en convocatoria abierta:\n"
-                    f"• Sede: Capital Pádel Club (Complejo Maloka)\n"
-                    f"• Pista: {c_label}\n"
-                    f"• Fecha: {d_label}\n"
-                    f"• Horario: {st_fmt} - {et_fmt}\n"
-                    f"• Tu aporte individual: {share_cop} COP\n\n"
-                    f"⚠️ *ADVERTENCIA DE CONFIRMACIÓN:* Si faltando 30 minutos para el inicio no se completan los {cap} jugadores, "
-                    f"el turno no podrá disputarse como partido cerrado y la cancha podrá ser liberada por el club.\n"
-                    f"Te notificaremos en cuanto se unan compañeros a la partida."
+                    f"📋 *¡CUPO APARTADO (1/{cap})!* 🎾\n\n"
+                    f"• *Pista:* {c_label}\n"
+                    f"• *Horario:* {st_fmt} - {et_fmt}\n"
+                    f"• *Inscritos:* (1/{cap})\n\n"
+                    f"⚠️ *Aviso:* Si el turno no completa los {cap} jugadores a menos de 30 min, podrá ser reasignado. Te avisaremos cuando se sumen compañeros."
                 )
 
             try:
@@ -2567,6 +2558,155 @@ async def drop_player(
     )
 
 
+@router.post("/{slot_id}/remove-player", status_code=status.HTTP_200_OK)
+async def remove_player_from_slot(
+    slot_id: int,
+    payload: RemovePlayerRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Elimina/da de baja a un jugador específico de un TimeSlot:
+    - Remueve al jugador de players_names usando player_index (0-based o 1-based) o player_phone.
+    - Re-indexa los jugadores restantes (1..N).
+    - Decrementa booked_spots.
+    - Actualiza el estado del turno a PARTIALLY_BOOKED o AVAILABLE si queda en 0.
+    - Notifica por WhatsApp si se proporcionó player_phone.
+    """
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.holds), selectinload(TimeSlot.court))
+        .where(TimeSlot.id == slot_id)
+        .with_for_update()
+    )
+    res = await db.execute(stmt)
+    slot = res.scalar_one_or_none()
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El slot {slot_id} no existe.",
+        )
+
+    participants = to_participants_list(slot.players_names)
+    if not participants:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El slot no contiene jugadores asignados.",
+        )
+
+    matched_idx = -1
+    matched_player = None
+
+    # 1. Intentar matching por player_index
+    if payload.player_index is not None:
+        idx_cand = payload.player_index
+        # Comprobar si es 0-based
+        if 0 <= idx_cand < len(participants):
+            matched_idx = idx_cand
+            matched_player = participants[idx_cand]
+        # O si es 1-based
+        elif 1 <= idx_cand <= len(participants):
+            matched_idx = idx_cand - 1
+            matched_player = participants[matched_idx]
+
+    # 2. Si no match por index, intentar por player_phone
+    if matched_idx == -1 and payload.player_phone:
+        norm_target = normalize_phone(payload.player_phone)
+        for i, p in enumerate(participants):
+            p_phone = normalize_phone(p.get("phone"))
+            h_phone = normalize_phone(p.get("host_phone"))
+            if (p_phone and p_phone == norm_target) or (h_phone and h_phone == norm_target):
+                matched_idx = i
+                matched_player = p
+                break
+
+    # 3. Si no match, intentar por player_name si viene
+    if matched_idx == -1 and payload.player_name:
+        target_name = payload.player_name.strip().lower()
+        for i, p in enumerate(participants):
+            p_name = (p.get("display_name") or p.get("name") or "").strip().lower()
+            if p_name and (p_name == target_name or target_name in p_name):
+                matched_idx = i
+                matched_player = p
+                break
+
+    # 4. Si aún no match pero solo hay un jugador
+    if matched_idx == -1 and len(participants) == 1:
+        matched_idx = 0
+        matched_player = participants[0]
+
+    if matched_idx == -1:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontró al jugador especificado en el turno.",
+        )
+
+    removed = participants.pop(matched_idx)
+
+    # Re-indexar (1..N)
+    for i, p in enumerate(participants, start=1):
+        p["spot_index"] = i
+
+    slot.players_names = participants
+    slot.booked_spots = max(0, slot.booked_spots - 1)
+
+    if slot.booked_spots == 0:
+        slot.status = SlotStatus.AVAILABLE
+    else:
+        slot.status = SlotStatus.PARTIALLY_BOOKED
+
+    # Cancelar holds activos asociados si los hay
+    target_phone = payload.player_phone or removed.get("phone")
+    if target_phone:
+        norm_t = normalize_phone(target_phone)
+        for h in slot.holds:
+            if h.status == HoldStatus.ACTIVE and normalize_phone(h.customer_phone) == norm_t:
+                h.status = HoldStatus.CANCELLED
+
+    await db.commit()
+    await db.refresh(slot)
+
+    # WhatsApp notification al jugador dado de baja
+    notif_phone = target_phone
+    if notif_phone and not notif_phone.startswith("+57-WA-") and not notif_phone.startswith("+57-unknown") and not "#GUEST" in notif_phone:
+        court_label = slot.court.name if slot.court else "Pista"
+        st_str = slot.start_time.strftime("%I:%M %p").lstrip("0")
+        et_str = slot.end_time.strftime("%I:%M %p").lstrip("0")
+        d_str = slot.date.strftime("%d/%m/%Y")
+        player_disp = removed.get("display_name") or "Jugador"
+
+        wa_msg = (
+            f"ℹ️ *CANCELACIÓN DE CUPO CONFIRMADA* 🎾\n\n"
+            f"Hola {player_disp}, tu cupo para el turno en {court_label} ({d_str} de {st_str} a {et_str}) "
+            f"ha sido dado de baja en el sistema del club.\n"
+            f"¡Esperamos verte pronto de vuelta en las pistas de Capital Pádel Club!"
+        )
+        try:
+            await send_whatsapp_message(to_phone=notif_phone, message_body=wa_msg)
+            await log_conversation_message(db, notif_phone, wa_msg, direction="bot", player_name=player_disp)
+        except Exception as err:
+            logger.warning(f"Error enviando WhatsApp de baja a {notif_phone}: {err}")
+
+    try:
+        await log_activity(
+            db=db,
+            action="REMOVE_PLAYER",
+            entity_name="SLOT",
+            entity_id=str(slot.id),
+            details=f"Jugador '{removed.get('display_name')}' retirado de slot #{slot.id}",
+            username_snapshot="Camilo Real (Recepción)"
+        )
+    except Exception as e:
+        logger.warning(f"Error registrando auditoría en remove_player_from_slot: {e}")
+
+    return {
+        "status": "ok",
+        "message": f"Jugador {removed.get('display_name')} retirado exitosamente",
+        "slot_id": slot.id,
+        "booked_spots": slot.booked_spots,
+        "slot_status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
+    }
+
+
 class AssignSpotRequest(BaseModel):
     slot_id: Union[int, str]
     customer_name: Optional[str] = None
@@ -2767,6 +2907,62 @@ async def assign_spot(
 
         await db.commit()
         await db.refresh(slot)
+
+        # Despacho transaccional por WhatsApp para asignación manual en recepción
+        if phone and not phone.startswith("+57-WA-") and not phone.startswith("+57-unknown") and not "#GUEST" in phone:
+            c_label = slot.court.name if slot.court else "Pista"
+            st_fmt = slot.start_time.strftime("%I:%M %p").lstrip("0")
+            et_fmt = slot.end_time.strftime("%I:%M %p").lstrip("0")
+            total_cap = slot.capacity or 4
+            spots_count = slot.booked_spots
+
+            # Si es Cancha Completa o se reservaron todos los cupos
+            if slot.mode == SlotMode.FULL_COURT or spots_requested >= total_cap:
+                wa_body = (
+                    f"✅ *¡RESERVA CONFIRMADA EN CAPITAL PÁDEL CLUB!* 🎾\n\n"
+                    f"• *Pista:* {c_label}\n"
+                    f"• *Horario:* {st_fmt} - {et_fmt}\n"
+                    f"• *Titular:* {name}\n\n"
+                    f"🔒 Tu pista ya quedó asegurada en nuestro sistema. ¡Te esperamos en la sede (Maloka)!"
+                )
+                try:
+                    await send_whatsapp_message(to_phone=phone, message_body=wa_body)
+                    await log_conversation_message(db, phone, wa_body, direction="bot", player_name=name)
+                except Exception as wa_err:
+                    logger.warning(f"Error enviando confirmación WhatsApp a {phone}: {wa_err}")
+            else:
+                # Cupo Individual / Split
+                wa_body = (
+                    f"📋 *¡CUPO APARTADO (1/{total_cap})!* 🎾\n\n"
+                    f"• *Pista:* {c_label}\n"
+                    f"• *Horario:* {st_fmt} - {et_fmt}\n"
+                    f"• *Inscritos:* ({spots_count}/{total_cap})\n\n"
+                    f"⚠️ *Aviso:* Si el turno no completa los {total_cap} jugadores a menos de 30 min, podrá ser reasignado. Te avisaremos cuando se sumen compañeros."
+                )
+                try:
+                    await send_whatsapp_message(to_phone=phone, message_body=wa_body)
+                    await log_conversation_message(db, phone, wa_body, direction="bot", player_name=name)
+                except Exception as wa_err:
+                    logger.warning(f"Error enviando cupo individual WhatsApp a {phone}: {wa_err}")
+
+            # Notificación de Partido Cerrado si se completaron los cupos (4/4)
+            if slot.booked_spots >= total_cap:
+                match_closed_msg = (
+                    f"🎉 *¡PARTIDO CONFIRMADO Y COMPLETO ({total_cap}/{total_cap})!* 🎾\n\n"
+                    f"Tu partido en {c_label} ({slot.date.strftime('%d/%m/%Y')} de {st_fmt} a {et_fmt}) "
+                    f"ha completado todos los jugadores.\n\n"
+                    f"¿Desean pagar por link digital (Wompi/Bold) o cancelar el valor pendiente directamente en counter?\n"
+                    f"¡Nos vemos en la pista!"
+                )
+                for part in current_participants:
+                    p_phone = part.get("phone")
+                    p_name = part.get("display_name") or "Jugador"
+                    if p_phone and not p_phone.startswith("+57-WA-") and not p_phone.startswith("+57-unknown") and not "#GUEST" in p_phone:
+                        try:
+                            await send_whatsapp_message(to_phone=p_phone, message_body=match_closed_msg)
+                            await log_conversation_message(db, p_phone, match_closed_msg, direction="bot", player_name=p_name)
+                        except Exception as w_err:
+                            logger.warning(f"Error enviando notificación 4/4 a {p_phone}: {w_err}")
 
         try:
             await log_activity(

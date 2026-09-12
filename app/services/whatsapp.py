@@ -2730,6 +2730,8 @@ async def send_whatsapp_message(to_phone: str, message_body: str) -> bool:
     }
 
     try:
+        logger.info(f"[WHATSAPP OUTGOING] Despachando mensaje a {clean_to}...")
+        print(f"[WHATSAPP OUTGOING] Despachando mensaje a {clean_to}...")
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(url, json=payload, headers=headers)
             if resp.is_success:
@@ -2741,10 +2743,15 @@ async def send_whatsapp_message(to_phone: str, message_body: str) -> bool:
                 print(f"[WHATSAPP OUTGOING] ÉXITO enviando a {clean_to}: {resp_json}")
                 return True
             else:
-                logger.error(f"Error Meta Graph API ({resp.status_code}): {resp.text}")
-                print(f"[WHATSAPP OUTGOING] ERROR Meta Graph API: {resp.text}")
+                err_detail = ""
+                try:
+                    err_detail = resp.json()
+                except Exception:
+                    err_detail = resp.text
+                logger.error(f"Error Meta Graph API ({resp.status_code}) enviando a {clean_to}: {err_detail}")
+                print(f"[WHATSAPP OUTGOING] ERROR Meta Graph API ({resp.status_code}) para {clean_to}: {err_detail}")
                 return False
     except Exception as exc:
         logger.error(f"Excepción despachando a {clean_to}: {exc}", exc_info=True)
-        print(f"[WHATSAPP OUTGOING] EXCEPCIÓN: {exc}")
+        print(f"[WHATSAPP OUTGOING] EXCEPCIÓN enviando a {clean_to}: {exc}")
         return False

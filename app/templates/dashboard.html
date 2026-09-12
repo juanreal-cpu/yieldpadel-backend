@@ -9827,9 +9827,8 @@ ${data.message}`);
         const playerList = (slot.participants && slot.participants.length > 0) 
           ? slot.participants 
           : (slot.players_names ? slot.players_names.map(n => (typeof n === 'object' ? n : { display_name: n, name: n })) : []);
-        if (playerList && playerList.length > 0) {
           playersHtml = '<div class="card-players" style="max-height: 120px; overflow-y: auto;">';
-          playerList.forEach(p => {
+          playerList.forEach((p, playerIndex) => {
             const pName = p.display_name || p.name || 'Jugador';
             const isFirst = Boolean(p.is_first_visit);
             const firstBadge = isFirst 
@@ -9842,7 +9841,7 @@ ${data.message}`);
             playersHtml += `
               <div class="card-player-item" onclick="openPlayerOnboardingProtocol(${slot.id}, ${JSON.stringify(pName)}, ${JSON.stringify(pPhone)}, ${isFirst}, ${JSON.stringify(pStatus)}, ${pCustId})" style="cursor: pointer;" title="${isFirst ? 'Cliente nuevo: Clic para abrir Protocolo Nuevo Cliente' : 'Gestionar jugador'}">
                 <span class="inline-flex items-center gap-1">${sportIcon} ${pName} ${firstBadge}</span>
-                <button onclick="event.stopPropagation(); openDropModal(${slot.id}, ${JSON.stringify(pName)})" class="btn-card-drop" title="Dar de baja">✕</button>
+                <button onclick="event.stopPropagation(); removePlayerFromSlot('${slot.id}', ${playerIndex}, '${pPhone}')" class="btn-card-drop" title="Dar de baja">✕</button>
               </div>
             `;
           });
@@ -11352,9 +11351,28 @@ ${data.message}`);
     }
     window.openHoldModal = openHoldModal;
 
-    function closeModal() {
-      const modal = document.getElementById('hold-modal') || document.getElementById('modal-hold');
-      if (modal) modal.classList.remove('active');
+    function closeModal(id) {
+      if (id) {
+        const target = document.getElementById(id);
+        if (target) {
+          target.classList.remove('active');
+          target.classList.add('hidden');
+          target.style.display = 'none';
+        }
+      }
+      const modals = [
+        document.getElementById('hold-modal'),
+        document.getElementById('modal-hold'),
+        document.getElementById('modal-assign-spot'),
+        document.getElementById('drop-modal'),
+      ];
+      modals.forEach(m => {
+        if (m && (!id || m.id === id)) {
+          m.classList.remove('active');
+          m.classList.add('hidden');
+          m.style.display = 'none';
+        }
+      });
       const dropdown = document.getElementById('hold-crm-dropdown');
       if (dropdown) {
         dropdown.innerHTML = '';
@@ -11563,6 +11581,41 @@ ${data.message}`);
         alert('Error al dar de baja al jugador');
       }
     }
+
+    async function removePlayerFromSlot(slotId, playerIndex, playerPhone) {
+      if (!confirm('¿Deseas retirar a este jugador del turno?')) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/remove-player`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            player_index: playerIndex,
+            player_phone: playerPhone || ''
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('Jugador Retirado', '✅ Jugador retirado del turno exitosamente');
+          } else if (typeof addEvent === 'function') {
+            addEvent('Baja Realizada', `Jugador retirado de Pista #${slotId}`, 'red');
+          } else {
+            alert('✅ Jugador retirado exitosamente');
+          }
+          if (typeof fetchSlots === 'function') {
+            await fetchSlots();
+          }
+        } else {
+          alert(data.detail || data.message || 'No fue posible retirar al jugador del turno');
+        }
+      } catch (err) {
+        console.error('Error in removePlayerFromSlot:', err);
+        alert('Error de conexión al retirar al jugador');
+      }
+    }
+    window.removePlayerFromSlot = removePlayerFromSlot;
 
     // Parseo de WhatsApp
     async function parseWhatsApp() {
