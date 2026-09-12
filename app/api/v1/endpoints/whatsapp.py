@@ -1,14 +1,16 @@
 import logging
 import os
 from datetime import date, timedelta
-from typing import Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.timezone import get_bogota_today
+from app.models.slot import TimeSlot
 from app.services.whatsapp import (
     MESSAGES_CACHE,
     generate_availability_broadcast,
@@ -20,6 +22,7 @@ from app.services.whatsapp import (
     log_conversation_message,
     normalize_phone,
     process_incoming_whatsapp_message,
+    sanitize_phone,
     send_whatsapp_message,
     set_conversation_paused,
 )
@@ -302,6 +305,91 @@ async def broadcast_promo_urgent(
         "target_date": str(parsed_date),
         "total_critical_slots": total_critical,
         "recipient": target_group,
+        "broadcast_text": broadcast_text,
+    }
+
+
+class TargetedBroadcastRequest(BaseModel):
+    mode: str = "AVAILABILITY"  # "AVAILABILITY" | "FLASH_PROMO"
+    target_phones: List[str]
+    custom_message: Optional[str] = None
+    slot_id: Optional[int] = None
+    sport: Optional[str] = "PADEL"
+    target_date: Optional[str] = None
+
+
+@router.post("/broadcast-targeted")
+async def broadcast_targeted(
+    payload: TargetedBroadcastRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Despacha difusión de WhatsApp con filtro de audiencia a una lista de números seleccionados.
+    Permite enviar mensaje personalizado, disponibilidad de turnos o remate flash (-25%).
+    """
+    if not payload.target_phones:
+        raise HTTPException(status_code=400, detail="Debe especificar al menos un teléfono de destino.")
+
+    # 1. Determinar el mensaje a despachar
+    broadcast_text = (payload.custom_message or "").strip()
+    if not broadcast_text:
+        parsed_date = None
+        if payload.target_date:
+            try:
+                parsed_date = date.fromisoformat(payload.target_date)
+            except ValueError:
+                parsed_date = get_bogota_today()
+        else:
+            parsed_date = get_bogota_today()
+
+        sport_val = (payload.sport or "PADEL").upper().strip()
+
+        if payload.mode == "FLASH_PROMO":
+            if payload.slot_id:
+                # Generar mensaje específico para el slot_id indicado
+                stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == payload.slot_id)
+                res = await db.execute(stmt)
+                slot = res.scalars().first()
+                if slot:
+                    c_name = slot.court.name if slot.court else "Cancha"
+                    st = slot.start_time.strftime("%I:%M%p").lower()
+                    et = slot.end_time.strftime("%I:%M%p").lower()
+                    orig_p = f"${int(slot.total_price or 80000):,}".replace(",", ".")
+                    disc_p = f"${int((slot.total_price or 80000) * 0.75):,}".replace(",", ".")
+                    broadcast_text = (
+                        f"⚡ *¡REMATE FLASH YIELD -25% EN CAPITAL PÁDEL CLUB!* ⚡\n\n"
+                        f"🚨 *¡Turno Liberado de Última Hora!*\n"
+                        f"📍 {c_name} | ⌚ *{st} - {et}* ({slot.date.strftime('%d/%m/%Y')})\n"
+                        f"💰 Tarifa Regular: ~{orig_p}~ ➔ *PROMO FLASH: {disc_p} COP* (-25% OFF)\n\n"
+                        f"🏃‍♂️ Responde de inmediato con *'VOY'* a este chat para asegurar tu pista."
+                    )
+            if not broadcast_text:
+                broadcast_text, _ = await generate_promo_urgent_broadcast(db, target_date=parsed_date, sport=sport_val)
+        else:
+            broadcast_text, _ = await generate_availability_broadcast(db, target_date=parsed_date, sport=sport_val)
+
+    # 2. Despachar a cada teléfono de la lista
+    sent_count = 0
+    clean_phones = []
+    for ph in payload.target_phones:
+        s_phone = sanitize_phone(ph)
+        if s_phone and s_phone not in clean_phones:
+            clean_phones.append(s_phone)
+
+    for ph in clean_phones:
+        try:
+            ok = await send_whatsapp_message(to_phone=ph, message_body=broadcast_text)
+            await log_conversation_message(db, ph, broadcast_text, direction="bot")
+            if ok:
+                sent_count += 1
+        except Exception as exc:
+            logger.warning(f"Fallo al despachar difusión a {ph}: {exc}")
+
+    return {
+        "status": "ok",
+        "sent_count": len(clean_phones),
+        "successful_deliveries": sent_count,
+        "message": f"Difusión entregada exitosamente a {len(clean_phones)} clientes.",
         "broadcast_text": broadcast_text,
     }
 
