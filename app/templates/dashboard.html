@@ -8825,18 +8825,23 @@ ${data.message}`);
             const category = p.detected_category || p.category || '4ta';
             const totalMatches = p.total_matches || p.total_matches_played || 1;
             const phone = p.phone || p.player_phone || '';
-            const cleanPhone = String(phone).replace(/[^0-9]/g, '');
-            const waHref = cleanPhone.length >= 7 
-              ? `https://wa.me/${cleanPhone}?text=Hola%20${encodeURIComponent(playerName)}`
-              : `https://wa.me/?text=Hola%20${encodeURIComponent(playerName)}`;
+            const cleanDigits = String(phone).replace(/[^0-9]/g, '');
+            const hasWa = cleanDigits.length >= 10;
+            const waHref = hasWa
+              ? `https://wa.me/${cleanDigits}?text=Hola%20${encodeURIComponent(playerName)},%20te%20escribimos%20de%20Capital%20P%C3%A1del%20Club.%20%C2%A1Te%20invitamos%20a%20conocer%20nuestras%20instalaciones!`
+              : '#';
+            const phoneDisplay = phone ? phone : '<span class="text-slate-400 text-xs font-medium">Sin WhatsApp</span>';
+            const waAction = hasWa
+              ? `<a href="${waHref}" target="_blank" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs shadow-sm inline-flex items-center gap-1 transition">💬 Contactar</a>`
+              : `<span class="text-slate-400 text-xs font-medium">—</span>`;
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                 <td class="py-2.5 px-3 font-bold text-slate-800">${playerName}</td>
                 <td class="py-2.5 px-3 text-slate-700">${category}</td>
-                <td class="py-2.5 px-3 text-slate-600">${phone || 'Sin WhatsApp'}</td>
+                <td class="py-2.5 px-3 text-slate-600">${phoneDisplay}</td>
                 <td class="py-2.5 px-3 font-semibold text-slate-600 text-right">${totalMatches} partidos</td>
                 <td class="py-2.5 px-3 text-center">
-                  <a href="${waHref}" target="_blank" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs shadow-sm inline-flex items-center gap-1">💬 WhatsApp</a>
+                  ${waAction}
                 </td>
               </tr>
             `;
