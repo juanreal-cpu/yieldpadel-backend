@@ -3189,7 +3189,21 @@
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[75vh]">
             <!-- Columna Izquierda: Conversaciones activas -->
             <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col h-full">
-              <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Chats Pendientes</div>
+              <div class="mb-3 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-black text-slate-500 uppercase tracking-wider">Bandeja de Entrada</span>
+                  <span id="inbox-filter-count" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">0 pendientes</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-[11px] font-bold">
+                  <button type="button" id="tab-filter-pending" onclick="setInboxFilter('PENDING')" class="py-1.5 px-2 rounded-lg transition bg-white text-slate-900 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                    <span>Asesor</span>
+                  </button>
+                  <button type="button" id="tab-filter-all" onclick="setInboxFilter('ALL')" class="py-1.5 px-2 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1 cursor-pointer">
+                    <span>Todos</span>
+                  </button>
+                </div>
+              </div>
               <div id="inbox-conversations-list" class="space-y-2 overflow-y-auto flex-1 pr-1">
                 <!-- Se llena dinámicamente con las sesiones pausadas -->
               </div>
@@ -15249,10 +15263,35 @@ Jugador: ${checkData.player_name}`);
     // =========================================================================
     window.inboxSelectedPhone = null;
     window.inboxConversationsCache = [];
+    window.currentInboxFilter = 'PENDING';
 
     function escapeHtmlInbox(str) {
       return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
+
+    window.setInboxFilter = function(filterType) {
+      window.currentInboxFilter = filterType;
+      const btnPending = document.getElementById('tab-filter-pending');
+      const btnAll = document.getElementById('tab-filter-all');
+
+      if (filterType === 'PENDING') {
+        if (btnPending) {
+          btnPending.className = 'py-1.5 px-2 rounded-lg transition bg-white text-slate-900 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer font-bold';
+        }
+        if (btnAll) {
+          btnAll.className = 'py-1.5 px-2 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1 cursor-pointer font-medium';
+        }
+      } else {
+        if (btnPending) {
+          btnPending.className = 'py-1.5 px-2 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5 cursor-pointer font-medium';
+        }
+        if (btnAll) {
+          btnAll.className = 'py-1.5 px-2 rounded-lg transition bg-white text-slate-900 shadow-xs flex items-center justify-center gap-1 cursor-pointer font-bold';
+        }
+      }
+
+      renderInboxConversationsList();
+    };
 
     async function loadInboxConversations() {
       try {
@@ -15270,15 +15309,39 @@ Jugador: ${checkData.player_name}`);
     function renderInboxConversationsList() {
       const list = document.getElementById('inbox-conversations-list');
       if (!list) return;
-      const conversations = window.inboxConversationsCache || [];
+      const allConversations = window.inboxConversationsCache || [];
+
+      // Conteo de chats esperando atención humana
+      const pendingCount = allConversations.filter(c => c.is_bot_paused === true).length;
+      const countBadge = document.getElementById('inbox-filter-count');
+      if (countBadge) {
+        countBadge.textContent = `${pendingCount} pendiente${pendingCount === 1 ? '' : 's'}`;
+      }
+
+      // Aplicar filtro según pestaña activa
+      let conversations = allConversations;
+      if (window.currentInboxFilter === 'PENDING') {
+        conversations = allConversations.filter(c => c.is_bot_paused === true);
+      }
+
       if (conversations.length === 0) {
-        list.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No hay conversaciones pendientes de asesor.</div>';
+        if (window.currentInboxFilter === 'PENDING') {
+          list.innerHTML = `
+            <div class="py-12 text-center text-slate-400">
+              <div class="text-2xl mb-1">🎉</div>
+              <div class="text-xs font-bold text-slate-700">¡Bandeja al día!</div>
+              <div class="text-[11px] mt-0.5 text-slate-500">No hay chats esperando atención humana. El bot IA está gestionando todo.</div>
+            </div>`;
+        } else {
+          list.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No hay conversaciones registradas.</div>';
+        }
         return;
       }
+
       list.innerHTML = conversations.map(c => {
         const isActive = c.sender_phone === window.inboxSelectedPhone;
         const statusBadge = c.is_bot_paused
-          ? '<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-100 text-rose-700 rounded-full">🔴 Bot Pausado</span>'
+          ? '<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-100 text-rose-700 rounded-full">🔴 Asesor Requerido</span>'
           : '<span class="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 rounded-full">🟢 Atendida por Bot</span>';
         const unreadBadge = c.unread_count > 0 ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-rose-500 text-white rounded-full">${c.unread_count}</span>` : '';
         return `
@@ -15337,7 +15400,6 @@ Jugador: ${checkData.player_name}`);
           const msgs = data.messages || [];
           container.innerHTML = msgs.map(m => {
             const isStaff = m.direction === 'staff';
-            // Cliente y Bot: burbuja blanca con texto oscuro visible; Recepción: burbuja verde alineada a la derecha
             const bubbleColor = isStaff ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-800';
             const align = isStaff ? 'justify-end' : 'justify-start';
             return `<div class="flex ${align}"><div class="max-w-[75%] px-3 py-2 rounded-xl text-xs ${bubbleColor} shadow-xs">${escapeHtmlInbox(m.body)}</div></div>`;
@@ -15387,7 +15449,35 @@ Jugador: ${checkData.player_name}`);
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sender_phone: phone }),
         });
-        selectInboxConversation(phone);
+
+        // Actualizar estado en caché local para respuesta inmediata
+        if (Array.isArray(window.inboxConversationsCache)) {
+          const match = window.inboxConversationsCache.find(c => c.sender_phone === phone);
+          if (match) {
+            match.is_bot_paused = false;
+          }
+        }
+
+        // Si estamos en filtro PENDING, remover selección si correspondía al chat devuelto
+        if (window.currentInboxFilter === 'PENDING') {
+          window.inboxSelectedPhone = null;
+          const nameEl = document.getElementById('inbox-chat-player-name');
+          const phoneEl = document.getElementById('inbox-chat-phone');
+          const handbackBtn = document.getElementById('btn-handback-bot');
+          const crmCard = document.getElementById('inbox-crm-mini-card');
+          const container = document.getElementById('inbox-messages-container');
+
+          if (nameEl) nameEl.textContent = 'Selecciona una conversación';
+          if (phoneEl) phoneEl.textContent = '--';
+          if (handbackBtn) handbackBtn.classList.add('hidden');
+          if (crmCard) crmCard.classList.add('hidden');
+          if (container) container.innerHTML = '';
+        } else {
+          selectInboxConversation(phone);
+        }
+
+        renderInboxConversationsList();
+
         if (typeof window.updateInboxUnreadBadge === 'function') {
           window.updateInboxUnreadBadge();
         }
