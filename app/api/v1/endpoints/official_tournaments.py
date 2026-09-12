@@ -51,21 +51,26 @@ class CreateOfficialTournamentRequest(BaseModel):
 
 
 class RegisterTeamRequest(BaseModel):
-    tournament_id: int
-    team_name: str
-    customer_id_1: int
-    customer_id_2: int
-    group_id: Optional[int] = None
+    tournament_id: Optional[int] = None
+    team_name: Optional[str] = None
+    pair_name: Optional[str] = None
+    customer_id_1: Optional[Union[int, str]] = None
+    customer_id_2: Optional[Union[int, str]] = None
+    player1_id: Optional[Union[int, str]] = None
+    player2_id: Optional[Union[int, str]] = None
+    group_id: Optional[Union[int, str]] = None
+    assigned_group: Optional[Union[int, str]] = None
     seed: Optional[int] = None
 
 
 class RecordScoreRequest(BaseModel):
-    match_id: int
-    scores: List[Dict[str, int]] = Field(
-        ...,
-        description="Lista de sets, ej: [{'set': 1, 't1': 6, 't2': 4}, {'set': 2, 't1': 6, 't2': 3}]",
+    match_id: Optional[int] = None
+    scores: Optional[Union[List[Dict[str, Any]], Dict[str, Any], List[Any]]] = Field(
+        None,
+        description="Lista de sets o dict con sets",
     )
-    winner_team_id: int
+    winner_team_id: Optional[Union[int, str]] = None
+    winner: Optional[Union[int, str]] = None
     status: Optional[str] = Field("COMPLETED", description="COMPLETED o IN_PROGRESS")
 
 
@@ -298,41 +303,81 @@ async def create_official_tournament(
     status_code=status.HTTP_201_CREATED,
     summary="Inscribir pareja desde el CRM con validación de categoría",
 )
+@router.post(
+    "/{tournament_id}/enroll-pair",
+    status_code=status.HTTP_201_CREATED,
+    summary="Inscribir pareja oficial en torneo",
+)
+@router.post(
+    "/official/{tournament_id}/enroll-pair",
+    status_code=status.HTTP_201_CREATED,
+    summary="Inscribir pareja oficial en torneo (alias)",
+)
 async def register_team(
     payload: RegisterTeamRequest,
+    tournament_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Inscribe una pareja de jugadores validando su existencia y categoría en el CRM.
+    Soporta tanto register-team como /{tournament_id}/enroll-pair.
     """
+    t_id = tournament_id or payload.tournament_id
+    if not t_id:
+        raise HTTPException(status_code=400, detail="Falta el ID del torneo.")
+
     # 1. Validar torneo
     tourn_res = await db.execute(
         select(OfficialTournament)
         .options(selectinload(OfficialTournament.teams), selectinload(OfficialTournament.groups))
-        .where(OfficialTournament.id == payload.tournament_id)
+        .where(OfficialTournament.id == t_id)
     )
     tourn = tourn_res.scalar_one_or_none()
     if not tourn:
         raise HTTPException(status_code=404, detail="Torneo oficial no encontrado")
 
-    # 2. Obtener y validar ambos jugadores
-    cust1_res = await db.execute(select(Customer).where(Customer.id == payload.customer_id_1))
-    cust1 = cust1_res.scalar_one_or_none()
-    cust2_res = await db.execute(select(Customer).where(Customer.id == payload.customer_id_2))
-    cust2 = cust2_res.scalar_one_or_none()
+    # 2. Obtener y validar ambos jugadores (soportando customer_id_1 o player1_id, y enteros o strings de teléfono/nombre)
+    p1_val = payload.customer_id_1 if payload.customer_id_1 is not None else payload.player1_id
+    p2_val = payload.customer_id_2 if payload.customer_id_2 is not None else payload.player2_id
 
-    if not cust1 or not cust2:
-        raise HTTPException(status_code=404, detail="Uno o ambos jugadores no existen en el CRM.")
+    if not p1_val or not p2_val:
+        raise HTTPException(status_code=400, detail="Debes seleccionar al menos los 2 jugadores de la dupla.")
+
+    async def resolve_customer(val: Union[int, str]) -> Customer:
+        # Si es int o string de digitos
+        if isinstance(val, int) or (isinstance(val, str) and val.isdigit()):
+            c_res = await db.execute(select(Customer).where(Customer.id == int(val)))
+            cust = c_res.scalar_one_or_none()
+            if cust:
+                return cust
+        # Si es string (telefono o nombre)
+        val_str = str(val).strip()
+        c_res = await db.execute(select(Customer).where(or_(Customer.phone == val_str, Customer.name.ilike(val_str))))
+        cust = c_res.scalars().first()
+        if cust:
+            return cust
+        # Crear nuevo cliente externo si no existe
+        new_c = Customer(
+            name=val_str if not val_str.startswith("+") and not val_str.isdigit() else f"Jugador {val_str[-4:]}",
+            phone=val_str if val_str.isdigit() or val_str.startswith("+") else "3000000000",
+            category=tourn.category or "4ta",
+            client_type="Estándar",
+        )
+        db.add(new_c)
+        await db.flush()
+        return new_c
+
+    cust1 = await resolve_customer(p1_val)
+    cust2 = await resolve_customer(p2_val)
 
     if cust1.id == cust2.id:
         raise HTTPException(status_code=400, detail="Una pareja debe estar compuesta por dos jugadores distintos.")
 
     # 3. Validar categoría
-    t_cat = tourn.category.strip().lower()
+    t_cat = (tourn.category or "4ta").strip().lower()
     c1_cat = (cust1.category or "4ta").strip().lower()
     c2_cat = (cust2.category or "4ta").strip().lower()
 
-    # Si la categoría del jugador es significativamente superior a la del torneo (ej: 1ra jugando en 5ta)
     cat_order = ["6ta", "5ta", "4ta", "3ra", "2da", "1ra"]
     t_idx = cat_order.index(t_cat) if t_cat in cat_order else 2
     c1_idx = cat_order.index(c1_cat) if c1_cat in cat_order else 2
@@ -345,21 +390,35 @@ async def register_team(
             f"Alerta de categoría: {higher_player} tiene nivel {higher_cat} e ingresa a torneo {tourn.category}"
         )
 
-    # 4. Asignar grupo si no viene especificado (distribución balanceada round-robin)
-    group_id_val = payload.group_id
+    # 4. Asignar grupo
+    grp_input = payload.group_id if payload.group_id is not None else payload.assigned_group
+    group_id_val = None
+
+    if grp_input is not None:
+        grp_str = str(grp_input).strip()
+        if grp_str.isdigit():
+            group_id_val = int(grp_str)
+        else:
+            # Buscar por nombre (ej: "Grupo A", "A")
+            for g in tourn.groups:
+                if grp_str.lower() in g.name.lower():
+                    group_id_val = g.id
+                    break
+
     if not group_id_val and tourn.groups:
-        # Contar equipos por grupo
-        groups_list = tourn.groups
-        min_group = min(
-            groups_list,
+        # Distribución balanceada
+        group_id_val = min(
+            tourn.groups,
             key=lambda g: sum(1 for tm in tourn.teams if tm.group_id == g.id),
-        )
-        group_id_val = min_group.id
+        ).id
+
+    # Nombre de la pareja
+    team_name_final = (payload.team_name or payload.pair_name or f"{cust1.name.split()[0]} / {cust2.name.split()[0]}").strip()
 
     # 5. Crear el equipo
     team = TournamentTeam(
         tournament_id=tourn.id,
-        team_name=payload.team_name.strip(),
+        team_name=team_name_final,
         customer_id_1=cust1.id,
         customer_id_2=cust2.id,
         group_id=group_id_val,
@@ -400,18 +459,112 @@ async def register_team(
 
 
 @router.post(
+    "/{tournament_id}/generate-matches",
+    status_code=status.HTTP_200_OK,
+    summary="Generar cruces de partidos round-robin para los grupos",
+)
+@router.post(
+    "/official/{tournament_id}/generate-matches",
+    status_code=status.HTTP_200_OK,
+    summary="Generar cruces de partidos round-robin (alias)",
+)
+async def generate_matches(
+    tournament_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Genera automáticamente el fixture y los cruces de todos contra todos (Round-Robin)
+    para cada grupo del torneo oficial que tenga al menos 2 parejas.
+    """
+    tourn_res = await db.execute(
+        select(OfficialTournament)
+        .options(
+            selectinload(OfficialTournament.groups).selectinload(TournamentGroup.matches),
+            selectinload(OfficialTournament.teams),
+        )
+        .where(OfficialTournament.id == tournament_id)
+    )
+    tourn = tourn_res.scalar_one_or_none()
+    if not tourn:
+        raise HTTPException(status_code=404, detail="Torneo oficial no encontrado")
+
+    created_matches = 0
+    import itertools
+
+    for group in tourn.groups:
+        grp_teams = [t for t in tourn.teams if t.group_id == group.id]
+        if len(grp_teams) < 2:
+            continue
+
+        existing_pairs = set()
+        for m in group.matches:
+            if m.team1_id and m.team2_id:
+                pair_key = tuple(sorted([m.team1_id, m.team2_id]))
+                existing_pairs.add(pair_key)
+
+        round_num = 1
+        for t1, t2 in itertools.combinations(grp_teams, 2):
+            pair_key = tuple(sorted([t1.id, t2.id]))
+            if pair_key in existing_pairs:
+                continue
+
+            match = TournamentMatch(
+                tournament_id=tourn.id,
+                group_id=group.id,
+                stage="GROUP_STAGE",
+                round_number=round_num,
+                team1_id=t1.id,
+                team2_id=t2.id,
+                team1_label=t1.team_name,
+                team2_label=t2.team_name,
+                scores_json=[],
+                status="SCHEDULED",
+            )
+            db.add(match)
+            existing_pairs.add(pair_key)
+            created_matches += 1
+            round_num += 1
+
+    if created_matches > 0:
+        tourn.status = OfficialTournamentStatus.IN_PROGRESS
+
+    await db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Se generaron {created_matches} cruces de grupo exitosamente.",
+        "matches_created": created_matches,
+    }
+
+
+@router.post(
     "/record-score",
     status_code=status.HTTP_200_OK,
     summary="Registrar marcador y recalcular tabla de posiciones / bracket",
 )
+@router.post(
+    "/matches/{match_id}/record-score",
+    status_code=status.HTTP_200_OK,
+    summary="Registrar marcador por id de partido",
+)
+@router.post(
+    "/official/matches/{match_id}/record-score",
+    status_code=status.HTTP_200_OK,
+    summary="Registrar marcador oficial (alias)",
+)
 async def record_score(
     payload: RecordScoreRequest,
+    match_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Recibe el marcador de un partido, recalcula en tiempo real los puntos (PJ, PG, PP, SF, SC, GF, GC)
     del grupo o avanza a la dupla ganadora en la fase de playoffs.
     """
+    m_id = match_id or payload.match_id
+    if not m_id:
+        raise HTTPException(status_code=400, detail="Falta el ID del partido.")
+
     match_stmt = (
         select(TournamentMatch)
         .options(
@@ -420,15 +573,67 @@ async def record_score(
             selectinload(TournamentMatch.team2),
             selectinload(TournamentMatch.tournament),
         )
-        .where(TournamentMatch.id == payload.match_id)
+        .where(TournamentMatch.id == m_id)
     )
     res = await db.execute(match_stmt)
     match = res.scalar_one_or_none()
     if not match:
         raise HTTPException(status_code=404, detail="Partido no encontrado")
 
-    match.scores_json = payload.scores
-    match.winner_team_id = payload.winner_team_id
+    # Normalizar scores
+    raw_scores = payload.scores or []
+    norm_scores = []
+    if isinstance(raw_scores, list):
+        for idx, s in enumerate(raw_scores):
+            if isinstance(s, dict):
+                norm_scores.append({
+                    "set": s.get("set", idx + 1),
+                    "t1": int(s.get("t1", 0)),
+                    "t2": int(s.get("t2", 0)),
+                })
+            elif isinstance(s, str) and "-" in s:
+                p = s.split("-")
+                try:
+                    norm_scores.append({"set": idx + 1, "t1": int(p[0].strip()), "t2": int(p[1].strip())})
+                except Exception:
+                    pass
+    elif isinstance(raw_scores, dict):
+        for k, v in raw_scores.items():
+            if isinstance(v, str) and "-" in v:
+                p = v.split("-")
+                norm_scores.append({"set": len(norm_scores) + 1, "t1": int(p[0].strip()), "t2": int(p[1].strip())})
+
+    # Resolver winner_team_id
+    win_val = payload.winner_team_id if payload.winner_team_id is not None else payload.winner
+    winner_team_id = None
+    if win_val is not None:
+        win_str = str(win_val).strip()
+        if win_str == "TEAM_A" and match.team1_id:
+            winner_team_id = match.team1_id
+        elif win_str == "TEAM_B" and match.team2_id:
+            winner_team_id = match.team2_id
+        elif win_str.isdigit():
+            winner_team_id = int(win_str)
+        elif match.team1 and win_str.lower() in match.team1.team_name.lower():
+            winner_team_id = match.team1_id
+        elif match.team2 and win_str.lower() in match.team2.team_name.lower():
+            winner_team_id = match.team2_id
+
+    # Si no se pasó ganador explícito pero hay sets anotados, inferir ganador
+    if not winner_team_id and norm_scores and match.team1_id and match.team2_id:
+        t1_w, t2_w = 0, 0
+        for s in norm_scores:
+            if s["t1"] > s["t2"]:
+                t1_w += 1
+            elif s["t2"] > s["t1"]:
+                t2_w += 1
+        if t1_w > t2_w:
+            winner_team_id = match.team1_id
+        elif t2_w > t1_w:
+            winner_team_id = match.team2_id
+
+    match.scores_json = norm_scores
+    match.winner_team_id = winner_team_id
     match.status = payload.status or "COMPLETED"
 
     # 1. Si pertenece a fase de grupos, recalcular la tabla del grupo
@@ -455,7 +660,7 @@ async def record_score(
         # Calcular sets y games
         t1_sets, t2_sets = 0, 0
         t1_games, t2_games = 0, 0
-        for s in payload.scores:
+        for s in norm_scores:
             g1 = s.get("t1", 0)
             g2 = s.get("t2", 0)
             t1_games += g1
@@ -465,8 +670,8 @@ async def record_score(
             elif g2 > g1:
                 t2_sets += 1
 
-        t1_won = payload.winner_team_id == match.team1_id
-        t2_won = payload.winner_team_id == match.team2_id
+        t1_won = winner_team_id == match.team1_id
+        t2_won = winner_team_id == match.team2_id
 
         # Actualizar Team 1
         st1 = standings[match.team1_id]
@@ -510,9 +715,10 @@ async def record_score(
 
     return {
         "status": "success",
-        "message": f"Marcador guardado y tabla del grupo actualizada. Ganador: ID {payload.winner_team_id}.",
+        "message": f"Marcador guardado exitosamente. Ganador: ID {winner_team_id}.",
         "match_id": match.id,
         "winner_team_id": match.winner_team_id,
+        "scores": match.scores_json,
     }
 
 

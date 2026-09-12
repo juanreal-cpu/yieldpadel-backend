@@ -15096,25 +15096,57 @@ Jugador: ${checkData.player_name}`);
 
       if (matchesCont) {
         if (!t.matches || t.matches.length === 0) {
-          matchesCont.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-6">No hay cruces generados aún. Inscribe parejas en los grupos.</p>';
+          if ((t.teams || []).length >= 2) {
+            matchesCont.innerHTML = `
+              <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-3">
+                <p class="text-xs text-slate-600 font-medium">Hay ${(t.teams || []).length} parejas inscritas listas para competir.</p>
+                <button type="button" onclick="generateTournamentMatches('${t.id}')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow hover:bg-indigo-700 cursor-pointer transition flex items-center gap-1.5 mx-auto">
+                  <span>⚡</span> <span>Generar Cruces de Grupo</span>
+                </button>
+              </div>
+            `;
+          } else {
+            matchesCont.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-6">No hay cruces generados aún. Inscribe parejas en los grupos.</p>';
+          }
         } else {
           matchesCont.innerHTML = t.matches.map(m => {
-            const scStr = (m.scores || []).map(s => `${s.t1}-${s.t2}`).join(', ');
+            const teamAName = (m.team1 && m.team1.name) ? m.team1.name : (m.team1_label || 'Dupla A');
+            const teamBName = (m.team2 && m.team2.name) ? m.team2.name : (m.team2_label || 'Dupla B');
+            const teamAId = m.team1 ? m.team1.id : null;
+            const teamBId = m.team2 ? m.team2.id : null;
+
+            // Sets guardados si existen
+            const s1 = (m.scores && m.scores[0]) ? `${m.scores[0].t1}-${m.scores[0].t2}` : '';
+            const s2 = (m.scores && m.scores[1]) ? `${m.scores[1].t1}-${m.scores[1].t2}` : '';
+            const s3 = (m.scores && m.scores[2]) ? `${m.scores[2].t1}-${m.scores[2].t2}` : '';
+
+            const isTeamAWinner = m.winner_team_id === teamAId;
+            const isTeamBWinner = m.winner_team_id === teamBId;
+
             return `
-              <div class="p-3 bg-slate-50 hover:bg-white border border-slate-200 rounded-2xl transition space-y-2 shadow-2xs">
-                <div class="flex justify-between items-center text-[10px] font-bold text-slate-500">
+              <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl mb-3 space-y-2 shadow-xs">
+                <div class="flex justify-between items-center text-[10px] font-bold text-slate-500 pb-1 border-b border-slate-200">
                   <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-700">${m.stage || 'GRUPO'}</span>
-                  <span class="font-mono text-indigo-600">${m.scheduled_time || 'Turno Progamado'}</span>
+                  <span class="font-mono text-indigo-600">${m.scheduled_time || 'Turno Oficial'}</span>
                 </div>
-                <div class="text-xs font-black text-slate-900 flex justify-between items-center">
-                  <span class="${m.winner_team_id === m.team1.id ? 'text-emerald-700' : ''}">${escapeHtml(m.team1.name)}</span>
-                  <span class="text-slate-400 text-[10px]">vs</span>
-                  <span class="${m.winner_team_id === m.team2.id ? 'text-emerald-700' : ''}">${escapeHtml(m.team2.name)}</span>
+                <div class="flex items-center justify-between text-xs font-bold text-slate-900">
+                  <span class="${isTeamAWinner ? 'text-emerald-700 font-black' : ''}">${escapeHtml(teamAName)} ${isTeamAWinner ? '🏆' : ''}</span>
+                  <span class="text-slate-400 font-extrabold text-[10px]">VS</span>
+                  <span class="${isTeamBWinner ? 'text-emerald-700 font-black' : ''}">${escapeHtml(teamBName)} ${isTeamBWinner ? '🏆' : ''}</span>
                 </div>
-                <div class="flex justify-between items-center pt-1 border-t border-slate-200 text-xs">
-                  <span class="font-mono font-black text-slate-800">${scStr ? `Sets: ${scStr}` : 'Marcador: 0-0'}</span>
-                  <button type="button" onclick="openRecordMatchScoreModal(${m.id}, '${escapeHtml(m.team1.name)}', '${escapeHtml(m.team2.name)}', ${m.team1.id}, ${m.team2.id})" class="px-2.5 py-1 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition shadow-2xs">
-                    ✏️ Cargar Marcador
+                <div class="flex items-center gap-2">
+                  <input type="text" id="score-set1-${m.id}" value="${s1}" placeholder="Set 1 (ej: 6-4)" class="w-1/3 px-2 py-1 text-xs border border-slate-300 rounded bg-white text-slate-900 text-center font-bold">
+                  <input type="text" id="score-set2-${m.id}" value="${s2}" placeholder="Set 2 (ej: 4-6)" class="w-1/3 px-2 py-1 text-xs border border-slate-300 rounded bg-white text-slate-900 text-center font-bold">
+                  <input type="text" id="score-set3-${m.id}" value="${s3}" placeholder="Set 3 / STB" class="w-1/3 px-2 py-1 text-xs border border-slate-300 rounded bg-white text-slate-900 text-center font-bold">
+                </div>
+                <div class="flex items-center justify-between pt-1">
+                  <select id="winner-select-${m.id}" class="text-xs border border-slate-300 rounded px-2 py-1 bg-white text-slate-800 font-semibold">
+                    <option value="">-- Seleccionar Ganador --</option>
+                    <option value="TEAM_A" ${isTeamAWinner ? 'selected' : ''}>${escapeHtml(teamAName)}</option>
+                    <option value="TEAM_B" ${isTeamBWinner ? 'selected' : ''}>${escapeHtml(teamBName)}</option>
+                  </select>
+                  <button type="button" onclick="saveOfficialMatchScore('${m.id}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm cursor-pointer transition">
+                    Guardar Marcador
                   </button>
                 </div>
               </div>
@@ -15242,90 +15274,270 @@ Jugador: ${checkData.player_name}`);
     }
     window.handleCreateOfficialTournamentSubmit = handleCreateOfficialTournamentSubmit;
 
-    function openRegisterOfficialTeamModal() {
-      if (!window.selectedOfficialTournamentId) {
+    async function openEnrollPairModal(tournamentId) {
+      const tId = tournamentId || window.selectedOfficialTournamentId;
+      if (!tId) {
         alert('Selecciona primero un torneo oficial.');
         return;
       }
+      window.activeTournamentId = tId;
+      window.selectedOfficialTournamentId = tId;
 
-      const p1 = document.getElementById('ot-team-player-1');
-      const p2 = document.getElementById('ot-team-player-2');
-      const grpSel = document.getElementById('ot-team-group');
+      // 1. Cargar jugadores del CRM desde /api/v1/customers/?limit=200
+      let crmList = [];
+      try {
+        const res = await fetch('/api/v1/customers/?limit=200');
+        if (res.ok) {
+          crmList = await res.json();
+          window.crmCustomersCache = crmList;
+        }
+      } catch (e) {
+        console.warn('Error fetching customers from CRM:', e);
+        crmList = window.crmCustomersCache || [];
+      }
 
-      const crmList = window.crmCustomersCache || [];
-      const opts = '<option value="">Selecciona jugador...</option>' + crmList.map(c => `
-        <option value="${c.id}">${escapeHtml(c.name)} (${c.category || '4ta'} - Tel: ${c.phone})</option>
+      const playerOptionsHtml = '<option value="">-- Seleccionar Jugador del CRM --</option>' + (crmList || []).map(c => `
+        <option value="${c.id || c.phone}">${escapeHtml(c.name || 'Sin Nombre')} (${escapeHtml(c.category || '4ta')} - ${escapeHtml(c.phone || '')})</option>
       `).join('');
 
-      if (p1) p1.innerHTML = opts;
-      if (p2) p2.innerHTML = opts;
+      // Popular selectores principales y sus alias
+      ['ot-team-player-1', 'enroll-player1'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = playerOptionsHtml;
+      });
+      ['ot-team-player-2', 'enroll-player2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = playerOptionsHtml;
+      });
 
-      const activeTourn = (window.officialTournamentsCache || []).find(t => t.id === window.selectedOfficialTournamentId);
-      if (grpSel && activeTourn && activeTourn.groups) {
-        grpSel.innerHTML = '<option value="">Automático (Round Robin)</option>' + activeTourn.groups.map(g => `
-          <option value="${g.id}">${escapeHtml(g.name)}</option>
-        `).join('');
+      // Grupos del torneo activo
+      const activeTourn = (window.officialTournamentsCache || []).find(t => t.id === tId);
+      const grpSel = document.getElementById('ot-team-group') || document.getElementById('enroll-group');
+      if (grpSel) {
+        if (activeTourn && activeTourn.groups && activeTourn.groups.length > 0) {
+          grpSel.innerHTML = '<option value="">Automático (Round Robin)</option>' + activeTourn.groups.map(g => `
+            <option value="${g.name}">${escapeHtml(g.name)}</option>
+          `).join('');
+        } else {
+          grpSel.innerHTML = `
+            <option value="">Automático (Round Robin)</option>
+            <option value="Grupo A">Grupo A</option>
+            <option value="Grupo B">Grupo B</option>
+          `;
+        }
       }
 
-      const modal = document.getElementById('modal-register-official-team');
+      // Limpiar inputs
+      const nameInput = document.getElementById('ot-team-name') || document.getElementById('enroll-pair-name');
+      if (nameInput) nameInput.value = '';
+      const seedInput = document.getElementById('ot-team-seed') || document.getElementById('enroll-seed');
+      if (seedInput) seedInput.value = '';
+
+      // Mostrar modal
+      const modal = document.getElementById('modal-register-official-team') || document.getElementById('modal-enroll-tournament-pair');
       if (modal) modal.style.display = 'flex';
     }
-    window.openRegisterOfficialTeamModal = openRegisterOfficialTeamModal;
+    window.openEnrollPairModal = openEnrollPairModal;
+    window.openRegisterOfficialTeamModal = openEnrollPairModal;
 
-    function closeRegisterOfficialTeamModal() {
-      const modal = document.getElementById('modal-register-official-team');
+    function closeEnrollPairModal() {
+      const modal = document.getElementById('modal-register-official-team') || document.getElementById('modal-enroll-tournament-pair');
       if (modal) modal.style.display = 'none';
+      if (typeof closeModal === 'function') {
+        closeModal('modal-enroll-tournament-pair');
+        closeModal('modal-register-official-team');
+      }
     }
-    window.closeRegisterOfficialTeamModal = closeRegisterOfficialTeamModal;
+    window.closeEnrollPairModal = closeEnrollPairModal;
+    window.closeRegisterOfficialTeamModal = closeEnrollPairModal;
 
-    async function handleRegisterOfficialTeamSubmit(e) {
-      e.preventDefault();
-      const teamName = document.getElementById('ot-team-name').value;
-      const c1 = parseInt(document.getElementById('ot-team-player-1').value, 10);
-      const c2 = parseInt(document.getElementById('ot-team-player-2').value, 10);
-      const grpVal = document.getElementById('ot-team-group').value;
-      const seedVal = document.getElementById('ot-team-seed').value;
-
-      if (!c1 || !c2) {
-        alert('Debes seleccionar ambos jugadores del CRM.');
+    async function submitTournamentPairRegistration() {
+      const tId = window.activeTournamentId || window.selectedOfficialTournamentId;
+      if (!tId) {
+        alert('Torneo oficial no especificado.');
         return;
       }
-      if (c1 === c2) {
+
+      const p1El = document.getElementById('enroll-player1')?.value ? document.getElementById('enroll-player1') : document.getElementById('ot-team-player-1');
+      const p2El = document.getElementById('enroll-player2')?.value ? document.getElementById('enroll-player2') : document.getElementById('ot-team-player-2');
+      const nameEl = document.getElementById('enroll-pair-name')?.value ? document.getElementById('enroll-pair-name') : document.getElementById('ot-team-name');
+      const grpEl = document.getElementById('enroll-group')?.value ? document.getElementById('enroll-group') : document.getElementById('ot-team-group');
+      const seedEl = document.getElementById('enroll-seed')?.value ? document.getElementById('enroll-seed') : document.getElementById('ot-team-seed');
+
+      const p1Val = p1El ? p1El.value.trim() : '';
+      const p2Val = p2El ? p2El.value.trim() : '';
+      const pairName = nameEl ? nameEl.value.trim() : '';
+      const assignedGroup = grpEl ? grpEl.value : null;
+      const seedVal = seedEl && seedEl.value ? parseInt(seedEl.value, 10) : null;
+
+      // Validación estricta
+      if (!p1Val || !p2Val) {
+        alert('Debes seleccionar al menos los 2 jugadores de la dupla.');
+        return;
+      }
+      if (p1Val === p2Val) {
         alert('La pareja debe estar compuesta por dos jugadores diferentes.');
         return;
       }
 
       const payload = {
-        tournament_id: window.selectedOfficialTournamentId,
-        team_name: teamName,
-        customer_id_1: c1,
-        customer_id_2: c2,
-        group_id: grpVal ? parseInt(grpVal, 10) : null,
-        seed: seedVal ? parseInt(seedVal, 10) : null
+        tournament_id: tId,
+        pair_name: pairName || null,
+        team_name: pairName || null,
+        player1_id: p1Val,
+        player2_id: p2Val,
+        customer_id_1: p1Val,
+        customer_id_2: p2Val,
+        assigned_group: assignedGroup,
+        group_id: assignedGroup,
+        seed: seedVal
       };
 
+      const btn = document.getElementById('btn-submit-tournament-pair');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span> <span>Guardando...</span>';
+      }
+
       try {
-        const res = await fetch('/api/v1/official-tournaments/register-team', {
+        let res = await fetch(`/api/v1/tournaments/official/${tId}/enroll-pair`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
+        if (!res.ok) {
+          // Fallback a ruta oficial directa
+          res = await fetch(`/api/v1/official-tournaments/${tId}/enroll-pair`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
         if (res.ok) {
           const data = await res.json();
-          alert(`✅ ${data.message}`);
-          closeRegisterOfficialTeamModal();
+          if (typeof showToast === 'function') {
+            showToast(data.message || 'Pareja inscrita exitosamente', 'success');
+          } else {
+            alert(`✅ ${data.message || 'Pareja inscrita exitosamente'}`);
+          }
+          closeEnrollPairModal();
           await loadOfficialTournaments();
         } else {
-          const err = await res.json();
+          const err = await res.json().catch(() => ({}));
           alert('Error al inscribir pareja: ' + (err.detail || 'Fallo'));
         }
       } catch (err) {
-        console.error('Error inscribiendo equipo:', err);
-        alert('Error de conexión al inscribir equipo');
+        console.error('Error inscribiendo pareja:', err);
+        alert('Error de conexión al inscribir la pareja oficial');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>💾</span> <span>Inscribir Pareja Oficial</span>';
+        }
       }
     }
-    window.handleRegisterOfficialTeamSubmit = handleRegisterOfficialTeamSubmit;
+    window.submitTournamentPairRegistration = submitTournamentPairRegistration;
+    window.handleRegisterOfficialTeamSubmit = submitTournamentPairRegistration;
+
+    async function generateTournamentMatches(tournamentId) {
+      const tId = tournamentId || window.activeTournamentId || window.selectedOfficialTournamentId;
+      if (!tId) {
+        alert('ID de torneo no especificado');
+        return;
+      }
+
+      try {
+        let res = await fetch(`/api/v1/tournaments/official/${tId}/generate-matches`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) {
+          res = await fetch(`/api/v1/official-tournaments/${tId}/generate-matches`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof showToast === 'function') {
+            showToast(data.message || 'Cruces generados con éxito', 'success');
+          } else {
+            alert(`✅ ${data.message || 'Cruces generados con éxito'}`);
+          }
+          await loadOfficialTournaments();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert('Error al generar cruces: ' + (err.detail || 'Fallo'));
+        }
+      } catch (e) {
+        console.error('Error generando cruces:', e);
+        alert('Error de conexión al generar cruces de torneo');
+      }
+    }
+    window.generateTournamentMatches = generateTournamentMatches;
+
+    async function saveOfficialMatchScore(matchId) {
+      if (!matchId) return;
+      const s1 = document.getElementById(`score-set1-${matchId}`)?.value?.trim() || '';
+      const s2 = document.getElementById(`score-set2-${matchId}`)?.value?.trim() || '';
+      const s3 = document.getElementById(`score-set3-${matchId}`)?.value?.trim() || '';
+      const winVal = document.getElementById(`winner-select-${matchId}`)?.value || '';
+
+      const scores = [];
+      [s1, s2, s3].forEach((s, idx) => {
+        if (s && s.includes('-')) {
+          const pts = s.split('-');
+          scores.push({
+            set: idx + 1,
+            t1: parseInt(pts[0].trim(), 10) || 0,
+            t2: parseInt(pts[1].trim(), 10) || 0
+          });
+        }
+      });
+
+      const payload = {
+        match_id: parseInt(matchId, 10),
+        scores: scores,
+        winner: winVal || null,
+        winner_team_id: winVal || null,
+        status: 'COMPLETED'
+      };
+
+      try {
+        let res = await fetch(`/api/v1/tournaments/official/matches/${matchId}/record-score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          res = await fetch(`/api/v1/official-tournaments/matches/${matchId}/record-score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof showToast === 'function') {
+            showToast('Marcador oficial guardado y tabla actualizada', 'success');
+          } else {
+            alert('✅ Marcador oficial guardado y tabla actualizada');
+          }
+          await loadOfficialTournaments();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert('Error al guardar marcador: ' + (err.detail || 'Fallo'));
+        }
+      } catch (e) {
+        console.error('Error guardando marcador:', e);
+        alert('Error de conexión al guardar marcador');
+      }
+    }
+    window.saveOfficialMatchScore = saveOfficialMatchScore;
 
     function openRecordMatchScoreModal(matchId, t1Name, t2Name, t1Id, t2Id) {
       document.getElementById('rms-match-id').value = matchId;
@@ -18305,55 +18517,64 @@ PARTIDO CERRADO</textarea>
   </div>
 
   <!-- MODAL: 👥 INSCRIBIR PAREJA CRM AL TORNEO -->
-  <div id="modal-register-official-team" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999;">
-    <div style="background: #FFFFFF; border-radius: 20px; width: 92%; max-width: 520px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);">
+  <div id="modal-register-official-team" class="modal-overlay modal-enroll-tournament-pair" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999;">
+    <div id="modal-enroll-tournament-pair" style="background: #FFFFFF; border-radius: 20px; width: 92%; max-width: 520px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
         <div>
           <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
             <span>👥</span> <span>Inscribir Pareja Oficial desde el CRM</span>
           </h3>
-          <p class="text-xs text-slate-500 mt-0.5">Valida automáticamente las categorías de ambos deportistas.</p>
+          <p class="text-xs text-slate-600 font-medium mt-0.5">Valida automáticamente las categorías de ambos deportistas.</p>
         </div>
-        <button type="button" onclick="closeRegisterOfficialTeamModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+        <button type="button" onclick="closeModal('modal-enroll-tournament-pair')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
       </div>
 
-      <form id="register-official-team-form" onsubmit="handleRegisterOfficialTeamSubmit(event)" class="space-y-3">
+      <form id="register-official-team-form" onsubmit="event.preventDefault(); submitTournamentPairRegistration();" class="space-y-3">
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Nombre de la Pareja / Dupla:</label>
-          <input type="text" id="ot-team-name" required placeholder="Ej: Los Galácticos (Gómez / Ruiz)" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl" />
+          <input type="text" id="ot-team-name" placeholder="Ej: Los Galácticos (Gómez / Ruiz)" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500" />
+          <input type="hidden" id="enroll-pair-name" />
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Jugador 1 (Drive / Titular):</label>
-          <select id="ot-team-player-1" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+          <select id="ot-team-player-1" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500">
             <option value="">Selecciona jugador 1 del CRM...</option>
           </select>
+          <select id="enroll-player1" class="hidden"></select>
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Jugador 2 (Revés / Titular):</label>
-          <select id="ot-team-player-2" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+          <select id="ot-team-player-2" required class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500">
             <option value="">Selecciona jugador 2 del CRM...</option>
           </select>
+          <select id="enroll-player2" class="hidden"></select>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Grupo Asignado:</label>
-            <select id="ot-team-group" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white">
+            <select id="ot-team-group" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500">
               <option value="">Automático (Round Robin)</option>
+              <option value="Grupo A">Grupo A</option>
+              <option value="Grupo B">Grupo B</option>
             </select>
+            <input type="hidden" id="enroll-group" />
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Siembra / Seed (Opcional):</label>
-            <input type="number" id="ot-team-seed" min="1" max="16" placeholder="Ej: 1, 2" class="w-full px-3 py-2 text-xs font-mono font-bold border border-slate-300 rounded-xl" />
+            <input type="number" id="ot-team-seed" min="1" max="16" placeholder="Ej: 1, 2" class="w-full px-3 py-2 text-xs font-mono font-bold border border-slate-300 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500" />
+            <input type="hidden" id="enroll-seed" />
           </div>
         </div>
 
-        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeRegisterOfficialTeamModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
-          <button type="submit" class="px-5 py-2 text-xs font-black bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition">
-            <span>✓</span> <span>Confirmar Inscripción</span>
+        <div class="mt-6 flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
+          <button type="button" onclick="closeModal('modal-enroll-tournament-pair')" class="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer">
+            Cancelar
+          </button>
+          <button type="button" id="btn-submit-tournament-pair" onclick="submitTournamentPairRegistration()" class="px-5 py-2 text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer">
+            <span>💾</span> <span>Inscribir Pareja Oficial</span>
           </button>
         </div>
       </form>

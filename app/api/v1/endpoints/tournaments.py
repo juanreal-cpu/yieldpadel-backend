@@ -920,4 +920,34 @@ async def get_tournament_participants(
     }
 
 
+# Forward / Alias routes for official tournaments under /tournaments/official
+from app.api.v1.endpoints import official_tournaments as ot_module
+
+@router.post("/official/{tournament_id}/enroll-pair", status_code=status.HTTP_201_CREATED)
+async def enroll_pair_alias(
+    tournament_id: int,
+    payload: ot_module.RegisterTeamRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await ot_module.register_team(payload=payload, tournament_id=tournament_id, db=db)
+
+
+@router.post("/official/{tournament_id}/generate-matches", status_code=status.HTTP_200_OK)
+async def generate_matches_alias(
+    tournament_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    return await ot_module.generate_matches(tournament_id=tournament_id, db=db)
+
+
+@router.post("/official/matches/{match_id}/record-score", status_code=status.HTTP_200_OK)
+async def record_score_alias(
+    match_id: int,
+    payload: ot_module.RecordScoreRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await ot_module.record_score(payload=payload, match_id=match_id, db=db)
+
+
+
 
