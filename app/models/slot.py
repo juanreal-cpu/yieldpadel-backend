@@ -102,6 +102,12 @@ class TimeSlot(Base):
     # Campos para Torneos Americanos y Eventos
     tournament_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     prize_pool: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    prize_money_cop: Mapped[Optional[int]] = mapped_column(Integer, default=0, nullable=True)
+    prize_points: Mapped[Optional[int]] = mapped_column(Integer, default=0, nullable=True)
+    tournament_category: Mapped[Optional[str]] = mapped_column(String(50), default="5ta", nullable=True)
+    is_closed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    spots_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    match_type: Mapped[Optional[str]] = mapped_column(String(50), default="MATCH", nullable=True)
     tournament_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     winners_names: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     runner_up_names: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

@@ -5663,7 +5663,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="lun_20_22" data-weekday="0">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">LUN</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">LUN</span>
+            <select id="seed-cat-0" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta">4ta</option>
+              <option value="5ta" selected>5ta</option>
+              <option value="6ta">6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 5ta" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA" selected>Pareja fija</option>
@@ -5685,14 +5691,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$200.000 COP" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-0" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="200000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-0" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="50000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -5702,7 +5712,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="mar_14_16" data-weekday="1">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">MAR</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">MAR</span>
+            <select id="seed-cat-1" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta">4ta</option>
+              <option value="5ta">5ta</option>
+              <option value="6ta" selected>6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6ta" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA">Pareja fija</option>
@@ -5724,14 +5740,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="25000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="Premio Sorpresa" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-1" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="100000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-1" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="25000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -5741,7 +5761,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="mar_20_22" data-weekday="1">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">MAR</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">MAR</span>
+            <select id="seed-cat-2" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta" selected>4ta</option>
+              <option value="5ta">5ta</option>
+              <option value="6ta">6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 4ta-5ta" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA" selected>Pareja fija</option>
@@ -5763,14 +5789,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$200.000 COP" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-2" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="200000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-2" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="50000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -5780,7 +5810,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="mie_20_22" data-weekday="2">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">MIÉ</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">MIÉ</span>
+            <select id="seed-cat-3" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta">4ta</option>
+              <option value="5ta">5ta</option>
+              <option value="6ta" selected>6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6ta" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA" selected>Pareja fija</option>
@@ -5802,14 +5838,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$200.000 COP" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-3" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="200000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-3" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="50000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -5819,7 +5859,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="jue_14_16" data-weekday="3">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">JUE</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">JUE</span>
+            <select id="seed-cat-4" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta">4ta</option>
+              <option value="5ta">5ta</option>
+              <option value="6ta" selected>6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6ta-7ma" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA">Pareja fija</option>
@@ -5841,14 +5887,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="30000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$90.000 COP" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-4" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="90000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-4" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="25000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -5858,7 +5908,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="vie_18_20" data-weekday="4">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">VIE</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">VIE</span>
+            <select id="seed-cat-5" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta">4ta</option>
+              <option value="5ta">5ta</option>
+              <option value="6ta">6ta</option>
+              <option value="Mixto" selected>Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano Femenino" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA">Pareja fija</option>
@@ -5880,14 +5936,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="50000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="Pala Chingotto" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-5" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="200000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-5" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="40000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -5897,7 +5957,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="sab_10_12" data-weekday="5">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">SÁB</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">SÁB</span>
+            <select id="seed-cat-6" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta">4ta</option>
+              <option value="5ta">5ta</option>
+              <option value="6ta" selected>6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6ta" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA">Pareja fija</option>
@@ -5919,14 +5985,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$170.000 COP" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-6" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="170000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-6" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="40000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -5936,7 +6006,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="sab_19_21" data-weekday="5">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">SÁB</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">SÁB</span>
+            <select id="seed-cat-7" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta">4ta</option>
+              <option value="5ta" selected>5ta</option>
+              <option value="6ta">6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 5ta" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA" selected>Pareja fija</option>
@@ -5958,14 +6034,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$250.000 COP" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-7" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="250000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-7" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="50000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -5975,7 +6055,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="dom_18_20" data-weekday="6">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">DOM</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">DOM</span>
+            <select id="seed-cat-8" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta">4ta</option>
+              <option value="5ta">5ta</option>
+              <option value="6ta" selected>6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Americano 6-8" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA" selected>Pareja fija</option>
@@ -5997,14 +6083,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="60000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$250.000 COP" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-8" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="250000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-8" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="50000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -6014,7 +6104,13 @@
         <div class="template-event-row bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs shadow-xs" data-event-id="dom_20_22" data-weekday="6">
           <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input type="checkbox" class="tpl-event-active w-4 h-4 text-emerald-600 rounded cursor-pointer flex-shrink-0" checked onchange="toggleEventRowState(this)" />
-            <span class="bg-slate-900 text-white font-extrabold text-[11px] px-2 py-0.5 rounded flex-shrink-0">DOM</span>
+            <span class="inline-flex items-center justify-center w-12 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-xs">DOM</span>
+            <select id="seed-cat-9" class="tpl-event-cat border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500">
+              <option value="4ta" selected>4ta</option>
+              <option value="5ta">5ta</option>
+              <option value="6ta">6ta</option>
+              <option value="Mixto">Mixto</option>
+            </select>
             <input type="text" class="tpl-event-name font-bold text-slate-900 border border-slate-300 rounded px-2 py-1 flex-1 min-w-[120px] bg-white focus:ring-1 focus:ring-emerald-500" value="Ranking 4ta" placeholder="Nombre del torneo" />
             <select class="tpl-event-modality border border-slate-300 rounded px-2 py-1 font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500">
               <option value="PAREJA_FIJA" selected>Pareja fija</option>
@@ -6036,14 +6132,18 @@
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="4" checked /> C4</label>
               <label class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-700 cursor-pointer"><input type="checkbox" class="tpl-court-cb" value="5" /> C5</label>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-bold text-slate-500">Insc:</span>
                 <input type="number" step="1000" class="tpl-event-entry border border-slate-300 rounded px-1.5 py-0.5 w-20 bg-white font-semibold text-slate-800" value="100000" placeholder="COP" />
               </div>
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold text-emerald-700">Premio:</span>
-                <input type="text" class="tpl-event-prize border border-slate-300 rounded px-1.5 py-0.5 w-24 bg-white font-semibold text-emerald-800" value="$600.000 COP" placeholder="Premio" />
+                <span class="text-[10px] font-bold text-emerald-700">Premio $:</span>
+                <input type="number" id="seed-prize-cop-9" class="tpl-event-prize-cop w-24 px-2 py-1 text-xs border rounded bg-white text-slate-800 font-bold" value="600000" placeholder="COP" />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] font-bold text-amber-700">Puntos 🪙:</span>
+                <input type="number" id="seed-prize-pts-9" class="tpl-event-prize-pts w-20 px-2 py-1 text-xs border border-amber-300 rounded bg-amber-50 text-amber-900 font-black" value="100000" placeholder="Pts" />
               </div>
             </div>
           </div>
@@ -10353,25 +10453,36 @@ ${data.message}`);
         const eventId = row.dataset.eventId || '';
         const weekday = parseInt(row.dataset.weekday || '0', 10);
         const nameInput = row.querySelector('.tpl-event-name');
+        const catSelect = row.querySelector('.tpl-event-cat');
         const modalitySelect = row.querySelector('.tpl-event-modality');
         const startInput = row.querySelector('.tpl-event-start');
         const endInput = row.querySelector('.tpl-event-end');
         const entryInput = row.querySelector('.tpl-event-entry');
-        const prizeInput = row.querySelector('.tpl-event-prize');
+        const prizeCopInput = row.querySelector('.tpl-event-prize-cop');
+        const prizePtsInput = row.querySelector('.tpl-event-prize-pts');
+        const prizeLegacyInput = row.querySelector('.tpl-event-prize');
 
         const courtCbs = row.querySelectorAll('.tpl-court-cb:checked');
         const courts = Array.from(courtCbs).map(cb => parseInt(cb.value, 10));
+
+        const prizeCopVal = prizeCopInput ? (parseInt(prizeCopInput.value, 10) || 0) : 200000;
+        const prizePtsVal = prizePtsInput ? (parseInt(prizePtsInput.value, 10) || 0) : 50000;
+        const catVal = catSelect ? catSelect.value : '5ta';
 
         activeEvents.push({
           id: eventId,
           weekday: weekday,
           name: nameInput ? nameInput.value.trim() : 'Torneo Americano',
+          category: catVal,
           modality: modalitySelect ? modalitySelect.value : 'PAREJA_FIJA',
           start_time: startInput ? startInput.value : '20:00',
           end_time: endInput ? endInput.value : '22:00',
           courts: courts.length > 0 ? courts : [1, 2, 3, 4],
           entry_fee: entryInput ? parseFloat(entryInput.value) || 60000 : 60000,
-          prize: prizeInput ? prizeInput.value.trim() : '$250.000 COP'
+          prize_money_cop: prizeCopVal,
+          prize_points: prizePtsVal,
+          spots_count: (courts.length > 0 ? courts.length : 4) * 4,
+          prize: prizeLegacyInput ? prizeLegacyInput.value.trim() : `$${prizeCopVal.toLocaleString('es-CO')} COP`
         });
       });
 

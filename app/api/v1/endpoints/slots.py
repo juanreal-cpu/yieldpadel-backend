@@ -837,6 +837,9 @@ async def seed_weekly_template(
                     "courts": ev_courts,
                     "entry_fee": e_fee,
                     "prize_pool": p_pool,
+                    "prize_money_cop": int(ev.get("prize_money_cop") or (int(p_pool) if p_pool else 0)),
+                    "prize_points": int(ev.get("prize_points") or 0),
+                    "spots_count": int(ev.get("spots_count") or (len(ev_courts) * 4) or 8),
                     "prize_label": str(ev.get("prize") or ev.get("prize_pool") or f"${p_pool:,.0f} COP"),
                 })
         else:
@@ -853,6 +856,9 @@ async def seed_weekly_template(
                         "courts": [1, 2, 3, 4],
                         "entry_fee": ev["entry_fee"],
                         "prize_pool": ev["prize_pool"],
+                        "prize_money_cop": int(ev.get("prize_money_cop") or (int(ev["prize_pool"]) if ev.get("prize_pool") else 0)),
+                        "prize_points": int(ev.get("prize_points") or 0),
+                        "spots_count": int(ev.get("spots_count") or 16),
                         "prize_label": ev["prize_label"],
                     })
 
@@ -984,6 +990,12 @@ async def seed_weekly_template(
                             players_names=[],
                             status=SlotStatus.AVAILABLE,
                             slot_type="MATCH",
+                            match_type="MATCH",
+                            is_closed=False,
+                            spots_count=0,
+                            prize_money_cop=0,
+                            prize_points=0,
+                            tournament_category="5ta",
                             instructor_name=None,
                             is_promo=False,
                             sport_type=c_sport,
@@ -996,8 +1008,13 @@ async def seed_weekly_template(
                         if (court.id, d, ev["start_time"]) in protected_keys:
                             continue
                         mod_label = "Pareja Fija" if ev["modality"] == "PAREJA_FIJA" else "Individual"
-                        cat_label = f"Americano {ev.get('category', '5ta')} ({mod_label})"
+                        tournament_cat = ev.get("category") or "5ta"
+                        cat_label = f"Americano {tournament_cat} ({mod_label})"
                         total_tournament_price = ev["entry_fee"] * 4
+                        p_money = int(ev.get("prize_money_cop") or 0)
+                        p_pts = int(ev.get("prize_points") or 0)
+                        sp_cnt = int(ev.get("spots_count") or (len(ev.get("courts", [1, 2, 3, 4])) * 4) or 8)
+
                         all_to_add.append(
                             TimeSlot(
                                 club_id=1,
@@ -1011,13 +1028,19 @@ async def seed_weekly_template(
                                 price=total_tournament_price,
                                 mode=SlotMode.FULL_COURT,
                                 capacity=4,
-                                booked_spots=4,
+                                booked_spots=0,
                                 category=cat_label,
-                                status=SlotStatus.FULLY_BOOKED,
+                                status=SlotStatus.AVAILABLE,
+                                is_closed=False,
+                                spots_count=sp_cnt,
+                                match_type="AMERICANO",
                                 slot_type="AMERICANO",
                                 tournament_type=ev["modality"],
                                 tournament_name=ev["name"],
-                                prize_pool=ev["prize_pool"],
+                                tournament_category=tournament_cat,
+                                prize_pool=Decimal(str(p_money)) if p_money > 0 else ev["prize_pool"],
+                                prize_money_cop=p_money,
+                                prize_points=p_pts,
                                 players_names=[],
                                 is_promo=False,
                                 sport_type="PADEL",
