@@ -1637,6 +1637,171 @@ async def reset_slot_to_available(
         )
 
 
+class UpdateSlotPriceRequest(BaseModel):
+    price_total_cop: float = Field(..., description="Nuevo precio total del slot en COP")
+    reason: Optional[str] = Field(None, description="Motivo o comentario del ajuste de precio")
+
+
+@router.post("/{slot_id}/cancel-and-free", summary="Cancelar reserva o americano y liberar espacio")
+async def cancel_and_free_slot(
+    slot_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Cancela una reserva particular, partido abierto o torneo americano:
+    - Restablece el slot a status = 'AVAILABLE'
+    - booked_spots = 0
+    - players_names = []
+    - is_tournament = False
+    - slot_type = 'MATCH'
+    - Limpia metadatos de torneos y clientes
+    - Registra log de auditoría
+    """
+    try:
+        stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id)
+        res = await db.execute(stmt)
+        slot = res.scalars().first()
+        if not slot:
+            raise HTTPException(status_code=404, detail=f"Turno #{slot_id} no encontrado")
+
+        old_status = slot.status.value if hasattr(slot.status, "value") else str(slot.status)
+        old_type = getattr(slot, "slot_type", "MATCH")
+        was_tournament = getattr(slot, "is_tournament", False) or old_type == "TOURNAMENT"
+
+        # Restablecer campos requeridos
+        slot.status = SlotStatus.AVAILABLE
+        slot.booked_spots = 0
+        slot.players_names = []
+        slot.is_tournament = False
+        slot.slot_type = "MATCH"
+        slot.mode = SlotMode.SPLIT_MATCH
+        slot.is_closed = False
+        slot.is_finished = False
+
+        if hasattr(slot, "tournament_name"):
+            slot.tournament_name = None
+        if hasattr(slot, "tournament_type"):
+            slot.tournament_type = None
+        if hasattr(slot, "customer_name"):
+            slot.customer_name = None
+        if hasattr(slot, "customer_phone"):
+            slot.customer_phone = None
+        if hasattr(slot, "instructor_name"):
+            slot.instructor_name = None
+        if hasattr(slot, "recurrence_group_id"):
+            slot.recurrence_group_id = None
+        if hasattr(slot, "winners_names"):
+            slot.winners_names = None
+        if hasattr(slot, "runner_up_names"):
+            slot.runner_up_names = None
+
+        # Auditoría
+        try:
+            await log_activity(
+                db=db,
+                action="CANCEL_AND_FREE_SLOT",
+                entity_type="time_slots",
+                entity_id=str(slot.id),
+                details={
+                    "old_status": old_status,
+                    "old_slot_type": old_type,
+                    "was_tournament": was_tournament,
+                    "freed_at": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+        except Exception as ex_audit:
+            logger.warning(f"No se pudo registrar log de auditoría en cancel_and_free: {ex_audit}")
+
+        await db.commit()
+        await db.refresh(slot)
+
+        return {
+            "status": "ok",
+            "message": "Turno cancelado y liberado exitosamente. La cancha ha quedado disponible.",
+            "slot_id": slot.id,
+            "slot_status": slot.status.value if hasattr(slot.status, "value") else str(slot.status),
+            "slot_type": slot.slot_type,
+            "is_tournament": slot.is_tournament,
+            "booked_spots": slot.booked_spots,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Error en cancel_and_free_slot: {traceback.format_exc()}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al cancelar y liberar turno: {str(exc)}",
+        )
+
+
+@router.post("/{slot_id}/update-price", summary="Actualizar tarifa y precio de slot abierto")
+@router.put("/{slot_id}/update-price", summary="Actualizar tarifa y precio de slot abierto (PUT)")
+async def update_slot_price(
+    slot_id: int,
+    payload: UpdateSlotPriceRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Edición en caliente de la tarifa de un slot disponible o abierto.
+    Actualiza price_total_cop, total_price, price y price_per_player_cop = price_total_cop / capacity.
+    Registra evento en bitácora de auditoría.
+    """
+    try:
+        stmt = select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id)
+        res = await db.execute(stmt)
+        slot = res.scalars().first()
+        if not slot:
+            raise HTTPException(status_code=404, detail=f"Turno #{slot_id} no encontrado")
+
+        old_price = float(slot.price_total_cop or slot.total_price or 0.0)
+        new_price_dec = Decimal(str(round(payload.price_total_cop, 2)))
+
+        slot.total_price = new_price_dec
+        slot.price = new_price_dec
+        slot.price_total_cop = new_price_dec
+        cap = slot.capacity or 4
+        slot.price_per_player_cop = (new_price_dec / Decimal(cap)).quantize(Decimal("1.00"))
+
+        # Auditoría
+        try:
+            await log_activity(
+                db=db,
+                action="UPDATE_SLOT_PRICE",
+                entity_type="time_slots",
+                entity_id=str(slot.id),
+                details={
+                    "old_price": old_price,
+                    "new_price": float(new_price_dec),
+                    "delta": float(new_price_dec) - old_price,
+                    "reason": payload.reason or "Actualización de tarifa en slot abierto desde dashboard",
+                },
+            )
+        except Exception as ex_audit:
+            logger.warning(f"No se pudo registrar log de auditoría en update_slot_price: {ex_audit}")
+
+        await db.commit()
+        await db.refresh(slot)
+
+        return {
+            "status": "ok",
+            "message": f"Tarifa del turno #{slot.id} actualizada a ${int(new_price_dec):,} COP.",
+            "slot_id": slot.id,
+            "price_total_cop": float(slot.price_total_cop),
+            "price_per_player_cop": float(slot.price_per_player_cop) if slot.price_per_player_cop is not None else None,
+            "capacity": slot.capacity,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Error en update_slot_price: {traceback.format_exc()}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar tarifa del turno: {str(exc)}",
+        )
+
+
 @router.post("/{slot_id}/apply-flash-promo", summary="Aplicar descuento Flash Promo (-25%) y notificar a recurrentes")
 async def apply_flash_promo(
     slot_id: int,

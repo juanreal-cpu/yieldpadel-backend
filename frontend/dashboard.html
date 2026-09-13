@@ -5253,8 +5253,58 @@
         </div>
 
         <div class="form-group" id="rb-custom-price-group">
-          <label class="form-label">Precio Total Acordado ($ COP)</label>
-          <input type="number" id="rb-custom-price" class="form-control" value="120000" step="5000" style="font-weight: 700; color: #0284C7;">
+          <div class="flex items-center justify-between mb-1">
+            <label class="form-label mb-0" style="font-weight: 700;">Precio Total ($ COP)</label>
+            <span id="rb-price-mode-indicator" class="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">Tarifa Acordada</span>
+          </div>
+
+          <!-- Selector de Modo de Precio Dinámico -->
+          <div class="mb-2">
+            <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Precio / Estrategia:</label>
+            <select id="rb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-sky-500" onchange="window.handleSmartPriceModeChange('rb', this.value)">
+              <option value="MANUAL" selected>✏️ Manual / Editable</option>
+              <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
+              <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
+              <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
+            </select>
+          </div>
+
+          <!-- Contenedor Descuento % (Oculto por defecto) -->
+          <div id="rb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="rb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('rb', this.value)">
+                <span class="text-xs font-bold text-amber-900">%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input de Precio Numérico (100% editable) -->
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
+            <input type="number" id="rb-custom-price" class="form-control pl-7" value="120000" step="5000" min="0" style="font-weight: 700; color: #0284C7;">
+          </div>
+
+          <!-- Quick Chips de Ajuste Rápido -->
+          <div class="flex items-center gap-1.5 flex-wrap mt-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
+            <button type="button" onclick="window.applySmartPriceChip('rb', 'VALLE')" class="px-2 py-0.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
+              ☀️ Valle: $80k
+            </button>
+            <button type="button" onclick="window.applySmartPriceChip('rb', 'PICO')" class="px-2 py-0.5 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
+              🌙 Pico: $120k
+            </button>
+            <button type="button" onclick="window.applySmartPriceChip('rb', 'YIELD')" class="px-2 py-0.5 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
+              🧠 Yield Sugerido
+            </button>
+            <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_15')" class="px-2 py-0.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
+              🏷️ -15%
+            </button>
+            <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_25')" class="px-2 py-0.5 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
+              🔥 -25%
+            </button>
+          </div>
         </div>
 
         <!-- Sección 🌟 Protocolo Nuevo Cliente (Onboarding Counter) -->
@@ -5328,12 +5378,21 @@
           </div>
         </div>
 
-        <div class="modal-actions flex items-center justify-between gap-2">
-          <button type="button" onclick="resetSlotToAvailable(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1">
-            <span>🗑️</span> <span>Vaciar / Dejar Disponible</span>
-          </button>
+        <div class="modal-actions flex items-center justify-between gap-2 flex-wrap pt-2">
           <div class="flex items-center gap-2">
-            <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary">Cancelar</button>
+            <!-- Botón dinámico de Cancelar Reserva / Torneo Americano -->
+            <button type="button" id="btn-cancel-slot-action" onclick="window.cancelTurnoOrSlot(document.getElementById('rb-slot-id').value)" class="hidden font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center gap-1.5" style="display: none;">
+              <span id="btn-cancel-slot-icon">🚫</span> <span id="btn-cancel-slot-text">Cancelar Reserva</span>
+            </button>
+            <button type="button" id="btn-reset-slot-available" onclick="resetSlotToAvailable(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1">
+              <span>🗑️</span> <span>Vaciar / Dejar Disponible</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="btn-save-slot-price" onclick="window.saveSlotPrice(document.getElementById('rb-slot-id').value)" class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1">
+              <span>💾</span> <span>Guardar Precio</span>
+            </button>
+            <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary">Cerrar</button>
             <button type="submit" class="btn-primary">Guardar Asignación</button>
           </div>
         </div>
@@ -6278,13 +6337,58 @@
           👑 <strong>Socio Activo:</strong> Exención de pago aplicada ($0 COP) por membresía activa.
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Precio Acordado (COP)</label>
-            <input type="number" id="mb-price" class="form-control" placeholder="80000" value="80000" step="1000" min="0" required style="font-weight: 700; color: #047857;" />
+        <div class="form-group mb-3" id="mb-custom-price-group">
+          <div class="flex items-center justify-between mb-1">
+            <label class="form-label mb-0" style="font-weight: 700; color: #475569;">Precio Acordado (COP)</label>
+            <span id="mb-price-hint" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Tarifa calculada</span>
           </div>
-          <div class="form-group flex items-end" style="margin-bottom: 0;">
-            <span id="mb-price-hint" class="text-[11px] text-slate-500 font-medium pb-2">Tarifa general calculada</span>
+
+          <!-- Selector de Modo de Precio Dinámico -->
+          <div class="mb-2">
+            <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Tarifa / Modo:</label>
+            <select id="mb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500" onchange="window.handleSmartPriceModeChange('mb', this.value)">
+              <option value="MANUAL" selected>✏️ Manual / Editable</option>
+              <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
+              <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
+              <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
+            </select>
+          </div>
+
+          <!-- Contenedor Descuento % (Oculto por defecto) -->
+          <div id="mb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="mb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('mb', this.value)">
+                <span class="text-xs font-bold text-amber-900">%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input de Precio Numérico (100% editable) -->
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
+            <input type="number" id="mb-price" class="form-control pl-7" placeholder="80000" value="80000" step="1000" min="0" required style="font-weight: 700; color: #047857;" />
+          </div>
+
+          <!-- Quick Chips de Ajuste Rápido -->
+          <div class="flex items-center gap-1.5 flex-wrap mt-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
+            <button type="button" onclick="window.applySmartPriceChip('mb', 'VALLE')" class="px-2 py-0.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
+              ☀️ Valle: $80k
+            </button>
+            <button type="button" onclick="window.applySmartPriceChip('mb', 'PICO')" class="px-2 py-0.5 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
+              🌙 Pico: $120k
+            </button>
+            <button type="button" onclick="window.applySmartPriceChip('mb', 'YIELD')" class="px-2 py-0.5 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
+              🧠 Yield Sugerido
+            </button>
+            <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_15')" class="px-2 py-0.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
+              🏷️ -15%
+            </button>
+            <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_25')" class="px-2 py-0.5 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
+              🔥 -25%
+            </button>
           </div>
         </div>
 
@@ -10592,7 +10696,11 @@ ${data.message}`);
         benefitAlert.style.display = 'none';
       }
       const priceHint = document.getElementById('mb-price-hint');
-      if (priceHint) priceHint.textContent = 'Tarifa general calculada';
+      if (priceHint) priceHint.textContent = 'Tarifa calculada';
+      const mbPriceMode = document.getElementById('mb-price-mode');
+      if (mbPriceMode) mbPriceMode.value = 'MANUAL';
+      const mbDiscountBox = document.getElementById('mb-price-discount-box');
+      if (mbDiscountBox) mbDiscountBox.style.display = 'none';
       const dropDown = document.getElementById('mb-client-dropdown');
       if (dropDown) {
         dropDown.classList.add('hidden');
@@ -11784,6 +11892,40 @@ ${data.message}`);
         }
       }
 
+      // Configurar visualización de botones de cancelación y precio
+      const btnCancel = document.getElementById('btn-cancel-slot-action');
+      const btnCancelIcon = document.getElementById('btn-cancel-slot-icon');
+      const btnCancelText = document.getElementById('btn-cancel-slot-text');
+      const isTournament = Boolean(slot.is_tournament || slot.slot_type === 'TOURNAMENT' || (slot.tournament_type && slot.tournament_type !== 'NONE'));
+      const hasBooking = (slot.status && slot.status !== 'AVAILABLE') || (slot.booked_spots && slot.booked_spots > 0) || (players && players.length > 0) || isTournament;
+
+      if (btnCancel) {
+        if (hasBooking) {
+          btnCancel.style.display = 'inline-flex';
+          btnCancel.classList.remove('hidden');
+          if (isTournament) {
+            btnCancel.className = 'font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition inline-flex items-center gap-1.5 bg-purple-700 hover:bg-purple-800 text-white';
+            if (btnCancelIcon) btnCancelIcon.textContent = '🏆';
+            if (btnCancelText) btnCancelText.textContent = 'Cancelar Americano';
+          } else {
+            btnCancel.className = 'font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white';
+            if (btnCancelIcon) btnCancelIcon.textContent = '🚫';
+            if (btnCancelText) btnCancelText.textContent = 'Cancelar Reserva';
+          }
+        } else {
+          btnCancel.style.display = 'none';
+          btnCancel.classList.add('hidden');
+        }
+      }
+
+      // Reiniciar selector de precio a MANUAL
+      const rbPriceMode = document.getElementById('rb-price-mode');
+      if (rbPriceMode) rbPriceMode.value = 'MANUAL';
+      const rbDiscountBox = document.getElementById('rb-price-discount-box');
+      if (rbDiscountBox) rbDiscountBox.style.display = 'none';
+      const rbModeIndicator = document.getElementById('rb-price-mode-indicator');
+      if (rbModeIndicator) rbModeIndicator.textContent = 'Tarifa Acordada';
+
       const modal = document.getElementById('modal-turn') || document.getElementById('reserve-block-modal');
       if (modal) modal.classList.add('active');
     }
@@ -11915,6 +12057,273 @@ ${data.message}`);
       }
     }
     window.resetSlotToAvailable = resetSlotToAvailable;
+
+    // Cancelar Reserva o Americano y liberar el espacio
+    async function cancelTurnoOrSlot(slotId, isTournamentExplicit) {
+      if (!slotId) {
+        alert('Identificador de turno inválido.');
+        return;
+      }
+      const slotList = (typeof allSlots !== 'undefined' && allSlots && allSlots.length > 0) ? allSlots : (window.allSlots || []);
+      const targetId = parseInt(slotId, 10);
+      const slot = slotList.find(s => s.id === slotId || s.id === targetId || String(s.id) === String(slotId));
+      const isTournament = (typeof isTournamentExplicit !== 'undefined')
+        ? Boolean(isTournamentExplicit)
+        : Boolean(slot && (slot.is_tournament || slot.slot_type === 'TOURNAMENT' || (slot.tournament_type && slot.tournament_type !== 'NONE')));
+
+      const confirmMsg = isTournament
+        ? "¿Estás seguro de cancelar este torneo americano? El espacio quedará disponible y se liberarán todas las pistas reservadas."
+        : "¿Estás seguro de cancelar esta reserva? El espacio quedará disponible para nuevos jugadores.";
+
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      const btnCancel = document.getElementById('btn-cancel-slot-action');
+      if (btnCancel) {
+        btnCancel.disabled = true;
+        btnCancel.textContent = 'Cancelando...';
+      }
+
+      try {
+        let res = await fetch(`/api/v1/slots/${slotId}/cancel-and-free`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!res.ok && res.status === 404) {
+          res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/cancel-and-free`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        const data = await res.json();
+        if (res.ok && data.status === 'ok') {
+          const successMsg = isTournament ? 'Torneo Americano cancelado y pista liberada.' : 'Reserva cancelada y turno liberado.';
+          if (typeof window.showCustomToast === 'function') {
+            window.showCustomToast('Espacio Liberado', successMsg, isTournament ? '🏆' : '🟢');
+          } else if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('Espacio Liberado', successMsg);
+          } else {
+            alert(`✅ ${successMsg}`);
+          }
+          closeReserveOrBlockModal();
+          if (typeof fetchSlots === 'function') {
+            await fetchSlots();
+          }
+        } else {
+          alert(`❌ Error al cancelar turno: ${data.detail || data.message || 'Error en el servidor'}`);
+        }
+      } catch (err) {
+        console.error('Error al cancelar turno:', err);
+        alert('❌ Error de conexión al cancelar el turno.');
+      } finally {
+        if (btnCancel) {
+          btnCancel.disabled = false;
+        }
+      }
+    }
+    window.cancelTurnoOrSlot = cancelTurnoOrSlot;
+
+    // Guardar / Actualizar Tarifa en caliente de slot abierto
+    async function saveSlotPrice(slotId) {
+      if (!slotId) {
+        alert('Identificador de turno inválido.');
+        return;
+      }
+      const priceInput = document.getElementById('rb-custom-price');
+      const newPrice = parseFloat(priceInput ? priceInput.value : 0);
+      if (isNaN(newPrice) || newPrice < 0) {
+        alert('Por favor ingresa un precio válido.');
+        return;
+      }
+
+      const btnSave = document.getElementById('btn-save-slot-price');
+      if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.innerHTML = '<span>💾</span> <span>Guardando...</span>';
+      }
+
+      try {
+        let res = await fetch(`/api/v1/slots/${slotId}/update-price`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ price_total_cop: newPrice, reason: 'Actualización rápida desde dashboard' })
+        });
+        if (!res.ok && res.status === 404) {
+          res = await fetch(`${API_BASE}/api/v1/slots/${slotId}/update-price`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ price_total_cop: newPrice, reason: 'Actualización rápida desde dashboard' })
+          });
+        }
+        const data = await res.json();
+        if (res.ok && data.status === 'ok') {
+          if (typeof window.showCustomToast === 'function') {
+            window.showCustomToast('Precio Actualizado', `Tarifa guardada: $${Math.round(newPrice).toLocaleString('es-CO')} COP`, '💰');
+          } else if (typeof window.showDarkToast === 'function') {
+            window.showDarkToast('Precio Actualizado', `Tarifa guardada: $${Math.round(newPrice).toLocaleString('es-CO')} COP`);
+          } else {
+            alert(`✅ Tarifa guardada exitosamente: $${Math.round(newPrice).toLocaleString('es-CO')} COP`);
+          }
+          if (typeof fetchSlots === 'function') {
+            await fetchSlots();
+          }
+        } else {
+          alert(`❌ Error al actualizar precio: ${data.detail || data.message || 'Error en el servidor'}`);
+        }
+      } catch (err) {
+        console.error('Error al actualizar precio:', err);
+        alert('❌ Error de conexión al actualizar tarifa.');
+      } finally {
+        if (btnSave) {
+          btnSave.disabled = false;
+          btnSave.innerHTML = '<span>💾</span> <span>Guardar Precio</span>';
+        }
+      }
+    }
+    window.saveSlotPrice = saveSlotPrice;
+
+    // Manejador del Selector de Modo de Precio Dinámico ('rb' o 'mb')
+    async function handleSmartPriceModeChange(prefix, mode) {
+      const discountBox = document.getElementById(`${prefix}-price-discount-box`);
+      const indicator = document.getElementById(`${prefix}-price-mode-indicator`) || document.getElementById(`${prefix}-price-hint`);
+      const priceInput = document.getElementById(prefix === 'rb' ? 'rb-custom-price' : 'mb-price');
+
+      if (discountBox) {
+        discountBox.style.display = (mode === 'DISCOUNT') ? 'block' : 'none';
+      }
+
+      if (mode === 'MANUAL') {
+        if (indicator) indicator.textContent = '✏️ Manual / Editable';
+      } else if (mode === 'PEAK_OFFPEAK') {
+        let startTime = '08:00';
+        let dateVal = selectedDate || getColombiaTodayString();
+        if (prefix === 'rb' && selectedSlot) {
+          startTime = (selectedSlot.start_time || '08:00').substring(0, 5);
+          dateVal = selectedSlot.date || dateVal;
+        } else if (prefix === 'mb') {
+          const tInput = document.getElementById('mb-start-time');
+          const dInput = document.getElementById('mb-date');
+          if (tInput && tInput.value) startTime = tInput.value.substring(0, 5);
+          if (dInput && dInput.value) dateVal = dInput.value;
+        }
+
+        // Lógica Valle / Pico: Semana >= 18:00 o Fin de semana = Pico ($120.000), sino Valle ($80.000)
+        let isPeak = false;
+        try {
+          const dt = new Date(`${dateVal}T12:00:00`);
+          const day = dt.getDay(); // 0 = Domingo, 6 = Sábado
+          if (day === 0 || day === 6) {
+            isPeak = true;
+          } else {
+            const hour = parseInt(startTime.split(':')[0], 10);
+            isPeak = hour >= 18;
+          }
+        } catch (_) {
+          const hour = parseInt(startTime.split(':')[0], 10);
+          isPeak = hour >= 18;
+        }
+
+        const rate = isPeak ? 120000 : 80000;
+        if (priceInput) priceInput.value = rate;
+        if (indicator) indicator.textContent = isPeak ? '🌙 Horario Pico ($120k)' : '☀️ Horario Valle ($80k)';
+      } else if (mode === 'YIELD_AI') {
+        if (indicator) indicator.textContent = '🧠 Consultando Yield IA...';
+        let slotId = (prefix === 'rb' && selectedSlot) ? selectedSlot.id : null;
+        let recommendedPrice = null;
+
+        if (slotId) {
+          try {
+            let res = await fetch(`/api/v1/yield/recommendation/${slotId}`);
+            if (!res.ok) {
+              res = await fetch(`/api/v1/slots/${slotId}/yield-recommendation`);
+            }
+            if (res.ok) {
+              const data = await res.json();
+              recommendedPrice = data.recommended_price || data.optimal_price || data.suggested_price || (data.data && data.data.recommended_price);
+            }
+          } catch (err) {
+            console.warn('Yield recommendation fetch fallback:', err);
+          }
+        }
+
+        if (!recommendedPrice) {
+          // Estimación Yield basada en ocupación y demanda
+          let startTime = (prefix === 'rb' && selectedSlot) ? (selectedSlot.start_time || '08:00') : (document.getElementById('mb-start-time') ? document.getElementById('mb-start-time').value : '08:00');
+          const hour = parseInt(startTime.split(':')[0], 10);
+          if (hour >= 18 && hour <= 21) recommendedPrice = 135000;
+          else if (hour >= 12 && hour < 18) recommendedPrice = 95000;
+          else recommendedPrice = 85000;
+        }
+
+        if (priceInput) priceInput.value = Math.round(recommendedPrice);
+        if (indicator) indicator.textContent = `🧠 Yield Sugerido ($${Math.round(recommendedPrice).toLocaleString('es-CO')})`;
+      } else if (mode === 'DISCOUNT') {
+        const discInput = document.getElementById(`${prefix}-discount-percent`);
+        const pct = discInput ? parseFloat(discInput.value) || 15 : 15;
+        applySmartPriceDiscount(prefix, pct);
+      }
+    }
+    window.handleSmartPriceModeChange = handleSmartPriceModeChange;
+
+    // Aplicar Descuento % sobre precio base
+    function applySmartPriceDiscount(prefix, percent) {
+      const pct = Math.max(1, Math.min(99, parseFloat(percent) || 0));
+      const priceInput = document.getElementById(prefix === 'rb' ? 'rb-custom-price' : 'mb-price');
+      const indicator = document.getElementById(`${prefix}-price-mode-indicator`) || document.getElementById(`${prefix}-price-hint`);
+      if (!priceInput) return;
+
+      // Base: tomar 120.000 como tarifa regular si el valor actual es 0 o indefinido
+      let currentVal = parseFloat(priceInput.value);
+      if (isNaN(currentVal) || currentVal <= 0) currentVal = 120000;
+      // Redondear a base más cercana (ej: 80k, 100k, 120k)
+      let base = 120000;
+      if (currentVal <= 90000) base = 80000;
+      else if (currentVal <= 110000) base = 100000;
+      else base = 120000;
+
+      const discounted = Math.round((base * (1 - (pct / 100))) / 1000) * 1000;
+      priceInput.value = discounted;
+      if (indicator) indicator.textContent = `🏷️ Tarifa con -${pct}% ($${discounted.toLocaleString('es-CO')})`;
+    }
+    window.applySmartPriceDiscount = applySmartPriceDiscount;
+
+    // Atajos de Chips Rápidos
+    function applySmartPriceChip(prefix, type) {
+      const modeSelect = document.getElementById(`${prefix}-price-mode`);
+      const priceInput = document.getElementById(prefix === 'rb' ? 'rb-custom-price' : 'mb-price');
+      const indicator = document.getElementById(`${prefix}-price-mode-indicator`) || document.getElementById(`${prefix}-price-hint`);
+      const discountBox = document.getElementById(`${prefix}-price-discount-box`);
+      if (!priceInput) return;
+
+      if (type === 'VALLE') {
+        if (modeSelect) modeSelect.value = 'PEAK_OFFPEAK';
+        if (discountBox) discountBox.style.display = 'none';
+        priceInput.value = 80000;
+        if (indicator) indicator.textContent = '☀️ Valle ($80.000)';
+      } else if (type === 'PICO') {
+        if (modeSelect) modeSelect.value = 'PEAK_OFFPEAK';
+        if (discountBox) discountBox.style.display = 'none';
+        priceInput.value = 120000;
+        if (indicator) indicator.textContent = '🌙 Pico ($120.000)';
+      } else if (type === 'YIELD') {
+        if (modeSelect) modeSelect.value = 'YIELD_AI';
+        handleSmartPriceModeChange(prefix, 'YIELD_AI');
+      } else if (type === 'DISCOUNT_15') {
+        if (modeSelect) modeSelect.value = 'DISCOUNT';
+        if (discountBox) discountBox.style.display = 'block';
+        const discInput = document.getElementById(`${prefix}-discount-percent`);
+        if (discInput) discInput.value = 15;
+        applySmartPriceDiscount(prefix, 15);
+      } else if (type === 'DISCOUNT_25') {
+        if (modeSelect) modeSelect.value = 'DISCOUNT';
+        if (discountBox) discountBox.style.display = 'block';
+        const discInput = document.getElementById(`${prefix}-discount-percent`);
+        if (discInput) discInput.value = 25;
+        applySmartPriceDiscount(prefix, 25);
+      }
+    }
+    window.applySmartPriceChip = applySmartPriceChip;
 
     function onSlotTypeChange(val) {
       const instrGroup = document.getElementById('rb-instructor-group');
