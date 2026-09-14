@@ -76,6 +76,7 @@ async def interact_with_voiceflow(sender_phone: str, message_text: str) -> List[
         "Authorization": vf_api_key,
         "Content-Type": "application/json",
         "accept": "application/json",
+        "versionID": os.getenv("VOICEFLOW_VERSION_ID", "main"),
     }
     payload = {
         "action": {
@@ -87,7 +88,7 @@ async def interact_with_voiceflow(sender_phone: str, message_text: str) -> List[
         resp = await client.post(url, json=payload, headers=headers)
         if resp.status_code != 200:
             logger.error(f"[VOICEFLOW REJECT {resp.status_code}] Body: {resp.text}")
-            resp.raise_for_status()
+        resp.raise_for_status()
         return _extract_voiceflow_text_messages(resp.json())
 
 
