@@ -23,10 +23,33 @@
        REGLA MAESTRA DE CONTRASTE ESTRICTO (PROTECCIÓN VISUAL CONTRA TEXTO BLANCO)
        ========================================================================= */
     /* Forzar legibilidad total en todos los inputs, selects y datepickers */
-    input, select, textarea {
+    #view-audit input, 
+    #view-audit select, 
+    #view-audit option,
+    input[type="date"],
+    select, option {
       color: #0f172a !important;
       background-color: #ffffff !important;
-      color-scheme: light !important; /* Corrige los selectores de fecha nativos en Chrome/Edge */
+      color-scheme: light !important;
+      -webkit-text-fill-color: #0f172a !important;
+    }
+
+    /* Pseudoelementos de fecha para Chrome / Edge / Safari */
+    input[type="date"]::-webkit-datetime-edit,
+    input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+    input[type="date"]::-webkit-datetime-edit-text,
+    input[type="date"]::-webkit-datetime-edit-month-field,
+    input[type="date"]::-webkit-datetime-edit-day-field,
+    input[type="date"]::-webkit-datetime-edit-year-field {
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+    }
+
+    /* Desplegable de Acción en Auditoría */
+    #audit-filter-action, #audit-filter-action option {
+      color: #0f172a !important;
+      background-color: #ffffff !important;
+      font-weight: 600 !important;
     }
     
     /* Calendarios nativos e iconos de fecha */
@@ -1521,7 +1544,7 @@
       border: 1px solid #E2E8F0;
       border-radius: 1rem;
       width: 100%;
-      max-width: 48rem; /* max-w-3xl (768px) */
+      max-width: 56rem; /* max-w-4xl (896px) */
       max-height: 90vh;
       display: flex;
       flex-direction: column;
@@ -4898,8 +4921,8 @@
 <!-- ======================================================== -->
   <!-- VISTA MODULAR: 🛡️ AUDITORÍA & GESTIÓN DE USUARIOS RBAC    -->
         <!-- ======================================================== -->
-	<div id="view-audit" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-6">
-          <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
+	<div id="view-audit" class="view-section hidden w-full px-6 py-6 space-y-6">
+          <div style="width: 100%; margin: 0 auto; padding-bottom: 3rem;">
             
             <!-- Encabezado de la Vista de Auditoría -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -4982,21 +5005,21 @@
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;" id="audit-filter-controls">
                   <div class="flex items-center gap-1">
                     <label for="audit-filter-start" class="text-[11px] font-bold text-slate-500">Desde:</label>
-                    <input type="date" id="audit-filter-start" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                    <input type="date" id="audit-filter-start" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-white text-slate-900 border border-slate-300 rounded-lg shadow-sm font-semibold focus:ring-1 focus:ring-emerald-500">
                   </div>
                   <div class="flex items-center gap-1">
                     <label for="audit-filter-end" class="text-[11px] font-bold text-slate-500">Hasta:</label>
-                    <input type="date" id="audit-filter-end" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                    <input type="date" id="audit-filter-end" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-white text-slate-900 border border-slate-300 rounded-lg shadow-sm font-semibold focus:ring-1 focus:ring-emerald-500">
                   </div>
                   <div class="flex items-center gap-1">
                     <label for="audit-filter-action" class="text-[11px] font-bold text-slate-500">Acción:</label>
-                    <select id="audit-filter-action" onchange="loadAuditLogs()" class="px-3 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
-                      <option value="ALL">Todas las acciones</option>
-                      <option value="CANCEL">🚫 Cancelaciones</option>
-                      <option value="RESERVATION">📅 Reservas Creadas</option>
-                      <option value="PLAYER">👤 Jugadores (Agregar/Quitar)</option>
-                      <option value="AMERICANO">🏆 Americanos / Torneos</option>
-                      <option value="PRICE">💰 Cambios de Precios</option>
+                    <select id="audit-filter-action" onchange="loadAuditLogs()" class="px-3 py-1.5 text-xs bg-white text-slate-900 border border-slate-300 rounded-lg shadow-sm font-semibold">
+                      <option value="ALL" class="text-slate-900 bg-white">🔍 Todas las acciones</option>
+                      <option value="CANCEL" class="text-slate-900 bg-white">🚫 Cancelaciones</option>
+                      <option value="RESERVATION" class="text-slate-900 bg-white">📅 Reservas Creadas</option>
+                      <option value="PLAYER" class="text-slate-900 bg-white">👤 Jugadores (Agregar/Quitar)</option>
+                      <option value="AMERICANO" class="text-slate-900 bg-white">🏆 Americanos / Torneos</option>
+                      <option value="PRICE" class="text-slate-900 bg-white">💰 Cambios de Precios</option>
                     </select>
                   </div>
                   <button type="button" onclick="setAuditToday()" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition" title="Filtrar eventos de hoy">📅 Hoy</button>
@@ -5254,7 +5277,7 @@
 
   <!-- MODAL: GESTIÓN DE TURNO (6 OPCIONES COMPLETAS & CRM AUTOCOMPLETE) -->
   <div id="modal-turn" data-alias="reserve-block-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
-    <div class="relative w-full max-w-2xl lg:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
       <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
         <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
           <span>🎾</span> Gestión de Turno
@@ -5489,7 +5512,7 @@
 
   <!-- MODAL: APARTAR CUPO (HOLD BOLD/WOMPI) -->
   <div id="hold-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
-    <div class="relative w-full max-w-2xl lg:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
       <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
         <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
           <span>⏱️</span> Apartar Cupo (Hold Temporal)
@@ -5646,7 +5669,7 @@
 
   <!-- MODAL: INSCRIBIR PAREJA/JUGADOR EN TORNEO AMERICANO -->
   <div id="join-tournament-modal" data-alias="modal-tournament-enroll modal-inscribir-pareja" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
-    <div class="relative w-full max-w-2xl lg:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
       <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
         <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
           <span>🎾</span> + Inscribir Pareja / Jugador
@@ -6340,7 +6363,7 @@
   <!-- MODAL: RESERVA PUNTUAL INDIVIDUAL DIRECTA                -->
   <!-- ======================================================== -->
   <div id="modal-manual-booking" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm" style="display: none;">
-    <div class="relative w-full max-w-2xl lg:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
       <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
         <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
           <span>➕</span> Nueva Reserva Puntual Directa
