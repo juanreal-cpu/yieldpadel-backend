@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 VERIFY_TOKEN = "yieldpadel_secret_token_2026"
-VOICEFLOW_DIALOG_URL = "https://general-runtime.voiceflow.com/state/user/{user_id}/interact"
 VOICEFLOW_TEXT_TRACE_TYPES = {"text", "speak"}
 VOICEFLOW_FALLBACK_MESSAGE = (
     "Gracias por contactar a Capital Pádel Club. En este momento no pude completar tu consulta. "
@@ -70,15 +69,18 @@ def _extract_voiceflow_text_messages(traces) -> List[str]:
 
 async def interact_with_voiceflow(sender_phone: str, message_text: str) -> List[str]:
     """Llama a la Dialog API de Voiceflow (production) y retorna mensajes text/speak."""
-    url = VOICEFLOW_DIALOG_URL.format(user_id=sender_phone)
+    api_key = (os.getenv("VOICEFLOW_API_KEY") or "").strip().replace('"', "").replace("'", "")
+    clean_phone = (sender_phone or "").replace("+", "").replace(" ", "").strip()
+    url = f"https://general-runtime.voiceflow.com/state/user/{clean_phone}/interact"
     headers = {
-        "Authorization": (os.getenv("VOICEFLOW_API_KEY") or "").strip().replace('"', "").replace("'", ""),
+        "Authorization": api_key,
         "Content-Type": "application/json",
         "accept": "application/json",
         "versionID": "production",
     }
+    # Voiceflow Dialog Runtime v1 espera 'action': {'type': 'text', 'payload': ...}
     payload = {
-        "request": {
+        "action": {
             "type": "text",
             "payload": message_text,
         },
@@ -86,8 +88,8 @@ async def interact_with_voiceflow(sender_phone: str, message_text: str) -> List[
     async with httpx.AsyncClient(timeout=20.0) as client:
         resp = await client.post(url, json=payload, headers=headers)
         if resp.status_code != 200:
-            logger.error(f"[VOICEFLOW REJECT] Status: {resp.status_code} | Body: {resp.text}")
-        resp.raise_for_status()
+            logger.error(f"[VOICEFLOW REJECT {resp.status_code}] Body: {resp.text}")
+            resp.raise_for_status()
         return _extract_voiceflow_text_messages(resp.json())
 
 
