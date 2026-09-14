@@ -14,6 +14,12 @@ except Exception:
     BOGOTA_TZ = timezone(timedelta(hours=-5))
 
 
+def ensure_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def get_bogota_now() -> datetime:
     """
     Retorna la fecha y hora actual en la zona horaria de Colombia ('America/Bogota').

@@ -86,14 +86,14 @@ async def create_hold(
         if available_spots < slot.capacity or slot.status == SlotStatus.FULLY_BOOKED:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
+                detail="⚠️ Espacio no disponible: Ya existe una reserva en este horario.",
             )
         amount_to_pay = slot.total_price
     else:  # SPLIT_MATCH
         if payload.spots_held > available_spots or available_spots <= 0 or slot.status == SlotStatus.FULLY_BOOKED:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="⚠️ Cancha ocupada: Ya existe una reserva en este horario.",
+                detail="⚠️ Espacio no disponible: Ya existe una reserva en este horario.",
             )
         price_per_spot = slot.total_price / Decimal(slot.capacity)
         amount_to_pay = (price_per_spot * Decimal(payload.spots_held)).quantize(Decimal("0.01"))
@@ -220,8 +220,8 @@ async def create_hold(
         return new_hold
 
     else:
-        # Flujo estándar: Hold temporal con TTL de 15 minutos habitual
-        expires_at = now_utc + timedelta(minutes=settings.HOLD_EXPIRATION_MINUTES)
+        # Flujo estándar: Hold temporal con TTL de 10 minutos para evitar sobreventa
+        expires_at = now_utc + timedelta(minutes=10)
         payment_reference = f"HOLD-{uuid.uuid4().hex[:10].upper()}"
 
         new_hold = SlotHold(

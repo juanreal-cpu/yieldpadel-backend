@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.timezone import get_bogota_now, get_bogota_today, validate_slot_not_past
+from app.core.timezone import get_bogota_now, get_bogota_today, validate_slot_not_past, ensure_utc
 from app.services import calculate_recommended_price, get_club_config, update_club_config
 from app.services.whatsapp import (
     detect_sport_from_text,
@@ -279,10 +279,42 @@ async def list_slots(
         else:
             stmt = stmt.where(TimeSlot.sport_type == s_upper)
 
+    # Concurrencia y Anti-Sobreveta: Liberar automáticamente holds expirados
+    now_utc = datetime.now(timezone.utc)
+    expired_holds_stmt = (
+        select(SlotHold)
+        .options(selectinload(SlotHold.slot).selectinload(TimeSlot.holds))
+        .where(SlotHold.status == HoldStatus.ACTIVE)
+    )
+    res_expired = await db.execute(expired_holds_stmt)
+    active_holds = res_expired.scalars().all()
+    expired_holds = [h for h in active_holds if ensure_utc(h.expires_at) <= now_utc]
+
+    if expired_holds:
+        affected_slots = set()
+        for hold in expired_holds:
+            hold.status = HoldStatus.EXPIRED
+            if hold.slot:
+                affected_slots.add(hold.slot)
+        for s in affected_slots:
+            if s.status != SlotStatus.BLOCKED:
+                active_spots = sum(
+                    h.spots_held
+                    for h in s.holds
+                    if h.status == HoldStatus.ACTIVE and ensure_utc(h.expires_at) > now_utc and h.id not in [eh.id for eh in expired_holds]
+                )
+                total_taken = s.booked_spots + active_spots
+                if total_taken == 0:
+                    s.status = SlotStatus.AVAILABLE
+                elif total_taken < s.capacity:
+                    s.status = SlotStatus.PARTIALLY_BOOKED
+                else:
+                    s.status = SlotStatus.FULLY_BOOKED
+        await db.commit()
+
     result = await db.execute(stmt)
     slots = result.scalars().all()
 
-    now_utc = datetime.now(timezone.utc)
     response_list: List[TimeSlotResponse] = []
 
     for slot in slots:
@@ -1667,45 +1699,62 @@ async def cancel_and_free_slot(
         old_status = slot.status.value if hasattr(slot.status, "value") else str(slot.status)
         old_type = getattr(slot, "slot_type", "MATCH")
         was_tournament = getattr(slot, "is_tournament", False) or old_type == "TOURNAMENT"
+        tourn_name = getattr(slot, "tournament_name", None)
 
-        # Restablecer campos requeridos
-        slot.status = SlotStatus.AVAILABLE
-        slot.booked_spots = 0
-        slot.players_names = []
-        slot.is_tournament = False
-        slot.slot_type = "MATCH"
-        slot.mode = SlotMode.SPLIT_MATCH
-        slot.is_closed = False
-        slot.is_finished = False
+        slots_to_free = [slot]
+        # Si era torneo americano, buscar todos los slots asociados al mismo torneo y fecha/hora
+        if was_tournament and tourn_name:
+            stmt_tourn = select(TimeSlot).options(selectinload(TimeSlot.court)).where(
+                TimeSlot.date == slot.date,
+                TimeSlot.tournament_name == tourn_name,
+            )
+            res_tourn = await db.execute(stmt_tourn)
+            other_slots = res_tourn.scalars().all()
+            if other_slots:
+                slots_to_free = list({s.id: s for s in (slots_to_free + list(other_slots))}.values())
 
-        if hasattr(slot, "tournament_name"):
-            slot.tournament_name = None
-        if hasattr(slot, "tournament_type"):
-            slot.tournament_type = None
-        if hasattr(slot, "customer_name"):
-            slot.customer_name = None
-        if hasattr(slot, "customer_phone"):
-            slot.customer_phone = None
-        if hasattr(slot, "instructor_name"):
-            slot.instructor_name = None
-        if hasattr(slot, "recurrence_group_id"):
-            slot.recurrence_group_id = None
-        if hasattr(slot, "winners_names"):
-            slot.winners_names = None
-        if hasattr(slot, "runner_up_names"):
-            slot.runner_up_names = None
+        # Restablecer campos requeridos para todos los slots liberados
+        for s in slots_to_free:
+            s.status = SlotStatus.AVAILABLE
+            s.booked_spots = 0
+            s.players_names = []
+            s.is_tournament = False
+            s.slot_type = "MATCH"
+            s.mode = SlotMode.SPLIT_MATCH
+            s.is_closed = False
+            s.is_finished = False
+
+            if hasattr(s, "tournament_name"):
+                s.tournament_name = None
+            if hasattr(s, "tournament_type"):
+                s.tournament_type = None
+            if hasattr(s, "customer_name"):
+                s.customer_name = None
+            if hasattr(s, "customer_phone"):
+                s.customer_phone = None
+            if hasattr(s, "instructor_name"):
+                s.instructor_name = None
+            if hasattr(s, "recurrence_group_id"):
+                s.recurrence_group_id = None
+            if hasattr(s, "winners_names"):
+                s.winners_names = None
+            if hasattr(s, "runner_up_names"):
+                s.runner_up_names = None
 
         # Auditoría
         try:
             await log_activity(
                 db=db,
-                action="CANCEL_AND_FREE_SLOT",
+                action="CANCEL_RESERVATION_AND_FREE",
                 entity_type="time_slots",
                 entity_id=str(slot.id),
                 details={
                     "old_status": old_status,
                     "old_slot_type": old_type,
                     "was_tournament": was_tournament,
+                    "tournament_name": tourn_name,
+                    "total_freed_slots": len(slots_to_free),
+                    "freed_slot_ids": [s.id for s in slots_to_free],
                     "freed_at": datetime.now(timezone.utc).isoformat(),
                 },
             )
@@ -1723,6 +1772,7 @@ async def cancel_and_free_slot(
             "slot_type": slot.slot_type,
             "is_tournament": slot.is_tournament,
             "booked_spots": slot.booked_spots,
+            "freed_slots_count": len(slots_to_free),
         }
     except HTTPException:
         raise
