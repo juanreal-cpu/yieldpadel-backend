@@ -269,11 +269,54 @@ async def log_conversation_message(
 
 
 async def is_conversation_paused(db: AsyncSession, sender_phone: str) -> bool:
-    """True si la bandeja tiene is_bot_paused=True (asesor humano aténdiendo manualmente desde el Dashboard)."""
+    """True si la bandeja tiene is_bot_paused=True (asesor humano atendiendo manualmente desde el Dashboard)."""
     norm_phone = normalize_phone(sender_phone)
     res = await db.execute(select(WhatsAppConversation).where(WhatsAppConversation.sender_phone == norm_phone))
     conv = res.scalars().first()
     return bool(conv and conv.is_bot_paused)
+
+
+async def handle_human_wait_turn(
+    db: AsyncSession,
+    sender_phone: str,
+    raw_text: str,
+) -> Optional[str]:
+    """
+    Gestiona la espera cuando la conversación está pausada (en cola de asesor humano).
+    - Si el usuario escribe 'VOLVER AL BOT', 'MENU', 'CANCELAR' o 'SALIR':
+        Despausa el bot, resetea human_wait_message_count = 0 y retorna bienvenida.
+    - Si el usuario sigue escribiendo:
+        Incrementa human_wait_message_count += 1.
+        Si count == 2: retorna aviso de espera y horario de atención.
+        Si count >= 4: ofrece rescate para volver al asistente virtual.
+    """
+    clean_upper = (raw_text or "").strip().upper()
+    rescue_commands = ["VOLVER AL BOT", "MENU", "MENÚ", "CANCELAR", "SALIR"]
+
+    if any(cmd == clean_upper or clean_upper.startswith(cmd + " ") for cmd in rescue_commands):
+        # Despausar bot y resetear contador
+        session = get_session(sender_phone)
+        session["human_wait_message_count"] = 0
+        await set_conversation_paused(db, sender_phone, False)
+        return "¡De vuelta contigo! 🎾 Soy el asistente virtual de Capital Pádel Club. ¿En qué te colaboro?"
+
+    # Incrementar contador de espera en sesión
+    session = get_session(sender_phone)
+    wait_count = session.get("human_wait_message_count", 0) + 1
+    session["human_wait_message_count"] = wait_count
+
+    if wait_count == 2:
+        return (
+            "Tu mensaje es muy importante para nosotros. Nuestro asesor en sede te atenderá en breve. "
+            "Recuerda que el horario de atención personalizada en recepción es de 6:00 a.m. a 12:00 p.m."
+        )
+    elif wait_count >= 4:
+        return (
+            "Nuestro asesor aún está ocupado en sede. Si no deseas seguir esperando, puedes responder "
+            "'VOLVER AL BOT' o 'MENU' para que nuestro Asistente IA te ayude de inmediato con reservas, canchas y servicios."
+        )
+
+    return None
 
 
 async def set_conversation_paused(
@@ -287,6 +330,8 @@ async def set_conversation_paused(
     conv.is_bot_paused = paused
     if not paused:
         conv.unread_count = 0
+        session = get_session(sender_phone)
+        session["human_wait_message_count"] = 0
     await db.commit()
     return conv
 
@@ -295,6 +340,7 @@ async def trigger_human_handoff(db: Optional[AsyncSession], phone: str, player_n
     """Marca la conversación como derivada a asesor humano (is_bot_paused=True) y limpia el conteo de reintentos."""
     session = get_session(phone)
     session["unknown_retry_count"] = 0
+    session["human_wait_message_count"] = 0
     if db is not None:
         await set_conversation_paused(db, phone, True, player_name=player_name)
 
@@ -1764,7 +1810,7 @@ async def process_incoming_whatsapp_message(
     Resuelve el texto citado desde context si no viene explícito.
     """
     if await is_conversation_paused(db, sender_phone):
-        return ""
+        return await handle_human_wait_turn(db, sender_phone, raw_text) or ""
 
     if not quoted_text and context:
         quoted_text = (
@@ -2395,6 +2441,7 @@ async def handle_active_reservation_query(db: AsyncSession, sender_phone: str, c
 
 
 RATES_QUESTION_REGEX = re.compile(r"cu[aá]nto\s+vale\s+la\s+hora|cu[aá]nto\s+vale\s+el\s+turno|valor\s+de\s+la\s+hora|valor\s+del\s+turno", re.IGNORECASE)
+PERSONAL_MEMBERSHIP_REGEX = re.compile(r"qu[eé]\s+membres[ií]a\s+tengo|tengo\s+membres[ií]a|mi\s+plan|vigencia\s+membres[ií]a", re.IGNORECASE)
 MEMBERSHIP_QUESTION_REGEX = re.compile(r"membres[ií]as?|planes?\s+de\s+socio|tapia|coello|gal[aá]n|chingotto|lebr[oó]n", re.IGNORECASE)
 
 MEMBERSHIP_PROMO_TEXT = (
@@ -2403,8 +2450,38 @@ MEMBERSHIP_PROMO_TEXT = (
 )
 
 
-async def handle_rates_and_membership_query(db: AsyncSession, clean: str) -> Optional[str]:
-    """Responde preguntas de tarifas (valle/pico + promo membresías) y detalle de planes de membresía."""
+async def handle_rates_and_membership_query(db: AsyncSession, clean: str, sender_phone: Optional[str] = None) -> Optional[str]:
+    """Responde preguntas de tarifas (valle/pico + promo membresías), consulta de membresía propia y detalle de planes."""
+    if sender_phone and PERSONAL_MEMBERSHIP_REGEX.search(clean):
+        norm_phone = normalize_phone(sender_phone)
+        res = await db.execute(select(Customer).where(Customer.phone == norm_phone))
+        cust = res.scalars().first()
+        today = get_bogota_today()
+        nombre = cust.name if cust and cust.name else "Padelista"
+
+        if (
+            cust
+            and cust.membership_tier
+            and cust.membership_tier.upper() != "ESTANDAR"
+            and cust.membership_end_date
+            and cust.membership_end_date >= today
+        ):
+            dias_restantes = (cust.membership_end_date - today).days
+            plan_name = cust.membership_plan.name if cust.membership_plan else cust.membership_tier
+            plan_title = plan_name.title()
+            return (
+                f"🎾 Hola {nombre}, actualmente cuentas con la membresía *{plan_title}* activa. "
+                f"Te quedan *{dias_restantes} días* de vigencia.\n\n"
+                f"💡 ¿Te gustaría renovar tu plan o ascender a una categoría superior para obtener más clases y beneficios?"
+            )
+        else:
+            return (
+                f"Hola {nombre}, actualmente juegas con tarifa *Estándar (sin membresía activa)*.\n\n"
+                f"🏆 *¡Ahorra en cada partido!* Con nuestras membresías oficiales (Tapia, Coello, Galán, Chingotto, Lebrón) "
+                f"tienes tarifas preferenciales, bebidas sin costo, clases de academia y hasta 40% de descuento en torneos.\n\n"
+                f"¿Te gustaría conocer los precios de los planes o activar una hoy?"
+            )
+
     if RATES_QUESTION_REGEX.search(clean):
         return (
             "💰 *Tarifas en Capital Pádel Club:*\n\n"
@@ -2812,7 +2889,7 @@ async def generate_concierge_reply(
     clean = (message_text or "").strip()
 
     if db is not None and await is_conversation_paused(db, sender_phone):
-        return ""
+        return await handle_human_wait_turn(db, sender_phone, clean) or ""
 
     if is_human_handoff_request(clean):
         await trigger_human_handoff(db, sender_phone, player_name=sender_name)
@@ -2834,7 +2911,7 @@ async def generate_concierge_reply(
             lambda: handle_challenge_query(db, sender_phone, clean),
             lambda: handle_predictions_query(db, clean),
             lambda: handle_active_reservation_query(db, sender_phone, clean),
-            lambda: handle_rates_and_membership_query(db, clean),
+            lambda: handle_rates_and_membership_query(db, clean, sender_phone=sender_phone),
             lambda: handle_tournaments_and_academy_query(db, clean),
         ):
             reply = await handler()
