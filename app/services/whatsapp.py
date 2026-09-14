@@ -11,6 +11,7 @@ y sistema de validaciones temporales y alertas de cancelación tardía con regis
 import logging
 import os
 import re
+import uuid
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
@@ -24,7 +25,7 @@ from app.core.config import settings
 from app.core.timezone import BOGOTA_TZ, get_bogota_now, get_bogota_today
 from app.services.audit import record_audit_log
 from app.models.court import Court
-from app.models.slot import ClientTier, SlotMode, SlotStatus, TimeSlot
+from app.models.slot import ClientTier, HoldStatus, PaymentStatus, SlotHold, SlotMode, SlotStatus, TimeSlot
 from app.models.incident import PlayerIncident
 from app.models.customer import Customer
 from app.models.membership import MembershipPlan
@@ -2270,10 +2271,48 @@ async def handle_sport_and_booking_flow(
         if not slot_id:
             return "Esa opción no está disponible. Por favor elige uno de los números de la lista enviada."
 
-        res = await db.execute(select(TimeSlot).where(TimeSlot.id == slot_id))
+        res = await db.execute(select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id))
         slot = res.scalar_one_or_none()
         if not slot:
             return "Ese turno ya no existe. ¿Quieres ver otras opciones disponibles?"
+
+        # Si viene de una búsqueda natural de turnos / hold matching:
+        if session.get("is_hold_search"):
+            session.pop("is_hold_search", None)
+            now_utc = datetime.now(timezone.utc)
+            expires_at = now_utc + timedelta(minutes=10)
+            c_name = slot.court.name if slot.court else "Cancha"
+            st = slot.start_time.strftime("%I:%M %p").lstrip("0")
+            et = slot.end_time.strftime("%I:%M %p").lstrip("0")
+            price_cop = int(slot.total_price or 80000)
+            price_formatted = f"${price_cop:,}".replace(",", ".")
+            payment_ref = f"HOLD-{slot.id}-{uuid.uuid4().hex[:6].upper()}"
+
+            hold = SlotHold(
+                slot_id=slot.id,
+                customer_phone=normalize_phone(sender_phone),
+                customer_name=sender_name or mask_phone(sender_phone),
+                spots_held=slot.capacity or 4,
+                amount_to_pay=Decimal(str(price_cop)),
+                expires_at=expires_at,
+                status=HoldStatus.ACTIVE,
+                payment_reference=payment_ref,
+                client_tier=ClientTier.STANDARD,
+                payment_status=PaymentStatus.PAID,
+            )
+            db.add(hold)
+            await db.commit()
+
+            return (
+                f"🔒 *¡Turno bloqueado temporalmente por 10 minutos!* 🎾\n\n"
+                f"• Pista: {c_name}\n"
+                f"• Horario: {st} - {et}\n"
+                f"• Valor total: {price_formatted} COP\n\n"
+                f"Tu reserva está apartada mientras completas el pago.\n"
+                f"💳 *¿Cómo prefieres pagar?*\n"
+                f"• Responde *'LINK'* para generar tu enlace de pago digital PSE/Nequi/Tarjeta.\n"
+                f"• Responde *'SEDE'* para abonar en recepción al llegar al club."
+            )
 
         if len(to_participants_list(slot.players_names)) > 0:
             # Ya hay un partido abierto en curso para ese turno: unirse directamente (mismo modo SPLIT_MATCH)
@@ -2287,6 +2326,93 @@ async def handle_sport_and_booking_flow(
             "2️⃣ *Mi Cupo / 1/4:* Abres convocatoria comunitaria con tu raqueta y esperas 3 compañeros.\n\n"
             "Responde con *1* o *2* para confirmar."
         )
+
+    # Intención J: Búsqueda natural de turnos / reserva con hora o franja (ej: "ábreme pista pa las 7", "turnos para las 7", "en la tarde")
+    natural_booking_regex = re.compile(
+        r"(?:[aá]breme\s+pista|[aá]breme\s+cancha|ap[aá]rtame\s+cancha|ap[aá]rtame\s+turno|reservar?\s+cancha|reservar?\s+pista|quiero\s+jugar|turnos?\s+para|pista\s+pa|cancha\s+pa|a\s+las?\s+\d+|en\s+la\s+(?:tarde|noche|ma[ñn]ana))",
+        re.IGNORECASE,
+    )
+    if natural_booking_regex.search(clean):
+        target_date = get_bogota_today()
+        if re.search(r"\bma[ñn]ana\b", clean, re.IGNORECASE):
+            target_date = target_date + timedelta(days=1)
+        now_bogota = get_bogota_now()
+
+        # Extraer hora específica si se menciona (ej: "las 7", "7pm", "19:00", "7:00")
+        hour_target = None
+        hour_match = re.search(r"\b(?:a\s+las?\s+|pa\s+las?\s+|para\s+las?\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", clean, re.IGNORECASE)
+        if hour_match:
+            try:
+                h_val = int(hour_match.group(1))
+                if 1 <= h_val <= 23:
+                    meridiem = (hour_match.group(3) or "").lower()
+                    if meridiem == "pm" and h_val < 12:
+                        h_val += 12
+                    elif meridiem == "am" and h_val == 12:
+                        h_val = 0
+                    elif not meridiem:
+                        # Si es entre 1 y 11 y menciona tarde/noche o es jerga de tarde habitual en pádel
+                        if (re.search(r"tarde|noche", clean, re.IGNORECASE) or h_val in [6, 7, 8, 9, 10, 11]) and h_val <= 11:
+                            h_val += 12
+                    hour_target = h_val
+            except Exception:
+                pass
+
+        # Filtrar slots disponibles
+        stmt = (
+            select(TimeSlot)
+            .options(selectinload(TimeSlot.court))
+            .where(
+                TimeSlot.date == target_date,
+                cast(TimeSlot.status, String).in_(["AVAILABLE", "PARTIALLY_BOOKED"]),
+                TimeSlot.slot_type == "MATCH",
+            )
+            .order_by(TimeSlot.start_time.asc())
+        )
+        res = await db.execute(stmt)
+        all_slots = list(res.scalars().all())
+
+        if target_date == get_bogota_today():
+            curr_time = now_bogota.time()
+            all_slots = [s for s in all_slots if s.start_time > curr_time]
+
+        # Si especificó hora o franja, priorizar
+        matched_slots = []
+        if hour_target is not None:
+            # Buscar slots en +/- 1 hora
+            matched_slots = [s for s in all_slots if abs(s.start_time.hour - hour_target) <= 1]
+
+        if not matched_slots:
+            if re.search(r"tarde|noche", clean, re.IGNORECASE):
+                matched_slots = [s for s in all_slots if s.start_time.hour >= 14]
+            elif re.search(r"ma[ñn]ana", clean, re.IGNORECASE) and not re.search(r"\bma[ñn]ana\b", clean, re.IGNORECASE):
+                matched_slots = [s for s in all_slots if s.start_time.hour < 12]
+
+        if not matched_slots:
+            matched_slots = all_slots
+
+        if matched_slots:
+            day_label = "hoy" if target_date == get_bogota_today() else "mañana"
+            number_emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
+            offered = {}
+            lines = []
+            for i, s in enumerate(matched_slots[:4], start=1):
+                c_name = s.court.name if s.court else "Cancha"
+                st = s.start_time.strftime("%I:%M %p").lstrip("0")
+                et = s.end_time.strftime("%I:%M %p").lstrip("0")
+                price = f"${int(s.total_price or 0):,}".replace(",", ".")
+                em = number_emojis[i - 1] if i <= len(number_emojis) else f"{i}."
+                lines.append(f"{em} *{st} - {et}* | {c_name} ({price} COP)")
+                offered[i] = s.id
+
+            session["last_offered_slots"] = offered
+            session["is_hold_search"] = True
+            lines_str = "\n".join(lines)
+            return (
+                f"🎾 *Opciones de turnos disponibles para {day_label}:*\n\n"
+                f"{lines_str}\n\n"
+                f"Responde con el número de la opción (ej. *1*) para apartarla de inmediato con un *hold temporal de 10 minutos*."
+            )
 
     sport_choice = detect_sport_choice(clean)
 
@@ -2348,11 +2474,15 @@ async def handle_social_query(db: AsyncSession, clean: str, session: dict) -> Op
     return f"👥 *Jugadores inscritos en el turno de {st} ({c_name}):*\n" + "\n".join(lines)
 
 
-PROFILE_SCORE_REGEX = re.compile(
-    r"cu[aá]ntos?\s+puntos\s+tengo|mis?\s+puntos|\bpuntos\b|puntos\s+capital|mi\s+puntaje|qu[eé]\s+puntaje\s+tengo|qu[eé]\s+categor[ií]a\s+soy|mi\s+categor[ií]a",
+EXPLAIN_POINTS_REGEX = re.compile(
+    r"diferencia\s+entre\s+puntos|puntos\s+capital\s+y\s+ranking|capital\s+points|qu[eé]\s+son\s+los\s+capital\s+points|explicame\s+los\s+puntos|c[oó]mo\s+funcionan\s+los\s+puntos|para\s+qu[eé]\s+sirven\s+los\s+puntos|puntos\s+de\s+ranking\s+vs",
     re.IGNORECASE,
 )
-WALLET_BALANCE_REGEX = re.compile(r"cu[aá]nto\s+cr[eé]dito\s+tengo|\bsaldo\b", re.IGNORECASE)
+PROFILE_SCORE_REGEX = re.compile(
+    r"ficha\s+deportiva|mi\s+ficha|estad[ií]sticas?|mis\s+estad[ií]sticas|cu[aá]ntos?\s+puntos\s+tengo|mis?\s+puntos|mi\s+puntaje|qu[eé]\s+puntaje\s+tengo|qu[eé]\s+categor[ií]a\s+soy|mi\s+categor[ií]a",
+    re.IGNORECASE,
+)
+WALLET_BALANCE_REGEX = re.compile(r"cu[aá]nto\s+cr[eé]dito\s+tengo|\bsaldo\b|mi\s+saldo", re.IGNORECASE)
 TOP_RANKING_REGEX = re.compile(r"top\s*3\s+de\s+([a-záéíóúñ0-9]+)", re.IGNORECASE)
 
 
@@ -2373,6 +2503,19 @@ async def handle_profile_query(db: AsyncSession, sender_phone: str, clean: str) 
         medals = ["🥇", "🥈", "🥉"]
         lines = [f"{medals[i]} {p.name} - {p.ranking_points} pts" for i, p in enumerate(top_players)]
         return f"🏆 *Top 3 de {top_players[0].category}:*\n" + "\n".join(lines)
+
+    if EXPLAIN_POINTS_REGEX.search(clean):
+        return (
+            "💡 *Diferencia entre Capital Points y Puntos de Ranking en Capital Pádel Club:*\n\n"
+            "🪙 *Capital Points (Monedero / Billetera):*\n"
+            "• Es tu saldo en dinero COP dentro del club.\n"
+            "• Se usa directamente para pagar reservas de canchas, inscripciones a torneos o consumos en la tienda.\n"
+            "• Se recarga vía pasarela de pagos o por premios deportivos.\n\n"
+            "🏆 *Puntos de Ranking (Nivel Deportivo):*\n"
+            "• Es tu puntaje competitivo acumulado por participar y ganar partidos o torneos.\n"
+            "• Determina tu posición en la tabla clasificatoria del club y define ascensos de categoría (7ma a 1ra).\n"
+            "• *No* se gasta ni se descuenta al comprar servicios; mide exclusivamente tu nivel de juego."
+        )
 
     norm_phone = normalize_phone(sender_phone)
 
@@ -2469,8 +2612,128 @@ async def handle_active_reservation_query(db: AsyncSession, sender_phone: str, c
     return "🎾 *Tus compañeros de turno hoy:*\n" + "\n".join(lines)
 
 
+# -----------------------------------------------------------------------------
+# Consultas Canónicas: FAQs (Palas, Bebidas, Categorías, Otros Deportes) y Mis Reservas
+# -----------------------------------------------------------------------------
+
+MY_BOOKINGS_REGEX = re.compile(
+    r"mis\s+reservas|mis\s+turnos|qu[eé]\s+turnos?\s+tengo|mis\s+partidos|mis\s+partidos\s+pr[oó]ximos|turnos\s+que\s+tengo",
+    re.IGNORECASE,
+)
+EQUIPMENT_FAQS_REGEX = re.compile(
+    r"alquiler\s+de\s+palas?|alquiler\s+de\s+raquetas?|palas?\s+y\s+raquetas?|raquetas?\s+o\s+palas?|alquilan\s+palas?|alquilan\s+raquetas?|venden\s+pelotas?|venden\s+bolas?|comprar\s+pelotas?|grips?",
+    re.IGNORECASE,
+)
+FOOD_BEVERAGE_REGEX = re.compile(
+    r"bebidas?|cervezas?|gatorade|snacks?|cafeter[ií]a|hay\s+comida|tienen\s+restaurante|venden\s+comida|para\s+comer|hidrataci[oó]n|almuerzo",
+    re.IGNORECASE,
+)
+CATEGORIES_EXPLANATION_REGEX = re.compile(
+    r"c[oó]mo\s+se\s+clasifican|qu[eé]\s+significan?\s+las?\s+categor[ií]as?|explicaci[oó]n\s+de\s+categor[ií]as?|qu[eé]\s+es\s+7ma|qu[eé]\s+es\s+1ra|c[oó]mo\s+saber\s+mi\s+categor[ií]a|nivelaci[oó]n\s+de\s+categor[ií]a",
+    re.IGNORECASE,
+)
+OTHER_SPORTS_REGEX = re.compile(
+    r"otros?\s+deportes?|qu[eé]\s+m[aá]s\s+tienen|qu[eé]\s+otras?\s+canchas|tienen\s+pickleball|tienen\s+v[oó]ley|tienen\s+consolas?|sala\s+gamer",
+    re.IGNORECASE,
+)
+
+
+async def handle_my_bookings_query(db: AsyncSession, sender_phone: str, clean: str) -> Optional[str]:
+    """Responde 'mis reservas' o 'mis turnos' listando los partidos y canchas futuras del jugador."""
+    if not MY_BOOKINGS_REGEX.search(clean):
+        return None
+
+    today = get_bogota_today()
+    norm_phone = normalize_phone(sender_phone)
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date >= today,
+            TimeSlot.status.notin_([SlotStatus.CANCELLED, SlotStatus.BLOCKED]),
+        )
+        .order_by(TimeSlot.date.asc(), TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    user_slots = []
+    for s in slots:
+        participants = to_participants_list(s.players_names)
+        if any(p.get("phone") and normalize_phone(p["phone"]) == norm_phone for p in participants):
+            user_slots.append(s)
+
+    if not user_slots:
+        return (
+            "🎾 *Tus Reservas en Capital Pádel Club:*\n\n"
+            "Actualmente no tienes reservas activas ni turnos futuros asignados.\n\n"
+            "¿Te gustaría buscar turnos disponibles para hoy o mañana? Escribe *'disponibilidad'*."
+        )
+
+    lines = []
+    for s in user_slots[:5]:
+        c_name = s.court.name if s.court else "Cancha"
+        date_str = s.date.strftime("%d/%m/%Y")
+        st = s.start_time.strftime("%I:%M %p").lstrip("0")
+        et = s.end_time.strftime("%I:%M %p").lstrip("0")
+        sport_em = get_sport_emoji(s.sport_type)
+        parts = to_participants_list(s.players_names)
+        cap = s.capacity or 4
+        lines.append(f"• {sport_em} *{date_str}* | {st} - {et} | {c_name} ({len(parts)}/{cap} jugadores)")
+
+    return "🎾 *Tus Próximas Reservas y Partidos:*\n\n" + "\n".join(lines) + "\n\n¡Te esperamos en la pista para darlo todo! 🏆"
+
+
+async def handle_faq_queries(clean: str) -> Optional[str]:
+    """Responde FAQs canónicas: palas/raquetas/pelotas, alimentos/bebidas, categorías y otros deportes."""
+    if EQUIPMENT_FAQS_REGEX.search(clean):
+        return (
+            "🎾 *Alquiler y Venta de Equipamiento en Capital Pádel Club:*\n\n"
+            "• *Palas vs Raquetas:* En pádel se juega con *palas* (sólidas con perforaciones, sin cuerdas), a diferencia de las raquetas de tenis tradicional.\n"
+            "• *Alquiler de Palas:* Contamos con alquiler de palas de gama alta y formativas por *$15.000 COP* por turno/partido.\n"
+            "• *Venta de Pelotas y Accesorios:* En nuestra tienda pro-shop puedes adquirir tubos de pelotas oficiales nuevas presurizadas, overgrips de agarre y protectores de pala.\n\n"
+            "¿Necesitas apartar una pala para tu próximo partido?"
+        )
+
+    if FOOD_BEVERAGE_REGEX.search(clean):
+        return (
+            "🥤 *Bebidas y Cafetería en Capital Pádel Club:*\n\n"
+            "• Contamos con servicio de bar y cafetería con hidratación completa (Gatorade, aguas, energizantes, gaseosas y cervezas frías para el tercer tiempo 🍻).\n"
+            "• Variedad de snacks deportivos, barras de proteína y pasabocas.\n"
+            "• ⚠️ *Aviso de restaurante:* Actualmente no contamos con restaurante de cocina caliente en la sede, pero sí con excelente oferta de bebidas y refrigerios para jugadores y acompañantes."
+        )
+
+    if CATEGORIES_EXPLANATION_REGEX.search(clean):
+        return (
+            "🏆 *Estructura de Categorías en Capital Pádel Club:*\n\n"
+            "Nuestro sistema clasifica a los jugadores en 7 niveles para asegurar partidos parejos y competitivos:\n"
+            "• *7ma y 6ta Categoría:* Iniciación y principiantes que dominan lo básico del juego.\n"
+            "• *5ta y 4ta Categoría:* Nivel intermedio; juego consistente, uso de paredes y táctica de fondo.\n"
+            "• *3ra y 2da Categoría:* Nivel avanzado; alto ritmo, definición de puntos y juego aéreo.\n"
+            "• *1ra Categoría:* Nivel primera / Open de máxima competencia deportiva.\n\n"
+            "💡 *Test de Nivelación:* Nuestros entrenadores certificados realizan una evaluación de 15 minutos en pista para asignarte tu categoría oficial en el club."
+        )
+
+    if OTHER_SPORTS_REGEX.search(clean):
+        return (
+            "🏟️ *Instalaciones Multideporte - Capital Pádel Club (Sede Maloka):*\n\n"
+            "Además del pádel, nuestro complejo deportivo ofrece:\n"
+            "• 🎾 *5 Canchas de Pádel Panorámicas:* Canchas 1 a 4 con césped azul oficial, Cancha 5 negra pro.\n"
+            "• 🏓 *2 Pistas de Pickleball:* Con medidas y demarcación reglamentaria.\n"
+            "• 🏐 *1 Cancha de Vóley Reglamentaria:* Superficie de piso rígido / alto impacto para 6 vs 6 (*NO es cancha de arena*).\n"
+            "• 🎮 *Zona Gamer / Consolas:* Sala de descanso y videojuegos para compartir con amigos.\n\n"
+            "¿Deseas consultar disponibilidad para pádel, pickleball o vóley?"
+        )
+
+    return None
+
+
 RATES_QUESTION_REGEX = re.compile(r"cu[aá]nto\s+vale\s+la\s+hora|cu[aá]nto\s+vale\s+el\s+turno|valor\s+de\s+la\s+hora|valor\s+del\s+turno", re.IGNORECASE)
-PERSONAL_MEMBERSHIP_REGEX = re.compile(r"qu[eé]\s+membres[ií]a\s+tengo|tengo\s+membres[ií]a|mi\s+plan|vigencia\s+membres[ií]a", re.IGNORECASE)
+PERSONAL_MEMBERSHIP_REGEX = re.compile(
+    r"qu[eé]\s+membres[ií]a\s+tengo|quiero\s+saber\s+qu[eé]\s+membres[ií]a\s+tengo|tengo\s+a[uú]n\s+la\s+membres[ií]a|tengo\s+membres[ií]a|cu[aá]ntos?\s+d[ií]as\s+me\s+quedan|mi\s+plan|vigencia\s+membres[ií]a",
+    re.IGNORECASE,
+)
 MEMBERSHIP_QUESTION_REGEX = re.compile(r"membres[ií]as?|planes?\s+de\s+socio|tapia|coello|gal[aá]n|chingotto|lebr[oó]n", re.IGNORECASE)
 
 MEMBERSHIP_PROMO_TEXT = (
@@ -2490,24 +2753,23 @@ async def handle_rates_and_membership_query(db: AsyncSession, clean: str, sender
 
         if (
             cust
-            and cust.membership_tier
-            and cust.membership_tier.upper() != "ESTANDAR"
+            and (cust.membership_plan_id is not None or (cust.membership_tier and cust.membership_tier.upper() != "ESTANDAR"))
             and cust.membership_end_date
             and cust.membership_end_date >= today
         ):
             dias_restantes = (cust.membership_end_date - today).days
-            plan_name = cust.membership_plan.name if cust.membership_plan else cust.membership_tier
+            plan_name = cust.membership_plan.name if cust.membership_plan else (cust.membership_tier or "Membresía")
             plan_title = plan_name.title()
             return (
-                f"🎾 Hola {nombre}, actualmente cuentas con la membresía *{plan_title}* activa. "
+                f"🎾 Hola {nombre}, actualmente cuentas con el plan *{plan_title}* activo. "
                 f"Te quedan *{dias_restantes} días* de vigencia.\n\n"
-                f"💡 ¿Te gustaría renovar tu plan o ascender a una categoría superior para obtener más clases y beneficios?"
+                f"💡 Recuerda que tienes beneficios en horarios, cortesías y torneos. ¿Deseas renovar o consultar beneficios?"
             )
         else:
             return (
                 f"Hola {nombre}, actualmente juegas con tarifa *Estándar (sin membresía activa)*.\n\n"
-                f"🏆 *¡Ahorra en cada partido!* Con nuestras membresías oficiales (Tapia, Coello, Galán, Chingotto, Lebrón) "
-                f"tienes tarifas preferenciales, bebidas sin costo, clases de academia y hasta 40% de descuento en torneos.\n\n"
+                f"🏆 *¡Ahorra en cada partido!* Con nuestras membresías oficiales (*Tapia, Coello, Galán, Chingotto, Lebrón*) "
+                f"obtienes tarifas preferenciales, horas fijas incluidas, clases de academia, bebidas sin costo y hasta 40% de descuento en torneos.\n\n"
                 f"¿Te gustaría conocer los precios de los planes o activar una hoy?"
             )
 
@@ -2585,14 +2847,17 @@ async def handle_tournaments_and_academy_query(db: AsyncSession, clean: str) -> 
 
     if ACADEMY_QUESTION_REGEX.search(clean):
         header = (
-            "🎓 *Academia de Pádel - Niveles disponibles:*\n"
-            "• *Iniciación* (6ta - 7ma)\n"
-            "• *Media* (4ta - 5ta)\n"
-            "• *Avanzado*\n"
+            "🎓 *Academia Formativa y Clases de Pádel en Capital Pádel Club:*\n\n"
+            "Contamos con programas para todas las edades y niveles impartidos por entrenadores certificados:\n"
+            "• 🎾 *Iniciación:* Para quienes arrancan de cero o juegan en 7ma / 6ta.\n"
+            "• 🎾 *Intermedio:* Perfeccionamiento táctico y golpes de pared (5ta / 4ta).\n"
+            "• 🎾 *Avanzado y Competencia:* Alto rendimiento, ritmo de partido y torneos (3ra a 1ra).\n"
+            "• 👦👧 *Academia Infantil / Kids:* Grupos formativos por edades desde los 5 años.\n\n"
+            "💡 *Prueba de nivel:* Si no conoces tu categoría, nuestros profesores te realizan un test de nivelación de 15 minutos sin costo al tomar tu paquete."
         )
         if wants_enroll:
-            return header + "\nCuéntanos tu nombre y el nivel/horario de tu interés y te confirmamos el cupo."
-        return header + "\n¿Quieres solicitar un cupo? Escribe *'quiero cupo en [nivel]'*."
+            return header + "\n\nCuéntanos tu nombre y el horario de tu interés para asignarte una evaluación de nivel."
+        return header + "\n\n¿Te gustaría agendar una prueba de nivel o conocer los paquetes de clases?"
 
     return None
 
@@ -2933,6 +3198,8 @@ async def generate_concierge_reply(
     if db is not None:
         for handler in (
             lambda: handle_split_payment_choice(db, sender_phone, clean),
+            lambda: handle_my_bookings_query(db, sender_phone, clean),
+            lambda: handle_faq_queries(clean),
             lambda: handle_sport_and_booking_flow(db, sender_phone, sender_name, clean, session),
             lambda: handle_category_tolerance_query(db, sender_phone, clean, session),
             lambda: handle_social_query(db, clean, session),

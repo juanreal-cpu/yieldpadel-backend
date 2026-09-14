@@ -199,14 +199,22 @@ async def simulate_incoming_message(
             or (MESSAGES_CACHE.get(ctx.get("id")) if ctx.get("id") else None)
         )
 
-    reply_text = await process_incoming_whatsapp_message(
-        db=db,
-        sender_phone=payload.sender_phone,
-        sender_name=payload.sender_name,
-        raw_text=payload.raw_text,
-        quoted_text=quoted_text,
-        context=payload.context,
-    )
+    if is_transactional_message(payload.raw_text):
+        reply_text = await process_incoming_whatsapp_message(
+            db=db,
+            sender_phone=payload.sender_phone,
+            sender_name=payload.sender_name,
+            raw_text=payload.raw_text,
+            quoted_text=quoted_text,
+            context=payload.context,
+        )
+    else:
+        reply_text = await generate_concierge_reply(
+            message_text=payload.raw_text,
+            sender_phone=payload.sender_phone,
+            db=db,
+            sender_name=payload.sender_name,
+        )
     return {
         "status": "processed",
         "sender_phone": payload.sender_phone,
