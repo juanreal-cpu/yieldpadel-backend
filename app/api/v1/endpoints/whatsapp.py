@@ -11,7 +11,6 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.timezone import get_bogota_today
-from app.core.config import settings
 from app.models.slot import TimeSlot
 from app.services.whatsapp import (
     MESSAGES_CACHE,
@@ -39,10 +38,15 @@ router = APIRouter()
 
 VERIFY_TOKEN = "yieldpadel_secret_token_2026"
 VOICEFLOW_DIALOG_URL = "https://general-runtime.voiceflow.com/state/user/{user_id}/interact"
+VOICEFLOW_TEXT_TRACE_TYPES = {"text", "speak"}
+VOICEFLOW_FALLBACK_MESSAGE = (
+    "Gracias por contactar a Capital Pádel Club. En este momento no pude completar tu consulta. "
+    "Un asesor del club te atenderá a la mayor brevedad. Disculpa las molestias."
+)
 
 
 def _extract_voiceflow_text_messages(traces) -> List[str]:
-    """Recorre traces de Voiceflow y extrae mensajes tipo text."""
+    """Recorre traces de Voiceflow y extrae mensajes tipo text o speak."""
     if isinstance(traces, dict):
         traces = traces.get("traces") or traces.get("trace") or []
     if not isinstance(traces, list):
@@ -52,7 +56,7 @@ def _extract_voiceflow_text_messages(traces) -> List[str]:
     for trace in traces:
         if not isinstance(trace, dict):
             continue
-        if str(trace.get("type") or "").lower() != "text":
+        if str(trace.get("type") or "").lower() not in VOICEFLOW_TEXT_TRACE_TYPES:
             continue
         payload_obj = trace.get("payload") or {}
         if isinstance(payload_obj, dict):
@@ -64,18 +68,20 @@ def _extract_voiceflow_text_messages(traces) -> List[str]:
     return messages
 
 
-async def interact_with_voiceflow(sender_phone: str, text_body: str) -> List[str]:
-    """
-    Llama a la Dialog API de Voiceflow y retorna los mensajes de texto a despachar.
-    """
-    api_key = os.getenv("VOICEFLOW_API_KEY") or getattr(settings, "VOICEFLOW_API_KEY", None) or "TU_VOICEFLOW_API_KEY"
+async def interact_with_voiceflow(sender_phone: str, message_text: str) -> List[str]:
+    """Llama a la Dialog API de Voiceflow (production) y retorna mensajes text/speak."""
+    api_key = os.getenv("VOICEFLOW_API_KEY", "")
     url = VOICEFLOW_DIALOG_URL.format(user_id=sender_phone)
     headers = {
         "Authorization": api_key,
         "Content-Type": "application/json",
+        "versionID": "production",
     }
     payload = {
-        "action": {"type": "text", "payload": text_body},
+        "action": {
+            "type": "text",
+            "payload": message_text,
+        },
     }
     async with httpx.AsyncClient(timeout=20.0) as client:
         resp = await client.post(url, json=payload, headers=headers)
@@ -83,20 +89,36 @@ async def interact_with_voiceflow(sender_phone: str, text_body: str) -> List[str
         return _extract_voiceflow_text_messages(resp.json())
 
 
-async def route_incoming_text_to_voiceflow(sender_phone: str, text_body: str, raw_from: str, db: AsyncSession) -> bool:
+async def dispatch_voiceflow_replies(
+    sender_phone: str,
+    message_text: str,
+    raw_from: str,
+    db: AsyncSession,
+    conversation_phone: Optional[str] = None,
+) -> None:
     """
-    Enruta un mensaje de texto a Voiceflow y despacha cada trace text vía Meta Graph API.
-    Retorna True si se despachó al menos un mensaje; False para activar el fallback local.
+    Enruta consultas generales a Voiceflow y despacha cada trace text/speak vía Meta Graph API.
+    Ante timeout o error, registra logger.error y envía un fallback formal.
     """
-    vf_messages = await interact_with_voiceflow(sender_phone, text_body)
-    dispatched = False
-    for vf_msg in vf_messages:
-        if not vf_msg:
-            continue
-        await log_conversation_message(db, sender_phone, vf_msg, direction="bot")
-        await send_whatsapp_message(to_phone=raw_from, message_body=vf_msg)
-        dispatched = True
-    return dispatched
+    log_phone = conversation_phone or sender_phone
+    try:
+        vf_messages = await interact_with_voiceflow(sender_phone, message_text)
+        if not vf_messages:
+            vf_messages = [VOICEFLOW_FALLBACK_MESSAGE]
+        for vf_msg in vf_messages:
+            if not vf_msg:
+                continue
+            await log_conversation_message(db, log_phone, vf_msg, direction="bot")
+            await send_whatsapp_message(to_phone=raw_from, message_body=vf_msg)
+    except Exception as vf_err:
+        logger.error(
+            "Voiceflow Dialog API error for %s: %s",
+            sender_phone,
+            vf_err,
+            exc_info=True,
+        )
+        await log_conversation_message(db, log_phone, VOICEFLOW_FALLBACK_MESSAGE, direction="bot")
+        await send_whatsapp_message(to_phone=raw_from, message_body=VOICEFLOW_FALLBACK_MESSAGE)
 
 
 class SimulateWhatsAppMessage(BaseModel):
@@ -206,25 +228,8 @@ async def receive_webhook(
                         player_name=sender_name, increment_unread=False,
                     )
 
-                    # Voiceflow Dialog API: enruta el texto entrante y despacha traces tipo text.
-                    # Si Voiceflow falla o no responde, se usa el motor local (transaccional/concierge)
-                    # para no bloquear el HTTP 200 que Meta requiere.
-                    voiceflow_handled = False
-                    try:
-                        voiceflow_handled = await route_incoming_text_to_voiceflow(
-                            sender_phone=sender_phone,
-                            text_body=message_text,
-                            raw_from=raw_from,
-                            db=db,
-                        )
-                    except Exception as vf_err:
-                        logger.warning(f"Voiceflow Dialog API fallback para {sender_phone}: {vf_err}")
-                        print(f"[VOICEFLOW FALLBACK] {vf_err}")
-
-                    if voiceflow_handled:
-                        continue
-
-                    # Fallback local: mensajes transaccionales (🎾 / voy / me bajo) o concierge IA.
+                    # Comandos transaccionales de lista (🎾 / voy / me bajo) siguen el motor nativo.
+                    # Consultas generales (puntos, membresía, precios, horarios, palas, asesor) van a Voiceflow.
                     if is_transactional_message(message_text):
                         reply_text = await process_incoming_whatsapp_message(
                             db=db,
@@ -234,21 +239,23 @@ async def receive_webhook(
                             quoted_text=quoted_text,
                             context=context,
                         )
-                    else:
-                        reply_text = await generate_concierge_reply(
-                            message_text=message_text,
-                            sender_phone=sender_phone,
-                            db=db,
-                            sender_name=sender_name,
-                        )
+                        if reply_text:
+                            print(f"[WHATSAPP OUTGOING PREPARED]:\n{reply_text}\n")
+                            await log_conversation_message(db, sender_phone, reply_text, direction="bot")
+                            await send_whatsapp_message(
+                                to_phone=raw_from,
+                                message_body=reply_text,
+                            )
+                        continue
 
-                    if reply_text:
-                        print(f"[WHATSAPP OUTGOING PREPARED]:\n{reply_text}\n")
-                        await log_conversation_message(db, sender_phone, reply_text, direction="bot")
-                        await send_whatsapp_message(
-                            to_phone=raw_from,
-                            message_body=reply_text,
-                        )
+                    vf_user_id = raw_from.lstrip("+")
+                    await dispatch_voiceflow_replies(
+                        sender_phone=vf_user_id,
+                        message_text=message_text,
+                        raw_from=raw_from,
+                        db=db,
+                        conversation_phone=sender_phone,
+                    )
 
     except Exception as e:
         logger.error(f"Error handling WhatsApp webhook: {e}", exc_info=True)
