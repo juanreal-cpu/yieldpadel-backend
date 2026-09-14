@@ -22,16 +22,41 @@
     /* =========================================================================
        REGLA MAESTRA DE CONTRASTE ESTRICTO (PROTECCIÓN VISUAL CONTRA TEXTO BLANCO)
        ========================================================================= */
+    /* Forzar legibilidad total en todos los inputs, selects y datepickers */
+    input, select, textarea {
+      color: #0f172a !important;
+      background-color: #ffffff !important;
+      color-scheme: light !important; /* Corrige los selectores de fecha nativos en Chrome/Edge */
+    }
+    
+    /* Calendarios nativos e iconos de fecha */
+    input[type="date"] {
+      color: #0f172a !important;
+      background-color: #ffffff !important;
+      font-weight: 600 !important;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.2) !important; /* Asegura que el icono de calendario se vea oscuro */
+      cursor: pointer;
+    }
+
+    /* Prohibir texto blanco en contenedores claros */
+    .bg-white, .bg-slate-50, .bg-slate-100 {
+      color: #0f172a !important;
+    }
+    .bg-white input, .bg-white select, .bg-white span, .bg-white label, .bg-white p {
+      color: #0f172a !important;
+    }
+    .bg-white .text-white, .bg-slate-50 .text-white, .bg-slate-100 .text-white {
+      color: #0f172a !important;
+    }
+
     /* Forzar contraste estricto en tarjetas claras */
-    .card-light, .bg-white, .bg-slate-50 {
+    .card-light {
       color: #0f172a !important;
     }
     .card-light h1, .card-light h2, .card-light h3, .card-light h4, .card-light p, .card-light span, .card-light div {
       color: inherit;
-    }
-    /* Evitar que texto blanco se cuele en contenedores claros */
-    .bg-white .text-white, .bg-slate-50 .text-white, .bg-slate-100 .text-white {
-      color: #0f172a !important;
     }
     /* Proteger botones y elementos oscuros dentro de contenedores claros para que su texto blanco se mantenga blanco */
     .bg-white button.text-white, .bg-slate-50 button.text-white, .bg-slate-100 button.text-white,
@@ -1474,36 +1499,68 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(15, 23, 42, 0.65);
+      background: rgba(2, 6, 23, 0.8);
       backdrop-filter: blur(4px);
       z-index: 100;
       align-items: center;
       justify-content: center;
+      padding: 1rem;
+    }
+    @media (min-width: 768px) {
+      .modal-overlay {
+        padding: 1.5rem;
+      }
     }
     .modal-overlay.active {
       display: flex;
     }
 
     .modal-card {
+      position: relative;
       background: #FFFFFF;
-      border: 1px solid #CBD5E1;
-      border-radius: 12px;
+      border: 1px solid #E2E8F0;
+      border-radius: 1rem;
       width: 100%;
-      max-width: 480px;
-      padding: 1.5rem;
+      max-width: 48rem; /* max-w-3xl (768px) */
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       color: #0F172A;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
 
     .modal-title {
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       font-weight: 800;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #E2E8F0;
-      padding-bottom: 0.5rem;
+      padding: 1.25rem;
+      background: rgba(248, 250, 252, 0.85);
+      flex-shrink: 0;
+      color: #0F172A;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1 1 auto;
+      color: #0F172A;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .form-group {
@@ -5196,220 +5253,234 @@
   </div>
 
   <!-- MODAL: GESTIÓN DE TURNO (6 OPCIONES COMPLETAS & CRM AUTOCOMPLETE) -->
-  <div id="modal-turn" data-alias="reserve-block-modal" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-title">
-        <span>Gestión de Turno</span>
-        <button type="button" onclick="closeReserveOrBlockModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
+  <div id="modal-turn" data-alias="reserve-block-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
+    <div class="relative w-full max-w-2xl lg:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+        <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+          <span>🎾</span> Gestión de Turno
+        </span>
+        <button type="button" onclick="closeReserveOrBlockModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1 rounded-lg transition leading-none">&times;</button>
       </div>
-      <form id="reserve-block-form" onsubmit="handleReserveOrBlockSubmit(event)">
+      <form id="reserve-block-form" onsubmit="handleReserveOrBlockSubmit(event)" class="flex flex-col flex-1 overflow-hidden">
         <input type="hidden" id="rb-slot-id" />
         
-        <div class="form-group">
-          <label class="form-label">Tipo de Asignación</label>
-          <select id="rb-slot-type-select" class="form-control" onchange="onSlotTypeChange(this.value)" style="font-weight: 700;">
-            <option value="FULL_COURT">Partido Completo (Reserva 100% - $120.000)</option>
-            <option value="SPLIT_MATCH">Partido Abierto (Split 1/4 - Cuota por jugador)</option>
-            <option value="MEMBER">Socio / Membresía (Exento de pasarela / Hold $0)</option>
-            <option value="PAY_AT_VENUE">Pago en Sede (Pay-at-venue / Datáfono)</option>
-            <option value="CLASS">Clase de Pádel (Academia / Coach)</option>
-            <option value="MAINTENANCE">Mantenimiento / Lluvia (Bloqueo administrativo)</option>
-          </select>
-        </div>
+        <!-- CUERPO DEL MODAL (Scroll interno ergonómico en dos columnas) -->
+        <div class="p-6 overflow-y-auto space-y-5 flex-1 text-slate-900">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- COLUMNA 1: Modalidad y Buscador de Cliente CRM -->
+            <div class="space-y-4">
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Tipo de Asignación / Modalidad</label>
+                <select id="rb-slot-type-select" class="form-control" onchange="onSlotTypeChange(this.value)" style="font-weight: 700;">
+                  <option value="FULL_COURT">Partido Completo (Reserva 100% - $120.000)</option>
+                  <option value="SPLIT_MATCH">Partido Abierto (Split 1/4 - Cuota por jugador)</option>
+                  <option value="MEMBER">Socio / Membresía (Exento de pasarela / Hold $0)</option>
+                  <option value="PAY_AT_VENUE">Pago en Sede (Pay-at-venue / Datáfono)</option>
+                  <option value="CLASS">Clase de Pádel (Academia / Coach)</option>
+                  <option value="MAINTENANCE">Mantenimiento / Lluvia (Bloqueo administrativo)</option>
+                </select>
+              </div>
 
-        <!-- Búsqueda dinámica CRM Autocompletado Reactivo -->
-        <div class="form-group relative" id="rb-customer-search-group">
-          <label class="form-label font-bold text-slate-700 flex items-center justify-between">
-            <span>🔍 Buscar Cliente (CRM)</span>
-            <span class="text-[10px] text-slate-400 font-normal">Autocompleta nombre, WhatsApp, categoría y membresía</span>
-          </label>
-          <div class="relative">
-            <input type="text" id="turn-crm-search" data-alias="rb-customer-search" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="window.handleTurnCRMSearch(event)">
-            <div id="turn-crm-dropdown" data-alias="rb-customer-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-          </div>
-        </div>
+              <!-- Búsqueda dinámica CRM Autocompletado Reactivo -->
+              <div class="form-group relative" id="rb-customer-search-group">
+                <label class="form-label font-bold text-slate-700 flex items-center justify-between">
+                  <span>🔍 Buscar Cliente (CRM)</span>
+                  <span class="text-[10px] text-slate-500 font-normal">Autocompleta nombre, WhatsApp y categoría</span>
+                </label>
+                <div class="relative">
+                  <input type="text" id="turn-crm-search" data-alias="rb-customer-search" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="window.handleTurnCRMSearch(event)">
+                  <div id="turn-crm-dropdown" data-alias="rb-customer-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+                </div>
+              </div>
 
-        <div class="form-group" id="rb-instructor-group" style="display: none;">
-          <label class="form-label">Nombre del Profesor / Instructor</label>
-          <input type="text" id="rb-instructor-name" class="form-control" placeholder="Ej: Profe Marcos Rivas">
-        </div>
+              <div class="form-group" id="rb-instructor-group" style="display: none;">
+                <label class="form-label font-bold text-slate-700">Nombre del Profesor / Instructor</label>
+                <input type="text" id="rb-instructor-name" class="form-control" placeholder="Ej: Profe Marcos Rivas">
+              </div>
 
-        <div class="form-group" id="rb-client-name-group">
-          <label class="form-label">Nombre del Cliente / Responsable</label>
-          <input type="text" id="rb-client-name" class="form-control" placeholder="Nombre completo">
-        </div>
+              <div class="form-group" id="rb-client-name-group">
+                <label class="form-label font-bold text-slate-700">Nombre del Cliente / Responsable</label>
+                <input type="text" id="rb-client-name" class="form-control" placeholder="Nombre completo">
+              </div>
 
-        <div class="form-group" id="rb-client-phone-group">
-          <label class="form-label">Teléfono WhatsApp</label>
-          <input type="tel" id="rb-client-phone" class="form-control" placeholder="+57 313 2058547">
-        </div>
+              <div class="form-group" id="rb-client-phone-group">
+                <label class="form-label font-bold text-slate-700">Teléfono WhatsApp</label>
+                <input type="tel" id="rb-client-phone" class="form-control font-semibold" placeholder="+57 313 2058547">
+              </div>
+            </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;" id="rb-client-details-row">
-          <div class="form-group">
-            <label class="form-label">Categoría</label>
-            <select id="rb-client-category" class="form-control" style="font-weight: 600;">
-              <option value="1ra">1ra Categoría (Avanzado)</option>
-              <option value="2da">2da Categoría</option>
-              <option value="3ra">3ra Categoría</option>
-              <option value="4ta" selected>4ta Categoría (Intermedio)</option>
-              <option value="5ta">5ta Categoría</option>
-              <option value="6ta">6ta Categoría (Iniciación)</option>
-              <option value="Abierta / Recreativa">Abierta / Recreativa</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Tipo de Cliente / Socio</label>
-            <select id="rb-client-type" class="form-control" style="font-weight: 600;">
-              <option value="Estándar" selected>Estándar</option>
-              <option value="Socio VIP">Socio VIP (Exento Hold)</option>
-              <option value="Alumno Academia">Alumno Academia</option>
-              <option value="Corporativo">Corporativo</option>
-            </select>
-          </div>
-        </div>
+            <!-- COLUMNA 2: Categoría, Socio y Selector Inteligente de Precio -->
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="rb-client-details-row">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Categoría</label>
+                  <select id="rb-client-category" class="form-control" style="font-weight: 600;">
+                    <option value="1ra">1ra Categoría (Avanzado)</option>
+                    <option value="2da">2da Categoría</option>
+                    <option value="3ra">3ra Categoría</option>
+                    <option value="4ta" selected>4ta Categoría (Intermedio)</option>
+                    <option value="5ta">5ta Categoría</option>
+                    <option value="6ta">6ta Categoría (Iniciación)</option>
+                    <option value="Abierta / Recreativa">Abierta / Recreativa</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Tipo de Socio</label>
+                  <select id="rb-client-type" class="form-control" style="font-weight: 600;">
+                    <option value="Estándar" selected>Estándar</option>
+                    <option value="Socio VIP">Socio VIP (Exento Hold)</option>
+                    <option value="Alumno Academia">Alumno Academia</option>
+                    <option value="Corporativo">Corporativo</option>
+                  </select>
+                </div>
+              </div>
 
-        <div class="form-group" id="rb-custom-price-group">
-          <div class="flex items-center justify-between mb-1">
-            <label class="form-label mb-0" style="font-weight: 700;">Precio Total ($ COP)</label>
-            <span id="rb-price-mode-indicator" class="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">Tarifa Acordada</span>
-          </div>
+              <div class="form-group p-3.5 bg-slate-50 border border-slate-200 rounded-xl" id="rb-custom-price-group">
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="form-label mb-0 font-bold text-slate-800">Tarifa / Precio Total ($ COP)</label>
+                  <span id="rb-price-mode-indicator" class="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">Tarifa Acordada</span>
+                </div>
 
-          <!-- Selector de Modo de Precio Dinámico -->
-          <div class="mb-2">
-            <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Precio / Estrategia:</label>
-            <select id="rb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-sky-500" onchange="window.handleSmartPriceModeChange('rb', this.value)">
-              <option value="MANUAL" selected>✏️ Manual / Editable</option>
-              <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
-              <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
-              <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
-            </select>
-          </div>
+                <!-- Selector de Modo de Precio Dinámico -->
+                <div class="mb-2">
+                  <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Precio / Estrategia:</label>
+                  <select id="rb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-sky-500" onchange="window.handleSmartPriceModeChange('rb', this.value)">
+                    <option value="MANUAL" selected>✏️ Manual / Editable</option>
+                    <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
+                    <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
+                    <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
+                  </select>
+                </div>
 
-          <!-- Contenedor Descuento % (Oculto por defecto) -->
-          <div id="rb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
-            <div class="flex items-center justify-between gap-2">
-              <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
-              <div class="flex items-center gap-1">
-                <input type="number" id="rb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('rb', this.value)">
-                <span class="text-xs font-bold text-amber-900">%</span>
+                <!-- Contenedor Descuento % (Oculto por defecto) -->
+                <div id="rb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
+                  <div class="flex items-center justify-between gap-2">
+                    <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
+                    <div class="flex items-center gap-1">
+                      <input type="number" id="rb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('rb', this.value)">
+                      <span class="text-xs font-bold text-amber-900">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Input de Precio Numérico (100% editable) -->
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
+                  <input type="number" id="rb-custom-price" class="form-control pl-7 font-bold text-sky-700" value="120000" step="5000" min="0">
+                </div>
+
+                <!-- Quick Chips de Ajuste Rápido -->
+                <div class="flex items-center gap-1.5 flex-wrap mt-2.5">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'VALLE')" class="px-2 py-1 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
+                    ☀️ Valle: $80k
+                  </button>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'PICO')" class="px-2 py-1 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
+                    🌙 Pico: $120k
+                  </button>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'YIELD')" class="px-2 py-1 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
+                    🧠 Yield Sugerido
+                  </button>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_15')" class="px-2 py-1 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
+                    🏷️ -15%
+                  </button>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_25')" class="px-2 py-1 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
+                    🔥 -25%
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Input de Precio Numérico (100% editable) -->
-          <div class="relative">
-            <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
-            <input type="number" id="rb-custom-price" class="form-control pl-7" value="120000" step="5000" min="0" style="font-weight: 700; color: #0284C7;">
-          </div>
-
-          <!-- Quick Chips de Ajuste Rápido -->
-          <div class="flex items-center gap-1.5 flex-wrap mt-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'VALLE')" class="px-2 py-0.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
-              ☀️ Valle: $80k
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'PICO')" class="px-2 py-0.5 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
-              🌙 Pico: $120k
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'YIELD')" class="px-2 py-0.5 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
-              🧠 Yield Sugerido
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_15')" class="px-2 py-0.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
-              🏷️ -15%
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_25')" class="px-2 py-0.5 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
-              🔥 -25%
-            </button>
-          </div>
-        </div>
-
-        <!-- Sección 🌟 Protocolo Nuevo Cliente (Onboarding Counter) -->
-        <div id="rb-onboarding-section" style="display: none; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 0.85rem; margin-top: 0.75rem; margin-bottom: 0.75rem;">
-          <input type="hidden" id="rb-onboarding-customer-id" />
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span style="font-size: 1.1rem;">🌟</span>
-              <span style="font-weight: 800; color: #92400E; font-size: 0.85rem;">Protocolo Nuevo Cliente (Primera Visita)</span>
+          <!-- Sección 🌟 Protocolo Nuevo Cliente (Onboarding Counter) -->
+          <div id="rb-onboarding-section" style="display: none; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 0.85rem;">
+            <input type="hidden" id="rb-onboarding-customer-id" />
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span style="font-size: 1.1rem;">🌟</span>
+                <span style="font-weight: 800; color: #92400E; font-size: 0.85rem;">Protocolo Nuevo Cliente (Primera Visita)</span>
+              </div>
+              <span id="rb-onboarding-badge" class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400 rounded-md">⭐ 1ra Visita</span>
             </div>
-            <span id="rb-onboarding-badge" class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400 rounded-md">⭐ 1ra Visita</span>
+            <p id="rb-onboarding-desc" style="font-size: 0.75rem; color: #78350F; margin-bottom: 0.5rem;">
+              Jugador: <strong id="rb-onboarding-player-name">-</strong> • Tel: <span id="rb-onboarding-player-phone">-</span> • Estado: <span id="rb-onboarding-player-status" style="font-weight: 700;">PENDING</span>
+            </p>
+            <div style="margin-bottom: 0.5rem;">
+              <label style="font-size: 0.72rem; font-weight: 700; color: #92400E; display: block; margin-bottom: 0.2rem;">Notas Rápidas de Recepción:</label>
+              <input type="text" id="rb-onboarding-notes" class="form-control" style="font-size: 0.75rem; padding: 0.35rem 0.5rem;" placeholder="Ej: Vino recomendado, interesado en clases y membresía..." />
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" onclick="submitOnboardingAction('WELCOMED')" class="btn-action-emerald" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar bienvenida completada en counter">
+                ✅ Marcar Bienvenida Realizada
+              </button>
+              <button type="button" onclick="submitOnboardingAction('MEMBER_OFFERED')" class="btn-action-primary-purple" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar oferta de membresía / promo 2do turno">
+                💳 Ofrecer Membresía / Descuento 2do Turno
+              </button>
+            </div>
           </div>
-          <p id="rb-onboarding-desc" style="font-size: 0.75rem; color: #78350F; margin-bottom: 0.5rem;">
-            Jugador: <strong id="rb-onboarding-player-name">-</strong> • Tel: <span id="rb-onboarding-player-phone">-</span> • Estado: <span id="rb-onboarding-player-status" style="font-weight: 700;">PENDING</span>
-          </p>
-          <div style="margin-bottom: 0.5rem;">
-            <label style="font-size: 0.72rem; font-weight: 700; color: #92400E; display: block; margin-bottom: 0.2rem;">Notas Rápidas de Recepción:</label>
-            <input type="text" id="rb-onboarding-notes" class="form-control" style="font-size: 0.75rem; padding: 0.35rem 0.5rem;" placeholder="Ej: Vino recomendado, interesado en clases y membresía..." />
-          </div>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button type="button" onclick="submitOnboardingAction('WELCOMED')" class="btn-action-emerald" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar bienvenida completada en counter">
-              ✅ Marcar Bienvenida Realizada
-            </button>
-            <button type="button" onclick="submitOnboardingAction('MEMBER_OFFERED')" class="btn-action-primary-purple" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar oferta de membresía / promo 2do turno">
-              💳 Ofrecer Membresía / Descuento 2do Turno
-            </button>
-          </div>
-        </div>
 
-        <!-- Sección 🏅 Resultado del Partido (Punto 4) -->
-        <div id="rb-match-result-section" class="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-              <span>🏅</span> Resultado del Partido
-            </span>
-            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">+25 Pts de Ranking</span>
-          </div>
-          <p class="text-[11px] text-emerald-800 mb-2">
-            Selecciona la pareja vencedora para registrar la victoria y sumar automáticamente 25 puntos a su ranking oficial:
-          </p>
-          <div class="flex items-center gap-2 flex-wrap">
-            <div class="flex-1 min-w-[200px]">
-              <select id="turn-winner-team" data-alias="rb-match-pair-select" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="team_1">🎾 Pareja 1</option>
-                <option value="team_2">🎾 Pareja 2</option>
+          <!-- Sección 🏅 Resultado del Partido (Punto 4) -->
+          <div id="rb-match-result-section" class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                <span>🏅</span> Resultado del Partido
+              </span>
+              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">+25 Pts de Ranking</span>
+            </div>
+            <p class="text-[11px] text-emerald-800 mb-2">
+              Selecciona la pareja vencedora para registrar la victoria y sumar automáticamente 25 puntos a su ranking oficial:
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="flex-1 min-w-[200px]">
+                <select id="turn-winner-team" data-alias="rb-match-pair-select" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="team_1">🎾 Pareja 1</option>
+                  <option value="team_2">🎾 Pareja 2</option>
+                </select>
+              </div>
+              <button type="button" id="rb-btn-save-match" onclick="window.saveMatchResult(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                Guardar Victoria (+25 Pts)
+              </button>
+            </div>
+
+            <div class="mt-2.5 pt-2 border-t border-emerald-200/80">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[11px] font-bold text-emerald-950 flex items-center gap-1">
+                  <span>🎯 Apuesta / Desafío en Juego</span>
+                </label>
+                <span class="text-[10px] text-emerald-700 font-semibold">Opcional</span>
+              </div>
+              <select id="rb-match-bet-select" onchange="window.toggleRBMatchCustomBet(this.value)" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="Puntos Simples">Puntos Simples (Solo Ranking +25 Pts)</option>
+                <option value="🍔 Tato Hamburguesa">🍔 Tato Hamburguesa</option>
+                <option value="🥤 Gatorade / Bebida">🥤 Gatorade / Bebida</option>
+                <option value="💵 20K COP">💵 20K COP</option>
+                <option value="🎾 Paga la Cancha">🎾 Paga la Cancha</option>
+                <option value="CUSTOM">🎯 Personalizada...</option>
               </select>
-            </div>
-            <button type="button" id="rb-btn-save-match" onclick="window.saveMatchResult(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
-              Guardar Victoria (+25 Pts)
-            </button>
-          </div>
-
-          <div class="mt-2.5 pt-2 border-t border-emerald-200/80">
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] font-bold text-emerald-950 flex items-center gap-1">
-                <span>🎯 Apuesta / Desafío en Juego</span>
-              </label>
-              <span class="text-[10px] text-emerald-700 font-semibold">Opcional</span>
-            </div>
-            <select id="rb-match-bet-select" onchange="window.toggleRBMatchCustomBet(this.value)" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="Puntos Simples">Puntos Simples (Solo Ranking +25 Pts)</option>
-              <option value="🍔 Tato Hamburguesa">🍔 Tato Hamburguesa</option>
-              <option value="🥤 Gatorade / Bebida">🥤 Gatorade / Bebida</option>
-              <option value="💵 20K COP">💵 20K COP</option>
-              <option value="🎾 Paga la Cancha">🎾 Paga la Cancha</option>
-              <option value="CUSTOM">🎯 Personalizada...</option>
-            </select>
-            <div id="rb-match-custom-bet-container" class="mt-1.5" style="display: none;">
-              <input type="text" id="rb-match-custom-bet" placeholder="Escribe la apuesta personalizada (ej: 🍕 Cena o Six-pack)..." class="w-full h-8 px-2.5 text-xs border border-amber-300 rounded-lg bg-amber-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <div id="rb-match-custom-bet-container" class="mt-1.5" style="display: none;">
+                <input type="text" id="rb-match-custom-bet" placeholder="Escribe la apuesta personalizada (ej: 🍕 Cena o Six-pack)..." class="w-full h-8 px-2.5 text-xs border border-amber-300 rounded-lg bg-amber-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="modal-actions flex items-center justify-between gap-2 flex-wrap pt-2">
+        <!-- FOOTER DEL MODAL (Botones claros y organizados) -->
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-3 flex-wrap">
           <div class="flex items-center gap-2">
             <!-- Botón dinámico de Cancelar Reserva / Torneo Americano -->
-            <button type="button" id="btn-cancel-slot-action" onclick="window.cancelTurnoOrSlot(document.getElementById('rb-slot-id').value)" class="hidden font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center gap-1.5" style="display: none;">
+            <button type="button" id="btn-cancel-slot-action" onclick="window.cancelTurnoOrSlot(document.getElementById('rb-slot-id').value)" class="hidden font-bold px-4 py-2.5 rounded-xl text-xs shadow-sm transition items-center gap-1.5" style="display: none;">
               <span id="btn-cancel-slot-icon">🚫</span> <span id="btn-cancel-slot-text">Cancelar Reserva</span>
             </button>
-            <button type="button" id="btn-reset-slot-available" onclick="resetSlotToAvailable(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1">
+            <button type="button" id="btn-reset-slot-available" onclick="resetSlotToAvailable(document.getElementById('rb-slot-id').value)" class="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5">
               <span>🗑️</span> <span>Vaciar / Dejar Disponible</span>
             </button>
           </div>
-          <div class="flex items-center gap-2">
-            <button type="button" id="btn-save-slot-price" onclick="window.saveSlotPrice(document.getElementById('rb-slot-id').value)" class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1">
+          <div class="flex items-center gap-2.5">
+            <button type="button" id="btn-save-slot-price" onclick="window.saveSlotPrice(document.getElementById('rb-slot-id').value)" class="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5">
               <span>💾</span> <span>Guardar Precio</span>
             </button>
-            <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary">Cerrar</button>
-            <button type="submit" class="btn-primary">Guardar Asignación</button>
+            <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary px-4 py-2.5 font-bold text-xs rounded-xl">Cancelar</button>
+            <button type="submit" class="btn-primary px-5 py-2.5 font-bold text-xs rounded-xl shadow-md">💾 Guardar Asignación / Confirmar</button>
           </div>
         </div>
       </form>
@@ -5417,69 +5488,81 @@
   </div>
 
   <!-- MODAL: APARTAR CUPO (HOLD BOLD/WOMPI) -->
-  <div id="hold-modal" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-title">
-        <span>Apartar Cupo (Hold Temporal)</span>
-        <button onclick="closeModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
+  <div id="hold-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
+    <div class="relative w-full max-w-2xl lg:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+        <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+          <span>⏱️</span> Apartar Cupo (Hold Temporal)
+        </span>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1 rounded-lg transition leading-none">&times;</button>
       </div>
-      <form id="hold-form" onsubmit="handleHoldSubmit(event)">
+      <form id="hold-form" onsubmit="handleHoldSubmit(event)" class="flex flex-col flex-1 overflow-hidden">
         <input type="hidden" id="hold-slot-id" />
         
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Método de Asignación</label>
-          <select id="hold-assignment-method" class="form-control" onchange="onHoldMethodChange(this.value)">
-            <option value="HOLD">⏱️ Hold Temporal (10 min para pago digital)</option>
-            <option value="COUNTER">💵 Pago en Counter / Efectivo-Datáfono (Confirma de una vez sin Hold)</option>
-            <option value="MEMBERSHIP">💎 Descontar de Membresía del Jugador</option>
-          </select>
-        </div>
+        <div class="p-6 overflow-y-auto space-y-5 flex-1 text-slate-900">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- COLUMNA 1: Método y Membresía -->
+            <div class="space-y-4">
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Método de Asignación</label>
+                <select id="hold-assignment-method" class="form-control" onchange="onHoldMethodChange(this.value)">
+                  <option value="HOLD">⏱️ Hold Temporal (10 min para pago digital)</option>
+                  <option value="COUNTER">💵 Pago en Counter / Efectivo-Datáfono (Confirma de una vez sin Hold)</option>
+                  <option value="MEMBERSHIP">💎 Descontar de Membresía del Jugador</option>
+                </select>
+              </div>
 
-        <div class="form-group" id="hold-membership-group" style="display: none;">
-          <label class="form-label font-bold text-slate-700">Membresía del Jugador</label>
-          <select id="hold-membership-tier" class="form-control">
-            <option value="TAPIA">TAPIA (6:00 AM - 11:59 PM | 40% desc)</option>
-            <option value="COELLO">COELLO (6:00 AM - 11:59 PM | 30% desc)</option>
-            <option value="GALAN">GALAN (6:00 AM - 11:59 PM | 20% desc)</option>
-            <option value="CHINGOTTO">CHINGOTTO (6:00 AM - 3:00 PM | 10% desc)</option>
-            <option value="LEBRON">LEBRON (6:00 AM - 6:00 PM | 20% desc)</option>
-            <option value="ESTANDAR">ESTANDAR (Sin descuento)</option>
-          </select>
-        </div>
+              <div class="form-group" id="hold-membership-group" style="display: none;">
+                <label class="form-label font-bold text-slate-700">Membresía del Jugador</label>
+                <select id="hold-membership-tier" class="form-control">
+                  <option value="TAPIA">TAPIA (6:00 AM - 11:59 PM | 40% desc)</option>
+                  <option value="COELLO">COELLO (6:00 AM - 11:59 PM | 30% desc)</option>
+                  <option value="GALAN">GALAN (6:00 AM - 11:59 PM | 20% desc)</option>
+                  <option value="CHINGOTTO">CHINGOTTO (6:00 AM - 3:00 PM | 10% desc)</option>
+                  <option value="LEBRON">LEBRON (6:00 AM - 6:00 PM | 20% desc)</option>
+                  <option value="ESTANDAR">ESTANDAR (Sin descuento)</option>
+                </select>
+              </div>
 
-        <!-- Búsqueda dinámica CRM Autocompletado Reactivo en Hold -->
-        <div class="form-group relative" id="hold-player-search-group">
-          <label class="form-label font-bold text-slate-700 flex items-center justify-between">
-            <span>Nombre del Jugador</span>
-            <span class="text-[10px] text-slate-400 font-normal">Autocompleta desde CRM</span>
-          </label>
-          <div class="relative">
-            <input type="text" id="hold-player-search" data-alias="hold-client-name" class="form-control" placeholder="Escribe para buscar cliente (Juan, Camilo, David)..." autocomplete="off" oninput="window.handleHoldCRMSearch(event)" required>
-            <div id="hold-crm-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-44 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Número de Cupos a Asignar</label>
+                <select id="hold-spots-count" class="form-control font-semibold">
+                  <option value="1">1 Cupo</option>
+                  <option value="2">2 Cupos</option>
+                  <option value="3">3 Cupos</option>
+                  <option value="4">4 Cupos (Cancha Completa)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- COLUMNA 2: Buscador CRM y Teléfono -->
+            <div class="space-y-4">
+              <!-- Búsqueda dinámica CRM Autocompletado Reactivo en Hold -->
+              <div class="form-group relative" id="hold-player-search-group">
+                <label class="form-label font-bold text-slate-700 flex items-center justify-between">
+                  <span>Nombre del Jugador</span>
+                  <span class="text-[10px] text-slate-500 font-normal">Autocompleta desde CRM</span>
+                </label>
+                <div class="relative">
+                  <input type="text" id="hold-player-search" data-alias="hold-client-name" class="form-control font-semibold" placeholder="Escribe para buscar cliente (Juan, Camilo, David)..." autocomplete="off" oninput="window.handleHoldCRMSearch(event)" required>
+                  <div id="hold-crm-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-44 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+                </div>
+                <input type="hidden" id="hold-player-name" />
+                <input type="hidden" id="hold-client-name" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Teléfono WhatsApp</label>
+                <input type="tel" id="hold-player-phone" data-alias="hold-client-phone" class="form-control font-semibold" required placeholder="+57 300 1234567" />
+                <input type="hidden" id="hold-client-phone" />
+              </div>
+            </div>
           </div>
-          <input type="hidden" id="hold-player-name" />
-          <input type="hidden" id="hold-client-name" />
         </div>
 
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Teléfono WhatsApp</label>
-          <input type="tel" id="hold-player-phone" data-alias="hold-client-phone" class="form-control" required placeholder="+57 300 1234567" />
-          <input type="hidden" id="hold-client-phone" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Número de Cupos a Asignar</label>
-          <select id="hold-spots-count" class="form-control">
-            <option value="1">1 Cupo</option>
-            <option value="2">2 Cupos</option>
-            <option value="3">3 Cupos</option>
-            <option value="4">4 Cupos (Cancha Completa)</option>
-          </select>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" onclick="closeModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" id="btn-submit-hold" class="btn-primary" style="background: #059669;">Generar Hold (10 min)</button>
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-3 flex-wrap">
+          <button type="button" onclick="closeModal()" class="btn-secondary px-4 py-2.5 font-bold text-xs rounded-xl">Cancelar</button>
+          <button type="submit" id="btn-submit-hold" class="btn-primary px-5 py-2.5 font-bold text-xs rounded-xl shadow-md" style="background: #059669 !important;">⚡ Generar Hold (10 min)</button>
         </div>
       </form>
     </div>
@@ -5562,67 +5645,77 @@
   </div>
 
   <!-- MODAL: INSCRIBIR PAREJA/JUGADOR EN TORNEO AMERICANO -->
-  <div id="join-tournament-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 500px;">
-      <div class="modal-title">
-        <span style="display: flex; align-items: center; gap: 0.4rem;">
+  <div id="join-tournament-modal" data-alias="modal-tournament-enroll modal-inscribir-pareja" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
+    <div class="relative w-full max-w-2xl lg:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+        <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
           <span>🎾</span> + Inscribir Pareja / Jugador
         </span>
-        <button onclick="closeJoinAmericanoModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
+        <button onclick="closeJoinAmericanoModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1 rounded-lg transition leading-none">&times;</button>
       </div>
-      <form id="join-tournament-form" onsubmit="handleJoinTournamentSubmit(event)">
+      <form id="join-tournament-form" onsubmit="handleJoinTournamentSubmit(event)" class="flex flex-col flex-1 overflow-hidden">
         <input type="hidden" id="join-tourn-name" />
         <input type="hidden" id="join-tourn-date" />
         <input type="hidden" id="join-tourn-time" />
         <input type="hidden" id="join-tourn-slots" />
 
-        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
-          <div id="join-tourn-title" style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">Torneo Americano</div>
-          <div id="join-tourn-subtitle" style="font-size: 0.75rem; color: #64748B; margin-top: 0.2rem;">Pistas y horario</div>
+        <div class="p-6 overflow-y-auto space-y-5 flex-1 text-slate-900">
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem;">
+            <div id="join-tourn-title" style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">Torneo Americano</div>
+            <div id="join-tourn-subtitle" style="font-size: 0.75rem; color: #64748B; margin-top: 0.2rem;">Pistas y horario</div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- COLUMNA 1: Jugador 1 Titular -->
+            <div class="space-y-4">
+              <div class="form-group relative">
+                <label class="form-label font-bold text-slate-700">Jugador 1 (Nombre Completo - Buscar en CRM)</label>
+                <input type="text" id="join-p1-name" class="form-control font-bold" required placeholder="Escribe para buscar cliente..." autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 1)" />
+                <div id="join-p1-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Teléfono WhatsApp Jugador 1</label>
+                <input type="tel" id="join-p1-phone" class="form-control font-semibold" required placeholder="+57 313 2058547" />
+              </div>
+            </div>
+
+            <!-- COLUMNA 2: Jugador 2 Pareja y Membresía -->
+            <div class="space-y-4">
+              <div class="form-group relative">
+                <label class="form-label font-bold text-slate-700">Jugador 2 (Pareja - Opcional)</label>
+                <input type="text" id="join-p2-name" class="form-control font-semibold" placeholder="Escribe para buscar o dejar vacío para sorteo" autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 2)" />
+                <div id="join-p2-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Teléfono WhatsApp Pareja</label>
+                <input type="tel" id="join-p2-phone" class="form-control font-semibold" placeholder="+57 300 1234567" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label font-bold text-slate-700">Membresía Aplicable (Descuento Automático)</label>
+            <select id="join-membership-tier" class="form-control font-bold text-indigo-700 bg-slate-50 cursor-not-allowed" disabled>
+              <option value="ESTANDAR">ESTÁNDAR (Tarifa normal $45.000 COP)</option>
+              <option value="TAPIA">👑 TAPIA (40% desc - Paga $27.000 COP)</option>
+              <option value="COELLO">⚡ COELLO (30% desc - Paga $31.500 COP)</option>
+              <option value="GALAN">🎾 GALÁN (20% desc - Paga $36.000 COP)</option>
+              <option value="CHINGOTTO">🌅 CHINGOTTO (10% desc - Paga $40.500 COP)</option>
+              <option value="LEBRON">🐺 LEBRÓN (20% desc - Paga $36.000 COP)</option>
+              <option value="ORO">🏆 ORO (40% desc - Paga $27.000 COP)</option>
+              <option value="PLATA">🥈 PLATA (30% desc - Paga $31.500 COP)</option>
+            </select>
+          </div>
+
+          <!-- Banner reactivo de descuento de torneo -->
+          <div id="join-discount-notice" class="hidden" style="display: none; background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: #6B21A8; font-weight: 700;"></div>
         </div>
 
-        <div class="form-group relative">
-          <label class="form-label font-bold text-slate-700">Jugador 1 (Nombre Completo - Buscar en CRM)</label>
-          <input type="text" id="join-p1-name" class="form-control font-bold" required placeholder="Escribe para buscar cliente..." autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 1)" />
-          <div id="join-p1-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Teléfono WhatsApp Jugador 1</label>
-          <input type="tel" id="join-p1-phone" class="form-control" required placeholder="+57 313 2058547" />
-        </div>
-
-        <div class="form-group relative">
-          <label class="form-label font-bold text-slate-700">Jugador 2 (Pareja - Opcional)</label>
-          <input type="text" id="join-p2-name" class="form-control" placeholder="Escribe para buscar o dejar vacío para sorteo" autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 2)" />
-          <div id="join-p2-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Teléfono WhatsApp Pareja</label>
-          <input type="tel" id="join-p2-phone" class="form-control" placeholder="+57 300 1234567" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Membresía Aplicable (Descuento Automático)</label>
-          <select id="join-membership-tier" class="form-control font-bold text-indigo-700 bg-slate-50 cursor-not-allowed" disabled>
-            <option value="ESTANDAR">ESTÁNDAR (Tarifa normal $45.000 COP)</option>
-            <option value="TAPIA">👑 TAPIA (40% desc - Paga $27.000 COP)</option>
-            <option value="COELLO">⚡ COELLO (30% desc - Paga $31.500 COP)</option>
-            <option value="GALAN">🎾 GALÁN (20% desc - Paga $36.000 COP)</option>
-            <option value="CHINGOTTO">🌅 CHINGOTTO (10% desc - Paga $40.500 COP)</option>
-            <option value="LEBRON">🐺 LEBRÓN (20% desc - Paga $36.000 COP)</option>
-            <option value="ORO">🏆 ORO (40% desc - Paga $27.000 COP)</option>
-            <option value="PLATA">🥈 PLATA (30% desc - Paga $31.500 COP)</option>
-          </select>
-        </div>
-
-        <!-- Banner reactivo de descuento de torneo -->
-        <div id="join-discount-notice" class="hidden" style="display: none; background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; color: #6B21A8; font-weight: 700;"></div>
-
-        <div class="modal-actions">
-          <button type="button" onclick="closeJoinAmericanoModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-action-primary-purple" style="padding: 0.55rem 1.2rem;">Confirmar Inscripción</button>
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-3 flex-wrap">
+          <button type="button" onclick="closeJoinAmericanoModal()" class="btn-secondary px-4 py-2.5 font-bold text-xs rounded-xl">Cancelar</button>
+          <button type="submit" class="btn-action-primary-purple px-5 py-2.5 font-bold text-xs rounded-xl shadow-md" style="padding: 0.65rem 1.25rem;">Confirmar Inscripción</button>
         </div>
       </form>
     </div>
@@ -6243,194 +6336,213 @@
   <!-- ======================================================== -->
   <!-- MODAL: RESERVA PUNTUAL INDIVIDUAL DIRECTA                -->
   <!-- ======================================================== -->
-  <div id="modal-manual-booking" class="modal-overlay" style="display: none;">
-    <div class="modal-card" style="max-width: 520px; width: 95%;">
-      <div class="modal-title">
-        <span style="display: flex; align-items: center; gap: 0.5rem; color: #0F172A; font-weight: 800;">
-          <span style="font-size: 1.25rem;">➕</span> Nueva Reserva Puntual Directa
+  <!-- ======================================================== -->
+  <!-- MODAL: RESERVA PUNTUAL INDIVIDUAL DIRECTA                -->
+  <!-- ======================================================== -->
+  <div id="modal-manual-booking" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm" style="display: none;">
+    <div class="relative w-full max-w-2xl lg:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+        <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+          <span>➕</span> Nueva Reserva Puntual Directa
         </span>
-        <button type="button" onclick="closeManualBookingModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #64748B;">&times;</button>
+        <button type="button" onclick="closeManualBookingModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1 rounded-lg transition leading-none">&times;</button>
       </div>
 
-      <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; font-size: 0.75rem; color: #1E40AF; line-height: 1.4;">
-        ⚡ <strong>Reserva Inmediata:</strong> Agenda un turno o reserva directa en PostgreSQL sin necesidad de sembrar semanas completas. Se sincroniza al instante con el CRM.
-      </div>
-
-      <form id="form-manual-booking" onsubmit="submitManualBooking(event)">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Cancha</label>
-            <select id="mb-court" class="form-control" required style="font-weight: 600;">
-              <option value="1">Cancha 1 (Panorámica)</option>
-              <option value="2">Cancha 2</option>
-              <option value="3">Cancha 3</option>
-              <option value="4">Cancha 4</option>
-              <option value="5">Cancha 5</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Deporte</label>
-            <select id="mb-sport" class="form-control" required style="font-weight: 600;" onchange="onManualBookingSportChange(this.value)">
-              <option value="PADEL">🎾 Pádel</option>
-              <option value="PICKLEBALL">🏓 Pickleball</option>
-              <option value="VOLLEYBALL">🏐 Vóley</option>
-              <option value="PILATES">🧘 Pilates</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Fecha</label>
-            <input type="date" id="mb-date" class="form-control" required style="font-weight: 600;" />
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Hora de Inicio</label>
-            <input type="time" id="mb-start-time" class="form-control" value="08:00" required style="font-weight: 600;" />
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Duración</label>
-            <select id="mb-duration" class="form-control" required style="font-weight: 600;">
-              <option value="60">60 minutos (1 hora)</option>
-              <option value="90" selected>90 minutos (1.5 horas)</option>
-              <option value="120">120 minutos (2 horas)</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Modalidad</label>
-            <select id="mb-mode" class="form-control" required style="font-weight: 600;">
-              <option value="FULL_COURT">🏟️ Cancha Completa (4/4)</option>
-              <option value="SPLIT_MATCH">👤 Cupo Individual (1/4)</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group relative" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Cliente (Buscar en CRM)</label>
-            <input type="text" id="mb-client-name" class="form-control" placeholder="Escribe para buscar cliente..." autocomplete="off" required style="font-weight: 600;" oninput="window.handleManualBookingCRMSearch(event)" />
-            <div id="mb-client-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Teléfono / WhatsApp</label>
-            <input type="tel" id="mb-client-phone" class="form-control" placeholder="+573001234567" required style="font-weight: 600;" />
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Membresía / Tipo Socio</label>
-            <select id="mb-membership-tier" class="form-control bg-slate-50 cursor-not-allowed" disabled style="font-weight: 700; color: #4338CA;">
-              <option value="ESTANDAR">Tarifa General (Sin Membresía)</option>
-              <option value="TAPIA">👑 TAPIA (Socio VIP)</option>
-              <option value="COELLO">⚡ COELLO (Socio VIP)</option>
-              <option value="GALAN">🎾 GALÁN (Socio VIP)</option>
-              <option value="CHINGOTTO">🌅 CHINGOTTO (Socio Matutino)</option>
-              <option value="LEBRON">🐺 LEBRÓN (Socio Diurno)</option>
-              <option value="ORO">🏆 ORO (Socio VIP)</option>
-              <option value="PLATA">🥈 PLATA (Socio)</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Nivel / Categoría</label>
-            <select id="mb-category" class="form-control" style="font-weight: 600;">
-              <option value="4ta">4ta Categoría (Intermedio)</option>
-              <option value="5ta">5ta Categoría (Iniciación)</option>
-              <option value="3ra">3ra Categoría (Avanzado)</option>
-              <option value="2da">2da Categoría</option>
-              <option value="1ra">1ra Categoría (Pro)</option>
-              <option value="6ta">6ta Categoría</option>
-              <option value="Open">Abierto</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Banner reactivo de beneficio de socio -->
-        <div id="mb-member-benefit-alert" class="hidden" style="display: none; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; color: #065F46; font-weight: 600;">
-          👑 <strong>Socio Activo:</strong> Exención de pago aplicada ($0 COP) por membresía activa.
-        </div>
-
-        <div class="form-group mb-3" id="mb-custom-price-group">
-          <div class="flex items-center justify-between mb-1">
-            <label class="form-label mb-0" style="font-weight: 700; color: #475569;">Precio Acordado (COP)</label>
-            <span id="mb-price-hint" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Tarifa calculada</span>
+      <form id="form-manual-booking" onsubmit="submitManualBooking(event)" class="flex flex-col flex-1 overflow-hidden">
+        <div class="p-6 overflow-y-auto space-y-5 flex-1 text-slate-900">
+          <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.75rem; color: #1E40AF; line-height: 1.4;">
+            ⚡ <strong>Reserva Inmediata:</strong> Agenda un turno o reserva directa en PostgreSQL sin necesidad de sembrar semanas completas. Se sincroniza al instante con el CRM.
           </div>
 
-          <!-- Selector de Modo de Precio Dinámico -->
-          <div class="mb-2">
-            <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Tarifa / Modo:</label>
-            <select id="mb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500" onchange="window.handleSmartPriceModeChange('mb', this.value)">
-              <option value="MANUAL" selected>✏️ Manual / Editable</option>
-              <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
-              <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
-              <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
-            </select>
-          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- COLUMNA 1: Cancha, Deporte, Fecha, Horario y Duración -->
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Cancha</label>
+                  <select id="mb-court" class="form-control" required style="font-weight: 600;">
+                    <option value="1">Cancha 1 (Panorámica)</option>
+                    <option value="2">Cancha 2</option>
+                    <option value="3">Cancha 3</option>
+                    <option value="4">Cancha 4</option>
+                    <option value="5">Cancha 5</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Deporte</label>
+                  <select id="mb-sport" class="form-control" required style="font-weight: 600;" onchange="onManualBookingSportChange(this.value)">
+                    <option value="PADEL">🎾 Pádel</option>
+                    <option value="PICKLEBALL">🏓 Pickleball</option>
+                    <option value="VOLLEYBALL">🏐 Vóley</option>
+                    <option value="PILATES">🧘 Pilates</option>
+                  </select>
+                </div>
+              </div>
 
-          <!-- Contenedor Descuento % (Oculto por defecto) -->
-          <div id="mb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
-            <div class="flex items-center justify-between gap-2">
-              <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
-              <div class="flex items-center gap-1">
-                <input type="number" id="mb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('mb', this.value)">
-                <span class="text-xs font-bold text-amber-900">%</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Fecha</label>
+                  <input type="date" id="mb-date" class="form-control" required style="font-weight: 600;" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Hora de Inicio</label>
+                  <input type="time" id="mb-start-time" class="form-control" value="08:00" required style="font-weight: 600;" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Duración</label>
+                  <select id="mb-duration" class="form-control" required style="font-weight: 600;">
+                    <option value="60">60 minutos (1 hora)</option>
+                    <option value="90" selected>90 minutos (1.5 horas)</option>
+                    <option value="120">120 minutos (2 horas)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Modalidad</label>
+                  <select id="mb-mode" class="form-control" required style="font-weight: 600;">
+                    <option value="FULL_COURT">🏟️ Cancha Completa (4/4)</option>
+                    <option value="SPLIT_MATCH">👤 Cupo Individual (1/4)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMNA 2: Cliente CRM, Teléfono, Membresía y Precio -->
+            <div class="space-y-4">
+              <div class="form-group relative">
+                <label class="form-label font-bold text-slate-700 flex items-center justify-between">
+                  <span>Cliente (Buscar en CRM)</span>
+                  <span class="text-[10px] text-slate-500 font-normal">Autocompleta datos</span>
+                </label>
+                <input type="text" id="mb-client-name" class="form-control font-semibold" placeholder="Escribe para buscar cliente..." autocomplete="off" required oninput="window.handleManualBookingCRMSearch(event)" />
+                <div id="mb-client-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Teléfono / WhatsApp</label>
+                <input type="tel" id="mb-client-phone" class="form-control font-semibold" placeholder="+573001234567" required />
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Membresía / Tipo Socio</label>
+                  <select id="mb-membership-tier" class="form-control bg-slate-50 cursor-not-allowed" disabled style="font-weight: 700; color: #4338CA;">
+                    <option value="ESTANDAR">Tarifa General (Sin Membresía)</option>
+                    <option value="TAPIA">👑 TAPIA (Socio VIP)</option>
+                    <option value="COELLO">⚡ COELLO (Socio VIP)</option>
+                    <option value="GALAN">🎾 GALÁN (Socio VIP)</option>
+                    <option value="CHINGOTTO">🌅 CHINGOTTO (Socio Matutino)</option>
+                    <option value="LEBRON">🐺 LEBRÓN (Socio Diurno)</option>
+                    <option value="ORO">🏆 ORO (Socio VIP)</option>
+                    <option value="PLATA">🥈 PLATA (Socio)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Nivel / Categoría</label>
+                  <select id="mb-category" class="form-control" style="font-weight: 600;">
+                    <option value="4ta">4ta Categoría (Intermedio)</option>
+                    <option value="5ta">5ta Categoría (Iniciación)</option>
+                    <option value="3ra">3ra Categoría (Avanzado)</option>
+                    <option value="2da">2da Categoría</option>
+                    <option value="1ra">1ra Categoría (Pro)</option>
+                    <option value="6ta">6ta Categoría</option>
+                    <option value="Open">Abierto</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Input de Precio Numérico (100% editable) -->
-          <div class="relative">
-            <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
-            <input type="number" id="mb-price" class="form-control pl-7" placeholder="80000" value="80000" step="1000" min="0" required style="font-weight: 700; color: #047857;" />
+          <!-- Banner reactivo de beneficio de socio -->
+          <div id="mb-member-benefit-alert" class="hidden" style="display: none; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: #065F46; font-weight: 600;">
+            👑 <strong>Socio Activo:</strong> Exención de pago aplicada ($0 COP) por membresía activa.
           </div>
 
-          <!-- Quick Chips de Ajuste Rápido -->
-          <div class="flex items-center gap-1.5 flex-wrap mt-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'VALLE')" class="px-2 py-0.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
-              ☀️ Valle: $80k
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'PICO')" class="px-2 py-0.5 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
-              🌙 Pico: $120k
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'YIELD')" class="px-2 py-0.5 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
-              🧠 Yield Sugerido
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_15')" class="px-2 py-0.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
-              🏷️ -15%
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_25')" class="px-2 py-0.5 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
-              🔥 -25%
-            </button>
+          <!-- Selector Inteligente de Precio (Ancho completo) -->
+          <div class="form-group p-3.5 bg-slate-50 border border-slate-200 rounded-xl" id="mb-custom-price-group">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="form-label mb-0 font-bold text-slate-800">Precio Acordado (COP)</label>
+              <span id="mb-price-hint" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Tarifa calculada</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+              <div>
+                <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Tarifa / Modo:</label>
+                <select id="mb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500" onchange="window.handleSmartPriceModeChange('mb', this.value)">
+                  <option value="MANUAL" selected>✏️ Manual / Editable</option>
+                  <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
+                  <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
+                  <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="text-[11px] font-bold text-slate-600 block mb-1">Monto a Facturar:</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
+                  <input type="number" id="mb-price" class="form-control pl-7 font-bold text-emerald-700" placeholder="80000" value="80000" step="1000" min="0" required />
+                </div>
+              </div>
+            </div>
+
+            <!-- Contenedor Descuento % (Oculto por defecto) -->
+            <div id="mb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
+                <div class="flex items-center gap-1">
+                  <input type="number" id="mb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('mb', this.value)">
+                  <span class="text-xs font-bold text-amber-900">%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Chips de Ajuste Rápido -->
+            <div class="flex items-center gap-1.5 flex-wrap mt-2">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'VALLE')" class="px-2 py-1 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
+                ☀️ Valle: $80k
+              </button>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'PICO')" class="px-2 py-1 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
+                🌙 Pico: $120k
+              </button>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'YIELD')" class="px-2 py-1 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
+                🧠 Yield Sugerido
+              </button>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_15')" class="px-2 py-1 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
+                🏷️ -15%
+              </button>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_25')" class="px-2 py-1 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
+                🔥 -25%
+              </button>
+            </div>
+          </div>
+
+          <!-- Toggle de Reserva Fija / Periódica -->
+          <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2.5">
+            <label class="flex items-center gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" id="mb-is-recurring" onchange="toggleManualBookingRecurring(this.checked)" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
+              <span class="text-xs font-bold text-indigo-900">🔁 Reserva Fija / Periódica</span>
+            </label>
+            <div id="mb-recurring-options" class="hidden grid grid-cols-2 gap-2.5 pt-1">
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-800 mb-1">Frecuencia:</label>
+                <select id="mb-recurrence-frequency" class="form-control text-xs font-semibold bg-white border-indigo-200">
+                  <option value="WEEKLY" selected>Semanal (mismo día y hora)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-800 mb-1">Número de semanas (4 a 12):</label>
+                <input type="number" id="mb-recurrence-weeks" min="4" max="12" value="4" class="form-control text-xs font-bold text-indigo-950 bg-white border-indigo-200">
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Toggle de Reserva Fija / Periódica -->
-        <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2.5 mb-3">
-          <label class="flex items-center gap-2.5 cursor-pointer select-none">
-            <input type="checkbox" id="mb-is-recurring" onchange="toggleManualBookingRecurring(this.checked)" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
-            <span class="text-xs font-bold text-indigo-900">🔁 Reserva Fija / Periódica</span>
-          </label>
-          <div id="mb-recurring-options" class="hidden grid grid-cols-2 gap-2.5 pt-1">
-            <div>
-              <label class="block text-[11px] font-bold text-indigo-800 mb-1">Frecuencia:</label>
-              <select id="mb-recurrence-frequency" class="form-control text-xs font-semibold bg-white border-indigo-200">
-                <option value="WEEKLY" selected>Semanal (mismo día y hora)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-indigo-800 mb-1">Número de semanas (4 a 12):</label>
-              <input type="number" id="mb-recurrence-weeks" min="4" max="12" value="4" class="form-control text-xs font-bold text-indigo-950 bg-white border-indigo-200">
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
-          <button type="button" onclick="closeManualBookingModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" id="btn-confirm-manual-booking" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition" style="background-color: #2563eb !important; color: #ffffff !important;">
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-3 flex-wrap">
+          <button type="button" onclick="closeManualBookingModal()" class="btn-secondary px-4 py-2.5 font-bold text-xs rounded-xl">Cancelar</button>
+          <button type="submit" id="btn-confirm-manual-booking" class="btn-primary px-5 py-2.5 font-bold text-xs rounded-xl shadow-md inline-flex items-center gap-2" style="background-color: #2563eb !important; color: #ffffff !important;">
             <span>➕</span> <span>Confirmar Reserva</span>
           </button>
         </div>
