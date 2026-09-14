@@ -17,6 +17,7 @@ from app.services.whatsapp import (
     generate_concierge_reply,
     generate_promo_urgent_broadcast,
     get_player_incidents,
+    handle_human_wait_turn,
     is_conversation_paused,
     is_transactional_message,
     log_conversation_message,
@@ -119,12 +120,30 @@ async def receive_webhook(
 
                     # Bandeja humana: registrar el mensaje entrante y respetar la pausa del bot si un asesor está atendiendo
                     paused = await is_conversation_paused(db, sender_phone)
+                    if paused:
+                        wait_reply = await handle_human_wait_turn(db, sender_phone, message_text)
+                        if wait_reply:
+                            await log_conversation_message(
+                                db, sender_phone, message_text, direction="incoming",
+                                player_name=sender_name, increment_unread=False,
+                            )
+                            await log_conversation_message(db, sender_phone, wait_reply, direction="bot")
+                            await send_whatsapp_message(
+                                to_phone=raw_from,
+                                message_body=wait_reply,
+                            )
+                            continue
+
+                        await log_conversation_message(
+                            db, sender_phone, message_text, direction="incoming",
+                            player_name=sender_name, increment_unread=True,
+                        )
+                        continue
+
                     await log_conversation_message(
                         db, sender_phone, message_text, direction="incoming",
-                        player_name=sender_name, increment_unread=paused,
+                        player_name=sender_name, increment_unread=False,
                     )
-                    if paused:
-                        continue
 
                     # Enrutar: mensajes con raquetas (🎾) o comandos rígidos ('voy'/'me bajo')
                     # van al flujo transaccional existente; el resto lo atiende el concierge IA.

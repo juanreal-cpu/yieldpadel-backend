@@ -2334,13 +2334,16 @@ async def handle_social_query(db: AsyncSession, clean: str, session: dict) -> Op
     return f"👥 *Jugadores inscritos en el turno de {st} ({c_name}):*\n" + "\n".join(lines)
 
 
-PROFILE_SCORE_REGEX = re.compile(r"qu[eé]\s+puntaje\s+tengo|qu[eé]\s+categor[ií]a\s+soy|mi\s+categor[ií]a|mis?\s+puntos", re.IGNORECASE)
-WALLET_BALANCE_REGEX = re.compile(r"cu[aá]nto\s+cr[eé]dito\s+tengo|\bsaldo\b|capital\s+points", re.IGNORECASE)
+PROFILE_SCORE_REGEX = re.compile(
+    r"cu[aá]ntos?\s+puntos\s+tengo|mis?\s+puntos|\bpuntos\b|puntos\s+capital|mi\s+puntaje|qu[eé]\s+puntaje\s+tengo|qu[eé]\s+categor[ií]a\s+soy|mi\s+categor[ií]a",
+    re.IGNORECASE,
+)
+WALLET_BALANCE_REGEX = re.compile(r"cu[aá]nto\s+cr[eé]dito\s+tengo|\bsaldo\b", re.IGNORECASE)
 TOP_RANKING_REGEX = re.compile(r"top\s*3\s+de\s+([a-záéíóúñ0-9]+)", re.IGNORECASE)
 
 
 async def handle_profile_query(db: AsyncSession, sender_phone: str, clean: str) -> Optional[str]:
-    """Responde consultas de perfil CRM: puntaje/categoría, saldo (wallet_balance) y Top 3 por categoría."""
+    """Responde consultas de perfil CRM: ficha deportiva/puntos, saldo (wallet_balance) y Top 3 por categoría."""
     top_match = TOP_RANKING_REGEX.search(clean)
     if top_match:
         category = top_match.group(1).strip()
@@ -2364,11 +2367,23 @@ async def handle_profile_query(db: AsyncSession, sender_phone: str, clean: str) 
         cust = res.scalars().first()
         if not cust:
             return "No encontramos tu perfil registrado aún. ¡Juega tu primer partido para empezar a sumar puntos! 🎾"
+
+        nombre = cust.name or "Jugador"
+        categoria = cust.category or "4ta"
+        ranking_points = cust.ranking_points or 0
+        victorias = (cust.category_wins or 0) + (cust.titles_count or 0)
+        if victorias == 0 and (cust.consecutive_wins or 0) > 0:
+            victorias = cust.consecutive_wins
+        wallet_balance = cust.wallet_balance or 0.0
+
         return (
-            f"🏅 *Tu perfil en Capital Pádel Club:*\n"
-            f"• Categoría: {cust.category}\n"
-            f"• Puntos de ranking: {cust.ranking_points} pts\n"
-            f"• Victorias consecutivas: {cust.consecutive_wins}"
+            "📊 *Tu Ficha Deportiva en Capital Pádel Club:*\n"
+            f"👤 Jugador: *{nombre}*\n"
+            f"🏅 Categoría: *{categoria}*\n"
+            f"🏆 Puntos de Ranking: *{ranking_points} pts*\n"
+            f"🥇 Partidos/Torneos Ganados: *{victorias}*\n"
+            f"🪙 Capital Points (Billetera): *${wallet_balance:,.0f} COP*\n\n"
+            "¿Deseas buscar un partido abierto de tu nivel o inscribirte a un torneo?"
         )
 
     if WALLET_BALANCE_REGEX.search(clean):
