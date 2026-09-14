@@ -68,17 +68,15 @@ def _extract_voiceflow_text_messages(traces) -> List[str]:
 
 
 async def interact_with_voiceflow(sender_phone: str, message_text: str) -> List[str]:
-    """Llama a la Dialog API de Voiceflow (production) y retorna mensajes text/speak."""
-    api_key = (os.getenv("VOICEFLOW_API_KEY") or "").strip().replace('"', "").replace("'", "")
+    """Llama a la Dialog API de Voiceflow y retorna mensajes text/speak."""
+    vf_api_key = (os.getenv("VOICEFLOW_API_KEY") or "").strip().replace('"', "").replace("'", "")
     clean_phone = (sender_phone or "").replace("+", "").replace(" ", "").strip()
     url = f"https://general-runtime.voiceflow.com/state/user/{clean_phone}/interact"
     headers = {
-        "Authorization": api_key,
+        "Authorization": vf_api_key,
         "Content-Type": "application/json",
         "accept": "application/json",
-        "versionID": "production",
     }
-    # Voiceflow Dialog Runtime v1 espera 'action': {'type': 'text', 'payload': ...}
     payload = {
         "action": {
             "type": "text",
