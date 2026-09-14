@@ -16,14 +16,18 @@ router = APIRouter()
 
 class AuditLogResponse(BaseModel):
     id: int
+    club_id: Optional[int] = 1
     user_id: Optional[int] = None
+    operator_user: Optional[str] = "RECEPCION"
     username_snapshot: str
     action: str
+    entity: Optional[str] = None
     entity_name: str
     entity_id: Optional[str] = None
     details: Optional[str] = None
     ip_address: Optional[str] = None
-    timestamp: datetime
+    created_at: Optional[datetime] = None
+    timestamp: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -85,17 +89,78 @@ class UserItemResponse(BaseModel):
 
 @router.get("/logs", response_model=List[AuditLogResponse])
 async def get_audit_logs(
+    start_date: Optional[str] = Query(None, description="Fecha de inicio (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Fecha fin (YYYY-MM-DD)"),
+    action_type: Optional[str] = Query(None, description="Tipo de acción: ALL, RESERVAS, AMERICANOS, CANCELACIONES, PRECIOS, JUGADORES"),
     action: Optional[str] = Query(None, description="Filtrar por acción específica"),
     entity_name: Optional[str] = Query(None, description="Filtrar por entidad (SLOT, TOURNAMENT, etc.)"),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(200, ge=1, le=500),
     db: AsyncSession = Depends(get_db)
 ):
     await ensure_seed_audit_logs(db)
-    query = select(AuditLog).order_by(desc(AuditLog.timestamp))
-    if action and action != "ALL":
-        query = query.where(AuditLog.action == action)
-    if entity_name and entity_name != "ALL":
-        query = query.where(AuditLog.entity_name == entity_name)
+    
+    # Ordenar por created_at DESC (o timestamp DESC)
+    order_col = func.coalesce(AuditLog.created_at, AuditLog.timestamp)
+    query = select(AuditLog).order_by(desc(order_col))
+
+    # Filtro por rango de fechas
+    if isinstance(start_date, str) and start_date.strip():
+        start_str = start_date.strip()
+        try:
+            start_dt = datetime.strptime(f"{start_str} 00:00:00", "%Y-%m-%d %H:%M:%S")
+            query = query.where(order_col >= start_dt)
+        except ValueError:
+            pass
+
+    if isinstance(end_date, str) and end_date.strip():
+        end_str = end_date.strip()
+        try:
+            end_dt = datetime.strptime(f"{end_str} 23:59:59", "%Y-%m-%d %H:%M:%S")
+            query = query.where(order_col <= end_dt)
+        except ValueError:
+            pass
+
+    # Filtro por categoría o tipo de acción
+    act_raw = action_type if isinstance(action_type, str) else (action if isinstance(action, str) else "ALL")
+    act_filter = act_raw.upper().strip()
+    if act_filter and act_filter != "ALL":
+        if act_filter in ("RESERVAS", "RESERVATION", "RESERVE_SLOT"):
+            query = query.where(
+                AuditLog.action.in_([
+                    "CREATE_RESERVATION", "RESERVA_CREADA", "RESERVE_SLOT", "RESERVA_MODIFICADA"
+                ]) | AuditLog.action.ilike("%RESERV%") | AuditLog.action.ilike("%BOOK%")
+            )
+        elif act_filter in ("AMERICANOS", "AMERICANO", "TOURNAMENT", "CREATE_AMERICANO"):
+            query = query.where(
+                AuditLog.action.in_([
+                    "CREATE_AMERICANO", "TORNEO_GANADORES", "ENROLL_AMERICANO"
+                ]) | AuditLog.action.ilike("%AMERICANO%") | AuditLog.action.ilike("%TOURNAMENT%")
+            )
+        elif act_filter in ("CANCELACIONES", "CANCEL", "CANCEL_RESERVATION", "CANCEL_AMERICANO"):
+            query = query.where(
+                AuditLog.action.in_([
+                    "CANCEL_RESERVATION", "CANCEL_AMERICANO", "CANCEL_RESERVATION_AND_FREE",
+                    "CANCEL_SLOT_PLAYER", "WHATSAPP_CANCEL_SPOT"
+                ]) | AuditLog.action.ilike("%CANCEL%") | AuditLog.action.ilike("%DROP%")
+            )
+        elif act_filter in ("PRECIOS", "PRICE", "UPDATE_CONFIG", "UPDATE_PRICE"):
+            query = query.where(
+                AuditLog.action.in_([
+                    "UPDATE_PRICE", "UPDATE_SLOT_PRICE", "UPDATE_CONFIG"
+                ]) | AuditLog.action.ilike("%PRICE%") | AuditLog.action.ilike("%PRECIO%") | AuditLog.action.ilike("%CONFIG%")
+            )
+        elif act_filter in ("JUGADORES", "PLAYER"):
+            query = query.where(
+                AuditLog.action.in_([
+                    "ADD_PLAYER", "REMOVE_PLAYER", "CANCEL_SLOT_PLAYER", "WHATSAPP_CANCEL_SPOT"
+                ]) | AuditLog.action.ilike("%PLAYER%") | AuditLog.action.ilike("%JUGADOR%")
+            )
+        else:
+            query = query.where((AuditLog.action == act_filter) | AuditLog.action.ilike(f"%{act_filter}%"))
+
+    if isinstance(entity_name, str) and entity_name.strip() and entity_name != "ALL":
+        query = query.where((AuditLog.entity_name == entity_name.strip()) | (AuditLog.entity == entity_name.strip()))
+
     query = query.limit(limit)
 
     res = await db.execute(query)

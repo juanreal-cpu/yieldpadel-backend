@@ -4921,14 +4921,31 @@
                   <div style="font-size: 0.75rem; color: #64748B;">Registro inalterable de asignaciones, bajas, torneos y configuración del club.</div>
                 </div>
 
-                <!-- Filtros de Acción -->
-                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;" id="audit-filter-pills">
-                  <button onclick="filterAuditAction('ALL')" id="btn-audit-all" class="filter-pill active" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Todas</button>
-                  <button onclick="filterAuditAction('RESERVE_SLOT')" id="btn-audit-res" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Reservas</button>
-                  <button onclick="filterAuditAction('CREATE_AMERICANO')" id="btn-audit-tourn" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Torneos</button>
-                  <button onclick="filterAuditAction('UPDATE_CONFIG')" id="btn-audit-cfg" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Tarifas</button>
-                  <button onclick="filterAuditAction('LOGIN_SUCCESS')" id="btn-audit-auth" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Accesos</button>
-                  <button onclick="filterAuditAction('CANCEL_SLOT_PLAYER')" id="btn-audit-cancel" class="filter-pill" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Bajas</button>
+                <!-- Filtros de Auditoría: Rango de Fechas & Selector de Acción -->
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;" id="audit-filter-controls">
+                  <div class="flex items-center gap-1">
+                    <label for="audit-filter-start" class="text-[11px] font-bold text-slate-500">Desde:</label>
+                    <input type="date" id="audit-filter-start" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <label for="audit-filter-end" class="text-[11px] font-bold text-slate-500">Hasta:</label>
+                    <input type="date" id="audit-filter-end" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <label for="audit-filter-action" class="text-[11px] font-bold text-slate-500">Acción:</label>
+                    <select id="audit-filter-action" onchange="loadAuditLogs()" class="px-3 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                      <option value="ALL">Todas las acciones</option>
+                      <option value="CANCEL">🚫 Cancelaciones</option>
+                      <option value="RESERVATION">📅 Reservas Creadas</option>
+                      <option value="PLAYER">👤 Jugadores (Agregar/Quitar)</option>
+                      <option value="AMERICANO">🏆 Americanos / Torneos</option>
+                      <option value="PRICE">💰 Cambios de Precios</option>
+                    </select>
+                  </div>
+                  <button type="button" onclick="setAuditToday()" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition" title="Filtrar eventos de hoy">📅 Hoy</button>
+                  <button type="button" onclick="loadAuditLogs()" class="px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition flex items-center gap-1">
+                    <span>🔄</span> <span>Filtrar</span>
+                  </button>
                 </div>
               </div>
 
@@ -4936,16 +4953,15 @@
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: left;">
                   <thead>
                     <tr style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; color: #475569; font-weight: 700;">
-                      <th style="padding: 0.75rem 1rem;">Fecha / Hora (Bogotá)</th>
-                      <th style="padding: 0.75rem 1rem;">Operador / Usuario</th>
-                      <th style="padding: 0.75rem 1rem;">Acción Realizada</th>
-                      <th style="padding: 0.75rem 1rem;">Entidad</th>
-                      <th style="padding: 0.75rem 1rem;">Detalles del Evento</th>
-                      <th style="padding: 0.75rem 1rem;">IP / Terminal</th>
+                      <th style="padding: 0.75rem 1rem;">FECHA Y HORA (Hora Bogotá)</th>
+                      <th style="padding: 0.75rem 1rem;">OPERADOR</th>
+                      <th style="padding: 0.75rem 1rem;">ACCIÓN</th>
+                      <th style="padding: 0.75rem 1rem;">ENTIDAD AFECTADA</th>
+                      <th style="padding: 0.75rem 1rem;">DETALLE DE LA TRANSACCIÓN</th>
                     </tr>
                   </thead>
                   <tbody id="audit-table-tbody">
-                    <tr><td colspan="6" style="padding: 2.5rem; text-align: center; color: #94A3B8;">Cargando registros de auditoría...</td></tr>
+                    <tr><td colspan="5" style="padding: 2.5rem; text-align: center; color: #94A3B8;">Cargando registros de auditoría...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -13146,87 +13162,101 @@ ${data.message}`);
       tbody.innerHTML = h;
     }
 
-    function filterAuditAction(action) {
-      currentAuditActionFilter = action;
-      const pills = ['all', 'res', 'tourn', 'cfg', 'auth', 'cancel'];
-      const map = {
-        'ALL': 'all',
-        'RESERVE_SLOT': 'res',
-        'CREATE_AMERICANO': 'tourn',
-        'UPDATE_CONFIG': 'cfg',
-        'LOGIN_SUCCESS': 'auth',
-        'CANCEL_SLOT_PLAYER': 'cancel'
-      };
-      pills.forEach(p => {
-        const btn = document.getElementById('btn-audit-' + p);
-        if (btn) {
-          btn.className = 'filter-pill' + (map[action] === p ? ' active' : '');
-        }
-      });
+    function setAuditToday() {
+      const todayStr = getColombiaTodayString ? getColombiaTodayString() : new Date().toISOString().split('T')[0];
+      const startEl = document.getElementById('audit-filter-start');
+      const endEl = document.getElementById('audit-filter-end');
+      if (startEl) startEl.value = todayStr;
+      if (endEl) endEl.value = todayStr;
       loadAuditLogs();
     }
+    window.setAuditToday = setAuditToday;
+
+    function filterAuditAction(action) {
+      currentAuditActionFilter = action;
+      const selectEl = document.getElementById('audit-filter-action');
+      if (selectEl) selectEl.value = action;
+      loadAuditLogs();
+    }
+    window.filterAuditAction = filterAuditAction;
 
     async function loadAuditLogs() {
       const tbody = document.getElementById('audit-table-tbody');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #64748B;">Consultando pista de auditoría...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="padding: 2rem; text-align: center; color: #64748B;">Consultando pista de auditoría...</td></tr>';
+
+      const startInput = document.getElementById('audit-filter-start');
+      const endInput = document.getElementById('audit-filter-end');
+      const actionSelect = document.getElementById('audit-filter-action');
+
+      const startDate = startInput ? startInput.value.trim() : '';
+      const endDate = endInput ? endInput.value.trim() : '';
+      const actionType = actionSelect ? actionSelect.value : (currentAuditActionFilter || 'ALL');
 
       const defaultFallbackLogs = () => {
         const now = new Date();
         return [
           {
             id: 1,
-            timestamp: new Date(now.getTime() - 1000 * 60 * 4).toISOString(),
-            username_snapshot: 'recepcion.camilo',
-            action: 'VENTA_POS',
-            entity_name: 'Order',
-            details: 'Venta rápida de mostrador #104 a Juanda Martinez ($35.000 COP) - 2x Gatorade, 1x Grips Wilson',
-            ip_address: '192.168.1.45'
+            created_at: new Date(now.getTime() - 1000 * 60 * 4).toISOString(),
+            operator_user: 'RECEPCION',
+            username_snapshot: 'RECEPCION',
+            action: 'CREATE_RESERVATION',
+            entity: 'time_slots',
+            entity_name: 'time_slots',
+            details: 'Reserva creada en Cancha 1 para David Gómez (+57 310 1234567) - Tarifa: $120.000 COP',
           },
           {
             id: 2,
-            timestamp: new Date(now.getTime() - 1000 * 60 * 15).toISOString(),
-            username_snapshot: 'recepcion.camilo',
-            action: 'ACCESO_REGISTRADO',
-            entity_name: 'Presence',
-            details: 'Entrada autorizada por molinete biométrico: Camilo Real (Membresía: COELLO)',
-            ip_address: '192.168.1.10'
+            created_at: new Date(now.getTime() - 1000 * 60 * 15).toISOString(),
+            operator_user: 'RECEPCION',
+            username_snapshot: 'RECEPCION',
+            action: 'ADD_PLAYER',
+            entity: 'slot_participants',
+            entity_name: 'slot_participants',
+            details: 'Se agregó al jugador Felipe Santos (+57 311 9876543) al turno 102',
           },
           {
             id: 3,
-            timestamp: new Date(now.getTime() - 1000 * 60 * 28).toISOString(),
-            username_snapshot: 'admin.afluencia',
-            action: 'RESERVA_CREADA',
-            entity_name: 'TimeSlot',
-            details: 'Reserva confirmada en Cancha 1 (18:00 - 19:30) por $120.000 COP. Titular: David Gómez',
-            ip_address: '127.0.0.1'
+            created_at: new Date(now.getTime() - 1000 * 60 * 28).toISOString(),
+            operator_user: 'BOT_WHATSAPP',
+            username_snapshot: 'BOT_WHATSAPP',
+            action: 'WHATSAPP_CANCEL_SPOT',
+            entity: 'time_slots',
+            entity_name: 'time_slots',
+            details: 'Jugador +573124567890 canceló cupo en slot 105 vía WhatsApp',
           },
           {
             id: 4,
-            timestamp: new Date(now.getTime() - 1000 * 60 * 45).toISOString(),
-            username_snapshot: 'director.club',
-            action: 'TORNEO_GANADORES',
-            entity_name: 'Tournament',
-            details: 'Torneo Americano Nocturno finalizado. Pareja Campeona: Juanda & Camilo (+100 Pts). Subcampeones: David & Pipe (+50 Pts)',
-            ip_address: '192.168.1.20'
+            created_at: new Date(now.getTime() - 1000 * 60 * 45).toISOString(),
+            operator_user: 'RECEPCION',
+            username_snapshot: 'RECEPCION',
+            action: 'CREATE_AMERICANO',
+            entity: 'tournaments',
+            entity_name: 'tournaments',
+            details: "Se creó torneo americano 'Americano Nocturno' bloqueando canchas ['Cancha 1', 'Cancha 2'] de 18:00 a 20:30",
           },
           {
             id: 5,
-            timestamp: new Date(now.getTime() - 1000 * 60 * 70).toISOString(),
-            username_snapshot: 'recepcion.camilo',
-            action: 'RESERVA_MODIFICADA',
-            entity_name: 'TimeSlot',
-            details: 'Ajuste de reserva en Cancha 2: agregado jugador adicional Felipe Santos',
-            ip_address: '127.0.0.1'
+            created_at: new Date(now.getTime() - 1000 * 60 * 70).toISOString(),
+            operator_user: 'RECEPCION',
+            username_snapshot: 'RECEPCION',
+            action: 'CANCEL_RESERVATION',
+            entity: 'time_slots',
+            entity_name: 'time_slots',
+            details: 'Se canceló y liberó el turno 101. Jugadores previos: []',
           }
         ];
       };
 
       try {
-        let url = `${API_BASE}/api/v1/audit/logs?limit=80`;
-        if (currentAuditActionFilter && currentAuditActionFilter !== 'ALL') {
-          url += `&action=${encodeURIComponent(currentAuditActionFilter)}`;
+        let url = `${API_BASE}/api/v1/audit/logs?limit=200`;
+        if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
+        if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
+        if (actionType && actionType !== 'ALL') {
+          url += `&action_type=${encodeURIComponent(actionType)}`;
         }
+
         const res = await fetch(url);
         let logs = [];
         if (res.ok) {
@@ -13234,7 +13264,14 @@ ${data.message}`);
         }
 
         if (!logs || logs.length === 0) {
-          logs = defaultFallbackLogs();
+          if (!startDate && !endDate && actionType === 'ALL') {
+            logs = defaultFallbackLogs();
+          } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding: 2.5rem; text-align: center; color: #94A3B8;">No se encontraron registros de auditoría para los filtros aplicados.</td></tr>';
+            const statEvents = document.getElementById('audit-stat-events');
+            if (statEvents) statEvents.textContent = '0';
+            return;
+          }
         }
 
         const statEvents = document.getElementById('audit-stat-events');
@@ -13243,43 +13280,51 @@ ${data.message}`);
         let h = '';
         logs.forEach(l => {
           let actBadge = '';
-          const act = l.action || 'ACTIVITY';
-          if (act === 'VENTA_POS' || act.includes('POS')) {
-            actBadge = `<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">💳 ${act}</span>`;
-          } else if (act === 'ACCESO_REGISTRADO' || act.includes('ACCESS')) {
-            actBadge = `<span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🚪 ${act}</span>`;
-          } else if (act === 'TORNEO_GANADORES' || act.includes('TOURNAMENT') || act.includes('AMERICANO')) {
-            actBadge = `<span style="background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🏆 ${act}</span>`;
-          } else if (act === 'RESERVA_CREADA' || act.includes('BOOK')) {
-            actBadge = `<span style="background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🎾 ${act}</span>`;
-          } else if (act === 'RESERVA_MODIFICADA' || act.includes('UPDATE')) {
-            actBadge = `<span style="background: #FFFBEB; color: #854D0E; border: 1px solid #FEF08A; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🔄 ${act}</span>`;
-          } else if (act.includes('CANCEL') || act.includes('DROP')) {
-            actBadge = `<span style="background: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🔴 ${act}</span>`;
-          } else if (act.includes('CONFIG')) {
-            actBadge = `<span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">⚙️ ${act}</span>`;
-          } else if (act.includes('LOGIN') || act.includes('AUTH')) {
-            actBadge = `<span style="background: #F0F9FF; color: #0369A1; border: 1px solid #BAE6FD; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">🔑 ${act}</span>`;
+          const act = (l.action || 'ACTIVITY').toUpperCase();
+          if (act.includes('CANCEL') || act.includes('DROP')) {
+            actBadge = `<span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] bg-rose-50 text-rose-700 border border-rose-200">🚫 ${l.action}</span>`;
+          } else if (act.includes('RESERV') || act.includes('BOOK')) {
+            actBadge = `<span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200">📅 ${l.action}</span>`;
+          } else if (act.includes('AMERICANO') || act.includes('TOURNAMENT') || act.includes('TORNEO')) {
+            actBadge = `<span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] bg-purple-50 text-purple-700 border border-purple-200">🏆 ${l.action}</span>`;
+          } else if (act.includes('PLAYER') || act.includes('JUGADOR')) {
+            actBadge = `<span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] bg-sky-50 text-sky-700 border border-sky-200">👤 ${l.action}</span>`;
+          } else if (act.includes('PRICE') || act.includes('PRECIO') || act.includes('CONFIG')) {
+            actBadge = `<span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] bg-amber-50 text-amber-700 border border-amber-200">💰 ${l.action}</span>`;
+          } else if (act.includes('POS') || act.includes('VENTA')) {
+            actBadge = `<span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200">💳 ${l.action}</span>`;
           } else {
-            actBadge = `<span style="background: #F8FAFC; color: #334155; border: 1px solid #CBD5E1; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">📋 ${act}</span>`;
+            actBadge = `<span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] bg-slate-100 text-slate-700 border border-slate-200">📋 ${l.action}</span>`;
           }
 
           let tsStr = '-';
-          if (l.timestamp) {
-            const dt = new Date(l.timestamp);
-            tsStr = dt.toLocaleString('es-CO', { hour12: false });
+          const rawTime = l.created_at || l.timestamp;
+          if (rawTime) {
+            try {
+              const dt = new Date(rawTime);
+              tsStr = dt.toLocaleString('es-CO', { timeZone: 'America/Bogota', hour12: false });
+            } catch (e) {
+              tsStr = String(rawTime).replace('T', ' ').substring(0, 19);
+            }
           }
+
+          const opUser = l.operator_user || l.username_snapshot || 'RECEPCION';
+          const entityStr = l.entity || l.entity_name || 'time_slots';
 
           h += `
             <tr style="border-bottom: 1px solid #F1F5F9;">
               <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.75rem; color: #334155; white-space: nowrap;">${tsStr}</td>
-              <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;">${l.username_snapshot || 'Sistema'}</td>
+              <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[11px] font-bold">
+                  <span>${opUser.includes('BOT') ? '🤖' : '👤'}</span>
+                  <span>${opUser}</span>
+                </span>
+              </td>
               <td style="padding: 0.75rem 1rem;">${actBadge}</td>
               <td style="padding: 0.75rem 1rem;">
-                <span style="font-size: 0.72rem; font-weight: 700; color: #64748B; background: #F1F5F9; padding: 0.1rem 0.4rem; border-radius: 4px;">${l.entity_name || '-'}</span>
+                <span style="font-size: 0.72rem; font-weight: 700; color: #64748B; background: #F1F5F9; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid #E2E8F0;">${entityStr}</span>
               </td>
-              <td style="padding: 0.75rem 1rem; color: #1E293B; max-width: 360px; word-break: break-word;">${l.details || '-'}</td>
-              <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.72rem; color: #64748B;">${l.ip_address || '127.0.0.1'}</td>
+              <td style="padding: 0.75rem 1rem; color: #1E293B; font-size: 0.78rem; word-break: break-word;">${escapeHtml(l.details || '-')}</td>
             </tr>
           `;
         });
@@ -13291,18 +13336,18 @@ ${data.message}`);
         fallback.forEach(l => {
           h += `
             <tr style="border-bottom: 1px solid #F1F5F9;">
-              <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.75rem; color: #334155; white-space: nowrap;">${new Date(l.timestamp).toLocaleString('es-CO', { hour12: false })}</td>
-              <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;">${l.username_snapshot}</td>
-              <td style="padding: 0.75rem 1rem;"><span style="background: #F8FAFC; color: #334155; border: 1px solid #CBD5E1; padding: 0.15rem 0.45rem; border-radius: 5px; font-weight: 700; font-size: 0.72rem;">📋 ${l.action}</span></td>
-              <td style="padding: 0.75rem 1rem;"><span style="font-size: 0.72rem; font-weight: 700; color: #64748B; background: #F1F5F9; padding: 0.1rem 0.4rem; border-radius: 4px;">${l.entity_name}</span></td>
-              <td style="padding: 0.75rem 1rem; color: #1E293B; max-width: 360px; word-break: break-word;">${l.details}</td>
-              <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.72rem; color: #64748B;">${l.ip_address}</td>
+              <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.75rem; color: #334155; white-space: nowrap;">${new Date(l.created_at).toLocaleString('es-CO', { hour12: false })}</td>
+              <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;">${l.operator_user}</td>
+              <td style="padding: 0.75rem 1rem;"><span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] bg-slate-100 text-slate-700 border border-slate-200">📋 ${l.action}</span></td>
+              <td style="padding: 0.75rem 1rem;"><span style="font-size: 0.72rem; font-weight: 700; color: #64748B; background: #F1F5F9; padding: 0.15rem 0.45rem; border-radius: 4px;">${l.entity}</span></td>
+              <td style="padding: 0.75rem 1rem; color: #1E293B; font-size: 0.78rem;">${escapeHtml(l.details)}</td>
             </tr>
           `;
         });
         tbody.innerHTML = h;
       }
     }
+    window.loadAuditLogs = loadAuditLogs;
 
     function openCreateUserModal() {
       const m = document.getElementById('modal-create-user');

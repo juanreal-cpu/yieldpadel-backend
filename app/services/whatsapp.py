@@ -22,6 +22,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.timezone import BOGOTA_TZ, get_bogota_now, get_bogota_today
+from app.services.audit import record_audit_log
 from app.models.court import Court
 from app.models.slot import ClientTier, SlotMode, SlotStatus, TimeSlot
 from app.models.incident import PlayerIncident
@@ -1512,6 +1513,19 @@ async def process_drop_intent(
     slot.closed_at = None  # Al abrirse un cupo, deja de estar cerrado
 
     logger.info(f"Player {norm_sender} ({matched_player.get('display_name')}) dropped from slot {slot.id}")
+
+    # Auditoría obligatoria de cancelación de cupo por WhatsApp
+    try:
+        await record_audit_log(
+            db=db,
+            action="WHATSAPP_CANCEL_SPOT",
+            entity="time_slots",
+            details=f"Jugador {norm_sender} canceló cupo en slot {slot.id} vía WhatsApp",
+            operator_user="BOT_WHATSAPP",
+            club_id=1,
+        )
+    except Exception as ex_audit:
+        logger.warning(f"Error registrando auditoría WHATSAPP_CANCEL_SPOT: {ex_audit}")
 
     if is_late and not is_recent_close:
         # a) Registrar una incidencia de baja tardía (late_cancellation) en el historial del jugador

@@ -17,7 +17,7 @@ except ImportError:  # Pydantic v1 fallback
     ConfigDict = None
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status, Request
 from fastapi.responses import JSONResponse
-from app.services.audit import log_activity
+from app.services.audit import log_activity, record_audit_log
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -1422,6 +1422,18 @@ async def create_manual_booking(
                     created_slots.append(new_slot)
 
             await db.commit()
+            try:
+                await record_audit_log(
+                    db=db,
+                    action="CREATE_RESERVATION",
+                    entity="time_slots",
+                    details=f"Reserva fija ({weeks} sem) creada en Cancha {target_court.court_number or target_court.id} para {client_name} ({client_phone}) - Tarifa sesión: ${int(total_price):,} COP",
+                    operator_user="RECEPCION",
+                    club_id=1,
+                )
+            except Exception as ex_audit:
+                logger.warning(f"No se pudo registrar auditoría en recurring manual_booking: {ex_audit}")
+
             return {
                 "status": "ok",
                 "is_recurring": True,
@@ -1554,6 +1566,19 @@ async def create_manual_booking(
 
         await db.commit()
         await db.refresh(slot)
+
+        # Auditoría obligatoria de creación de reserva
+        try:
+            await record_audit_log(
+                db=db,
+                action="CREATE_RESERVATION",
+                entity="time_slots",
+                details=f"Reserva creada en Cancha {target_court.court_number or target_court.id} para {client_name} ({client_phone}) - Tarifa: ${int(total_price):,} COP",
+                operator_user="RECEPCION",
+                club_id=1,
+            )
+        except Exception as ex_audit:
+            logger.warning(f"No se pudo registrar auditoría en manual_booking: {ex_audit}")
 
         # Despacho transaccional por WhatsApp según modalidad de reserva
         if client_phone and not client_phone.startswith("+57-WA-") and not client_phone.startswith("+57-unknown"):
@@ -1700,6 +1725,7 @@ async def cancel_and_free_slot(
         old_type = getattr(slot, "slot_type", "MATCH")
         was_tournament = getattr(slot, "is_tournament", False) or old_type == "TOURNAMENT"
         tourn_name = getattr(slot, "tournament_name", None)
+        prev_players_names = list(slot.players_names or [])
 
         slots_to_free = [slot]
         # Si era torneo americano, buscar todos los slots asociados al mismo torneo y fecha/hora
@@ -1741,22 +1767,17 @@ async def cancel_and_free_slot(
             if hasattr(s, "runner_up_names"):
                 s.runner_up_names = None
 
-        # Auditoría
+        # Auditoría obligatoria con record_audit_log
+        audit_action = "CANCEL_AMERICANO" if was_tournament else "CANCEL_RESERVATION"
+        audit_details = f"Se canceló y liberó el turno {slot_id}. Jugadores previos: {prev_players_names}"
         try:
-            await log_activity(
+            await record_audit_log(
                 db=db,
-                action="CANCEL_RESERVATION_AND_FREE",
-                entity_type="time_slots",
-                entity_id=str(slot.id),
-                details={
-                    "old_status": old_status,
-                    "old_slot_type": old_type,
-                    "was_tournament": was_tournament,
-                    "tournament_name": tourn_name,
-                    "total_freed_slots": len(slots_to_free),
-                    "freed_slot_ids": [s.id for s in slots_to_free],
-                    "freed_at": datetime.now(timezone.utc).isoformat(),
-                },
+                action=audit_action,
+                entity="time_slots",
+                details=audit_details,
+                operator_user="RECEPCION",
+                club_id=1,
             )
         except Exception as ex_audit:
             logger.warning(f"No se pudo registrar log de auditoría en cancel_and_free: {ex_audit}")
@@ -1815,10 +1836,18 @@ async def update_slot_price(
 
         # Auditoría
         try:
+            await record_audit_log(
+                db=db,
+                action="UPDATE_PRICE",
+                entity="time_slots",
+                details=f"Precio modificado en slot {slot_id}: de ${int(old_price):,} a ${int(new_price_dec):,} COP",
+                operator_user="RECEPCION",
+                club_id=1,
+            )
             await log_activity(
                 db=db,
                 action="UPDATE_SLOT_PRICE",
-                entity_type="time_slots",
+                entity_name="time_slots",
                 entity_id=str(slot.id),
                 details={
                     "old_price": old_price,
@@ -2428,6 +2457,17 @@ async def create_americano(
     # Operational Audit Trail
     try:
         court_names = [s.court.name for s in loaded_slots if s.court]
+        c_repr = court_names or payload.court_ids
+        st_str = payload.start_time.strftime("%H:%M") if hasattr(payload.start_time, "strftime") else str(payload.start_time)
+        et_str = end_time_val.strftime("%H:%M") if hasattr(end_time_val, "strftime") else str(end_time_val)
+        await record_audit_log(
+            db=db,
+            action="CREATE_AMERICANO",
+            entity="tournaments",
+            details=f"Se creó torneo americano '{t_name}' bloqueando canchas {c_repr} de {st_str} a {et_str}",
+            operator_user="RECEPCION",
+            club_id=1,
+        )
         await log_activity(
             db=db,
             action="CREATE_AMERICANO",
@@ -2847,6 +2887,25 @@ async def parse_open_match(
     await db.commit()
     await db.refresh(slot)
 
+    # Auditoría obligatoria para nuevos jugadores incorporados
+    new_players_names = incoming_names_set - prev_names_set
+    if new_players_names:
+        for new_p in participants:
+            if new_p.get("display_name", "").strip().lower() in new_players_names:
+                p_disp = new_p.get("display_name")
+                p_ph = new_p.get("phone") or "Sin teléfono"
+                try:
+                    await record_audit_log(
+                        db=db,
+                        action="ADD_PLAYER",
+                        entity="slot_participants",
+                        details=f"Se agregó al jugador {p_disp} ({p_ph}) al turno {slot.id}",
+                        operator_user="RECEPCION",
+                        club_id=1,
+                    )
+                except Exception as ex_audit:
+                    logger.warning(f"No se pudo registrar auditoría en parse_open_match: {ex_audit}")
+
     # Formatear respuesta WhatsApp oficial multideporte
     from app.services.whatsapp import format_whatsapp_reply
     reply = format_whatsapp_reply(slot)
@@ -2941,6 +3000,14 @@ async def drop_player(
 
     # Operational Audit Trail
     try:
+        await record_audit_log(
+            db=db,
+            action="REMOVE_PLAYER",
+            entity="slot_participants",
+            details=f"Se quitó al jugador {payload.player_name} del turno {payload.slot_id}",
+            operator_user="RECEPCION",
+            club_id=1,
+        )
         await log_activity(
             db=db,
             action="CANCEL_SLOT_PLAYER",
@@ -3072,6 +3139,20 @@ async def remove_player_from_slot(
 
     await db.commit()
     await db.refresh(slot)
+
+    # Auditoría obligatoria de eliminación de jugador
+    removed_name = removed.get("display_name") or removed.get("name") or payload.player_name or "Jugador"
+    try:
+        await record_audit_log(
+            db=db,
+            action="REMOVE_PLAYER",
+            entity="slot_participants",
+            details=f"Se quitó al jugador {removed_name} del turno {slot_id}",
+            operator_user="RECEPCION",
+            club_id=1,
+        )
+    except Exception as ex_audit:
+        logger.warning(f"No se pudo registrar auditoría en remove_player_from_slot: {ex_audit}")
 
     # WhatsApp notification al jugador dado de baja
     notif_phone = target_phone

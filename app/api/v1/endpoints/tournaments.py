@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status, Request
 from pydantic import BaseModel, Field
-from app.services.audit import log_activity
+from app.services.audit import log_activity, record_audit_log
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -649,6 +649,16 @@ async def register_player_to_tournament(
     total_booked = sum(s.booked_spots or 0 for s in slots)
 
     try:
+        target_slot_id = slots[0].id if slots else payload.slot_id or ""
+        for p in players_to_register:
+            await record_audit_log(
+                db=db,
+                action="ADD_PLAYER",
+                entity="slot_participants",
+                details=f"Se agregó al jugador {p['name']} ({p['phone']}) al turno {target_slot_id}",
+                operator_user="RECEPCION",
+                club_id=1,
+            )
         await log_activity(
             db=db,
             action="REGISTER_TOURNAMENT_PLAYER",

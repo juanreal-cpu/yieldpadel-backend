@@ -181,6 +181,10 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS customer_name VARCHAR(150) DEFAULT 'Mesa / Cuenta General'",
                     # slot challenges votes
                     "CREATE TABLE IF NOT EXISTS slot_challenges_votes (id SERIAL PRIMARY KEY, slot_id INTEGER REFERENCES time_slots(id) ON DELETE CASCADE, player_phone VARCHAR(50) NOT NULL, vote VARCHAR(20) NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), CONSTRAINT uq_slot_challenge_vote_slot_phone UNIQUE (slot_id, player_phone))",
+                    # audit_logs
+                    "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS club_id INTEGER DEFAULT 1",
+                    "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS operator_user VARCHAR(100)",
+                    "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS entity VARCHAR(100)",
                 ]
                 for stmt in pg_statements:
                     try:
