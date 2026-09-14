@@ -341,6 +341,50 @@ async def ensure_initial_customers(db: AsyncSession):
                 uc.membership_plan_id = plan_map[tier_key]
         await db.commit()
 
+@router.get("/stats")
+async def get_customer_stats(phone: str, db: AsyncSession = Depends(get_db)):
+    clean_phone = phone.strip().replace("+", "").replace(" ", "")
+    
+    query = select(Customer).where(
+        or_(
+            Customer.phone.ilike(f"%{clean_phone[-10:]}%"),
+            Customer.phone.ilike(f"%{clean_phone}%")
+        )
+    )
+    result = await db.execute(query)
+    customer = result.scalars().first()
+
+    if not customer:
+        return {
+            "status": "not_found",
+            "name": "Jugador",
+            "phone": clean_phone,
+            "category": "4ta Categoría",
+            "ranking_points": 0,
+            "wallet_balance": 0,
+            "membership_tier": "ESTANDAR",
+            "membership_name": "Estándar (Sin Membresía)",
+            "days_left": 0
+        }
+
+    days_left = 0
+    if customer.membership_end_date:
+        today = datetime.utcnow().date()
+        end_date = customer.membership_end_date if isinstance(customer.membership_end_date, date) else customer.membership_end_date.date()
+        days_left = max(0, (end_date - today).days)
+
+    return {
+        "status": "ok",
+        "name": customer.name,
+        "phone": customer.phone,
+        "category": customer.category or "4ta Categoría",
+        "ranking_points": customer.ranking_points or 0,
+        "wallet_balance": customer.wallet_balance or 0,
+        "membership_tier": customer.membership_tier or "ESTANDAR",
+        "membership_name": customer.membership_tier or "Estándar (Sin Membresía)",
+        "days_left": days_left
+    }
+
 
 @router.get("/search", response_model=List[CustomerResponse])
 async def search_customers(
