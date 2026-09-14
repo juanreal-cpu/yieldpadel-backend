@@ -10,8 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.core.timezone import get_bogota_today
 from app.models.customer import Customer
 from app.models.membership import MembershipPlan
+from app.models.slot import HoldStatus, SlotHold, SlotStatus, TimeSlot
+from app.models.booking import Booking
 
 router = APIRouter()
 
@@ -384,6 +387,141 @@ async def get_customer_stats(phone: str, db: AsyncSession = Depends(get_db)):
         "membership_name": customer.membership_tier or "Estándar (Sin Membresía)",
         "days_left": days_left
     }
+
+
+def _phone_match_keys(phone: str) -> set:
+    digits = "".join(c for c in (phone or "") if c.isdigit())
+    keys = {digits, (phone or "").strip()}
+    if len(digits) >= 10:
+        last10 = digits[-10:]
+        keys.update({last10, "57" + last10, "+57" + last10})
+    return {k for k in keys if k}
+
+
+def _slot_includes_phone(players, keys: set) -> bool:
+    if not players:
+        return False
+    items = players if isinstance(players, list) else [players]
+    for item in items:
+        raw = item.get("phone") if isinstance(item, dict) else item
+        raw_str = str(raw or "")
+        digits = "".join(c for c in raw_str if c.isdigit())
+        if raw_str in keys or digits in keys or (len(digits) >= 10 and digits[-10:] in keys):
+            return True
+    return False
+
+
+@router.get("/bookings")
+async def get_customer_bookings(phone: str, db: AsyncSession = Depends(get_db)):
+    """Lista las reservas activas/futuras del jugador por teléfono (JSON plano)."""
+    keys = _phone_match_keys(phone)
+    last10 = "".join(c for c in (phone or "") if c.isdigit())[-10:] if phone else ""
+    today = get_bogota_today()
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(
+            TimeSlot.date >= today,
+            TimeSlot.status.notin_([SlotStatus.CANCELLED, SlotStatus.BLOCKED]),
+        )
+        .order_by(TimeSlot.date.asc(), TimeSlot.start_time.asc())
+    )
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    bookings = []
+    seen_slot_ids = set()
+    for slot in slots:
+        if not _slot_includes_phone(slot.players_names, keys):
+            continue
+        seen_slot_ids.add(slot.id)
+        court_name = slot.court.name if slot.court else "Cancha"
+        participants = slot.players_names if isinstance(slot.players_names, list) else []
+        bookings.append({
+            "slot_id": slot.id,
+            "date": slot.date.isoformat() if slot.date else None,
+            "start_time": slot.start_time.strftime("%H:%M") if slot.start_time else None,
+            "end_time": slot.end_time.strftime("%H:%M") if slot.end_time else None,
+            "court": court_name,
+            "sport": (slot.sport_type or "PADEL").upper(),
+            "status": str(getattr(slot.status, "value", slot.status) or ""),
+            "price_cop": int(slot.total_price or 0),
+            "players": len(participants),
+            "capacity": slot.capacity or 4,
+            "source": "time_slot",
+        })
+
+    if last10:
+        booking_stmt = (
+            select(Booking)
+            .options(selectinload(Booking.slot).selectinload(TimeSlot.court))
+            .where(
+                or_(
+                    Booking.customer_phone.ilike(f"%{last10}%"),
+                    Booking.customer_phone.ilike(f"%{phone.strip()}%"),
+                )
+            )
+        )
+        booking_res = await db.execute(booking_stmt)
+        for row in booking_res.scalars().all():
+            slot = row.slot
+            if not slot or slot.id in seen_slot_ids:
+                continue
+            if slot.date and slot.date < today:
+                continue
+            seen_slot_ids.add(slot.id)
+            court_name = slot.court.name if slot.court else "Cancha"
+            bookings.append({
+                "slot_id": slot.id,
+                "date": slot.date.isoformat() if slot.date else None,
+                "start_time": slot.start_time.strftime("%H:%M") if slot.start_time else None,
+                "end_time": slot.end_time.strftime("%H:%M") if slot.end_time else None,
+                "court": court_name,
+                "sport": (slot.sport_type or "PADEL").upper(),
+                "status": str(getattr(slot.status, "value", slot.status) or ""),
+                "price_cop": int(row.amount_paid or slot.total_price or 0),
+                "players": row.spots_booked or 1,
+                "capacity": slot.capacity or 4,
+                "source": "booking",
+            })
+
+        hold_stmt = (
+            select(SlotHold)
+            .options(selectinload(SlotHold.slot).selectinload(TimeSlot.court))
+            .where(
+                SlotHold.status == HoldStatus.ACTIVE,
+                or_(
+                    SlotHold.customer_phone.ilike(f"%{last10}%"),
+                    SlotHold.customer_phone.ilike(f"%{phone.strip()}%"),
+                ),
+            )
+        )
+        hold_res = await db.execute(hold_stmt)
+        for hold in hold_res.scalars().all():
+            slot = hold.slot
+            if not slot or slot.id in seen_slot_ids:
+                continue
+            if slot.date and slot.date < today:
+                continue
+            seen_slot_ids.add(slot.id)
+            court_name = slot.court.name if slot.court else "Cancha"
+            bookings.append({
+                "slot_id": slot.id,
+                "date": slot.date.isoformat() if slot.date else None,
+                "start_time": slot.start_time.strftime("%H:%M") if slot.start_time else None,
+                "end_time": slot.end_time.strftime("%H:%M") if slot.end_time else None,
+                "court": court_name,
+                "sport": (slot.sport_type or "PADEL").upper(),
+                "status": "HOLD",
+                "price_cop": int(hold.amount_to_pay or slot.total_price or 0),
+                "players": hold.spots_held or 1,
+                "capacity": slot.capacity or 4,
+                "source": "hold",
+            })
+
+    bookings.sort(key=lambda b: (b.get("date") or "", b.get("start_time") or ""))
+    return bookings
 
 
 @router.get("/search", response_model=List[CustomerResponse])
