@@ -70,21 +70,22 @@ def _extract_voiceflow_text_messages(traces) -> List[str]:
 
 async def interact_with_voiceflow(sender_phone: str, message_text: str) -> List[str]:
     """Llama a la Dialog API de Voiceflow (production) y retorna mensajes text/speak."""
-    api_key = os.getenv("VOICEFLOW_API_KEY", "")
     url = VOICEFLOW_DIALOG_URL.format(user_id=sender_phone)
     headers = {
-        "Authorization": api_key,
+        "Authorization": (os.getenv("VOICEFLOW_API_KEY") or "").strip().replace('"', "").replace("'", ""),
         "Content-Type": "application/json",
-        "versionID": "production",
+        "accept": "application/json",
     }
     payload = {
-        "action": {
+        "request": {
             "type": "text",
             "payload": message_text,
         },
     }
     async with httpx.AsyncClient(timeout=20.0) as client:
         resp = await client.post(url, json=payload, headers=headers)
+        if resp.status_code != 200:
+            logger.error(f"[VOICEFLOW REJECT] Status: {resp.status_code} | Body: {resp.text}")
         resp.raise_for_status()
         return _extract_voiceflow_text_messages(resp.json())
 
