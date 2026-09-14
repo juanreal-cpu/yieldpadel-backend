@@ -75,6 +75,7 @@ async def interact_with_voiceflow(sender_phone: str, message_text: str) -> List[
         "Authorization": (os.getenv("VOICEFLOW_API_KEY") or "").strip().replace('"', "").replace("'", ""),
         "Content-Type": "application/json",
         "accept": "application/json",
+        "versionID": "production",
     }
     payload = {
         "request": {
