@@ -53,10 +53,11 @@ INFORMACIÓN INSTITUCIONAL DEL CLUB:
 - Instalaciones: 5 canchas de pádel panorámicas (Canchas 1 a 4 azules, Cancha 5 negra), 2 pistas de pickleball, 1 Cancha de Vóley Reglamentaria/Convencional (superficie rígida / piso de alta competencia, NO es de arena) y sala de consolas.
 - Servicios: Tienda/POS (venta y alquiler de palas, bolas y grips), Bar/Cafetería con bebidas hidratantes y snacks, vestieres con duchas y lockers, parqueadero cubierto en Maloka.
 - Tarifas: Se estructuran en Franja Valle (lunes a viernes antes de las 6:00 p.m.) y Franja Pico (noches después de las 6:00 p.m., fines de semana y festivos).
-- Membresías Oficiales: Promueve los planes Tapia, Coello, Galán, Chingotto y Lebrón para obtener tarifas preferenciales, horas fijas incluidas, clases de academia y bebidas sin costo.
+- Membresías Oficiales (Tapia, Coello, Galán, Chingotto, Lebrón): son beneficios opcionales (descuentos, créditos de cortesía, horas incluidas y bebidas). NUNCA bloquees una reserva por no tener membresía activa. Un socio con plan vencido o un jugador regular puede reservar y pagar tarifa estándar como cualquier cliente.
 - Actividades: Torneos Americanos entre semana y fines de semana, Academia formativa (Iniciación, Media, Avanzada), partidos abiertos comunitarios y predicciones deportivas.
 
 REGLAS DE INTERACCIÓN:
+- NUNCA exijas membresía para jugar o reservar cancha. Membresía = beneficios, no un candado de acceso.
 - Si el usuario saluda por primera vez o dice 'hola', responde con el saludo cálido y humano presentándote como el equipo de Capital Pádel Club y ofreciendo ayuda en reservas, torneos o servicios.
 - Si pregunta qué es el club, horarios, servicios o precios generales, responde de forma clara y directa usando emojis deportivos sobrios (🎾, 📍, ⌚, 🏆).
 - Si pregunta por disponibilidad específica de canchas para hoy o mañana, invoca la consulta a la base de datos de time_slots y presenta las opciones disponibles con su precio en pesos colombianos.
@@ -150,8 +151,8 @@ def _local_concierge_fallback(clean_text: str) -> str:
             "Nuestras tarifas se dividen en:\n"
             "• 🌿 *Tarifa Valle:* Lunes a viernes antes de las 6:00 p.m.\n"
             "• 🔥 *Tarifa Pico:* Noches (después de 6:00 p.m.), fines de semana y festivos.\n\n"
-            "💡 *Tip:* Con nuestras Membresías Oficiales (Tapia, Coello, Galán, Chingotto, Lebrón) "
-            "tienes tarifas preferenciales, horas mensuales y clases sin costo adicional.\n\n"
+            "💡 *Tip:* Las membresías oficiales (Tapia, Coello, Galán, Chingotto, Lebrón) "
+            "otorgan descuentos y cortesías, pero *no son obligatorias*: cualquier jugador puede reservar y pagar tarifa estándar.\n\n"
             "Escribe *'disponibilidad'* o *'turnos hoy'* para ver los horarios con precio exacto en COP."
         )
     if re.search(r"\bd[oó]nde\b|\bubicad[oa]s?\b|\bdirecci[oó]n\b|\bqueda[n]?\b", t):
@@ -2271,10 +2272,18 @@ async def handle_sport_and_booking_flow(
         if not slot_id:
             return "Esa opción no está disponible. Por favor elige uno de los números de la lista enviada."
 
-        res = await db.execute(select(TimeSlot).options(selectinload(TimeSlot.court)).where(TimeSlot.id == slot_id))
+        res = await db.execute(
+            select(TimeSlot)
+            .options(selectinload(TimeSlot.court))
+            .where(TimeSlot.id == slot_id)
+            .with_for_update()
+        )
         slot = res.scalar_one_or_none()
         if not slot:
             return "Ese turno ya no existe. ¿Quieres ver otras opciones disponibles?"
+        status_val = str(getattr(slot.status, "value", slot.status) or "").upper()
+        if status_val not in ("AVAILABLE", "PARTIALLY_BOOKED"):
+            return "Ese turno ya no está disponible. Escribe *turnos libres hoy* para ver opciones actualizadas."
 
         # Si viene de una búsqueda natural de turnos / hold matching:
         if session.get("is_hold_search"):
@@ -2737,8 +2746,9 @@ PERSONAL_MEMBERSHIP_REGEX = re.compile(
 MEMBERSHIP_QUESTION_REGEX = re.compile(r"membres[ií]as?|planes?\s+de\s+socio|tapia|coello|gal[aá]n|chingotto|lebr[oó]n", re.IGNORECASE)
 
 MEMBERSHIP_PROMO_TEXT = (
-    "💡 Recuerda que con nuestras Membresías Oficiales (Tapia, Coello, Galán, Chingotto, Lebrón) "
-    "obtienes tarifas preferenciales, horas fijas incluidas, clases de academia y bebidas sin costo."
+    "💡 Las membresías oficiales (Tapia, Coello, Galán, Chingotto, Lebrón) otorgan descuentos, "
+    "créditos de cortesía y beneficios en academia/bar. *No son obligatorias para jugar*: "
+    "cualquier cliente, socio con plan vencido o jugador regular puede reservar y pagar tarifa estándar."
 )
 
 
@@ -2767,10 +2777,11 @@ async def handle_rates_and_membership_query(db: AsyncSession, clean: str, sender
             )
         else:
             return (
-                f"Hola {nombre}, actualmente juegas con tarifa *Estándar (sin membresía activa)*.\n\n"
-                f"🏆 *¡Ahorra en cada partido!* Con nuestras membresías oficiales (*Tapia, Coello, Galán, Chingotto, Lebrón*) "
-                f"obtienes tarifas preferenciales, horas fijas incluidas, clases de academia, bebidas sin costo y hasta 40% de descuento en torneos.\n\n"
-                f"¿Te gustaría conocer los precios de los planes o activar una hoy?"
+                f"Hola {nombre}, actualmente juegas con tarifa *Estándar* (sin membresía activa).\n\n"
+                f"Puedes reservar y pagar cualquier cancha con normalidad: *la membresía no es un requisito para jugar*.\n\n"
+                f"🏆 Si quieres ahorrar, los planes *Tapia, Coello, Galán, Chingotto y Lebrón* dan descuentos, "
+                f"horas incluidas, clases de academia y bebidas de cortesía.\n\n"
+                f"¿Te muestro turnos libres o los beneficios de cada plan?"
             )
 
     if RATES_QUESTION_REGEX.search(clean):

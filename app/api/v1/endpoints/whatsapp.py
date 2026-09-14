@@ -1,6 +1,7 @@
 import logging
 import os
-from datetime import date, timedelta
+import re
+from datetime import date, datetime, time, timedelta
 from typing import List, Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -8,17 +9,23 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy import select, cast, String
 
 from app.core.database import get_db
-from app.core.timezone import get_bogota_today
+from app.core.timezone import get_bogota_today, get_bogota_now
 from app.models.slot import TimeSlot
+import importlib
+_yield_mod = importlib.import_module("app.services.yield")
+calculate_recommended_price = _yield_mod.calculate_recommended_price
 from app.services.whatsapp import (
     MESSAGES_CACHE,
     generate_availability_broadcast,
     generate_concierge_reply,
     generate_promo_urgent_broadcast,
     get_player_incidents,
+    get_session,
     handle_human_wait_turn,
+    handle_sport_and_booking_flow,
     is_conversation_paused,
     is_transactional_message,
     log_conversation_message,
@@ -30,7 +37,6 @@ from app.services.whatsapp import (
 )
 from app.models.whatsapp_conversation import WhatsAppConversation
 from app.models.customer import Customer
-from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +48,20 @@ VOICEFLOW_FALLBACK_MESSAGE = (
     "Gracias por contactar a Capital Pádel Club. En este momento no pude completar tu consulta. "
     "Un asesor del club te atenderá a la mayor brevedad. Disculpa las molestias."
 )
+VOICEFLOW_MEMBERSHIP_CONTEXT = (
+    "[CONTEXTO CLUB] Las membresías Tapia, Coello, Galán, Chingotto y Lebrón NO son requisito para jugar. "
+    "Cualquier cliente, socio con plan vencido o jugador regular puede reservar y pagar tarifa estándar. "
+    "La membresía solo otorga descuentos y cortesías.\n\n"
+    "Mensaje del usuario: "
+)
+AVAILABILITY_INTENT_REGEX = re.compile(
+    r"disponib|turnos?\s+libres?|canchas?\s+libres?|qu[eé]\s+horas?\s+hay|"
+    r"despu[eé]s\s+de(?:\s+las?)?\s+\d|hoy\s+despu|hay\s+(?:cancha|turno|pista)|"
+    r"quiero\s+jugar|reservar?\s+(?:cancha|pista|turno)|horarios?\s+(?:libres?|hoy)",
+    re.IGNORECASE,
+)
+SLOT_SELECTION_REGEX = re.compile(r"^\s*([1-9])\s*$")
+MEMBERSHIP_BLOCK_REGEX = re.compile(r"membres[ií]a|socio|tapia|coello|gal[aá]n|chingotto|lebr[oó]n", re.IGNORECASE)
 
 
 def _extract_voiceflow_text_messages(traces) -> List[str]:
@@ -104,8 +124,11 @@ async def dispatch_voiceflow_replies(
     Ante timeout o error, registra logger.error y envía un fallback formal.
     """
     log_phone = conversation_phone or sender_phone
+    vf_text = message_text
+    if MEMBERSHIP_BLOCK_REGEX.search(message_text or ""):
+        vf_text = f"{VOICEFLOW_MEMBERSHIP_CONTEXT}{message_text}"
     try:
-        vf_messages = await interact_with_voiceflow(sender_phone, message_text)
+        vf_messages = await interact_with_voiceflow(sender_phone, vf_text)
         if not vf_messages:
             vf_messages = [VOICEFLOW_FALLBACK_MESSAGE]
         for vf_msg in vf_messages:
@@ -124,12 +147,175 @@ async def dispatch_voiceflow_replies(
         await send_whatsapp_message(to_phone=raw_from, message_body=VOICEFLOW_FALLBACK_MESSAGE)
 
 
+def parse_availability_filters(message_text: str) -> dict:
+    """Extrae fecha, hora mínima y deporte de un mensaje de disponibilidad en español."""
+    text = message_text or ""
+    today = get_bogota_today()
+    target_date = today + timedelta(days=1) if re.search(r"\bma[ñn]ana\b", text, re.IGNORECASE) else today
+
+    sport = "PADEL"
+    sport_map = [
+        ("PICKLEBALL", r"\bpickleball\b"),
+        ("VOLLEYBALL", r"\bv[oó]ley(bol)?\b"),
+        ("PILATES", r"\bpilates\b"),
+        ("CONSOLE", r"\bconsola"),
+        ("PADEL", r"\bp[aá]del\b"),
+    ]
+    for code, pattern in sport_map:
+        if re.search(pattern, text, re.IGNORECASE):
+            sport = code
+            break
+
+    after_time = None
+    after_match = re.search(
+        r"despu[eé]s\s+de(?:\s+las?)?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?",
+        text,
+        re.IGNORECASE,
+    )
+    hour_match = re.search(r"\b(?:a\s+las?\s+|desde\s+las?\s+)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?", text, re.IGNORECASE)
+    parsed = after_match or hour_match
+    if parsed:
+        hour = int(parsed.group(1))
+        minute = int(parsed.group(2) or 0)
+        meridiem = (parsed.group(3) or "").lower().replace(".", "")
+        if "p" in meridiem and hour < 12:
+            hour += 12
+        elif "a" in meridiem and hour == 12:
+            hour = 0
+        elif not meridiem and 1 <= hour <= 7:
+            hour += 12
+        after_time = time(min(hour, 23), min(minute, 59))
+    elif re.search(r"\bnoche\b", text, re.IGNORECASE):
+        after_time = time(18, 0)
+    elif re.search(r"\btarde\b", text, re.IGNORECASE):
+        after_time = time(14, 0)
+
+    return {"date": target_date, "after_time": after_time, "sport": sport}
+
+
+def _slot_price_cop(slot: TimeSlot) -> int:
+    try:
+        yd = calculate_recommended_price(slot)
+        return int(yd.get("recommended_price") or slot.total_price or 0)
+    except Exception:
+        return int(slot.total_price or slot.price_total_cop or 0)
+
+
+async def lookup_available_slots(
+    db: AsyncSession,
+    sender_phone: Optional[str] = None,
+    message_text: Optional[str] = None,
+    target_date: Optional[date] = None,
+    after_time: Optional[time] = None,
+    sport: Optional[str] = "PADEL",
+) -> dict:
+    """Consulta time_slots AVAILABLE y arma JSON limpio + texto numerado para WhatsApp/Voiceflow."""
+    filters = parse_availability_filters(message_text or "")
+    d = target_date or filters["date"]
+    after = after_time or filters["after_time"]
+    sport_filter = (sport or filters["sport"] or "PADEL").upper().strip()
+
+    stmt = (
+        select(TimeSlot)
+        .options(selectinload(TimeSlot.court))
+        .where(TimeSlot.date == d, cast(TimeSlot.status, String) == "AVAILABLE")
+        .order_by(TimeSlot.start_time.asc())
+    )
+    if sport_filter and sport_filter != "ALL":
+        stmt = stmt.where(TimeSlot.sport_type == sport_filter)
+
+    res = await db.execute(stmt)
+    slots = list(res.scalars().all())
+
+    now_bogota = get_bogota_now()
+    if d == get_bogota_today():
+        current = now_bogota.time()
+        cutoff = after if after and after > current else current
+        slots = [s for s in slots if s.start_time >= cutoff]
+    elif after:
+        slots = [s for s in slots if s.start_time >= after]
+
+    options = []
+    offered = {}
+    for idx, slot in enumerate(slots[:8], start=1):
+        court_name = slot.court.name if slot.court else "Cancha"
+        price_cop = _slot_price_cop(slot)
+        start_label = slot.start_time.strftime("%I:%M %p").lstrip("0")
+        end_label = slot.end_time.strftime("%I:%M %p").lstrip("0")
+        options.append({
+            "index": idx,
+            "slot_id": slot.id,
+            "court": court_name,
+            "start_time": slot.start_time.strftime("%H:%M"),
+            "end_time": slot.end_time.strftime("%H:%M"),
+            "start_label": start_label,
+            "end_label": end_label,
+            "price_cop": price_cop,
+            "price_label": f"${price_cop:,}".replace(",", ".") + " COP",
+            "sport": (slot.sport_type or sport_filter or "PADEL").upper(),
+        })
+        offered[idx] = slot.id
+
+    if sender_phone:
+        session = get_session(sender_phone)
+        session["last_offered_slots"] = offered
+        session["is_hold_search"] = True
+        session["offered_slots_json"] = options
+
+    after_label = after.strftime("%I:%M %p").lstrip("0") if after else None
+    day_label = "hoy" if d == get_bogota_today() else d.strftime("%d/%m/%Y")
+    if not options:
+        whatsapp_text = (
+            f"🎾 No encontré turnos *AVAILABLE* de {sport_filter.title()} para {day_label}"
+            + (f" después de las {after_label}" if after_label else "")
+            + ".\n\nPuedes consultar otra hora o fecha. Recuerda: *no necesitas membresía* para reservar; "
+            "Tapia/Coello solo aplican descuentos."
+        )
+    else:
+        lines = [
+            f"{opt['index']}. {opt['court']} | {opt['start_label']} - {opt['end_label']} | {opt['price_label']}"
+            for opt in options
+        ]
+        whatsapp_text = (
+            f"🎾 *Turnos disponibles {day_label}*"
+            + (f" (después de las {after_label})" if after_label else "")
+            + f" — {sport_filter.title()}:\n\n"
+            + "\n".join(lines)
+            + "\n\nResponde con *1*, *2* o *3* para apartar el cupo. "
+            "*No necesitas membresía para jugar*; los planes Tapia/Coello solo dan beneficios."
+        )
+
+    return {
+        "status": "ok",
+        "membership_required": False,
+        "date": d.isoformat(),
+        "sport": sport_filter,
+        "after_time": after.strftime("%H:%M") if after else None,
+        "options": options,
+        "whatsapp_text": whatsapp_text,
+    }
+
+
 class SimulateWhatsAppMessage(BaseModel):
     sender_phone: str
     sender_name: Optional[str] = None
     raw_text: str
     quoted_text: Optional[str] = None
     context: Optional[dict] = None
+
+
+class AvailabilityLookupRequest(BaseModel):
+    sender_phone: Optional[str] = None
+    message_text: Optional[str] = None
+    date: Optional[str] = None
+    after_time: Optional[str] = None
+    sport: Optional[str] = "PADEL"
+
+
+class SelectSlotRequest(BaseModel):
+    sender_phone: str
+    option: int
+    sender_name: Optional[str] = None
 
 
 @router.get("/webhook")
@@ -231,8 +417,9 @@ async def receive_webhook(
                         player_name=sender_name, increment_unread=False,
                     )
 
+                    session = get_session(sender_phone)
+
                     # Comandos transaccionales de lista (🎾 / voy / me bajo) siguen el motor nativo.
-                    # Consultas generales (puntos, membresía, precios, horarios, palas, asesor) van a Voiceflow.
                     if is_transactional_message(message_text):
                         reply_text = await process_incoming_whatsapp_message(
                             db=db,
@@ -251,6 +438,31 @@ async def receive_webhook(
                             )
                         continue
 
+                    # Selección numerada (1, 2, 3...) de un turno previamente ofertado.
+                    if SLOT_SELECTION_REGEX.match(message_text) and (
+                        session.get("last_offered_slots") or session.get("pending_mode_slot_id")
+                    ):
+                        reply_text = await handle_sport_and_booking_flow(
+                            db, sender_phone, sender_name, message_text.strip(), session
+                        )
+                        if reply_text:
+                            await log_conversation_message(db, sender_phone, reply_text, direction="bot")
+                            await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
+                        continue
+
+                    # Consulta real de disponibilidad en time_slots (JSON + viñetas para el chat).
+                    if AVAILABILITY_INTENT_REGEX.search(message_text):
+                        availability = await lookup_available_slots(
+                            db,
+                            sender_phone=sender_phone,
+                            message_text=message_text,
+                        )
+                        reply_text = availability.get("whatsapp_text") or VOICEFLOW_FALLBACK_MESSAGE
+                        await log_conversation_message(db, sender_phone, reply_text, direction="bot")
+                        await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
+                        continue
+
+                    # Consultas generales (puntos, membresía, precios, palas, asesor) van a Voiceflow.
                     vf_user_id = raw_from.lstrip("+")
                     await dispatch_voiceflow_replies(
                         sender_phone=vf_user_id,
@@ -308,6 +520,91 @@ async def simulate_incoming_message(
         "sender_phone": payload.sender_phone,
         "sender_name": payload.sender_name,
         "quoted_text_received": bool(quoted_text),
+        "reply": reply_text,
+    }
+
+
+@router.get("/availability")
+async def get_slot_availability(
+    phone: Optional[str] = Query(None),
+    message_text: Optional[str] = Query(None),
+    target_date: Optional[str] = Query(None, alias="date"),
+    after_time: Optional[str] = Query(None),
+    sport: Optional[str] = Query("PADEL"),
+    db: AsyncSession = Depends(get_db),
+):
+    """JSON limpio de turnos AVAILABLE para Voiceflow (cancha, horario, precio, índice 1..n)."""
+    parsed_date = None
+    if target_date:
+        try:
+            parsed_date = date.fromisoformat(target_date)
+        except ValueError:
+            parsed_date = None
+    parsed_after = None
+    if after_time:
+        try:
+            parsed_after = datetime.strptime(after_time.strip(), "%H:%M").time()
+        except ValueError:
+            parsed_after = None
+    return await lookup_available_slots(
+        db,
+        sender_phone=phone,
+        message_text=message_text,
+        target_date=parsed_date,
+        after_time=parsed_after,
+        sport=sport,
+    )
+
+
+@router.post("/availability")
+async def post_slot_availability(
+    payload: AvailabilityLookupRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Misma consulta de disponibilidad, pensada para API Steps de Voiceflow."""
+    parsed_date = None
+    if payload.date:
+        try:
+            parsed_date = date.fromisoformat(payload.date)
+        except ValueError:
+            parsed_date = None
+    parsed_after = None
+    if payload.after_time:
+        try:
+            parsed_after = datetime.strptime(payload.after_time.strip(), "%H:%M").time()
+        except ValueError:
+            parsed_after = None
+    return await lookup_available_slots(
+        db,
+        sender_phone=payload.sender_phone,
+        message_text=payload.message_text,
+        target_date=parsed_date,
+        after_time=parsed_after,
+        sport=payload.sport or "PADEL",
+    )
+
+
+@router.post("/select-slot")
+async def select_offered_slot(
+    payload: SelectSlotRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Aparta de forma atómica el turno elegido (1, 2, 3...) almacenado en CONVERSATION_SESSIONS."""
+    session = get_session(payload.sender_phone)
+    reply_text = await handle_sport_and_booking_flow(
+        db,
+        payload.sender_phone,
+        payload.sender_name,
+        str(payload.option),
+        session,
+    )
+    if not reply_text:
+        raise HTTPException(status_code=404, detail="No hay turnos ofertados en sesión para ese número.")
+    return {
+        "status": "ok",
+        "membership_required": False,
+        "sender_phone": payload.sender_phone,
+        "option": payload.option,
         "reply": reply_text,
     }
 
