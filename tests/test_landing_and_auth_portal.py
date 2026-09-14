@@ -32,6 +32,9 @@ def test_landing_page_unauthenticated():
     html = response.text
     assert "YieldPadel" in html
     assert "Ingresar al Club" in html
+    assert "Solicitar Demo" in html
+    assert "Offer Excellence en Clubes Deportivos" in html
+    assert "modal-demo-lead" in html
     assert "login-modal" in html
     assert "login-club-select" in html
     assert "RevPAST" in html

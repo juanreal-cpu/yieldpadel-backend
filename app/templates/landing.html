@@ -22,17 +22,26 @@
             display: ['"Outfit"', 'sans-serif'],
           },
           colors: {
+            navy: {
+              950: '#050b14',
+              900: '#0b1528',
+              800: '#10203a',
+            },
+            cyan: {
+              brand: '#00D9F5',
+            },
             emerald: {
               400: '#34d399',
               500: '#10b981',
               600: '#059669',
+              brand: '#00F5A0',
             },
             sport: {
-              dark: '#030712',
-              card: '#0b1329',
+              dark: '#050b14',
+              card: '#0b1528',
               border: '#1e293b',
-              neon: '#10b981',
-              accent: '#6366f1',
+              neon: '#00F5A0',
+              accent: '#00D9F5',
             }
           }
         }
@@ -41,21 +50,46 @@
   </script>
   <style>
     body {
-      background-color: #030712;
+      background: linear-gradient(180deg, #050b14 0%, #0b1528 42%, #050b14 100%);
       color: #f1f5f9;
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
+    .hero-surface {
+      background: linear-gradient(180deg, #050b14 0%, #0b1528 100%);
+    }
     .hero-glow {
-      background: radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15), rgba(99, 102, 241, 0.08) 45%, transparent 70%);
+      background:
+        radial-gradient(circle at 18% 20%, rgba(0, 217, 245, 0.22), transparent 38%),
+        radial-gradient(circle at 82% 12%, rgba(0, 245, 160, 0.16), transparent 36%),
+        radial-gradient(circle at 50% 70%, rgba(0, 217, 245, 0.08), transparent 48%);
+    }
+    .hero-grid {
+      background-image:
+        linear-gradient(rgba(0, 217, 245, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 217, 245, 0.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 72%);
     }
     .neon-border-glow:hover {
-      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.35);
-      border-color: rgba(52, 211, 153, 0.6);
+      box-shadow: 0 0 28px -6px rgba(0, 217, 245, 0.35);
+      border-color: rgba(0, 245, 160, 0.45);
     }
     .glass-nav {
-      background: rgba(3, 7, 18, 0.82);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(5, 11, 20, 0.86);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(0, 217, 245, 0.12);
+    }
+    .btn-pros {
+      background-image: linear-gradient(90deg, #00D9F5 0%, #00F5A0 100%);
+    }
+    .btn-pros:hover {
+      background-image: linear-gradient(90deg, #33e3f8 0%, #3ff7b3 100%);
+    }
+    .text-pros {
+      background-image: linear-gradient(90deg, #00D9F5 0%, #00F5A0 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
     .custom-scroll::-webkit-scrollbar {
       width: 6px;
@@ -66,12 +100,13 @@
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-slate-950 relative overflow-x-hidden">
+<body class="hero-surface text-slate-100 min-h-screen flex flex-col selection:bg-cyan-300 selection:text-slate-950 relative overflow-x-hidden">
 
   <!-- Glow Background Accents -->
-  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] hero-glow pointer-events-none -z-10"></div>
-  <div class="absolute top-96 -left-48 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
-  <div class="absolute top-[800px] -right-48 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+  <div class="absolute inset-x-0 top-0 h-[720px] hero-glow pointer-events-none -z-10"></div>
+  <div class="absolute inset-x-0 top-0 h-[640px] hero-grid pointer-events-none -z-10"></div>
+  <div class="absolute top-96 -left-48 w-96 h-96 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+  <div class="absolute top-[800px] -right-48 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
   <!-- NAVBAR -->
   <header class="sticky top-0 z-40 glass-nav transition-all duration-300">
@@ -79,13 +114,13 @@
       
       <!-- Brand Logo -->
       <a href="/" class="flex items-center gap-3 group">
-        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 via-teal-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200">
+        <div class="w-11 h-11 rounded-xl btn-pros flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform duration-200">
           <span class="text-2xl select-none">⚡</span>
         </div>
         <div>
           <div class="flex items-center gap-2">
             <span class="text-xl font-display font-extrabold tracking-tight text-white">YieldPadel</span>
-            <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">AI Yield 2.0</span>
+            <span class="text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full bg-cyan-400/10 text-[#00D9F5] border border-cyan-400/30">PROS Revenue</span>
           </div>
           <span class="text-[11px] text-slate-400 font-medium tracking-wide">Afluenc.IA Sports Systems</span>
         </div>
@@ -93,29 +128,39 @@
 
       <!-- Desktop Nav Links -->
       <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
-        <a href="#features" class="hover:text-emerald-400 transition-colors">Características</a>
-        <a href="#pricing" class="hover:text-emerald-400 transition-colors">Planes & Precios</a>
-        <a href="#registro-prospectos" class="hover:text-emerald-400 transition-colors">Pre-Inscripción</a>
-        <a href="#sedes" class="hover:text-emerald-400 transition-colors">Sedes Activas</a>
+        <a href="#features" class="hover:text-[#00D9F5] transition-colors">Características</a>
+        <a href="#pricing" class="hover:text-[#00D9F5] transition-colors">Planes & Precios</a>
+        <a href="#registro-prospectos" class="hover:text-[#00D9F5] transition-colors">Pre-Inscripción</a>
+        <a href="#sedes" class="hover:text-[#00D9F5] transition-colors">Sedes Activas</a>
       </nav>
 
       <!-- Right Action & Login CTA -->
       <div class="flex items-center gap-3">
-        <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-xs text-slate-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div class="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-cyan-400/20 text-xs text-slate-400">
+          <span class="w-2 h-2 rounded-full bg-[#00F5A0] animate-pulse"></span>
           <span>Red Activa: <strong>3 Sedes</strong></span>
         </div>
 
-        <button 
-          id="btn-open-login" 
-          onclick="openLoginModal()" 
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-95 transition-all duration-200"
+        <button
+          id="btn-solicitar-demo"
+          type="button"
+          onclick="openDemoLeadModal()"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black btn-pros text-slate-950 shadow-lg shadow-cyan-500/25 hover:shadow-emerald-400/40 hover:scale-[1.02] active:scale-95 transition-all duration-200"
+        >
+          Solicitar Demo
+        </button>
+
+        <a
+          id="btn-open-login"
+          href="/dashboard"
+          onclick="bypassClubAccess(event)"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-transparent text-white border border-cyan-400/30 hover:border-[#00F5A0] hover:bg-white/5 hover:scale-[1.02] active:scale-95 transition-all duration-200"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
           </svg>
           <span>Ingresar al Club</span>
-        </button>
+        </a>
       </div>
 
     </div>
@@ -131,39 +176,39 @@
         <div class="text-center max-w-4xl mx-auto space-y-6">
           
           <!-- Announcement Pill -->
-          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-emerald-500/30 text-xs font-semibold text-emerald-400 shadow-inner">
-            <span class="flex h-2 w-2 rounded-full bg-emerald-400"></span>
-            <span>Motor Predictivo de Yield Management v2.5 Liberado</span>
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#050b14]/90 border border-cyan-400/30 text-xs font-semibold text-[#00D9F5] shadow-inner">
+            <span class="flex h-2 w-2 rounded-full bg-[#00F5A0]"></span>
+            <span>Revenue Management algorítmico para operadores de alto volumen</span>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </div>
 
           <!-- Hero Title -->
           <h1 class="text-4xl sm:text-6xl lg:text-7xl font-display font-black tracking-tight leading-[1.08] text-white">
-            Maximiza el <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">RevPAST</span> de tus Canchas de Pádel
+            <span class="text-pros">Offer Excellence en Clubes Deportivos.</span>
           </h1>
 
           <!-- Hero Subtitle -->
-          <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-            El sistema operativo definitivo para clubes deportivos: Algoritmo predictivo de Yield Management por ocupación histórica, franja horaria y tarifas de competidores directos, <strong class="text-emerald-400">Bot de WhatsApp con Holds de 10 min anti-no-show</strong>, CRM con rankings de 1ra a 6ta y multisede centralizada.
+          <p class="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed font-normal">
+            Maximiza el RevPAST de tus canchas con Revenue Management algorítmico, reservas nativas por WhatsApp e inteligencia de mercado en tiempo real.
           </p>
 
           <!-- Hero Action Buttons -->
           <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <button 
-              onclick="openLoginModal()" 
-              class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.03] transition-all duration-200 flex items-center justify-center gap-3"
+            <a
+              href="/dashboard"
+              onclick="bypassClubAccess(event)"
+              class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-black btn-pros text-slate-950 shadow-xl shadow-cyan-500/25 hover:shadow-emerald-400/40 hover:scale-[1.03] transition-all duration-200 flex items-center justify-center gap-3"
             >
-              <span>Acceder al Portal del Club</span>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-            </button>
-
-            <a 
-              href="#features" 
-              class="w-full sm:w-auto px-7 py-4 rounded-2xl text-base font-semibold bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 transition-all duration-200 flex items-center justify-center gap-2"
-            >
-              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              <span>Conocer las 4 Claves</span>
+              <span>🚀 Ver Demo en Vivo</span>
             </a>
+
+            <button
+              type="button"
+              onclick="openPlayerSignupModal()"
+              class="w-full sm:w-auto px-7 py-4 rounded-2xl text-base font-semibold bg-[#0b1528]/80 hover:bg-[#10203a] text-slate-200 border border-cyan-400/25 hover:border-[#00F5A0] transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <span>🎾 Inscribirse como Jugador</span>
+            </button>
           </div>
 
           <!-- Trust Badges / Stats Strip -->
@@ -670,6 +715,10 @@
       <h3 class="text-2xl font-black tracking-tight text-white mb-1">Ingresar al Club</h3>
       <p class="text-xs text-slate-400 mb-6">Selecciona tu sede deportiva e ingresa al sistema operativo.</p>
 
+      <div id="login-error-alert" class="hidden mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold">
+        <span id="login-error-text">Credenciales no válidas.</span>
+      </div>
+
       <!-- Formulario de acceso directo sin credenciales -->
       <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
         
@@ -677,9 +726,9 @@
         <div>
           <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Sede Deportiva / Club</label>
           <select id="login-club-select" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400 transition" style="background-color: #1e293b !important; color: #ffffff !important;">
-            <option value="1">Capital Pádel Club – Maloka</option>
-            <option value="2">Bogotá Pádel Center</option>
-            <option value="3">PadelTown Salitre</option>
+            <option value="2756f34a-7d24-4815-9f7e-6ed125ea5de7">Capital Pádel Club – Maloka</option>
+            <option value="b8a7c290-53e1-4822-9214-9b16548d90e2">Pádel Indoor 127 – Cedritos</option>
+            <option value="f47ac10b-58cc-4372-a567-0e02b2c3d479">Country Padel Arena – Chía</option>
           </select>
         </div>
 
@@ -696,8 +745,9 @@
         </div>
 
         <!-- Botón Iniciar Sesión Directo -->
-        <button type="submit" id="btn-do-login" class="w-full mt-2 py-3 px-4 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2">
-          <span>Iniciar Sesión en el Club</span>
+        <button type="submit" id="btn-do-login" class="w-full mt-2 py-3 px-4 btn-pros text-slate-950 font-black text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+          <span id="btn-login-spinner" class="hidden w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+          <span id="btn-login-text">Iniciar Sesión en el Club</span>
           <span>→</span>
         </button>
       </form>
@@ -723,112 +773,112 @@
     </div>
   </div>
 
-
-      <!-- Login Form -->
-      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
-        
-        <!-- Sede / Club Selector -->
-        <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
-            Sede Deportiva / Club
-          </label>
-          <div class="relative">
-            <select 
-              id="login-club-select" 
-              class="w-full px-3.5 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors appearance-none cursor-pointer"
-              required
-            >
-              <option value="2756f34a-7d24-4815-9f7e-6ed125ea5de7">Capital Pádel Club – Maloka</option>
-              <option value="b8a7c290-53e1-4822-9214-9b16548d90e2">Pádel Indoor 127 – Cedritos</option>
-              <option value="f47ac10b-58cc-4372-a567-0e02b2c3d479">Country Padel Arena – Chía</option>
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </div>
-          </div>
-        </div>
-
-        <!-- Usuario / Email Input -->
-        <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
-            Usuario o Correo
-          </label>
-          <input 
-            type="text" 
-            id="login-username" 
-            required 
-            placeholder="ej. admin o recepcion" 
-            class="w-full px-3.5 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
-          />
-        </div>
-
-        <!-- Contraseña Input -->
-        <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
-            Contraseña
-          </label>
-          <div class="relative">
-            <input 
-              type="password" 
-              id="login-password" 
-              required 
-              placeholder="••••••••" 
-              class="w-full px-3.5 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors pr-10"
-            />
-            <button 
-              type="button" 
-              onclick="togglePasswordVisibility()" 
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200"
-            >
-              <svg id="icon-eye" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Submit Button -->
-        <button 
-          type="submit" 
-          id="btn-do-login" 
-          class="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/35 transition-all flex items-center justify-center gap-2 mt-2"
-        >
-          <span id="btn-login-spinner" class="hidden w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
-          <span id="btn-login-text">Iniciar Sesión en el Club</span>
-        </button>
-
-      </form>
-
-      <!-- Quick Test Chips -->
-      <div class="pt-3 border-t border-slate-800/80">
-        <div class="text-[11px] text-slate-400 font-medium mb-2 flex items-center justify-between">
-          <span>Accesos Rápidos de Prueba:</span>
-          <span class="text-emerald-400 text-[10px]">Autollenado 1-Click</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          
-          <button 
-            type="button" 
-            onclick="fillCredentials('admin', 'admin123', '2756f34a-7d24-4815-9f7e-6ed125ea5de7')"
-            class="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-emerald-500/50 text-left transition-colors group"
-          >
-            <div class="text-xs font-bold text-white group-hover:text-emerald-400">👑 Administrador</div>
-            <div class="text-[10px] text-slate-400">admin / admin123</div>
-          </button>
-
-          <button 
-            type="button" 
-            onclick="fillCredentials('recepcion', 'recepcion123', '2756f34a-7d24-4815-9f7e-6ed125ea5de7')"
-            class="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-teal-500/50 text-left transition-colors group"
-          >
-            <div class="text-xs font-bold text-white group-hover:text-teal-400">🎾 Recepción / Staff</div>
-            <div class="text-[10px] text-slate-400">recepcion / recepcion123</div>
-          </button>
-
-        </div>
+  <!-- MODAL SOLICITAR DEMO B2B -->
+  <div id="modal-demo-lead" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#050b14]/88 backdrop-blur-md hidden">
+    <div class="relative w-full max-w-lg bg-[#0b1528] border border-cyan-400/25 rounded-3xl shadow-2xl p-6 sm:p-8 text-white z-10">
+      <button type="button" onclick="closeDemoLeadModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+        ✕
+      </button>
+      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-cyan-400/10 text-[#00D9F5] border border-cyan-400/25 mb-3 uppercase tracking-widest">
+        Demo PROS Revenue
       </div>
+      <h3 class="text-2xl font-black tracking-tight text-white mb-1">Solicitar Demo</h3>
+      <p class="text-xs text-slate-400 mb-6">Agenda una sesión con el equipo comercial y ve el motor de RevPAST operando en vivo.</p>
 
+      <form id="demo-lead-form" onsubmit="handleDemoLeadSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Nombre del operador</label>
+          <input type="text" id="demo-lead-name" required placeholder="ej. Laura Restrepo" class="w-full bg-[#050b14] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#00D9F5] transition" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">WhatsApp</label>
+            <input type="tel" id="demo-lead-phone" required placeholder="+57 300 123 4567" class="w-full bg-[#050b14] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#00D9F5] transition" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Club / Sede</label>
+            <input type="text" id="demo-lead-club" required placeholder="Nombre del club" class="w-full bg-[#050b14] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#00D9F5] transition" />
+          </div>
+        </div>
+        <button type="submit" id="btn-submit-demo-lead" class="w-full py-3.5 rounded-xl text-sm font-black btn-pros text-slate-950 shadow-lg shadow-cyan-500/20 transition">
+          Enviar solicitud de demo
+        </button>
+        <div id="demo-lead-success-alert" class="hidden p-3 rounded-xl bg-emerald-500/15 border border-emerald-400/30 text-[#00F5A0] text-xs font-semibold text-center">
+          ✓ Solicitud recibida. El equipo comercial te contactará para agendar la demo.
+        </div>
+      </form>
     </div>
-
   </div>
+
+  <!-- MODAL INSCRIPCIÓN MULTIDEPORTE -->
+  <div id="modal-player-signup" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#050b14]/88 backdrop-blur-md hidden">
+    <div class="relative w-full max-w-lg bg-[#0b1528] border border-cyan-400/25 rounded-3xl shadow-2xl p-6 sm:p-8 text-white z-10">
+      <button type="button" onclick="closePlayerSignupModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+        ✕
+      </button>
+      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-400/10 text-[#00F5A0] border border-emerald-400/25 mb-3 uppercase tracking-widest">
+        Inscripción de Jugador
+      </div>
+      <h3 class="text-2xl font-black tracking-tight text-white mb-1">Inscribirse como Jugador</h3>
+      <p class="text-xs text-slate-400 mb-6">Elige tu disciplina y precarga tu perfil en el CRM del club.</p>
+
+      <form id="player-signup-form" onsubmit="handlePlayerSignupSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Deporte</label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="player-sport-grid">
+            <label class="cursor-pointer">
+              <input type="radio" name="player-sport" value="PADEL" class="peer sr-only" checked />
+              <span class="block text-center text-xs font-bold rounded-xl border border-slate-700 bg-[#050b14] px-3 py-2.5 peer-checked:border-[#00D9F5] peer-checked:text-[#00D9F5] peer-checked:bg-cyan-400/10">🎾 Pádel</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="player-sport" value="PICKLEBALL" class="peer sr-only" />
+              <span class="block text-center text-xs font-bold rounded-xl border border-slate-700 bg-[#050b14] px-3 py-2.5 peer-checked:border-[#00D9F5] peer-checked:text-[#00D9F5] peer-checked:bg-cyan-400/10">🥒 Pickleball</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="player-sport" value="VOLLEYBALL" class="peer sr-only" />
+              <span class="block text-center text-xs font-bold rounded-xl border border-slate-700 bg-[#050b14] px-3 py-2.5 peer-checked:border-[#00D9F5] peer-checked:text-[#00D9F5] peer-checked:bg-cyan-400/10">🏐 Vóley</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="player-sport" value="PILATES" class="peer sr-only" />
+              <span class="block text-center text-xs font-bold rounded-xl border border-slate-700 bg-[#050b14] px-3 py-2.5 peer-checked:border-[#00D9F5] peer-checked:text-[#00D9F5] peer-checked:bg-cyan-400/10">🧘 Pilates</span>
+            </label>
+            <label class="cursor-pointer col-span-2 sm:col-span-1">
+              <input type="radio" name="player-sport" value="CONSOLE" class="peer sr-only" />
+              <span class="block text-center text-xs font-bold rounded-xl border border-slate-700 bg-[#050b14] px-3 py-2.5 peer-checked:border-[#00D9F5] peer-checked:text-[#00D9F5] peer-checked:bg-cyan-400/10">🎮 Consola</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Nombre Completo</label>
+          <input type="text" id="player-signup-name" required placeholder="ej. Mateo Gómez" class="w-full bg-[#050b14] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#00D9F5] transition" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Teléfono (+57)</label>
+            <input type="tel" id="player-signup-phone" required placeholder="+57 300 123 4567" class="w-full bg-[#050b14] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#00D9F5] transition" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Categoría</label>
+            <select id="player-signup-category" class="w-full bg-[#050b14] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#00D9F5] transition">
+              <option value="1ra">1ra Categoría</option>
+              <option value="2da">2da Categoría</option>
+              <option value="3ra">3ra Categoría</option>
+              <option value="4ta" selected>4ta Categoría</option>
+              <option value="5ta">5ta Categoría</option>
+              <option value="6ta">6ta Categoría</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" id="btn-submit-player-signup" class="w-full py-3.5 rounded-xl text-sm font-black btn-pros text-slate-950 shadow-lg shadow-cyan-500/20 transition">
+          Confirmar inscripción
+        </button>
+        <div id="player-signup-success-alert" class="hidden p-3 rounded-xl bg-emerald-500/15 border border-emerald-400/30 text-[#00F5A0] text-xs font-semibold text-center">
+          ✓ Jugador inscrito. Tu perfil quedó precargado en el CRM del club.
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   <!-- INTERACTION SCRIPTS -->
   <script>
@@ -887,6 +937,7 @@
           const clubs = await res.json();
           if (clubs && clubs.length > 0) {
             const selectEl = document.getElementById('login-club-select');
+            if (!selectEl) return;
             selectEl.innerHTML = '';
             clubs.forEach((c, idx) => {
               const opt = document.createElement('option');
@@ -902,18 +953,59 @@
       }
     }
 
-    function openLoginModal() {
-      const modal = document.getElementById('login-modal');
+    function bypassClubAccess(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      localStorage.setItem('user_role', 'ADMIN');
+      localStorage.setItem('user_name', 'Administrador General');
+      window.location.href = '/dashboard';
+      return false;
+    }
+
+    function openModalById(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
       modal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
-      document.getElementById('login-username').focus();
+    }
+
+    function closeModalById(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.classList.add('hidden');
+      if (!document.querySelector('.fixed.inset-0.z-50:not(.hidden)')) {
+        document.body.classList.remove('overflow-hidden');
+      }
+    }
+
+    function openLoginModal() {
+      openModalById('login-modal');
+      const username = document.getElementById('login-username');
+      if (username) username.focus();
     }
 
     function closeLoginModal() {
-      const modal = document.getElementById('login-modal');
-      modal.classList.add('hidden');
-      document.body.classList.remove('overflow-hidden');
+      closeModalById('login-modal');
       hideError();
+    }
+
+    function openDemoLeadModal() {
+      openModalById('modal-demo-lead');
+      const nameEl = document.getElementById('demo-lead-name');
+      if (nameEl) nameEl.focus();
+    }
+
+    function closeDemoLeadModal() {
+      closeModalById('modal-demo-lead');
+    }
+
+    function openPlayerSignupModal() {
+      openModalById('modal-player-signup');
+      const nameEl = document.getElementById('player-signup-name');
+      if (nameEl) nameEl.focus();
+    }
+
+    function closePlayerSignupModal() {
+      closeModalById('modal-player-signup');
     }
 
     function openLoginForClub(clubId) {
@@ -926,6 +1018,7 @@
 
     function togglePasswordVisibility() {
       const pwd = document.getElementById('login-password');
+      if (!pwd) return;
       if (pwd.type === 'password') {
         pwd.type = 'text';
       } else {
@@ -934,51 +1027,136 @@
     }
 
     function fillCredentials(user, pass, clubId) {
-      document.getElementById('login-username').value = user;
-      document.getElementById('login-password').value = pass;
+      const username = document.getElementById('login-username');
+      const password = document.getElementById('login-password');
+      if (username) username.value = user;
+      if (password) password.value = pass;
       if (clubId) {
-        document.getElementById('login-club-select').value = clubId;
+        const selectEl = document.getElementById('login-club-select');
+        if (selectEl) selectEl.value = clubId;
       }
       hideError();
+    }
+
+    function quickFillAndLogin(role) {
+      if (role === 'recepcion') {
+        fillCredentials('recepcion', 'recepcion123');
+      } else {
+        fillCredentials('admin', 'admin123');
+      }
+      handleLogin();
     }
 
     function showError(msg) {
       const alertBox = document.getElementById('login-error-alert');
       const textEl = document.getElementById('login-error-text');
-      textEl.textContent = msg || 'Credenciales no válidas.';
-      alertBox.classList.remove('hidden');
+      if (textEl) textEl.textContent = msg || 'Credenciales no válidas.';
+      if (alertBox) alertBox.classList.remove('hidden');
     }
 
     function hideError() {
       const alertBox = document.getElementById('login-error-alert');
-      alertBox.classList.add('hidden');
+      if (alertBox) alertBox.classList.add('hidden');
     }
 
-function handleLogin(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    // Bypass: guardar sesión mock de administrador para la UI
-    localStorage.setItem('user_role', 'ADMIN');
-    localStorage.setItem('user_name', 'Administrador General');
-    // Redirigir de inmediato al dashboard
-    window.location.href = '/dashboard';
-    return false;
-  }
-
-  // Modal background click closes modal
-  document.getElementById('login-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-      closeLoginModal();
+    function handleLogin(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      localStorage.setItem('user_role', 'ADMIN');
+      localStorage.setItem('user_name', 'Administrador General');
+      window.location.href = '/dashboard';
+      return false;
     }
-  });
 
-  // Check URL query or hash for ?login=true or #login
-  window.addEventListener('DOMContentLoaded', () => {
-    loadPublicClubs();
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('login') === 'true' || window.location.hash === '#login') {
-      openLoginModal();
+    async function postLeadPayload(payload, btn, alertEl, form) {
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+      }
+      try {
+        const res = await fetch('/api/v1/customers/register-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          if (alertEl) alertEl.classList.remove('hidden');
+          if (form) form.reset();
+        } else {
+          alert('No se pudo registrar el prospecto.');
+        }
+      } catch (err) {
+        console.error('Error al registrar lead:', err);
+        alert('Error de conexión al registrar prospecto.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        }
+      }
     }
-  });
-</script>
+
+    async function handleDemoLeadSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const nameEl = document.getElementById('demo-lead-name');
+      const phoneEl = document.getElementById('demo-lead-phone');
+      const clubEl = document.getElementById('demo-lead-club');
+      if (!nameEl || !phoneEl) return false;
+      const name = nameEl.value.trim();
+      const phone = phoneEl.value.trim();
+      const club_name = clubEl ? clubEl.value.trim() : '';
+      if (!name || !phone) return false;
+      await postLeadPayload(
+        { name, phone, category: '4ta', club_name: club_name ? `Demo B2B · ${club_name}` : 'Demo B2B Landing' },
+        document.getElementById('btn-submit-demo-lead'),
+        document.getElementById('demo-lead-success-alert'),
+        document.getElementById('demo-lead-form')
+      );
+      return false;
+    }
+
+    async function handlePlayerSignupSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const nameEl = document.getElementById('player-signup-name');
+      const phoneEl = document.getElementById('player-signup-phone');
+      const categoryEl = document.getElementById('player-signup-category');
+      const sportEl = document.querySelector('input[name="player-sport"]:checked');
+      if (!nameEl || !phoneEl) return false;
+      const name = nameEl.value.trim();
+      const phone = phoneEl.value.trim();
+      const category = categoryEl ? categoryEl.value : '4ta';
+      const sport = sportEl ? sportEl.value : 'PADEL';
+      if (!name || !phone) return false;
+      await postLeadPayload(
+        { name, phone, category, club_name: `Inscripción Jugador · ${sport}` },
+        document.getElementById('btn-submit-player-signup'),
+        document.getElementById('player-signup-success-alert'),
+        document.getElementById('player-signup-form')
+      );
+      return false;
+    }
+
+    function bindModalBackdrop(id, closer) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) closer();
+      });
+    }
+
+    bindModalBackdrop('login-modal', closeLoginModal);
+    bindModalBackdrop('modal-demo-lead', closeDemoLeadModal);
+    bindModalBackdrop('modal-player-signup', closePlayerSignupModal);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPublicClubs();
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('login') === 'true' || window.location.hash === '#login') {
+        openLoginModal();
+      }
+      if (params.get('demo') === 'true' || window.location.hash === '#modal-demo-lead') {
+        openDemoLeadModal();
+      }
+    });
+  </script>
 </body>
 </html>

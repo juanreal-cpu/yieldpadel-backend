@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import date, timedelta
 from typing import List, Optional
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
@@ -10,6 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.timezone import get_bogota_today
+from app.core.config import settings
 from app.models.slot import TimeSlot
 from app.services.whatsapp import (
     MESSAGES_CACHE,
@@ -36,6 +38,65 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 VERIFY_TOKEN = "yieldpadel_secret_token_2026"
+VOICEFLOW_DIALOG_URL = "https://general-runtime.voiceflow.com/state/user/{user_id}/interact"
+
+
+def _extract_voiceflow_text_messages(traces) -> List[str]:
+    """Recorre traces de Voiceflow y extrae mensajes tipo text."""
+    if isinstance(traces, dict):
+        traces = traces.get("traces") or traces.get("trace") or []
+    if not isinstance(traces, list):
+        return []
+
+    messages: List[str] = []
+    for trace in traces:
+        if not isinstance(trace, dict):
+            continue
+        if str(trace.get("type") or "").lower() != "text":
+            continue
+        payload_obj = trace.get("payload") or {}
+        if isinstance(payload_obj, dict):
+            message = payload_obj.get("message")
+            if message:
+                messages.append(str(message))
+        elif isinstance(payload_obj, str) and payload_obj.strip():
+            messages.append(payload_obj)
+    return messages
+
+
+async def interact_with_voiceflow(sender_phone: str, text_body: str) -> List[str]:
+    """
+    Llama a la Dialog API de Voiceflow y retorna los mensajes de texto a despachar.
+    """
+    api_key = os.getenv("VOICEFLOW_API_KEY") or getattr(settings, "VOICEFLOW_API_KEY", None) or "TU_VOICEFLOW_API_KEY"
+    url = VOICEFLOW_DIALOG_URL.format(user_id=sender_phone)
+    headers = {
+        "Authorization": api_key,
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "action": {"type": "text", "payload": text_body},
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        resp = await client.post(url, json=payload, headers=headers)
+        resp.raise_for_status()
+        return _extract_voiceflow_text_messages(resp.json())
+
+
+async def route_incoming_text_to_voiceflow(sender_phone: str, text_body: str, raw_from: str, db: AsyncSession) -> bool:
+    """
+    Enruta un mensaje de texto a Voiceflow y despacha cada trace text vía Meta Graph API.
+    Retorna True si se despachó al menos un mensaje; False para activar el fallback local.
+    """
+    vf_messages = await interact_with_voiceflow(sender_phone, text_body)
+    dispatched = False
+    for vf_msg in vf_messages:
+        if not vf_msg:
+            continue
+        await log_conversation_message(db, sender_phone, vf_msg, direction="bot")
+        await send_whatsapp_message(to_phone=raw_from, message_body=vf_msg)
+        dispatched = True
+    return dispatched
 
 
 class SimulateWhatsAppMessage(BaseModel):
@@ -145,8 +206,25 @@ async def receive_webhook(
                         player_name=sender_name, increment_unread=False,
                     )
 
-                    # Enrutar: mensajes con raquetas (🎾) o comandos rígidos ('voy'/'me bajo')
-                    # van al flujo transaccional existente; el resto lo atiende el concierge IA.
+                    # Voiceflow Dialog API: enruta el texto entrante y despacha traces tipo text.
+                    # Si Voiceflow falla o no responde, se usa el motor local (transaccional/concierge)
+                    # para no bloquear el HTTP 200 que Meta requiere.
+                    voiceflow_handled = False
+                    try:
+                        voiceflow_handled = await route_incoming_text_to_voiceflow(
+                            sender_phone=sender_phone,
+                            text_body=message_text,
+                            raw_from=raw_from,
+                            db=db,
+                        )
+                    except Exception as vf_err:
+                        logger.warning(f"Voiceflow Dialog API fallback para {sender_phone}: {vf_err}")
+                        print(f"[VOICEFLOW FALLBACK] {vf_err}")
+
+                    if voiceflow_handled:
+                        continue
+
+                    # Fallback local: mensajes transaccionales (🎾 / voy / me bajo) o concierge IA.
                     if is_transactional_message(message_text):
                         reply_text = await process_incoming_whatsapp_message(
                             db=db,
