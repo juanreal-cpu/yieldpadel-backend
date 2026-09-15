@@ -21,13 +21,13 @@ router = APIRouter()
 
 
 class CustomerResponse(BaseModel):
-    id: int
-    name: str
-    phone: str
+    id: Optional[int] = None
+    name: Optional[str] = "Jugador"
+    phone: Optional[str] = ""
     avatar_url: Optional[str] = None
-    category: str
-    client_type: str
-    membership_tier: str = "ESTANDAR"
+    category: Optional[str] = "4ta"
+    client_type: Optional[str] = "Estándar"
+    membership_tier: Optional[str] = "ESTANDAR"
     notes: Optional[str] = None
     gender: Optional[str] = None
     preferred_music: Optional[str] = None
@@ -35,28 +35,28 @@ class CustomerResponse(BaseModel):
     membership_plan_id: Optional[int] = None
     membership_start_date: Optional[str] = None
     membership_end_date: Optional[str] = None
-    days_remaining: int = 0
-    academy_classes_used: int = 0
-    total_bookings_completed: int = 0
-    is_first_visit: bool = True
-    onboarding_status: str = "PENDING"
-    ranking_points: int = 0
-    titles_count: int = 0
-    category_wins: int = 0
-    consecutive_wins: int = 0
-    promotion_recommended: bool = False
+    days_remaining: Optional[int] = 0
+    academy_classes_used: Optional[int] = 0
+    total_bookings_completed: Optional[int] = 0
+    is_first_visit: Optional[bool] = True
+    onboarding_status: Optional[str] = "PENDING"
+    ranking_points: Optional[int] = 0
+    titles_count: Optional[int] = 0
+    category_wins: Optional[int] = 0
+    consecutive_wins: Optional[int] = 0
+    promotion_recommended: Optional[bool] = False
     recommended_category: Optional[str] = None
-    is_minor: bool = False
+    is_minor: Optional[bool] = False
     birth_date: Optional[str] = None
     guardian_id: Optional[int] = None
     guardian_relationship: Optional[str] = None
     guardian_name: Optional[str] = None
     guardian_phone: Optional[str] = None
     plan_name: Optional[str] = None
-    americano_discount_pct: int = 0
-    includes_beverage_perk: bool = False
-    wallet_balance: float = 0.0
-    is_recent: bool = False
+    americano_discount_pct: Optional[int] = 0
+    includes_beverage_perk: Optional[bool] = False
+    wallet_balance: Optional[float] = 0.0
+    is_recent: Optional[bool] = False
     last_booking_date: Optional[str] = None
     email: Optional[str] = None
     status: Optional[str] = "success"
@@ -302,7 +302,7 @@ INITIAL_CUSTOMERS_SEED = [
     },
     {
         "name": "Lucas Real (Kid)",
-        "phone": "+573132058547",
+        "phone": "+573132058548",
         "category": "6ta",
         "client_type": "Semillero Kids",
         "membership_tier": "ESTANDAR",
@@ -317,17 +317,28 @@ INITIAL_CUSTOMERS_SEED = [
 
 async def ensure_initial_customers(db: AsyncSession):
     for c_data in INITIAL_CUSTOMERS_SEED:
-        stmt = select(Customer).where(Customer.name == c_data["name"])
-        res = await db.execute(stmt)
-        existing = res.scalars().first()
-        if not existing:
-            new_cust = Customer(**c_data)
-            db.add(new_cust)
-        else:
-            for k, v in c_data.items():
-                if getattr(existing, k, None) is None and v is not None:
-                    setattr(existing, k, v)
-    await db.commit()
+        try:
+            stmt = select(Customer).where(
+                or_(
+                    Customer.name == c_data["name"],
+                    Customer.phone == c_data["phone"]
+                )
+            )
+            res = await db.execute(stmt)
+            existing = res.scalars().first()
+            if not existing:
+                new_cust = Customer(**c_data)
+                db.add(new_cust)
+                await db.commit()
+            else:
+                for k, v in c_data.items():
+                    if getattr(existing, k, None) is None and v is not None:
+                        setattr(existing, k, v)
+                await db.commit()
+        except IntegrityError:
+            await db.rollback()
+        except Exception:
+            await db.rollback()
 
     # Vincular Lucas Real con Juan Real Florez si no tiene guardian_id
     kid_stmt = select(Customer).where(Customer.name.ilike("%Lucas Real%"))
