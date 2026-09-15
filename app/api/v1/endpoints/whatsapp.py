@@ -1,8 +1,9 @@
 import logging
 import os
 import re
+import traceback
 from datetime import date, datetime, time, timedelta
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
@@ -143,12 +144,8 @@ async def dispatch_voiceflow_replies(
             await log_conversation_message(db, log_phone, vf_msg, direction="bot")
             await send_whatsapp_message(to_phone=raw_from, message_body=vf_msg)
     except Exception as vf_err:
-        logger.error(
-            "Voiceflow Dialog API error for %s: %s",
-            sender_phone,
-            vf_err,
-            exc_info=True,
-        )
+        logger.error("[VOICEFLOW TEXT EXCEPT] %s", vf_err)
+        logger.error(traceback.format_exc())
         await log_conversation_message(db, log_phone, VOICEFLOW_FALLBACK_MESSAGE, direction="bot")
         await send_whatsapp_message(to_phone=raw_from, message_body=VOICEFLOW_FALLBACK_MESSAGE)
 
@@ -324,6 +321,164 @@ class SelectSlotRequest(BaseModel):
     sender_name: Optional[str] = None
 
 
+def _is_audio_message(msg_type: str, msg: dict) -> bool:
+    """True solo si el mensaje ES una nota de voz. El type=text nunca entra al flujo de audio."""
+    t = (msg_type or "").strip().lower()
+    if t == "text":
+        return False
+    if t in ("audio", "voice"):
+        return True
+    if t:
+        return False
+    audio_obj = msg.get("audio") if isinstance(msg, dict) else None
+    voice_obj = msg.get("voice") if isinstance(msg, dict) else None
+    return isinstance(audio_obj, dict) or isinstance(voice_obj, dict)
+
+
+def _safe_text_body(msg: dict) -> str:
+    text_obj = msg.get("text") if isinstance(msg, dict) else None
+    if isinstance(text_obj, dict):
+        return str(text_obj.get("body") or "").strip()
+    if isinstance(text_obj, str):
+        return text_obj.strip()
+    return ""
+
+
+async def _persist_inbox_immediately(
+    db: AsyncSession,
+    sender_phone: str,
+    body: str,
+    sender_name: Optional[str] = None,
+) -> None:
+    """Guarda el mensaje en DB al instante. Un fallo de VF/Gemini no debe dejar el inbox vacío."""
+    try:
+        await log_conversation_message(
+            db,
+            sender_phone,
+            body or "[mensaje vacío]",
+            direction="incoming",
+            player_name=sender_name,
+            increment_unread=True,
+        )
+    except Exception as persist_err:
+        logger.error("[INBOX PERSIST EXCEPT] %s", persist_err)
+        logger.error(traceback.format_exc())
+
+
+async def _route_text_message(
+    db: AsyncSession,
+    sender_phone: str,
+    sender_name: Optional[str],
+    raw_from: str,
+    message_text: str,
+    msg: dict,
+    msg_id: Optional[str],
+) -> None:
+    """Flujo de texto: comandos nativos, disponibilidad, Voiceflow. Sin descarga de audio."""
+    if msg_id:
+        MESSAGES_CACHE[msg_id] = message_text
+
+    context = msg.get("context") if isinstance(msg, dict) else {}
+    if not isinstance(context, dict):
+        context = {}
+    quoted_text = None
+    quoted_msg = context.get("quoted_message")
+    if isinstance(quoted_msg, dict):
+        quoted_text = quoted_msg.get("body")
+        inner = quoted_msg.get("text")
+        if not quoted_text and isinstance(inner, dict):
+            quoted_text = inner.get("body")
+    if not quoted_text:
+        quoted_text = context.get("body") or context.get("text")
+    if not quoted_text and context.get("id"):
+        quoted_text = MESSAGES_CACHE.get(context.get("id"))
+
+    logger.info("[WHATSAPP TEXT] %s (%s): '%s'", sender_phone, sender_name, message_text)
+
+    paused = await is_conversation_paused(db, sender_phone)
+    if paused:
+        wait_reply = await handle_human_wait_turn(db, sender_phone, message_text)
+        if wait_reply:
+            await log_conversation_message(db, sender_phone, wait_reply, direction="bot")
+            await send_whatsapp_message(to_phone=raw_from, message_body=wait_reply)
+        return
+
+    session = get_session(sender_phone)
+
+    if is_transactional_message(message_text):
+        reply_text = await process_incoming_whatsapp_message(
+            db=db,
+            sender_phone=sender_phone,
+            sender_name=sender_name,
+            raw_text=message_text,
+            quoted_text=quoted_text,
+            context=context,
+        )
+        if reply_text:
+            logger.info("[WHATSAPP OUTGOING PREPARED]:\n%s\n", reply_text)
+            await log_conversation_message(db, sender_phone, reply_text, direction="bot")
+            await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
+        return
+
+    if SLOT_SELECTION_REGEX.match(message_text) and (
+        session.get("last_offered_slots") or session.get("pending_mode_slot_id")
+    ):
+        reply_text = await handle_sport_and_booking_flow(
+            db, sender_phone, sender_name, message_text.strip(), session
+        )
+        if reply_text:
+            await log_conversation_message(db, sender_phone, reply_text, direction="bot")
+            await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
+        return
+
+    if AVAILABILITY_INTENT_REGEX.search(message_text):
+        availability = await lookup_available_slots(
+            db,
+            sender_phone=sender_phone,
+            message_text=message_text,
+        )
+        reply_text = availability.get("whatsapp_text") or VOICEFLOW_FALLBACK_MESSAGE
+        await log_conversation_message(db, sender_phone, reply_text, direction="bot")
+        await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
+        return
+
+    vf_user_id = raw_from.lstrip("+")
+    await dispatch_voiceflow_replies(
+        sender_phone=vf_user_id,
+        message_text=message_text,
+        raw_from=raw_from,
+        db=db,
+        conversation_phone=sender_phone,
+    )
+
+
+async def _transcribe_inbound_audio(msg: dict) -> Tuple[str, str]:
+    """Descarga (2 pasos Meta) y transcribe. No se llama nunca para type=text."""
+    audio_obj = msg.get("audio") or msg.get("voice") or {}
+    if not isinstance(audio_obj, dict):
+        audio_obj = {}
+    media_id = audio_obj.get("id")
+    media_url = audio_obj.get("url")
+    mime_type = audio_obj.get("mime_type") or "audio/ogg"
+
+    if media_id:
+        logger.info("[AUDIO STT] Resolviendo media_id=%s (2-step Meta v17)", media_id)
+        audio_bytes, mime_from_meta = await download_whatsapp_media_by_id(str(media_id))
+        if mime_from_meta:
+            mime_type = mime_from_meta
+    elif media_url:
+        logger.info("[AUDIO STT] Descargando audio desde URL directa")
+        audio_bytes = await download_whatsapp_media(media_url, mime_type=mime_type)
+    else:
+        raise ValueError("El payload de audio no trae media_id ni url")
+
+    logger.info("[AUDIO STT] Transcribiendo audio (%s bytes) con Gemini 1.5 Flash...", len(audio_bytes))
+    transcription = await transcribe_audio_with_gemini(audio_bytes, mime_type=mime_type)
+    if not transcription or not str(transcription).strip():
+        raise ValueError("Transcripción vacía")
+    return str(transcription).strip(), mime_type
+
+
 @router.get("/webhook")
 async def verify_webhook(request: Request):
     """Verificación de webhook requerida por Meta Cloud API."""
@@ -343,189 +498,142 @@ async def receive_webhook(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Recepción de eventos de WhatsApp Cloud API (Meta).
-    Extrae contexto de mensaje citado ('context') y despacha intenciones con mutabilidad estricta.
+    Recepción de eventos de WhatsApp Cloud API (Meta) y Twilio.
+    1) Persiste el mensaje en inbox inmediatamente.
+    2) Texto → Voiceflow / flujos nativos (nunca descarga audio).
+    3) Audio → Meta 2-step + Gemini STT.
     """
     try:
-        body = await request.json()
-        logger.info(f"Incoming WhatsApp webhook payload: {body}")
+        body: Dict[str, Any] = {}
+        form = None
+        content_type = (request.headers.get("content-type") or "").lower()
+        if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+            form = await request.form()
+        else:
+            try:
+                parsed = await request.json()
+                body = parsed if isinstance(parsed, dict) else {}
+            except Exception:
+                try:
+                    form = await request.form()
+                except Exception:
+                    form = None
 
-        entries = body.get("entry", [])
+        inbound_messages: List[dict] = []
+
+        # Twilio (form)
+        if form is not None and (form.get("From") or form.get("Body") or form.get("MediaUrl0")):
+            raw_from = str(form.get("From") or "").replace("whatsapp:", "").strip()
+            media_url = str(form.get("MediaUrl0") or "").strip()
+            media_ctype = str(form.get("MediaContentType0") or "").strip().lower()
+            body_text = str(form.get("Body") or "").strip()
+            is_audio = media_ctype.startswith("audio") or (bool(media_url) and not body_text)
+            inbound_messages.append({
+                "id": str(form.get("MessageSid") or ""),
+                "from": raw_from,
+                "type": "audio" if is_audio else "text",
+                "text": {"body": body_text},
+                "audio": {"url": media_url, "mime_type": media_ctype or "audio/ogg"} if is_audio else None,
+                "profile_name": str(form.get("ProfileName") or ""),
+            })
+
+        # Meta Cloud API (JSON)
+        entries = body.get("entry", []) if isinstance(body, dict) else []
         for entry in entries:
-            changes = entry.get("changes", [])
-            for change in changes:
-                value = change.get("value", {})
-                contacts = value.get("contacts", [])
+            if not isinstance(entry, dict):
+                continue
+            for change in entry.get("changes", []) or []:
+                if not isinstance(change, dict):
+                    continue
+                value = change.get("value", {}) or {}
+                contacts = value.get("contacts", []) or []
                 contact_map = {}
                 for c in contacts:
+                    if not isinstance(c, dict):
+                        continue
                     wa_id = c.get("wa_id")
-                    profile_name = c.get("profile", {}).get("name")
+                    profile_name = (c.get("profile") or {}).get("name")
                     if wa_id and profile_name:
-                        contact_map[wa_id] = profile_name
+                        contact_map[str(wa_id)] = profile_name
 
-                messages = value.get("messages", [])
+                messages = value.get("messages") or []
+                if isinstance(messages, dict):
+                    messages = list(messages.values())
+                if not isinstance(messages, list):
+                    continue
                 for msg in messages:
-                    msg_id = msg.get("id")
-                    raw_from = msg.get("from", "")
-                    if not raw_from:
+                    if not isinstance(msg, dict):
                         continue
-                    sender_phone = f"+{raw_from}" if not raw_from.startswith("+") else raw_from
-                    sender_name = contact_map.get(raw_from) or contact_map.get(raw_from.lstrip("+"))
+                    raw_from = str(msg.get("from") or "")
+                    msg["_profile_name"] = contact_map.get(raw_from) or contact_map.get(raw_from.lstrip("+"))
+                    inbound_messages.append(msg)
 
-                    msg_type = (msg.get("type") or "").lower()
-                    text_obj = msg.get("text", {})
-                    message_text = text_obj.get("body", "").strip()
+        logger.info("Incoming WhatsApp webhook: %s mensaje(s)", len(inbound_messages))
 
-                    # Intercepción de mensajes de tipo audio o voice (notas de voz)
-                    if msg_type in ["audio", "voice"] or ("audio" in msg or "voice" in msg):
-                        audio_obj = msg.get("audio") or msg.get("voice") or {}
-                        media_url = audio_obj.get("url")
-                        media_id = audio_obj.get("id")
-                        mime_type = audio_obj.get("mime_type") or "audio/ogg"
+        for msg in inbound_messages:
+            raw_from = str(msg.get("from") or "").strip()
+            if not raw_from:
+                continue
+            sender_phone = f"+{raw_from}" if not raw_from.startswith("+") else raw_from
+            sender_name = msg.get("_profile_name") or msg.get("profile_name")
+            msg_type = str(msg.get("type") or "").lower()
+            message_text = _safe_text_body(msg)
+            is_audio = _is_audio_message(msg_type, msg)
 
-                        try:
-                            # Flujo obligatorio Meta Cloud API (2 pasos): media_id → GET Graph → GET url con Bearer.
-                            if media_id:
-                                logger.info(f"[AUDIO STT] Resolviendo media_id={media_id} para {sender_phone} (2-step Meta)")
-                                audio_bytes, mime_from_meta = await download_whatsapp_media_by_id(media_id)
-                                if mime_from_meta:
-                                    mime_type = mime_from_meta
-                            elif media_url:
-                                logger.info(f"[AUDIO STT] Descargando audio para {sender_phone} desde URL directa")
-                                audio_bytes = await download_whatsapp_media(media_url, mime_type=mime_type)
-                            else:
-                                raise ValueError("El payload de audio no trae media_id ni url")
+            inbox_preview = (
+                "[Nota de voz recibida]" if is_audio else (message_text or f"[{msg_type or 'mensaje'}]")
+            )
+            await _persist_inbox_immediately(db, sender_phone, inbox_preview, sender_name)
 
-                            logger.info(f"[AUDIO STT] Transcribiendo audio ({len(audio_bytes)} bytes) con Gemini 1.5 Flash...")
-                            transcription = await transcribe_audio_with_gemini(audio_bytes, mime_type=mime_type)
-                            logger.info(f"[AUDIO STT ÉXITO] Transcripción para {sender_phone}: '{transcription}'")
-
-                            message_text = transcription.strip()
-                        except Exception as stt_err:
-                            logging.error(f"Error procesando audio: {str(stt_err)}")
-                            logger.error(
-                                f"[AUDIO STT ERROR] Error procesando nota de voz de {sender_phone} (media_id: {media_id}, url: {media_url}, mime: {mime_type}): {stt_err}",
-                                exc_info=True
-                            )
-                            await log_conversation_message(
-                                db, sender_phone, "[Nota de voz sin procesar]", direction="incoming",
-                                player_name=sender_name, increment_unread=False,
-                            )
-                            await log_conversation_message(
-                                db, sender_phone, AUDIO_PROCESSING_ERROR_MESSAGE, direction="bot"
-                            )
-                            await send_whatsapp_message(
-                                to_phone=raw_from,
-                                message_body=AUDIO_PROCESSING_ERROR_MESSAGE,
-                            )
-                            continue
-
-                    if not message_text:
-                        continue
-
-                    # Guardar mensaje entrante en cache si tiene ID
-                    if msg_id:
-                        MESSAGES_CACHE[msg_id] = message_text
-
-                    # Extracción precisa del contexto de cita ('context')
-                    context = msg.get("context", {})
-                    quoted_text = None
-                    if context:
-                        quoted_text = (
-                            context.get("quoted_message", {}).get("body")
-                            or context.get("quoted_message", {}).get("text", {}).get("body")
-                            or context.get("body")
-                            or context.get("text")
-                        )
-                        if not quoted_text and context.get("id"):
-                            quoted_text = MESSAGES_CACHE.get(context.get("id"))
-
-                    logger.info(f"[WHATSAPP INCOMING] Mensaje de {sender_phone} ({sender_name}): '{message_text}' | Quoted: {bool(quoted_text)}")
-
-                    # Bandeja humana: registrar el mensaje entrante y respetar la pausa del bot si un asesor está atendiendo
-                    paused = await is_conversation_paused(db, sender_phone)
-                    if paused:
-                        wait_reply = await handle_human_wait_turn(db, sender_phone, message_text)
-                        if wait_reply:
-                            await log_conversation_message(
-                                db, sender_phone, message_text, direction="incoming",
-                                player_name=sender_name, increment_unread=False,
-                            )
-                            await log_conversation_message(db, sender_phone, wait_reply, direction="bot")
-                            await send_whatsapp_message(
-                                to_phone=raw_from,
-                                message_body=wait_reply,
-                            )
-                            continue
-
+            if is_audio:
+                try:
+                    transcription, _mime = await _transcribe_inbound_audio(msg)
+                    logger.info("[AUDIO STT ÉXITO] %s: '%s'", sender_phone, transcription)
+                    await _persist_inbox_immediately(
+                        db, sender_phone, f"[Transcripción] {transcription}", sender_name
+                    )
+                    message_text = transcription
+                    await _route_text_message(
+                        db, sender_phone, sender_name, raw_from, message_text, msg, msg.get("id"),
+                    )
+                except Exception as stt_err:
+                    logger.error("[AUDIO STT EXCEPT] %s", stt_err)
+                    logger.error(traceback.format_exc())
+                    try:
                         await log_conversation_message(
-                            db, sender_phone, message_text, direction="incoming",
-                            player_name=sender_name, increment_unread=True,
+                            db, sender_phone, AUDIO_PROCESSING_ERROR_MESSAGE, direction="bot"
                         )
-                        continue
-
-                    await log_conversation_message(
-                        db, sender_phone, message_text, direction="incoming",
-                        player_name=sender_name, increment_unread=False,
+                    except Exception:
+                        logger.error(traceback.format_exc())
+                    await send_whatsapp_message(
+                        to_phone=raw_from,
+                        message_body=AUDIO_PROCESSING_ERROR_MESSAGE,
                     )
+                continue
 
-                    session = get_session(sender_phone)
-
-                    # Comandos transaccionales de lista (🎾 / voy / me bajo) siguen el motor nativo.
-                    if is_transactional_message(message_text):
-                        reply_text = await process_incoming_whatsapp_message(
-                            db=db,
-                            sender_phone=sender_phone,
-                            sender_name=sender_name,
-                            raw_text=message_text,
-                            quoted_text=quoted_text,
-                            context=context,
-                        )
-                        if reply_text:
-                            logger.info(f"[WHATSAPP OUTGOING PREPARED]:\n{reply_text}\n")
-                            await log_conversation_message(db, sender_phone, reply_text, direction="bot")
-                            await send_whatsapp_message(
-                                to_phone=raw_from,
-                                message_body=reply_text,
-                            )
-                        continue
-
-                    # Selección numerada (1, 2, 3...) de un turno previamente ofertado.
-                    if SLOT_SELECTION_REGEX.match(message_text) and (
-                        session.get("last_offered_slots") or session.get("pending_mode_slot_id")
-                    ):
-                        reply_text = await handle_sport_and_booking_flow(
-                            db, sender_phone, sender_name, message_text.strip(), session
-                        )
-                        if reply_text:
-                            await log_conversation_message(db, sender_phone, reply_text, direction="bot")
-                            await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
-                        continue
-
-                    # Consulta real de disponibilidad en time_slots (JSON + viñetas para el chat).
-                    if AVAILABILITY_INTENT_REGEX.search(message_text):
-                        availability = await lookup_available_slots(
-                            db,
-                            sender_phone=sender_phone,
-                            message_text=message_text,
-                        )
-                        reply_text = availability.get("whatsapp_text") or VOICEFLOW_FALLBACK_MESSAGE
-                        await log_conversation_message(db, sender_phone, reply_text, direction="bot")
-                        await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
-                        continue
-
-                    # Consultas generales (puntos, membresía, precios, palas, asesor) van a Voiceflow.
-                    vf_user_id = raw_from.lstrip("+")
-                    await dispatch_voiceflow_replies(
-                        sender_phone=vf_user_id,
-                        message_text=message_text,
-                        raw_from=raw_from,
-                        db=db,
-                        conversation_phone=sender_phone,
-                    )
+            # Ruta de texto estricta: nunca descarga media ni toca variables de audio.
+            if not message_text:
+                logger.info("[WHATSAPP TEXT] Mensaje sin body (type=%s); ya persistido en inbox.", msg_type)
+                continue
+            try:
+                await _route_text_message(
+                    db, sender_phone, sender_name, raw_from, message_text, msg, msg.get("id"),
+                )
+            except Exception as text_err:
+                logger.error("[WHATSAPP TEXT EXCEPT] %s", text_err)
+                logger.error(traceback.format_exc())
+                try:
+                    await log_conversation_message(db, sender_phone, VOICEFLOW_FALLBACK_MESSAGE, direction="bot")
+                except Exception:
+                    logger.error(traceback.format_exc())
+                await send_whatsapp_message(
+                    to_phone=raw_from,
+                    message_body=VOICEFLOW_FALLBACK_MESSAGE,
+                )
 
     except Exception as e:
-        logger.error(f"Error handling WhatsApp webhook: {e}", exc_info=True)
+        logger.error("[WHATSAPP WEBHOOK EXCEPT] %s", e)
+        logger.error(traceback.format_exc())
         print(f"[WHATSAPP WEBHOOK ERROR] Error procesando webhook: {e}")
 
     return {"status": "received"}

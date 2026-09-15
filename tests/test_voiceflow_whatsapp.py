@@ -65,6 +65,35 @@ def test_whatsapp_webhook_returns_200_and_fallback_when_voiceflow_fails():
         assert sent_body == VOICEFLOW_FALLBACK_MESSAGE
 
 
+def test_text_messages_never_download_audio_and_persist_immediately():
+    payload = _webhook_payload("Hola, hay cancha?")
+    payload["entry"][0]["changes"][0]["value"]["messages"][0]["audio"] = None
+    with patch(
+        "app.api.v1.endpoints.whatsapp.download_whatsapp_media_by_id",
+        new=AsyncMock(side_effect=AssertionError("no debe descargar audio en type=text")),
+    ) as audio_mock, patch(
+        "app.api.v1.endpoints.whatsapp.interact_with_voiceflow",
+        new=AsyncMock(return_value=["Hola desde VF"]),
+    ), patch(
+        "app.api.v1.endpoints.whatsapp.send_whatsapp_message",
+        new=AsyncMock(return_value=True),
+    ), patch(
+        "app.api.v1.endpoints.whatsapp.is_conversation_paused",
+        new=AsyncMock(return_value=False),
+    ), patch(
+        "app.api.v1.endpoints.whatsapp.log_conversation_message",
+        new=AsyncMock(),
+    ) as log_mock:
+        client = TestClient(app)
+        res = client.post("/api/v1/whatsapp/webhook", json=payload)
+        assert res.status_code == 200
+        audio_mock.assert_not_awaited()
+        assert log_mock.await_count >= 1
+        first_body = log_mock.await_args_list[0].kwargs.get("body") or log_mock.await_args_list[0].args[2]
+        assert first_body == "Hola, hay cancha?"
+        assert log_mock.await_args_list[0].kwargs.get("direction") == "incoming"
+
+
 def test_transactional_messages_skip_voiceflow():
     with patch(
         "app.api.v1.endpoints.whatsapp.interact_with_voiceflow",

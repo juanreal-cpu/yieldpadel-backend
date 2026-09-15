@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -87,10 +87,21 @@ class FinalizeTournamentRequest(BaseModel):
 # ----------------------------------------------------
 @router.get("/", summary="Listar torneos oficiales con grupos y partidos")
 async def list_official_tournaments(
+    request: Request,
     status_filter: Optional[str] = Query(None, description="Filtrar por status"),
     category_filter: Optional[str] = Query(None, description="Filtrar por categoría"),
+    club_id: Optional[str] = Query(None, description="UUID de la sede (multi-tenant)"),
     db: AsyncSession = Depends(get_db),
 ):
+    header_club = request.headers.get("X-Club-Id") or request.cookies.get("user_club")
+    club_raw = club_id or header_club
+    club_uuid = None
+    if club_raw:
+        try:
+            club_uuid = uuid.UUID(str(club_raw).strip())
+        except (ValueError, TypeError, AttributeError):
+            club_uuid = None
+
     stmt = (
         select(OfficialTournament)
         .options(
@@ -102,6 +113,12 @@ async def list_official_tournaments(
         )
         .order_by(desc(OfficialTournament.created_at))
     )
+    default_club = uuid.UUID("2756f34a-7d24-4815-9f7e-6ed125ea5de7")
+    if club_uuid:
+        if club_uuid == default_club:
+            stmt = stmt.where(or_(OfficialTournament.club_id == club_uuid, OfficialTournament.club_id.is_(None)))
+        else:
+            stmt = stmt.where(OfficialTournament.club_id == club_uuid)
     if status_filter:
         stmt = stmt.where(OfficialTournament.status == status_filter)
     if category_filter and category_filter != "ALL":
@@ -114,6 +131,7 @@ async def list_official_tournaments(
     for t in tournaments:
         output.append({
             "id": t.id,
+            "club_id": str(t.club_id) if t.club_id else None,
             "name": t.name,
             "sport_type": t.sport_type,
             "category": t.category,
@@ -121,7 +139,7 @@ async def list_official_tournaments(
             "match_rule": t.match_rule.value,
             "match_duration_minutes": t.match_duration_minutes,
             "tiebreak_rule": t.tiebreak_rule.value,
-            "status": t.status.value,
+            "status": "RUNNING" if str(getattr(t.status, "value", t.status)) in {"IN_PROGRESS", "RUNNING"} else str(getattr(t.status, "value", t.status)),
             "start_date": str(t.start_date) if t.start_date else None,
             "end_date": str(t.end_date) if t.end_date else None,
             "start_time": t.start_time.strftime("%H:%M") if t.start_time else None,

@@ -115,6 +115,121 @@
       color: #64748b !important;
     }
 
+    /* =========================================================================
+       TORNEOS AMERICANOS: CONTRASTE FORZADO + CRONÓMETRO (Tailwind v2 CDN)
+       ========================================================================= */
+    #americano-live-cockpit {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      border: 1px solid #334155 !important;
+    }
+    #americano-live-cockpit .text-white,
+    #americano-live-cockpit h3,
+    #americano-live-cockpit button.live-cockpit-btn-on-dark {
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+    #americano-live-cockpit table thead,
+    #americano-live-cockpit table thead th {
+      background-color: #1e293b !important;
+      color: #cbd5e1 !important;
+      -webkit-text-fill-color: #cbd5e1 !important;
+    }
+    #btn-confirm-start-americano,
+    #modal-confirm-start-americano button[type="submit"] {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      font-weight: 800 !important;
+    }
+    #btn-confirm-start-americano span,
+    #modal-confirm-start-americano button[type="submit"] * {
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+    #modal-confirm-start-americano .btn-cancel-light {
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+      background-color: #f1f5f9 !important;
+      font-weight: 700 !important;
+    }
+    .americano-active-card {
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff !important;
+      color: #0f172a !important;
+    }
+    .americano-active-card h4,
+    .americano-active-card p,
+    .americano-active-card span.force-on-light {
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+    }
+    .cupos-libres-badge {
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+      background-color: #dcfce7 !important;
+      border: 1px solid #86efac;
+      font-weight: 800;
+    }
+    .americano-players-list {
+      flex: 1 1 auto;
+      min-height: 180px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    #live-round-timer-display {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.06em;
+    }
+    #live-round-timer-display.timer-expired {
+      color: #dc2626 !important;
+      -webkit-text-fill-color: #dc2626 !important;
+      animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    #btn-start-round-timer {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      font-weight: 800 !important;
+    }
+    #live-tournament-selector {
+      background-color: #1e293b !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+    #americano-live-cockpit input[type="number"] {
+      background-color: #020617 !important;
+      color: #34d399 !important;
+      -webkit-text-fill-color: #34d399 !important;
+    }
+    #modal-americano-podium,
+    #modal-confirm-start-americano,
+    #modal-round-time-up {
+      color: #0f172a !important;
+    }
+    #modal-americano-podium h3,
+    #modal-americano-podium p,
+    #modal-americano-podium .text-on-light,
+    #modal-americano-podium .\!text-slate-900 {
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+    }
+    #modal-round-time-up {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 10050;
+      backdrop-filter: blur(4px);
+    }
+    #modal-round-time-up.active {
+      display: flex;
+    }
+
     /* FILTROS HORARIOS Y DE DEPORTE: DISEÑO LIMPIO Y ALTO CONTRASTE (CERO BLOQUES NEGROS) */
     .btn-sport-filter, .time-filter-btn, .btn-an-sport-pill {
       color: #1e293b !important; /* slate-800 */
@@ -2940,17 +3055,26 @@
                 </div>
 
                 <div class="flex items-center gap-2.5 flex-wrap">
-                  <select id="live-tournament-selector" onchange="onSelectLiveAmericano(this.value)" class="px-3 py-1.5 text-xs font-bold bg-slate-800 text-white border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                  <div id="live-round-timer-panel" class="flex items-center gap-3 px-3 py-2 rounded-xl border" style="background-color: #020617; border-color: #334155;">
+                    <div>
+                      <div class="text-[9px] font-black uppercase tracking-wider" style="color: #94a3b8;">Cronómetro de Ronda</div>
+                      <div id="live-round-timer-display" class="text-2xl font-black font-mono leading-none" style="color: #ffffff;">00:00</div>
+                    </div>
+                    <button type="button" id="btn-start-round-timer" onclick="startLiveAmericanoRound(event)" class="px-3 py-1.5 rounded-xl text-xs font-bold shadow-md transition" style="background-color: #2563eb !important; color: #ffffff !important;">
+                      Iniciar Ronda
+                    </button>
+                  </div>
+                  <select id="live-tournament-selector" onchange="onSelectLiveAmericano(this.value)" class="px-3 py-1.5 text-xs font-bold rounded-xl outline-none" style="background-color: #1e293b; color: #ffffff; border: 1px solid #334155;">
                     <option value="">Cargando torneos activos...</option>
                   </select>
-                  <button type="button" onclick="refreshLiveAmericanoState()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-slate-700">
+                  <button type="button" onclick="refreshLiveAmericanoState()" class="live-cockpit-btn-on-dark px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1" style="background-color: #1e293b; color: #e2e8f0; border: 1px solid #334155;">
                     <span>🔄</span> <span>Refrescar</span>
                   </button>
-                  <button type="button" onclick="advanceLiveAmericanoRound()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5" style="background-color: #4f46e5 !important; color: #ffffff !important;">
+                  <button type="button" onclick="advanceLiveAmericanoRound()" class="live-cockpit-btn-on-dark px-3 py-1.5 rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5" style="background-color: #4f46e5 !important; color: #ffffff !important;">
                     <span style="color: #ffffff !important;">⏭️</span> <span style="color: #ffffff !important;">Siguiente Ronda</span>
                   </button>
-                  <button type="button" onclick="openCloseAmericanoModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5">
-                    <span>👑</span> <span>Cerrar Torneo & Podio</span>
+                  <button type="button" onclick="openCloseAmericanoModal()" class="px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5" style="background-color: #d97706 !important; color: #0f172a !important;">
+                    <span style="color: #0f172a !important;">👑</span> <span style="color: #0f172a !important;">Finalizar Americano</span>
                   </button>
                 </div>
               </div>
@@ -2976,21 +3100,21 @@
                   <h4 class="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
                     <span>📊</span> <span>Leaderboard en Tiempo Real (Wins & Puntos)</span>
                   </h4>
-                  <span class="text-[10px] text-slate-400 font-semibold">Criterio: 1° Partidos Ganados • 2° Dif. Puntos • 3° Puntos a Favor</span>
+                  <span id="live-cockpit-tiebreak-hint" class="text-[10px] font-semibold" style="color: #cbd5e1;">Criterio: 1° Partidos ganados • 2° Puntos a favor • 3° Enfrentamiento directo</span>
                 </div>
                 <div class="overflow-x-auto rounded-2xl border border-slate-700/80 bg-slate-800/40">
                   <table class="w-full text-left text-xs border-collapse">
-                    <thead class="bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-wider border-b border-slate-700">
+                    <thead class="text-[10px] font-black uppercase tracking-wider border-b" style="background-color: #1e293b; color: #cbd5e1; border-color: #334155;">
                       <tr>
-                        <th class="p-3">Pos</th>
-                        <th class="p-3">Pareja / Dupla</th>
-                        <th class="p-3 text-center">PJ</th>
-                        <th class="p-3 text-center text-emerald-400">PG</th>
-                        <th class="p-3 text-center text-rose-400">PP</th>
-                        <th class="p-3 text-center">Pts Favor</th>
-                        <th class="p-3 text-center">Pts Contra</th>
-                        <th class="p-3 text-center text-cyan-300">Diferencia</th>
-                        <th class="p-3 text-center text-amber-300 font-black">Pts Torneo</th>
+                        <th class="p-3" style="color: #cbd5e1;">Pos</th>
+                        <th class="p-3" style="color: #cbd5e1;">Pareja / Dupla</th>
+                        <th class="p-3 text-center" style="color: #cbd5e1;">PJ</th>
+                        <th class="p-3 text-center" style="color: #6ee7b7;">PG</th>
+                        <th class="p-3 text-center" style="color: #fda4af;">PP</th>
+                        <th class="p-3 text-center" style="color: #cbd5e1;">Pts Favor</th>
+                        <th class="p-3 text-center" style="color: #cbd5e1;">Pts Contra</th>
+                        <th class="p-3 text-center" style="color: #67e8f9;">Diferencia</th>
+                        <th class="p-3 text-center font-black" style="color: #fcd34d;">Pts Torneo</th>
                       </tr>
                     </thead>
                     <tbody id="live-cockpit-leaderboard-body" class="divide-y divide-slate-800 text-slate-200">
@@ -5333,81 +5457,126 @@
   <!-- MODAL: CREAR TORNEO AMERICANO MULTI-PISTA                -->
   <!-- ======================================================== -->
   <div id="create-americano-modal" class="modal-overlay modal-create-americano">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card" style="max-width: 640px;">
       <div class="modal-title">
-        <span>🏆 Crear Torneo Americano (Multi-Pista)</span>
+        <span style="color: #0f172a; font-weight: 800;">🏆 Crear Torneo Americano en Tiempo Real</span>
         <button onclick="closeCreateAmericanoModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
       </div>
 
       <form id="create-americano-form" onsubmit="handleCreateAmericanoSubmit(event)">
         <div class="form-group">
-          <label class="form-label">Nombre del Torneo / Evento</label>
-          <input type="text" id="am-name" class="form-control" placeholder="Ej: Americano Nocturno 4ta Masculino" required value="Americano Nocturno 4ta">
+          <label class="form-label" style="color: #0f172a;">Nombre del Torneo / Evento</label>
+          <input type="text" id="am-name" class="form-control" placeholder="Ej: Americano Nocturno 4ta Masculino" required value="Americano Nocturno 4ta" style="color: #0f172a; background: #ffffff;">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
-            <label class="form-label">Disciplina / Deporte</label>
-            <select id="am-sport" class="form-control" onchange="renderAmericanoCourtsSelector(this.value)">
+            <label class="form-label" style="color: #0f172a;">Disciplina / Deporte</label>
+            <select id="am-sport" class="form-control" onchange="renderAmericanoCourtsSelector(this.value)" style="color: #0f172a; background: #ffffff;">
               <option value="PADEL" selected>🎾 Pádel</option>
               <option value="PICKLEBALL">🏓 Pickleball</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Modalidad</label>
-            <select id="am-type" class="form-control">
-              <option value="PAREJA_FIJA">Pareja Fija</option>
-              <option value="INDIVIDUAL">Individual (Rotativo)</option>
+            <label class="form-label" style="color: #0f172a;">Tipo de inscripción</label>
+            <select id="am-type" class="form-control" style="color: #0f172a; background: #ffffff;">
+              <option value="PAREJA_FIJA">Pareja Fija (Round-Robin)</option>
+              <option value="INDIVIDUAL">Individual / Sube y Baja</option>
+              <option value="SUBE_Y_BAJA">Sube y Baja (King of the Court)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label" style="color: #0f172a;">Cantidad de parejas</label>
+            <select id="am-pair-count" class="form-control" style="color: #0f172a; background: #ffffff;">
+              <option value="4">4 parejas</option>
+              <option value="6">6 parejas</option>
+              <option value="8" selected>8 parejas</option>
+              <option value="10">10 parejas</option>
+              <option value="12">12 parejas</option>
+              <option value="16">16 parejas</option>
+              <option value="20">20 parejas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color: #0f172a;">Duración del evento</label>
+            <select id="am-duration" class="form-control" style="color: #0f172a; background: #ffffff;">
+              <option value="120">2 Horas</option>
+              <option value="150" selected>2.5 Horas</option>
+              <option value="180">3 Horas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color: #0f172a;">Hora de Inicio</label>
+            <input type="time" id="am-start-time" class="form-control" value="18:00" required style="color: #0f172a; background: #ffffff;">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="color: #0f172a;">Fecha del Torneo</label>
+          <input type="date" id="am-date" class="form-control" required style="color: #0f172a; background: #ffffff;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label" style="color: #0f172a;">Sistema de puntuación</label>
+            <select id="am-scoring" class="form-control" onchange="onAmScoringChange()" style="color: #0f172a; background: #ffffff;">
+              <option value="TIME_UNLIMITED">Por tiempo (puntos infinitos)</option>
+              <option value="POINTS_24">A 24 puntos</option>
+              <option value="POINTS_32" selected>A 32 puntos</option>
+              <option value="POINTS_40">A 40 puntos</option>
+              <option value="SETS">Por sets (mejor de 3)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color: #0f172a;">Criterio de desempate</label>
+            <select id="am-tiebreak" class="form-control" style="color: #0f172a; background: #ffffff;">
+              <option value="MATCHES_WON" selected>Partidos ganados → Diff → Pts a favor</option>
+              <option value="POINTS_FOR">Puntos a favor → PG → Diff</option>
+              <option value="GAMES_DIFF">Diferencia de puntos → PG</option>
+              <option value="HEAD_TO_HEAD">PG → Enfrentamiento directo</option>
             </select>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-          <div class="form-group">
-            <label class="form-label">Duración Continua</label>
-            <select id="am-duration" class="form-control">
-              <option value="120">2 Horas (120 min)</option>
-              <option value="150" selected>2.5 Horas (150 min)</option>
-              <option value="180">3 Horas (180 min)</option>
-            </select>
+          <div class="form-group" id="am-round-minutes-wrap">
+            <label class="form-label" style="color: #0f172a;">Minutos por ronda (cronómetro)</label>
+            <input type="number" id="am-round-minutes" class="form-control" min="1" max="180" value="15" style="color: #0f172a; background: #ffffff;">
           </div>
-          <div class="form-group">
-            <label class="form-label">Hora de Inicio</label>
-            <input type="time" id="am-start-time" class="form-control" value="18:00" required>
+          <div class="form-group" id="am-target-points-wrap">
+            <label class="form-label" style="color: #0f172a;">Puntos meta por cruce</label>
+            <input type="number" id="am-target-points" class="form-control" min="0" max="99" value="32" style="color: #0f172a; background: #ffffff;">
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Fecha del Torneo</label>
-          <input type="date" id="am-date" class="form-control" required>
-        </div>
-
-        <!-- Selección Multi-Cancha (2 a 5 Pistas) -->
-        <div class="form-group">
-          <label class="form-label">Seleccionar Canchas a Bloquear (Mín 2, Máx 5)</label>
-          <div id="am-courts-selector" style="display: flex; flex-direction: column; gap: 0.4rem; background: #F8FAFC; padding: 0.6rem; border-radius: 6px; border: 1px solid #CBD5E1; max-height: 130px; overflow-y: auto;">
-            <div style="font-size: 0.75rem; color: #64748B;">Cargando canchas...</div>
+          <label class="form-label" style="color: #0f172a;">Seleccionar Canchas (Mín 1, Máx 5)</label>
+          <div id="am-courts-selector" style="display: flex; flex-direction: column; gap: 0.4rem; background: #F8FAFC; padding: 0.6rem; border-radius: 6px; border: 1px solid #CBD5E1; max-height: 130px; overflow-y: auto; color: #0f172a;">
+            <div style="font-size: 0.75rem; color: #334155;">Cargando canchas...</div>
           </div>
-          <p style="font-size: 0.68rem; color: #64748B; margin-top: 0.25rem;">
-            Las canchas seleccionadas se bloquearán visualmente en color púrpura durante toda la duración del evento.
+          <p style="font-size: 0.68rem; color: #334155; margin-top: 0.25rem;">
+            Las canchas seleccionadas se bloquean en el calendario y alimentan la Mesa de Control (un cruce simultáneo por pista).
           </p>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
-            <label class="form-label">Precio Inscripción ($ COP)</label>
-            <input type="number" id="am-price" class="form-control" value="45000" step="5000" required>
+            <label class="form-label" style="color: #0f172a;">Precio Inscripción ($ COP)</label>
+            <input type="number" id="am-price" class="form-control" value="45000" step="5000" required style="color: #0f172a; background: #ffffff;">
           </div>
           <div class="form-group">
-            <label class="form-label">Bolsa de Premio ($ COP)</label>
-            <input type="number" id="am-prize" class="form-control" value="250000" step="10000" required>
+            <label class="form-label" style="color: #0f172a;">Bolsa de Premio ($ COP)</label>
+            <input type="number" id="am-prize" class="form-control" value="250000" step="10000" required style="color: #0f172a; background: #ffffff;">
           </div>
         </div>
 
         <div class="modal-actions">
-          <button type="button" onclick="closeCreateAmericanoModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" id="btn-submit-americano" class="btn-primary" style="background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);">
-            🏆 Confirmar y Bloquear Pistas
+          <button type="button" onclick="closeCreateAmericanoModal()" class="btn-secondary" style="color: #0f172a;">Cancelar</button>
+          <button type="submit" id="btn-submit-americano" class="btn-primary" style="background: #2563eb; color: #ffffff; font-weight: 800;">
+            🏆 Confirmar, Bloquear Pistas e Iniciar Motor
           </button>
         </div>
       </form>
@@ -5991,27 +6160,95 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Sistema de Puntuación:</label>
-          <select id="csa-scoring-system" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          <label class="block text-xs font-bold mb-1" style="color: #0f172a;">Sistema de Puntuación:</label>
+          <select id="csa-scoring-system" onchange="onCsaScoringChange()" class="w-full px-3 py-2 text-xs font-bold border rounded-xl focus:outline-none" style="background-color: #ffffff; color: #0f172a; border-color: #cbd5e1;">
             <option value="POINTS_32" selected>32 Puntos (Estándar Americano)</option>
             <option value="POINTS_24">24 Puntos (Express Rápido)</option>
             <option value="POINTS_40">40 Puntos (Extendido)</option>
             <option value="SETS">Al mejor de 3 Sets Cortos</option>
+            <option value="TIME_UNLIMITED">Por tiempo — puntos infinitos (cronómetro de ronda)</option>
           </select>
         </div>
 
-        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-medium flex items-start gap-2">
+        <div id="csa-round-minutes-wrap">
+          <label class="block text-xs font-bold mb-1" style="color: #0f172a;">Minutos por ronda (cronómetro):</label>
+          <input type="number" id="csa-round-minutes" min="1" max="180" value="15" class="w-full px-3 py-2 text-xs font-bold border rounded-xl" style="background-color: #ffffff; color: #0f172a; border-color: #cbd5e1;" />
+          <p id="csa-round-minutes-hint" class="text-[11px] mt-1 font-medium" style="color: #334155;">En modo por tiempo, al pulsar «Iniciar Ronda» arranca la cuenta regresiva. Al llegar a 00:00 se pide anotar marcadores y hacer Sube y Baja.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1" style="color: #0f172a;">Criterio de desempate:</label>
+          <select id="csa-tiebreak" class="w-full px-3 py-2 text-xs font-bold border rounded-xl" style="background-color: #ffffff; color: #0f172a; border-color: #cbd5e1;">
+            <option value="MATCHES_WON" selected>Partidos ganados → Diff → Pts a favor</option>
+            <option value="POINTS_FOR">Puntos a favor</option>
+            <option value="GAMES_DIFF">Diferencia de puntos</option>
+            <option value="HEAD_TO_HEAD">Enfrentamiento directo</option>
+          </select>
+        </div>
+
+        <div class="p-3 rounded-xl border text-xs font-medium flex items-start gap-2" style="background-color: #ecfdf5; border-color: #a7f3d0; color: #064e3b;">
           <span class="text-base leading-none">🎾</span>
           <p>Al confirmar, el torneo pasará a estado <strong>EN JUEGO</strong>, se generará la Ronda 1 con tanteador directo (0-0) y se abrirá la <strong>Mesa de Control en Vivo</strong> para el arbitraje.</p>
         </div>
 
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeStartAmericanoModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
-          <button type="submit" class="px-5 py-2 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition flex items-center gap-1.5">
-            <span>⚡</span> <span>¡Comenzar Torneo Ahora!</span>
+          <button type="button" onclick="closeStartAmericanoModal()" class="btn-cancel-light px-4 py-2 text-xs font-bold rounded-xl transition" style="color: #0f172a !important; background-color: #f1f5f9 !important;">Cancelar</button>
+          <button type="submit" id="btn-confirm-start-americano" class="px-5 py-2 text-xs rounded-xl shadow-md transition flex items-center gap-1.5" style="background-color: #2563eb !important; color: #ffffff !important; font-weight: 800 !important;">
+            <span style="color: #ffffff !important;">⚡</span> <span style="color: #ffffff !important;">¡Comenzar Torneo Ahora!</span>
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL SUAVE: TIEMPO DE RONDA FINALIZADO -->
+  <div id="modal-round-time-up" role="dialog" aria-modal="true" aria-labelledby="round-time-up-title">
+    <div style="background: #FFFFFF; border-radius: 24px; width: 92%; max-width: 440px; padding: 1.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid #FECACA;">
+      <div class="flex items-center gap-3 mb-3">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: #FEE2E2; color: #991B1B; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">⏱</div>
+        <div>
+          <h3 id="round-time-up-title" class="text-sm font-black leading-tight" style="color: #991B1B;">¡TIEMPO FINALIZADO!</h3>
+          <p class="text-xs font-medium mt-0.5" style="color: #334155;">Ronda cerrada por cronómetro</p>
+        </div>
+      </div>
+      <p class="text-sm font-medium leading-relaxed mb-4" style="color: #0f172a;">
+        Recepcionista: <strong>detenga el juego ahora</strong>, anote los marcadores finales en el tanteador (+1 / −1) y proceda al <strong>Sube y Baja</strong> con «Siguiente Ronda».
+      </p>
+      <div class="flex justify-end">
+        <button type="button" onclick="closeRoundTimeUpModal()" class="px-5 py-2 text-xs font-black rounded-xl shadow-md" style="background-color: #2563eb !important; color: #ffffff !important;">
+          Entendido — anotar marcadores
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PODIO AMERICANO -->
+  <div id="modal-americano-podium" role="dialog" aria-modal="true" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72); z-index: 10060; backdrop-filter: blur(4px);">
+    <div style="background: #FFFFFF; border-radius: 24px; width: 92%; max-width: 480px; padding: 1.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid #FDE68A;">
+      <div class="text-center mb-4">
+        <div style="font-size: 2rem;">👑</div>
+        <h3 class="text-base font-black !text-slate-900 text-on-light" style="color: #0f172a !important;">Finalizar Americano</h3>
+        <p id="americano-podium-title" class="text-xs font-medium mt-1 !text-slate-900 text-on-light" style="color: #334155 !important;">Confirma el podio definitivo. Los puntos se consolidarán en el ranking CRM.</p>
+      </div>
+      <div class="space-y-2 mb-4">
+        <div class="p-3 rounded-xl border" style="background: #FFFBEB; border-color: #FCD34D;">
+          <div class="text-[10px] font-black uppercase" style="color: #92400e;">Campeón</div>
+          <div id="americano-podium-gold" class="text-sm font-black !text-slate-900 text-on-light" style="color: #0f172a !important;">—</div>
+        </div>
+        <div class="p-3 rounded-xl border" style="background: #F8FAFC; border-color: #CBD5E1;">
+          <div class="text-[10px] font-black uppercase" style="color: #475569;">Subcampeón</div>
+          <div id="americano-podium-silver" class="text-sm font-black !text-slate-900 text-on-light" style="color: #0f172a !important;">—</div>
+        </div>
+        <div class="p-3 rounded-xl border" style="background: #FFF7ED; border-color: #FDBA74;">
+          <div class="text-[10px] font-black uppercase" style="color: #9a3412;">Tercer puesto</div>
+          <div id="americano-podium-bronze" class="text-sm font-black !text-slate-900 text-on-light" style="color: #0f172a !important;">—</div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeAmericanoPodiumModal()" class="px-5 py-2 text-xs font-black rounded-xl !text-slate-900" style="background-color: #f1f5f9 !important; color: #0f172a !important;">Cancelar</button>
+        <button type="button" id="btn-confirm-finish-americano" onclick="confirmFinishAmericano()" class="px-5 py-2 text-xs font-black rounded-xl" style="background-color: #d97706 !important; color: #0f172a !important;">Confirmar y consolidar ranking</button>
+        <button type="button" id="btn-close-finish-americano" onclick="closeAmericanoPodiumModal()" class="px-5 py-2 text-xs font-black rounded-xl" style="display: none; background-color: #2563eb !important; color: #ffffff !important;">Cerrar</button>
+      </div>
     </div>
   </div>
 
@@ -11375,6 +11612,7 @@ ${data.message}`);
       }
 
       renderAmericanoCourtsSelector(defaultSport);
+      if (typeof onAmScoringChange === 'function') onAmScoringChange();
 
       const modal = document.getElementById('create-americano-modal');
       if (modal) modal.classList.add('active');
@@ -11386,6 +11624,21 @@ ${data.message}`);
       if (modal) modal.classList.remove('active');
     }
     window.closeCreateAmericanoModal = closeCreateAmericanoModal;
+
+    function onAmScoringChange() {
+      const scoring = (document.getElementById('am-scoring') || {}).value || '';
+      const minsWrap = document.getElementById('am-round-minutes-wrap');
+      const ptsWrap = document.getElementById('am-target-points-wrap');
+      const timeBased = typeof isTimeBasedScoring === 'function' ? isTimeBasedScoring(scoring) : String(scoring).indexOf('TIME') === 0;
+      if (minsWrap) minsWrap.style.opacity = timeBased || scoring === 'SETS' ? '1' : '0.95';
+      if (ptsWrap) ptsWrap.style.display = timeBased ? 'none' : '';
+      const pts = document.getElementById('am-target-points');
+      if (pts && scoring === 'POINTS_24') pts.value = 24;
+      if (pts && scoring === 'POINTS_32') pts.value = 32;
+      if (pts && scoring === 'POINTS_40') pts.value = 40;
+      if (pts && scoring === 'SETS') pts.value = 2;
+    }
+    window.onAmScoringChange = onAmScoringChange;
 
     async function handleCreateAmericanoSubmit(e) {
       e.preventDefault();
@@ -11400,14 +11653,20 @@ ${data.message}`);
       const prize = parseFloat(document.getElementById('am-prize').value) || 250000;
 
       const checkedCourts = Array.from(document.querySelectorAll('input[name="am-court"]:checked')).map(cb => cb.value);
-      if (checkedCourts.length < 2) {
-        alert('Debes seleccionar al menos 2 canchas para el Torneo Americano.');
+      if (checkedCourts.length < 1) {
+        alert('Debes seleccionar al menos 1 cancha para el Torneo Americano.');
         return;
       }
       if (checkedCourts.length > 5) {
         alert('Máximo 5 canchas simultáneas.');
         return;
       }
+
+      const scoring = (document.getElementById('am-scoring') || {}).value || 'POINTS_32';
+      const tiebreak = (document.getElementById('am-tiebreak') || {}).value || 'MATCHES_WON';
+      const pairCount = parseInt((document.getElementById('am-pair-count') || {}).value, 10) || 8;
+      const roundMinutes = parseInt((document.getElementById('am-round-minutes') || {}).value, 10) || 15;
+      const targetPoints = isTimeBasedScoring(scoring) ? 0 : (parseInt((document.getElementById('am-target-points') || {}).value, 10) || 32);
 
       const payload = {
         name: name,
@@ -11447,7 +11706,7 @@ ${data.message}`);
         alert('❌ Error de conexión al registrar Torneo Americano: No se pudo conectar con el servidor.');
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '🏆 Confirmar y Bloquear Pistas';
+          btn.innerHTML = '🏆 Confirmar, Bloquear Pistas e Iniciar Motor';
         }
         return;
       }
@@ -11467,17 +11726,55 @@ ${data.message}`);
         }
 
         if (res.ok) {
+          let liveId = null;
+          try {
+            const liveRes = await fetch(withClubQuery('/api/v1/tournaments/'), {
+              method: 'POST',
+              headers: clubApiHeaders(),
+              body: JSON.stringify({
+                name: name,
+                sport_type: sport,
+                category: '4ta',
+                modality: type,
+                scoring_system: scoring,
+                target_points: targetPoints,
+                round_minutes: roundMinutes,
+                pair_count: pairCount,
+                tiebreak_rule: tiebreak,
+                assigned_court_ids: checkedCourts,
+                start_date: date || null,
+                start_time: startTime || '18:00',
+                club_id: getActiveClubId(),
+                start_immediately: true
+              })
+            });
+            if (liveRes.ok) {
+              const liveData = await liveRes.json();
+              liveId = liveData.tournament_id;
+              window.activeLiveAmericanoId = liveId;
+              persistAmericanoRoundConfig(liveId, scoring, roundMinutes);
+            }
+          } catch (liveErr) {
+            console.warn('Motor en vivo no se pudo crear (slots sí bloqueados):', liveErr);
+          }
+
           if (typeof addEvent === 'function') {
             addEvent('Torneo Americano Creado', `${name} (${sport}) • ${checkedCourts.length} pistas reservadas`, 'purple');
           }
           closeCreateAmericanoModal();
-          alert(`🏆 ¡Torneo Americano '${payload.tournament_name}' (${sport}) creado con éxito!\n\nSe bloquearon ${checkedCourts.length} pistas en color púrpura durante ${payload.duration_minutes / 60} horas.`);
-          
+          alert(`🏆 ¡Torneo Americano '${payload.tournament_name}' creado!\n\n${checkedCourts.length} pistas bloqueadas • ${pairCount} parejas • Mesa de Control lista.`);
+
           if (typeof fetchSlots === 'function') {
             await fetchSlots();
           }
           if (typeof loadTournaments === 'function') {
             await loadTournaments();
+          }
+          if (liveId && typeof initLiveAmericanoSelector === 'function') {
+            const cockpit = document.getElementById('americano-live-cockpit');
+            if (cockpit) cockpit.classList.remove('hidden');
+            await initLiveAmericanoSelector();
+            if (cockpit) cockpit.scrollIntoView({ behavior: 'smooth' });
           }
         } else {
           console.error('Respuesta no exitosa al crear torneo americano:', res.status, errDetail);
@@ -11489,7 +11786,7 @@ ${data.message}`);
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '🏆 Confirmar y Bloquear Pistas';
+          btn.innerHTML = '🏆 Confirmar, Bloquear Pistas e Iniciar Motor';
         }
       }
     }
@@ -13740,63 +14037,63 @@ ${data.message}`);
       const tIdStr = t.id ? String(t.id).replace(/'/g, "\\'") : '';
 
       return `
-        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-          <div>
+        <div class="americano-active-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between" style="min-height: 400px; background: #ffffff; border-color: #e2e8f0; color: #0f172a;">
+          <div class="flex flex-col flex-grow">
             <div class="flex justify-between items-start mb-2 gap-3">
               <div class="flex items-start gap-2.5">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-100 border border-violet-200 text-violet-800 text-lg shadow-xs shrink-0 font-black">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 font-black" style="background-color: #ede9fe; border: 1px solid #ddd6fe; color: #5b21b6;">
                   <span>${sportEmoji}</span>
                 </div>
                 <div>
-                  <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 mb-1">
+                  <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full mb-1 force-on-light" style="background-color: #ede9fe; color: #5b21b6;">
                     ${t.sport_type || 'PADEL'} • ${modalityLabel}
                   </span>
-                  <h4 class="text-sm font-black text-slate-900 leading-tight">${t.tournament_name || 'Torneo Americano'}</h4>
+                  <h4 class="text-sm font-black leading-tight force-on-light" style="color: #0f172a;">${t.tournament_name || 'Torneo Americano'}</h4>
                 </div>
               </div>
-              <span class="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+              <span class="text-xs font-black px-2.5 py-1 rounded-lg shrink-0 force-on-light" style="color: #065f46; background-color: #ecfdf5; border: 1px solid #a7f3d0;">
                 💰 ${prizeFormatted}
               </span>
             </div>
 
-            <div class="text-xs text-slate-600 mb-3 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-medium">
-              <p>📅 <strong>${t.date}</strong> | ⏰ <strong>${t.start_time} - ${t.end_time}</strong></p>
-              <p>📍 ${courtsStr}</p>
+            <div class="text-xs mb-3 space-y-1 p-2.5 rounded-xl font-medium" style="background-color: #f8fafc; border: 1px solid #f1f5f9; color: #0f172a;">
+              <p style="color: #0f172a;">📅 <strong>${t.date}</strong> | ⏰ <strong>${t.start_time} - ${t.end_time}</strong></p>
+              <p style="color: #334155;">📍 ${courtsStr}</p>
               <div class="flex items-center justify-between pt-0.5">
-                <span>👥 Inscritos: <strong class="text-purple-700">${bookedCount}/${capCount}</strong> cupos</span>
-                <span class="text-[10px] font-bold text-slate-500">${bookedCount >= capCount ? '🔴 Completo' : '🟢 Cupos libres'}</span>
+                <span class="force-on-light" style="color: #0f172a;">👥 Inscritos: <strong style="color: #6d28d9;">${bookedCount}/${capCount}</strong> cupos</span>
+                <span class="${bookedCount >= capCount ? '' : 'cupos-libres-badge'} text-[10px] font-bold px-2 py-0.5 rounded-full" style="${bookedCount >= capCount ? 'color: #0f172a; background-color: #fee2e2;' : 'color: #0f172a; background-color: #dcfce7;'}">${bookedCount >= capCount ? '🔴 Completo' : '🟢 Cupos libres'}</span>
               </div>
-              ${isPast && t.winners_names ? `<p class="text-amber-800 font-bold mt-1 bg-amber-100/70 p-1.5 rounded border border-amber-300">🏆 Ganadores: ${t.winners_names}</p>` : ''}
+              ${isPast && t.winners_names ? `<p class="font-bold mt-1 p-1.5 rounded" style="color: #92400e; background-color: #fef3c7; border: 1px solid #fcd34d;">🏆 Ganadores: ${t.winners_names}</p>` : ''}
             </div>
 
-            <!-- Previsualización de Participantes (hasta 20 jugadores) -->
-            ${!isPast && bookedCount > 0 ? `
-              <div class="mb-3">
-                <div class="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            <!-- Lista de participantes: espacio para hasta 20 jugadores -->
+            ${!isPast ? `
+              <div class="mb-3 flex-grow flex flex-col">
+                <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-1" style="color: #334155;">
                   <span>Jugadores Inscritos (${bookedCount})</span>
-                  <button type="button" onclick="toggleCardParticipants('${safeTournName}')" class="text-purple-600 hover:text-purple-800 font-semibold lowercase">ver todos</button>
+                  <button type="button" onclick="toggleCardParticipants('${safeTournName}')" class="font-semibold lowercase" style="color: #6d28d9;">ver todos</button>
                 </div>
-                <div id="part-preview-${safeTournName.replace(/\W/g, '_')}" class="max-h-24 overflow-y-auto space-y-1 p-1.5 bg-slate-50 border border-slate-100 rounded-lg text-[11px] text-slate-700 font-medium">
-                  <div class="flex items-center gap-1.5 text-slate-500 text-[10px] italic">
-                    <span>⚡ Participantes confirmados listos para juego</span>
+                <div id="part-preview-${safeTournName.replace(/\W/g, '_')}" data-tourn-name="${safeTournName}" class="americano-players-list space-y-1 p-1.5 rounded-lg text-[11px] font-medium" style="background-color: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a;">
+                  <div class="flex items-center gap-1.5 text-[10px] italic" style="color: #475569;">
+                    <span>⚡ Hasta 20 inscritos visibles · pulse «ver todos» para cargar la lista</span>
                   </div>
                 </div>
               </div>
             ` : ''}
           </div>
 
-          <div class="flex items-center gap-1.5 pt-3 border-t border-slate-100 flex-wrap">
+          <div class="flex items-center gap-1.5 pt-3 border-t flex-wrap mt-auto" style="border-color: #e2e8f0;">
             ${!isPast ? `
-              <button type="button" onclick="openStartAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="flex-1 py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap flex items-center justify-center gap-1" style="background-color: #059669 !important; color: #ffffff !important;">
+              <button type="button" onclick="openStartAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="flex-1 py-1.5 px-2.5 rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap flex items-center justify-center gap-1" style="background-color: #2563eb !important; color: #ffffff !important;">
                 <span style="color: #ffffff !important;">⚡</span> <span style="color: #ffffff !important;">Iniciar</span>
               </button>
-              <button type="button" onclick="openJoinAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap" style="background-color: #7c3aed !important; color: #ffffff !important;">
+              <button type="button" onclick="openJoinAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap" style="background-color: #1e293b !important; color: #ffffff !important;">
                 <span style="color: #ffffff !important;">+ Inscribir</span>
               </button>
-              <button type="button" onclick="openRecordWinnersModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap" style="background-color: #f59e0b !important; color: #0f172a !important;" title="Registrar Ganadores Oficiales">
+              <button type="button" onclick="openRecordWinnersModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-2.5 rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap" style="background-color: #f59e0b !important; color: #0f172a !important;" title="Registrar Ganadores Oficiales">
                 <span style="color: #0f172a !important;">🏆 Ganadores</span>
               </button>
-              <button type="button" onclick="cancelAmericanoTournament('${safeTournName}', '${t.date}', '${t.start_time}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold border border-rose-200 transition" title="Cancelar Torneo y Liberar Canchas">
+              <button type="button" onclick="cancelAmericanoTournament('${safeTournName}', '${t.date}', '${t.start_time}')" class="p-1.5 rounded-xl text-xs font-bold border transition" style="background-color: #fff1f2; color: #9f1239; border-color: #fecdd3;" title="Cancelar Torneo y Liberar Canchas">
                 🗑️
               </button>
             ` : `
@@ -14193,6 +14490,46 @@ ${data.message}`);
     }
     window.closeStartAmericanoModal = closeStartAmericanoModal;
 
+    function isTimeBasedScoring(scoring) {
+      const s = String(scoring || window.liveAmericanoScoring || '').toUpperCase();
+      return s === 'TIME_UNLIMITED' || s === 'TIME' || s.indexOf('TIME_') === 0 || s.indexOf('INFINIT') >= 0;
+    }
+    window.isTimeBasedScoring = isTimeBasedScoring;
+
+    function persistAmericanoRoundConfig(tournId, scoring, minutes) {
+      window.liveAmericanoScoring = scoring || window.liveAmericanoScoring || 'POINTS_32';
+      const mins = parseInt(minutes, 10);
+      window.liveAmericanoRoundMinutes = (!isNaN(mins) && mins > 0) ? mins : (window.liveAmericanoRoundMinutes || 15);
+      if (!tournId) return;
+      try {
+        localStorage.setItem('yp_am_scoring_' + tournId, window.liveAmericanoScoring);
+        localStorage.setItem('yp_am_roundmin_' + tournId, String(window.liveAmericanoRoundMinutes));
+      } catch (err) { /* ignore quota */ }
+    }
+
+    function restoreAmericanoRoundConfig(tournId, fallbackMinutes) {
+      try {
+        const s = localStorage.getItem('yp_am_scoring_' + tournId);
+        const m = localStorage.getItem('yp_am_roundmin_' + tournId);
+        if (s) window.liveAmericanoScoring = s;
+        if (m) window.liveAmericanoRoundMinutes = parseInt(m, 10) || fallbackMinutes || 15;
+      } catch (err) { /* ignore */ }
+      if (!window.liveAmericanoRoundMinutes) {
+        window.liveAmericanoRoundMinutes = fallbackMinutes || 15;
+      }
+    }
+
+    function onCsaScoringChange() {
+      const scoring = (document.getElementById('csa-scoring-system') || {}).value || '';
+      const hint = document.getElementById('csa-round-minutes-hint');
+      if (hint) {
+        hint.textContent = isTimeBasedScoring(scoring)
+          ? 'Modo puntos infinitos: al pulsar «Iniciar Ronda» arranca la cuenta regresiva. Al llegar a 00:00 se pide anotar marcadores y hacer Sube y Baja.'
+          : 'El cronómetro es opcional en partidas por puntos. En modo por tiempo (infinitos) es obligatorio para cerrar la ronda.';
+      }
+    }
+    window.onCsaScoringChange = onCsaScoringChange;
+
     async function handleStartAmericanoSubmit(e) {
       if (e && e.preventDefault) e.preventDefault();
       const name = document.getElementById('csa-hidden-name').value;
@@ -14200,15 +14537,19 @@ ${data.message}`);
       const startTime = document.getElementById('csa-hidden-time').value;
       const scoring = document.getElementById('csa-scoring-system').value || 'POINTS_32';
       const modality = document.getElementById('csa-hidden-modality').value || 'PAREJA_FIJA';
+      const minutesEl = document.getElementById('csa-round-minutes');
+      const roundMinutes = Math.max(1, parseInt(minutesEl && minutesEl.value, 10) || 15);
+      const tiebreak = (document.getElementById('csa-tiebreak') || {}).value || 'MATCHES_WON';
+      persistAmericanoRoundConfig(null, scoring, roundMinutes);
       closeStartAmericanoModal();
-      await startAmericanoLiveDirect(name, date, startTime, scoring, modality);
+      await startAmericanoLiveDirect(name, date, startTime, scoring, modality, roundMinutes, tiebreak);
     }
     window.handleStartAmericanoSubmit = handleStartAmericanoSubmit;
 
-    async function startAmericanoLiveDirect(name, date, startTime, scoring = 'POINTS_32', modality = 'PAREJA_FIJA') {
+    async function startAmericanoLiveDirect(name, date, startTime, scoring = 'POINTS_32', modality = 'PAREJA_FIJA', roundMinutes = 15, tiebreak = 'MATCHES_WON') {
       try {
         // 1. Obtener lista de torneos oficiales para encontrar si ya existe como OfficialTournament
-        const resList = await fetch('/api/v1/official-tournaments/');
+        const resList = await fetch(withClubQuery('/api/v1/tournaments/americanos'));
         let existingId = null;
         if (resList.ok) {
           const list = await resList.json();
@@ -14218,35 +14559,39 @@ ${data.message}`);
 
         // Si existe, llamar a /{id}/start
         if (existingId) {
-          const resStart = await fetch(`/api/v1/tournaments/${existingId}/start`, {
+          const resStart = await fetch(withClubQuery(`/api/v1/tournaments/${existingId}/start`), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ scoring_system: scoring, modality: modality })
+            headers: clubApiHeaders(),
+            body: JSON.stringify({ scoring_system: scoring, modality: modality, round_minutes: roundMinutes, tiebreak_rule: tiebreak })
           });
           window.activeLiveAmericanoId = existingId;
         } else {
-          // Obtener pistas activas
-          const courtsRes = await fetch('/api/v1/courts/');
+          // Obtener pistas activas de la sede
+          const courtsRes = await fetch(withClubQuery('/api/v1/courts/'));
           let assignedCourts = [];
           if (courtsRes.ok) {
             const courts = await courtsRes.json();
             assignedCourts = courts.slice(0, 3).map(c => String(c.id));
           }
           // Crear torneo en vivo
-          const resCreate = await fetch('/api/v1/tournaments/', {
+          const resCreate = await fetch(withClubQuery('/api/v1/tournaments/'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: clubApiHeaders(),
             body: JSON.stringify({
               name: name,
               sport_type: 'PADEL',
               category: '4ta',
               modality: modality,
               scoring_system: scoring,
-              target_points: 32,
-              tiebreak_rule: 'GAMES_DIFF',
+              target_points: isTimeBasedScoring(scoring) ? 0 : (scoring === 'POINTS_24' ? 24 : scoring === 'POINTS_40' ? 40 : 32),
+              round_minutes: roundMinutes,
+              pair_count: 8,
+              tiebreak_rule: tiebreak,
               assigned_court_ids: assignedCourts,
               start_date: date || null,
-              start_time: startTime || '18:00'
+              start_time: startTime || '18:00',
+              club_id: getActiveClubId(),
+              start_immediately: true
             })
           });
           if (resCreate.ok) {
@@ -14266,6 +14611,8 @@ ${data.message}`);
           if (sel) sel.value = window.activeLiveAmericanoId;
           await refreshLiveAmericanoState();
         }
+        persistAmericanoRoundConfig(window.activeLiveAmericanoId, scoring, roundMinutes);
+        resetRoundTimerDisplay();
         cockpit.scrollIntoView({ behavior: 'smooth' });
         alert(`⚡ ¡Torneo Americano '${name}' INICIADO EN VIVO!\nMesa de Control sincronizada con las pistas.`);
       } catch (err) {
@@ -14275,39 +14622,47 @@ ${data.message}`);
     }
     window.startAmericanoLiveDirect = startAmericanoLiveDirect;
 
-    async function toggleCardParticipants(tournName) {
+    async function toggleCardParticipants(tournName, opts) {
       const elId = `part-preview-${tournName.replace(/\W/g, '_')}`;
       const el = document.getElementById(elId);
       if (!el) return;
 
       if (el.getAttribute('data-loaded') === 'true') {
-        el.classList.toggle('hidden');
+        if (!(opts && opts.silent)) el.classList.toggle('hidden');
         return;
       }
 
-      el.innerHTML = '<span class="text-slate-400 italic">Cargando lista de inscritos...</span>';
+      el.innerHTML = '<span style="color: #64748b; font-style: italic;">Cargando lista de inscritos...</span>';
       try {
         const res = await fetch(`/api/v1/tournaments/${encodeURIComponent(tournName)}/participants`);
         if (res.ok) {
           const data = await res.json();
-          const parts = data.participants || [];
+          const parts = (data.participants || []).slice(0, 20);
           if (parts.length === 0) {
-            el.innerHTML = '<span class="text-slate-400 italic">No hay participantes registrados todavía.</span>';
+            el.innerHTML = '<span style="color: #64748b; font-style: italic;">No hay participantes registrados todavía.</span>';
           } else {
             el.innerHTML = parts.map(p => `
-              <div class="flex items-center justify-between py-0.5 border-b border-slate-100 last:border-0">
-                <span class="font-bold text-slate-900">${escapeHtml(p.name)}</span>
-                <span class="text-[10px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 font-bold">${escapeHtml(p.membership_tier || p.category || '4ta')}</span>
+              <div class="flex items-center justify-between py-0.5 last:border-0" style="border-bottom: 1px solid #e2e8f0;">
+                <span class="font-bold" style="color: #0f172a;">${escapeHtml(p.name)}</span>
+                <span class="text-[10px] px-1.5 rounded font-bold" style="background-color: #ede9fe; color: #5b21b6;">${escapeHtml(p.membership_tier || p.category || '4ta')}</span>
               </div>
             `).join('');
           }
           el.setAttribute('data-loaded', 'true');
         }
       } catch (err) {
-        el.innerHTML = '<span class="text-rose-500 italic">Error al cargar participantes</span>';
+        el.innerHTML = '<span style="color: #e11d48; font-style: italic;">Error al cargar participantes</span>';
       }
     }
     window.toggleCardParticipants = toggleCardParticipants;
+
+    function hydrateAmericanoCardParticipants() {
+      document.querySelectorAll('[id^="part-preview-"][data-tourn-name]').forEach(function (el) {
+        const name = el.getAttribute('data-tourn-name');
+        if (name) toggleCardParticipants(name, { silent: true });
+      });
+    }
+    window.hydrateAmericanoCardParticipants = hydrateAmericanoCardParticipants;
 
     async function loadTournaments(sport = 'ALL') {
       const upGrid = document.getElementById('tournaments-upcoming-grid');
@@ -14336,6 +14691,7 @@ ${data.message}`);
             `;
           } else {
             upGrid.innerHTML = upcoming.map(t => renderTournamentCard(t, false)).join('');
+            hydrateAmericanoCardParticipants();
           }
         }
 
@@ -14380,6 +14736,33 @@ ${data.message}`);
     // ========================================================
     window.activeLiveAmericanoId = null;
     window.liveAmericanoPollInterval = null;
+    window.DEFAULT_CLUB_ID = '2756f34a-7d24-4815-9f7e-6ed125ea5de7';
+
+    function getActiveClubId() {
+      try {
+        const fromLs = localStorage.getItem('user_club');
+        if (fromLs) return fromLs;
+      } catch (e) {}
+      const match = document.cookie.match(/(?:^|; )user_club=([^;]*)/);
+      if (match) return decodeURIComponent(match[1]);
+      return window.DEFAULT_CLUB_ID;
+    }
+    window.getActiveClubId = getActiveClubId;
+
+    function clubApiHeaders(extra) {
+      const headers = Object.assign({
+        'Content-Type': 'application/json',
+        'X-Club-Id': getActiveClubId(),
+      }, extra || {});
+      return headers;
+    }
+    window.clubApiHeaders = clubApiHeaders;
+
+    function withClubQuery(url) {
+      const sep = String(url).indexOf('?') >= 0 ? '&' : '?';
+      return url + sep + 'club_id=' + encodeURIComponent(getActiveClubId());
+    }
+    window.withClubQuery = withClubQuery;
 
     function toggleAmericanoLiveCockpit() {
       const panel = document.getElementById('americano-live-cockpit');
@@ -14397,7 +14780,7 @@ ${data.message}`);
       const sel = document.getElementById('live-tournament-selector');
       if (!sel) return;
       try {
-        const res = await fetch('/api/v1/official-tournaments/');
+        const res = await fetch(withClubQuery('/api/v1/tournaments/americanos'));
         if (!res.ok) return;
         const list = await res.json();
         if (!Array.isArray(list) || list.length === 0) {
@@ -14425,6 +14808,8 @@ ${data.message}`);
     function onSelectLiveAmericano(tournId) {
       if (!tournId) return;
       window.activeLiveAmericanoId = parseInt(tournId, 10);
+      restoreAmericanoRoundConfig(window.activeLiveAmericanoId);
+      resetRoundTimerDisplay();
       refreshLiveAmericanoState();
     }
     window.onSelectLiveAmericano = onSelectLiveAmericano;
@@ -14434,7 +14819,9 @@ ${data.message}`);
       if (!tId) return;
 
       try {
-        const res = await fetch(`/api/v1/tournaments/${tId}/live`);
+        const res = await fetch(withClubQuery(`/api/v1/tournaments/${tId}/live`), {
+          headers: clubApiHeaders(),
+        });
         if (!res.ok) return;
         const data = await res.json();
         renderLiveAmericanoUI(data);
@@ -14444,15 +14831,124 @@ ${data.message}`);
     }
     window.refreshLiveAmericanoState = refreshLiveAmericanoState;
 
+    window._liveScoreCache = window._liveScoreCache || {};
+    window._roundTimerIntervalId = null;
+    window._roundTimerEndsAt = 0;
+    window._roundTimerFinished = false;
+
+    function formatRoundClock(totalSeconds) {
+      const safe = Math.max(0, Math.floor(totalSeconds));
+      const mm = String(Math.floor(safe / 60)).padStart(2, '0');
+      const ss = String(safe % 60).padStart(2, '0');
+      return mm + ':' + ss;
+    }
+
+    function paintRoundTimer(totalSeconds, expired) {
+      const el = document.getElementById('live-round-timer-display');
+      if (!el) return;
+      if (expired) {
+        el.textContent = '¡TIEMPO FINALIZADO!';
+        el.classList.add('timer-expired', 'animate-pulse');
+        el.style.color = '#dc2626';
+        el.style.fontSize = '1rem';
+      } else {
+        el.textContent = formatRoundClock(totalSeconds);
+        el.classList.remove('timer-expired', 'animate-pulse');
+        el.style.color = '#ffffff';
+        el.style.fontSize = '';
+      }
+    }
+
+    function resetRoundTimerDisplay() {
+      if (window._roundTimerIntervalId) {
+        clearInterval(window._roundTimerIntervalId);
+        window._roundTimerIntervalId = null;
+      }
+      window._roundTimerEndsAt = 0;
+      window._roundTimerFinished = false;
+      paintRoundTimer(0, false);
+      const btn = document.getElementById('btn-start-round-timer');
+      if (btn) btn.textContent = 'Iniciar Ronda';
+    }
+    window.resetRoundTimerDisplay = resetRoundTimerDisplay;
+
+    function closeRoundTimeUpModal() {
+      const modal = document.getElementById('modal-round-time-up');
+      if (modal) modal.classList.remove('active');
+    }
+    window.closeRoundTimeUpModal = closeRoundTimeUpModal;
+
+    function showRoundTimeUpModal() {
+      const modal = document.getElementById('modal-round-time-up');
+      if (modal) modal.classList.add('active');
+    }
+
+    function onRoundTimerTick() {
+      const remainingMs = Math.max(0, window._roundTimerEndsAt - Date.now());
+      const remainingSec = Math.ceil(remainingMs / 1000);
+      if (remainingMs <= 0) {
+        if (window._roundTimerIntervalId) {
+          clearInterval(window._roundTimerIntervalId);
+          window._roundTimerIntervalId = null;
+        }
+        if (!window._roundTimerFinished) {
+          window._roundTimerFinished = true;
+          paintRoundTimer(0, true);
+          showRoundTimeUpModal();
+        }
+        return;
+      }
+      paintRoundTimer(remainingSec, false);
+    }
+
+    function startLiveAmericanoRound(ev) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      const tId = window.activeLiveAmericanoId;
+      if (!tId) {
+        alert('Selecciona primero un torneo activo en la Mesa de Control.');
+        return;
+      }
+      restoreAmericanoRoundConfig(tId);
+      if (!isTimeBasedScoring()) {
+        alert('Esta ronda es por puntos (no por tiempo). El cronómetro solo arranca en torneos de puntos infinitos / por tiempo.\nCambia el sistema de puntuación al iniciar el torneo o usa «Siguiente Ronda» para el Sube y Baja.');
+        return;
+      }
+      const minutes = Math.max(1, parseInt(window.liveAmericanoRoundMinutes, 10) || 15);
+      if (window._roundTimerIntervalId) {
+        clearInterval(window._roundTimerIntervalId);
+        window._roundTimerIntervalId = null;
+      }
+      window._roundTimerFinished = false;
+      window._roundTimerEndsAt = Date.now() + minutes * 60 * 1000;
+      paintRoundTimer(minutes * 60, false);
+      const btn = document.getElementById('btn-start-round-timer');
+      if (btn) btn.textContent = 'Reiniciar Ronda';
+      window._roundTimerIntervalId = setInterval(onRoundTimerTick, 250);
+    }
+    window.startLiveAmericanoRound = startLiveAmericanoRound;
+
     function renderLiveAmericanoUI(data) {
       if (!data || !data.tournament) return;
       const t = data.tournament;
+      restoreAmericanoRoundConfig(t.id, t.match_duration_minutes);
+      if (t.scoring_system) {
+        window.liveAmericanoScoring = t.scoring_system;
+        persistAmericanoRoundConfig(t.id, t.scoring_system, t.match_duration_minutes || 15);
+      }
+      if (t.match_duration_minutes) {
+        window.liveAmericanoRoundMinutes = t.match_duration_minutes;
+      }
 
       // 1. Cabecera y meta
       const nameEl = document.getElementById('live-cockpit-tourn-name');
       const badgeEl = document.getElementById('live-cockpit-status-badge');
       const metaEl = document.getElementById('live-cockpit-meta-info');
+      const tbHint = document.getElementById('live-cockpit-tiebreak-hint');
 
+      const scoringLabel = isTimeBasedScoring(t.scoring_system) ? 'Por tiempo (puntos infinitos)' : (
+        t.scoring_system === 'SETS' ? 'Por sets' : (`A ${t.target_points || 32} pts`)
+      );
+      const modLabel = (t.modality === 'PAREJA_FIJA') ? 'Pareja Fija' : 'Sube y Baja';
       if (nameEl) nameEl.textContent = t.name;
       if (badgeEl) {
         badgeEl.textContent = t.status;
@@ -14463,7 +14959,17 @@ ${data.message}`);
         }
       }
       if (metaEl) {
-        metaEl.textContent = `${t.category} (${t.sport_type}) • ${data.courts_status ? data.courts_status.length : 0} canchas activas • ${data.matches ? data.matches.length : 0} cruces programados`;
+        metaEl.textContent = `Ronda ${t.current_round || 1} • ${modLabel} • ${scoringLabel} • ${data.courts_status ? data.courts_status.length : 0} canchas • ${t.pair_count || ''} parejas`;
+      }
+      if (tbHint) {
+        const rule = String(t.tiebreak_rule || 'MATCHES_WON').toUpperCase();
+        const labels = {
+          MATCHES_WON: 'Criterio: 1° Partidos ganados • 2° Puntos a favor • 3° Enfrentamiento directo',
+          POINTS_FOR: 'Criterio: 1° Puntos a favor • 2° Partidos ganados • 3° Enfrentamiento directo',
+          GAMES_DIFF: 'Criterio: 1° Diferencia • 2° Partidos ganados • 3° Puntos a favor',
+          HEAD_TO_HEAD: 'Criterio: 1° Partidos ganados • 2° Puntos a favor • 3° Enfrentamiento directo',
+        };
+        tbHint.textContent = labels[rule] || labels.MATCHES_WON;
       }
 
       // 2. Grilla de canchas con tanteador rápido
@@ -14494,48 +15000,53 @@ ${data.message}`);
             }
 
             const isDone = m.status === 'COMPLETED';
+            const cached = (window._liveScoreCache && window._liveScoreCache[m.match_id]) || null;
+            const t1pts = cached ? cached.t1 : (m.team1_points || 0);
+            const t2pts = cached ? cached.t2 : (m.team2_points || 0);
+            if (!cached) {
+              window._liveScoreCache[m.match_id] = { t1: t1pts, t2: t2pts };
+            }
+            const timeBased = isTimeBasedScoring(t.scoring_system);
+            const metaLabel = timeBased ? 'Puntos infinitos · por tiempo' : (`Meta: ${t.target_points || 32} pts`);
             return `
-              <div class="p-4 bg-slate-800/90 border ${isDone ? 'border-emerald-700/70' : 'border-indigo-600/70'} rounded-2xl shadow-lg flex flex-col justify-between space-y-3">
-                <div class="flex justify-between items-center text-xs font-bold pb-2 border-b border-slate-700">
-                  <span class="flex items-center gap-1.5 text-white">
-                    <span class="w-2.5 h-2.5 rounded-full ${isDone ? 'bg-emerald-400' : 'bg-emerald-400 animate-ping'}"></span>
+              <div class="p-4 rounded-2xl shadow-lg flex flex-col justify-between space-y-3" style="background-color: #020617; border: 1px solid ${isDone ? '#047857' : '#4f46e5'};">
+                <div class="flex justify-between items-center text-xs font-bold pb-2" style="border-bottom: 1px solid #334155;">
+                  <span class="flex items-center gap-1.5" style="color: #ffffff;">
+                    <span class="w-2.5 h-2.5 rounded-full ${isDone ? '' : 'animate-ping'}" style="background-color: #34d399;"></span>
                     <span class="font-black">${escapeHtml(c.court_name)}</span>
                   </span>
-                  <span class="text-[10px] font-black px-2 py-0.5 rounded ${isDone ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' : 'bg-indigo-950 text-indigo-300 border border-indigo-700'}">
+                  <span class="text-[10px] font-black px-2 py-0.5 rounded" style="${isDone ? 'background-color: #064e3b; color: #6ee7b7; border: 1px solid #047857;' : 'background-color: #312e81; color: #c7d2fe; border: 1px solid #4338ca;'}">
                     ${m.status} • R${m.round_number}
                   </span>
                 </div>
 
-                <!-- Tanteador en vivo con +/- y entrada directa rápida -->
                 <div class="space-y-2">
-                  <!-- Equipo 1 -->
-                  <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80">
-                    <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHtml(m.team1_name)}</span>
+                  <div class="flex items-center justify-between p-2.5 rounded-xl" style="background-color: #0f172a; border: 1px solid #334155;">
+                    <span class="text-xs font-bold truncate pr-2" style="color: #e2e8f0;">${escapeHtml(m.team1_name)}</span>
                     <div class="flex items-center gap-1.5 shrink-0">
-                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, -1, 0)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center border border-slate-600">-</button>
-                      <input type="number" min="0" max="60" value="${m.team1_points || 0}" id="score-t1-${m.match_id}" onchange="setDirectLiveScore(${t.id}, ${m.match_id}, parseInt(this.value, 10), null)" class="w-11 h-7 text-center font-mono font-black text-xs bg-slate-950 text-emerald-400 border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none" />
-                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 1, 0)" class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center">+</button>
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, -1, 0, event)" class="px-1.5 h-7 rounded font-black text-[10px] flex items-center justify-center" style="background-color: #1e293b; color: #ffffff; border: 1px solid #475569; min-width: 32px;">-1</button>
+                      <input type="number" min="0" max="999" value="${t1pts}" id="score-t1-${m.match_id}" onchange="setDirectLiveScore(${t.id}, ${m.match_id}, parseInt(this.value, 10), null)" class="w-11 h-7 text-center font-mono font-black text-xs rounded-lg outline-none" style="background-color: #020617; color: #34d399; border: 1px solid #334155;" />
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 1, 0, event)" class="px-1.5 h-7 rounded font-black text-[10px] flex items-center justify-center" style="background-color: #2563eb; color: #ffffff; min-width: 32px;">+1</button>
                     </div>
                   </div>
 
-                  <!-- Equipo 2 -->
-                  <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80">
-                    <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHtml(m.team2_name)}</span>
+                  <div class="flex items-center justify-between p-2.5 rounded-xl" style="background-color: #0f172a; border: 1px solid #334155;">
+                    <span class="text-xs font-bold truncate pr-2" style="color: #e2e8f0;">${escapeHtml(m.team2_name)}</span>
                     <div class="flex items-center gap-1.5 shrink-0">
-                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, -1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center border border-slate-600">-</button>
-                      <input type="number" min="0" max="60" value="${m.team2_points || 0}" id="score-t2-${m.match_id}" onchange="setDirectLiveScore(${t.id}, ${m.match_id}, null, parseInt(this.value, 10))" class="w-11 h-7 text-center font-mono font-black text-xs bg-slate-950 text-emerald-400 border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none" />
-                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, 1)" class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center">+</button>
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, -1, event)" class="px-1.5 h-7 rounded font-black text-[10px] flex items-center justify-center" style="background-color: #1e293b; color: #ffffff; border: 1px solid #475569; min-width: 32px;">-1</button>
+                      <input type="number" min="0" max="999" value="${t2pts}" id="score-t2-${m.match_id}" onchange="setDirectLiveScore(${t.id}, ${m.match_id}, null, parseInt(this.value, 10))" class="w-11 h-7 text-center font-mono font-black text-xs rounded-lg outline-none" style="background-color: #020617; color: #34d399; border: 1px solid #334155;" />
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, 1, event)" class="px-1.5 h-7 rounded font-black text-[10px] flex items-center justify-center" style="background-color: #2563eb; color: #ffffff; min-width: 32px;">+1</button>
                     </div>
                   </div>
                 </div>
 
                 <div class="flex items-center justify-between pt-1">
                   <div class="flex items-center gap-1">
-                    <span class="text-[10px] font-bold text-slate-400 font-mono">Meta: 32 pts</span>
-                    <span class="text-[9px] text-slate-500">• Sube & Baja</span>
+                    <span class="text-[10px] font-bold font-mono" style="color: #94a3b8;">${metaLabel}</span>
+                    <span class="text-[9px]" style="color: #64748b;">• ${modLabel}</span>
                   </div>
-                  <button type="button" onclick="markMatchCompleted(${t.id}, ${m.match_id})" class="px-2.5 py-1 text-[10px] font-black rounded-lg ${isDone ? 'bg-slate-700 text-slate-300' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} transition" style="${isDone ? 'background-color: #334155 !important; color: #cbd5e1 !important;' : 'background-color: #4f46e5 !important; color: #ffffff !important;'}">
-                    ${isDone ? 'Completado ✓' : 'Finalizar Cruce'}
+                  <button type="button" onclick="markMatchCompleted(${t.id}, ${m.match_id})" class="px-2.5 py-1 text-[10px] font-black rounded-lg" style="${isDone ? 'background-color: #334155 !important; color: #cbd5e1 !important;' : 'background-color: #4f46e5 !important; color: #ffffff !important;'}">
+                    ${isDone ? 'Completado ✓' : 'Cierre de Cruce'}
                   </button>
                 </div>
               </div>
@@ -14545,78 +15056,101 @@ ${data.message}`);
       }
 
       // 3. Leaderboard en vivo
-      const lbBody = document.getElementById('live-cockpit-leaderboard-body');
-      if (lbBody) {
-        const lb = data.leaderboard || [];
-        if (lb.length === 0) {
-          lbBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-xs text-slate-500">Sin estadísticas registradas.</td></tr>';
-        } else {
-          lbBody.innerHTML = lb.map((row, idx) => {
-            const isLeader = idx === 0;
-            const isPodium = idx < 2;
-            return `
-              <tr class="${isLeader ? 'bg-emerald-950/40 font-bold' : isPodium ? 'bg-slate-800/50' : ''} hover:bg-slate-800/80 transition">
-                <td class="p-3 font-mono font-black ${isLeader ? 'text-amber-400' : 'text-slate-400'}">
-                  ${idx + 1} ${isLeader ? '👑' : idx === 1 ? '🥈' : ''}
-                </td>
-                <td class="p-3 font-bold text-white">${escapeHtml(row.team_name || 'Pareja')}</td>
-                <td class="p-3 text-center font-mono text-slate-300">${row.pj || 0}</td>
-                <td class="p-3 text-center font-mono font-bold text-emerald-400">${row.pg || 0}</td>
-                <td class="p-3 text-center font-mono text-rose-400">${row.pp || 0}</td>
-                <td class="p-3 text-center font-mono text-slate-300">${row.pts_favor || 0}</td>
-                <td class="p-3 text-center font-mono text-slate-400">${row.pts_contra || 0}</td>
-                <td class="p-3 text-center font-mono font-bold ${row.diff >= 0 ? 'text-cyan-300' : 'text-rose-400'}">
-                  ${row.diff > 0 ? '+' : ''}${row.diff || 0}
-                </td>
-                <td class="p-3 text-center font-black font-mono text-amber-300 text-sm">${row.ranking_pts || 0}</td>
-              </tr>
-            `;
-          }).join('');
-        }
-      }
+      paintLiveLeaderboard(data.leaderboard || []);
     }
 
-    async function modifyLiveScore(tournId, matchId, delta1, delta2) {
-      try {
-        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            delta_t1: delta1,
-            delta_t2: delta2
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const t1El = document.getElementById(`score-t1-${matchId}`);
-          const t2El = document.getElementById(`score-t2-${matchId}`);
-          if (t1El) t1El.value = data.team1_points;
-          if (t2El) t2El.value = data.team2_points;
-          await refreshLiveAmericanoState();
-        }
-      } catch (err) {
-        console.error('Error modificando score:', err);
+    function paintLiveLeaderboard(lb) {
+      const lbBody = document.getElementById('live-cockpit-leaderboard-body');
+      if (!lbBody) return;
+      const rows = (lb || []).filter(function (row) { return row && !row._config; });
+      if (rows.length === 0) {
+        lbBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-xs" style="color: #94a3b8;">Sin estadísticas registradas.</td></tr>';
+        return;
       }
+      lbBody.innerHTML = rows.map(function (row, idx) {
+        const isLeader = idx === 0;
+        const medal = isLeader ? '👑' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : ''));
+        const nameColor = '#ffffff';
+        const posColor = isLeader ? '#fbbf24' : '#94a3b8';
+        return `
+          <tr style="background-color: ${isLeader ? '#052e16' : (idx < 3 ? '#1e293b' : 'transparent')};">
+            <td class="p-3 font-mono font-black" style="color: ${posColor};">${idx + 1} ${medal}</td>
+            <td class="p-3 font-bold" style="color: ${nameColor};">${escapeHtml(row.team_name || 'Pareja')}</td>
+            <td class="p-3 text-center font-mono" style="color: #cbd5e1;">${row.pj || 0}</td>
+            <td class="p-3 text-center font-mono font-bold" style="color: #6ee7b7;">${row.pg || 0}</td>
+            <td class="p-3 text-center font-mono" style="color: #fda4af;">${row.pp || 0}</td>
+            <td class="p-3 text-center font-mono" style="color: #cbd5e1;">${row.pts_favor || 0}</td>
+            <td class="p-3 text-center font-mono" style="color: #94a3b8;">${row.pts_contra || 0}</td>
+            <td class="p-3 text-center font-mono font-bold" style="color: ${(row.diff || 0) >= 0 ? '#67e8f9' : '#fda4af'};">${row.diff > 0 ? '+' : ''}${row.diff || 0}</td>
+            <td class="p-3 text-center font-black font-mono" style="color: #fcd34d;">${row.ranking_pts || 0}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+    window.paintLiveLeaderboard = paintLiveLeaderboard;
+
+    function readLiveScoreInputs(matchId) {
+      const t1El = document.getElementById(`score-t1-${matchId}`);
+      const t2El = document.getElementById(`score-t2-${matchId}`);
+      const cached = window._liveScoreCache[matchId] || {};
+      return {
+        t1: Math.max(0, parseInt(t1El ? t1El.value : cached.t1, 10) || cached.t1 || 0),
+        t2: Math.max(0, parseInt(t2El ? t2El.value : cached.t2, 10) || cached.t2 || 0),
+      };
+    }
+
+    function paintLiveScoreInputs(matchId, t1, t2) {
+      const t1El = document.getElementById(`score-t1-${matchId}`);
+      const t2El = document.getElementById(`score-t2-${matchId}`);
+      if (t1El) t1El.value = t1;
+      if (t2El) t2El.value = t2;
+      window._liveScoreCache[matchId] = { t1: t1, t2: t2 };
+    }
+
+    function persistLiveScore(tournId, matchId, cache) {
+      return fetch(withClubQuery(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`), {
+        method: 'POST',
+        headers: clubApiHeaders(),
+        body: JSON.stringify({
+          team1_points: cache.t1,
+          team2_points: cache.t2,
+          delta_t1: cache.delta1,
+          delta_t2: cache.delta2,
+        }),
+      }).then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      }).then(function (data) {
+        if (data && data.leaderboard) paintLiveLeaderboard(data.leaderboard);
+        return data;
+      }).catch(function (err) {
+        console.error('Error persistiendo tanteador local:', err);
+      });
+    }
+
+    function modifyLiveScore(tournId, matchId, delta1, delta2, ev) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      const current = readLiveScoreInputs(matchId);
+      const next = {
+        t1: Math.max(0, current.t1 + (parseInt(delta1, 10) || 0)),
+        t2: Math.max(0, current.t2 + (parseInt(delta2, 10) || 0)),
+        delta1: parseInt(delta1, 10) || 0,
+        delta2: parseInt(delta2, 10) || 0,
+      };
+      paintLiveScoreInputs(matchId, next.t1, next.t2);
+      persistLiveScore(tournId, matchId, next);
     }
     window.modifyLiveScore = modifyLiveScore;
 
-    async function setDirectLiveScore(tournId, matchId, p1, p2) {
-      try {
-        const payload = {};
-        if (p1 !== null && !isNaN(p1)) payload.team1_points = p1;
-        if (p2 !== null && !isNaN(p2)) payload.team2_points = p2;
-
-        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          await refreshLiveAmericanoState();
-        }
-      } catch (err) {
-        console.error('Error guardando tanteador directo:', err);
-      }
+    function setDirectLiveScore(tournId, matchId, p1, p2) {
+      const current = readLiveScoreInputs(matchId);
+      const next = {
+        t1: (p1 !== null && !isNaN(p1)) ? Math.max(0, p1) : current.t1,
+        t2: (p2 !== null && !isNaN(p2)) ? Math.max(0, p2) : current.t2,
+      };
+      paintLiveScoreInputs(matchId, next.t1, next.t2);
+      persistLiveScore(tournId, matchId, next);
     }
     window.setDirectLiveScore = setDirectLiveScore;
 
@@ -14631,13 +15165,15 @@ ${data.message}`);
       }
 
       try {
-        const res = await fetch(`/api/v1/tournaments/${tId}/next-round`, {
+        const res = await fetch(withClubQuery(`/api/v1/tournaments/${tId}/next-round`), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: clubApiHeaders(),
           body: JSON.stringify({ auto_promote_relegate: true })
         });
         const data = await res.json();
         if (res.ok) {
+          window._liveScoreCache = {};
+          resetRoundTimerDisplay();
           alert(`⏭️ ${data.message || 'Siguiente ronda iniciada'}\nRonda Activa: ${data.current_round}`);
           await refreshLiveAmericanoState();
         } else {
@@ -14652,14 +15188,19 @@ ${data.message}`);
 
     async function markMatchCompleted(tournId, matchId) {
       try {
-        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
+        const cache = readLiveScoreInputs(matchId);
+        await persistLiveScore(tournId, matchId, cache);
+        const res = await fetch(withClubQuery(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: clubApiHeaders(),
           body: JSON.stringify({
-            status: 'COMPLETED'
+            status: 'COMPLETED',
+            team1_points: cache.t1,
+            team2_points: cache.t2,
           })
         });
         if (res.ok) {
+          delete window._liveScoreCache[matchId];
           await refreshLiveAmericanoState();
         }
       } catch (err) {
@@ -14669,15 +15210,89 @@ ${data.message}`);
     window.markMatchCompleted = markMatchCompleted;
 
     // Modal de Cierre de Torneo Americano
-    function openCloseAmericanoModal() {
+    async function openCloseAmericanoModal() {
       const tId = window.activeLiveAmericanoId;
       if (!tId) {
         alert('Selecciona primero un torneo activo.');
         return;
       }
-      openFinalizeOfficialTournamentModal();
+      await previewFinishAmericano(tId);
     }
     window.openCloseAmericanoModal = openCloseAmericanoModal;
+
+    function closeAmericanoPodiumModal() {
+      const modal = document.getElementById('modal-americano-podium');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeAmericanoPodiumModal = closeAmericanoPodiumModal;
+
+    function setFinishAmericanoMode(done) {
+      const confirmBtn = document.getElementById('btn-confirm-finish-americano');
+      const closeBtn = document.getElementById('btn-close-finish-americano');
+      if (confirmBtn) confirmBtn.style.display = done ? 'none' : 'inline-flex';
+      if (closeBtn) closeBtn.style.display = done ? 'inline-flex' : 'none';
+    }
+
+    function showAmericanoPodium(data, done) {
+      const modal = document.getElementById('modal-americano-podium');
+      const title = document.getElementById('americano-podium-title');
+      const gold = document.getElementById('americano-podium-gold');
+      const silver = document.getElementById('americano-podium-silver');
+      const bronze = document.getElementById('americano-podium-bronze');
+      const lb = ((data && data.leaderboard) || []).filter(function (row) { return row && !row._config; });
+      const podium = (data && data.podium) || {};
+      if (title) {
+        title.textContent = done
+          ? ((data && data.message) || 'Podio definitivo consolidado en el ranking CRM.')
+          : 'Confirma el podio definitivo. Los puntos se consolidarán en el perfil de cada jugador.';
+      }
+      if (gold) gold.textContent = podium.champion || (lb[0] && lb[0].team_name) || '—';
+      if (silver) silver.textContent = podium.runner_up || (lb[1] && lb[1].team_name) || '—';
+      if (bronze) bronze.textContent = podium.third || (lb[2] && lb[2].team_name) || '—';
+      setFinishAmericanoMode(!!done);
+      if (modal) modal.style.display = 'flex';
+    }
+
+    async function previewFinishAmericano(tId) {
+      try {
+        const res = await fetch(withClubQuery(`/api/v1/tournaments/${tId}/live`), { headers: clubApiHeaders() });
+        const data = res.ok ? await res.json() : {};
+        showAmericanoPodium(data, false);
+      } catch (err) {
+        console.error('Error previsualizando podio:', err);
+        showAmericanoPodium({}, false);
+      }
+    }
+
+    async function confirmFinishAmericano() {
+      const tId = window.activeLiveAmericanoId;
+      if (!tId) return;
+      await closeLiveAmericanoWithPodium(tId);
+    }
+    window.confirmFinishAmericano = confirmFinishAmericano;
+
+    async function closeLiveAmericanoWithPodium(tId) {
+      try {
+        const res = await fetch(withClubQuery(`/api/v1/tournaments/${tId}/close`), {
+          method: 'POST',
+          headers: clubApiHeaders(),
+          body: JSON.stringify({ champions_points: 100, runner_up_points: 50 }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert('No se pudo cerrar el torneo: ' + (data.detail || 'Error'));
+          return;
+        }
+        resetRoundTimerDisplay();
+        showAmericanoPodium(data, true);
+        await refreshLiveAmericanoState();
+        if (typeof loadTournaments === 'function') loadTournaments();
+      } catch (err) {
+        console.error('Error cerrando americano:', err);
+        alert('Error de conexión al cerrar el torneo.');
+      }
+    }
+    window.closeLiveAmericanoWithPodium = closeLiveAmericanoWithPodium;
 
 
     

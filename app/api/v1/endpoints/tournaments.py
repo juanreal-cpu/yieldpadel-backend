@@ -975,19 +975,313 @@ from app.models.official_tournaments import (
 from app.services.ranking_engine import get_next_category
 
 
+AMERICANO_CONFIG_FLAG = "_config"
+DEFAULT_CLUB_UUID = uuid.UUID("2756f34a-7d24-4815-9f7e-6ed125ea5de7")
+
+
+def _parse_club_uuid(raw: Optional[str]) -> Optional[uuid.UUID]:
+    if not raw:
+        return None
+    try:
+        return uuid.UUID(str(raw).strip())
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def resolve_club_id(request: Request, payload_club_id: Optional[str] = None) -> uuid.UUID:
+    """Resuelve el club activo: body → header X-Club-Id → query → cookie user_club → sede default."""
+    header = request.headers.get("X-Club-Id") or request.headers.get("x-club-id")
+    query = request.query_params.get("club_id")
+    cookie = request.cookies.get("user_club")
+    return (
+        _parse_club_uuid(payload_club_id)
+        or _parse_club_uuid(header)
+        or _parse_club_uuid(query)
+        or _parse_club_uuid(cookie)
+        or DEFAULT_CLUB_UUID
+    )
+
+
+def _club_scope(club_id: uuid.UUID):
+    """Aislamiento multi-tenant. Filas legacy sin club_id solo son visibles en la sede default."""
+    if club_id == DEFAULT_CLUB_UUID:
+        return or_(OfficialTournament.club_id == club_id, OfficialTournament.club_id.is_(None))
+    return OfficialTournament.club_id == club_id
+
+
+def _public_status(status) -> str:
+    raw = status.value if hasattr(status, "value") else str(status or "DRAFT")
+    if raw in {"IN_PROGRESS", "RUNNING", "LIVE"}:
+        return "RUNNING"
+    return raw
+
+
+def _running_status() -> OfficialTournamentStatus:
+    return OfficialTournamentStatus.RUNNING
+
+
+def _is_finished(status) -> bool:
+    raw = status.value if hasattr(status, "value") else str(status or "")
+    return raw == "FINISHED"
+
+
+def _americano_eager_options():
+    return (
+        selectinload(OfficialTournament.teams),
+        selectinload(OfficialTournament.groups).selectinload(TournamentGroup.matches),
+        selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team1),
+        selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team2),
+    )
+
+
+async def _get_tournament_for_club(
+    db: AsyncSession,
+    tourn_id: int,
+    club_id: uuid.UUID,
+    *,
+    bind_legacy: bool = False,
+) -> OfficialTournament:
+    stmt = (
+        select(OfficialTournament)
+        .options(*_americano_eager_options())
+        .where(OfficialTournament.id == tourn_id, _club_scope(club_id))
+    )
+    res = await db.execute(stmt)
+    tourn = res.scalar_one_or_none()
+    if not tourn:
+        raise HTTPException(status_code=404, detail="Torneo no encontrado.")
+    if bind_legacy and tourn.club_id is None:
+        tourn.club_id = club_id
+    return tourn
+
+
+async def _assert_courts_belong_to_club(
+    db: AsyncSession,
+    court_uuids: List[uuid.UUID],
+    club_id: uuid.UUID,
+) -> None:
+    if not court_uuids:
+        raise HTTPException(status_code=400, detail="Debe asignar al menos una pista deportiva para el torneo.")
+    courts_res = await db.execute(select(Court).where(Court.id.in_(court_uuids)))
+    found = {c.id: c for c in courts_res.scalars().all()}
+    for cid in court_uuids:
+        court = found.get(cid)
+        if not court:
+            raise HTTPException(status_code=400, detail=f"Cancha {cid} no existe.")
+        if court.club_id and court.club_id != club_id:
+            raise HTTPException(
+                status_code=403,
+                detail="La cancha no pertenece al club activo. Aislamiento multi-tenant.",
+            )
+
+
+def _parse_court_uuids(court_ids: Optional[List[str]]) -> List[uuid.UUID]:
+    parsed: List[uuid.UUID] = []
+    for cid in court_ids or []:
+        try:
+            parsed.append(uuid.UUID(str(cid)))
+        except Exception:
+            continue
+    return parsed
+
+
+def _is_time_unlimited(scoring: Optional[str]) -> bool:
+    s = str(scoring or "").upper()
+    return s in {"TIME_UNLIMITED", "TIME", "TIME_INFINITE", "INFINITOS"} or s.startswith("TIME_")
+
+
+def _is_sube_y_baja(modality: Optional[str]) -> bool:
+    m = str(modality or "").upper()
+    return m in {"SUBE_Y_BAJA", "INDIVIDUAL", "ROTATIVA", "ROTATIVA_KING_OF_COURT", "KING_OF_THE_COURT"}
+
+
+def _target_points_for(scoring: Optional[str], explicit: Optional[int] = None) -> int:
+    if _is_time_unlimited(scoring):
+        return 0
+    if explicit is not None and int(explicit) > 0:
+        return int(explicit)
+    s = str(scoring or "").upper()
+    if "24" in s:
+        return 24
+    if "40" in s:
+        return 40
+    if s == "SETS":
+        return 2
+    return 32
+
+
+def _split_standings_config(standings: Optional[List[dict]]) -> tuple:
+    cfg: Dict[str, Any] = {}
+    rows: List[dict] = []
+    for item in standings or []:
+        if isinstance(item, dict) and item.get(AMERICANO_CONFIG_FLAG):
+            cfg = item
+        elif isinstance(item, dict):
+            rows.append(item)
+    return cfg, rows
+
+
+def _merge_standings_config(cfg: Optional[dict], rows: Optional[List[dict]]) -> List[dict]:
+    merged = [r for r in (rows or []) if isinstance(r, dict) and not r.get(AMERICANO_CONFIG_FLAG)]
+    if cfg:
+        payload = dict(cfg)
+        payload[AMERICANO_CONFIG_FLAG] = True
+        return [payload] + merged
+    return merged
+
+
+def _build_americano_config(
+    scoring_system: str = "POINTS_32",
+    target_points: Optional[int] = None,
+    modality: str = "PAREJA_FIJA",
+    tiebreak_rule: str = "MATCHES_WON",
+    round_minutes: int = 15,
+    pair_count: int = 4,
+) -> Dict[str, Any]:
+    scoring = str(scoring_system or "POINTS_32").upper()
+    minutes = max(1, int(round_minutes or 15))
+    return {
+        AMERICANO_CONFIG_FLAG: True,
+        "scoring_system": scoring,
+        "target_points": _target_points_for(scoring, target_points),
+        "modality": str(modality or "PAREJA_FIJA").upper(),
+        "tiebreak_rule": str(tiebreak_rule or "MATCHES_WON").upper(),
+        "round_minutes": minutes,
+        "pair_count": max(2, min(int(pair_count or 4), 20)),
+    }
+
+
+def _head_to_head_margin(matches: List[TournamentMatch], team_a: int, team_b: int) -> int:
+    won_a = won_b = 0
+    for m in matches:
+        if m.status != "COMPLETED" or not m.team1_id or not m.team2_id:
+            continue
+        ids = {m.team1_id, m.team2_id}
+        if team_a not in ids or team_b not in ids:
+            continue
+        if m.winner_team_id == team_a:
+            won_a += 1
+        elif m.winner_team_id == team_b:
+            won_b += 1
+    return won_a - won_b
+
+
+def _sort_americano_leaderboard(rows: List[dict], matches: List[TournamentMatch], rule: str) -> List[dict]:
+    """Desempate canónico: 1) partidos ganados  2) puntos a favor  3) enfrentamiento directo."""
+    r = str(rule or "MATCHES_WON").upper()
+
+    def key_fn(row: dict):
+        pg = int(row.get("pg") or 0)
+        diff = int(row.get("diff") or 0)
+        pf = int(row.get("pts_favor") or 0)
+        if r in {"POINTS_FOR", "PTS_FAVOR", "PUNTOS_A_FAVOR"}:
+            return (pf, pg, diff)
+        if r in {"GAMES_DIFF", "DIFF", "POINTS_DIFF", "DIFERENCIA"}:
+            return (diff, pg, pf)
+        if r in {"SETS_DIFF"}:
+            return (pg, diff, pf)
+        # MATCHES_WON (default) y HEAD_TO_HEAD: PG → puntos a favor → diff
+        return (pg, pf, diff)
+
+    ordered = sorted(rows, key=key_fn, reverse=True)
+
+    apply_h2h = r in {"MATCHES_WON", "HEAD_TO_HEAD", "H2H", "ENFRENTAMIENTO_DIRECTO", ""}
+    if apply_h2h:
+        for i in range(len(ordered)):
+            for j in range(i + 1, len(ordered)):
+                if int(ordered[i].get("pg") or 0) != int(ordered[j].get("pg") or 0):
+                    break
+                if r != "HEAD_TO_HEAD" and int(ordered[i].get("pts_favor") or 0) != int(ordered[j].get("pts_favor") or 0):
+                    break
+                if _head_to_head_margin(matches, ordered[i]["team_id"], ordered[j]["team_id"]) < 0:
+                    ordered[i], ordered[j] = ordered[j], ordered[i]
+    return ordered
+
+
+def _circle_round_robin(teams: List[TournamentTeam]) -> List[List[tuple]]:
+    ts: List[Optional[TournamentTeam]] = list(teams)
+    if len(ts) < 2:
+        return []
+    if len(ts) % 2 == 1:
+        ts.append(None)
+    n = len(ts)
+    arr = ts[:]
+    rounds: List[List[tuple]] = []
+    for _ in range(n - 1):
+        pairs = []
+        for i in range(n // 2):
+            a, b = arr[i], arr[n - 1 - i]
+            if a is not None and b is not None:
+                pairs.append((a, b))
+        rounds.append(pairs)
+        arr = [arr[0]] + [arr[-1]] + arr[1:-1]
+    return rounds
+
+
+def _build_fixture_rounds(
+    teams: List[TournamentTeam],
+    court_uuids: List[uuid.UUID],
+    modality: str,
+) -> List[List[tuple]]:
+    """Cada ronda: lista de (team1, team2, court_uuid|None) limitada a canchas simultáneas."""
+    if len(teams) < 2:
+        return []
+    n_courts = max(1, len(court_uuids) or 1)
+    if _is_sube_y_baja(modality):
+        pairings = []
+        max_pairs = min(len(teams) // 2, n_courts)
+        for i in range(max_pairs):
+            court = court_uuids[i] if i < len(court_uuids) else None
+            pairings.append((teams[i * 2], teams[i * 2 + 1], court))
+        return [pairings] if pairings else []
+
+    out: List[List[tuple]] = []
+    for pairs in _circle_round_robin(teams):
+        for start in range(0, len(pairs), n_courts):
+            chunk = pairs[start:start + n_courts]
+            assigned = []
+            for i, (t1, t2) in enumerate(chunk):
+                court = court_uuids[i] if i < len(court_uuids) else (court_uuids[i % len(court_uuids)] if court_uuids else None)
+                assigned.append((t1, t2, court))
+            if assigned:
+                out.append(assigned)
+    return out
+
+
+def _make_match(tourn_id: int, group_id: int, round_number: int, t1: TournamentTeam, t2: TournamentTeam, court, stage: str, status: str) -> TournamentMatch:
+    return TournamentMatch(
+        tournament_id=tourn_id,
+        group_id=group_id,
+        stage=stage,
+        round_number=round_number,
+        team1_id=t1.id,
+        team2_id=t2.id,
+        team1_label=t1.team_name,
+        team2_label=t2.team_name,
+        court_id=court,
+        scheduled_time=f"Ronda {round_number}",
+        scores_json=[{"set": 1, "t1": 0, "t2": 0}],
+        status=status,
+    )
+
+
 class CreateAmericanoTournamentRequest(BaseModel):
     name: str = Field(..., description="Nombre del Torneo Americano (ej: Americano Nocturno Express)")
     sport_type: str = Field("PADEL", description="PADEL, PICKLEBALL")
     category: str = Field("4ta", description="Categoría (1ra, 2da, 3ra, 4ta, 5ta, 6ta)")
-    modality: str = Field("PAREJA_FIJA", description="PAREJA_FIJA o ROTATIVA_KING_OF_COURT")
-    scoring_system: str = Field("POINTS_32", description="POINTS_32, POINTS_24, POINTS_40, SETS")
-    target_points: int = Field(32, description="Puntos meta por partido (default: 32)")
-    tiebreak_rule: str = Field("GAMES_DIFF", description="GAMES_DIFF, HEAD_TO_HEAD, SETS_DIFF")
+    modality: str = Field("PAREJA_FIJA", description="PAREJA_FIJA, INDIVIDUAL, SUBE_Y_BAJA, ROTATIVA_KING_OF_COURT")
+    scoring_system: str = Field("POINTS_32", description="TIME_UNLIMITED, POINTS_24, POINTS_32, POINTS_40, SETS")
+    target_points: int = Field(32, description="Puntos meta por partido; 0 = infinitos (por tiempo)")
+    round_minutes: int = Field(15, ge=1, le=180, description="Duración de cada ronda en minutos (cronómetro)")
+    pair_count: int = Field(4, ge=2, le=20, description="Cantidad de parejas inscritas / plazas")
+    tiebreak_rule: str = Field("MATCHES_WON", description="MATCHES_WON (PG → PF → H2H), POINTS_FOR, GAMES_DIFF, HEAD_TO_HEAD")
     assigned_court_ids: List[str] = Field(..., description="Lista de IDs UUID de pistas físicas asignadas")
     player_ids: Optional[List[Union[int, str]]] = Field(default_factory=list, description="Lista de IDs o teléfonos de jugadores CRM")
     teams: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Parejas fijas [{'name': '...', 'p1': 1, 'p2': 2}]")
     start_date: Optional[str] = Field(None, description="Fecha YYYY-MM-DD")
     start_time: Optional[str] = Field("18:00", description="Hora de inicio HH:MM")
+    club_id: Optional[str] = Field(None, description="UUID de la sede (multi-tenant). Si se omite, se toma cookie/header.")
+    start_immediately: bool = Field(True, description="True = RUNNING (mesa en vivo). False = DRAFT.")
 
 
 class LiveScoreUpdateRequest(BaseModel):
@@ -1013,45 +1307,66 @@ class CloseTournamentRequest(BaseModel):
 )
 async def create_live_americano_tournament(
     payload: CreateAmericanoTournamentRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    club_id: Optional[str] = Query(None, description="UUID de la sede activa"),
 ):
     """
-    Crea un nuevo Torneo Americano, asocia y valida las canchas activas,
-    inscribe a los participantes desde `customers` y genera el fixture
-    balanceado de partidos en las pistas seleccionadas.
+    Setup del Americano: canchas, modalidad (Pareja Fija / Sube y Baja) y formato
+    de puntuación (puntos acumulados vs sets). Aislado por club_id.
     """
     if len(payload.assigned_court_ids) < 1:
         raise HTTPException(status_code=400, detail="Debe asignar al menos una pista deportiva para el torneo.")
+
+    club_uuid = resolve_club_id(request, payload.club_id or club_id)
+    court_uuids_setup = _parse_court_uuids(payload.assigned_court_ids)
+    await _assert_courts_belong_to_club(db, court_uuids_setup, club_uuid)
+    start_now = bool(payload.start_immediately)
 
     # 1. Crear el torneo en official_tournaments
     t_date = to_date_obj(payload.start_date) or date.today()
     t_time = to_time_obj(payload.start_time) or time(18, 0)
 
     # Determinar regla de partido según sistema de puntuación
+    scoring = str(payload.scoring_system or "POINTS_32").upper()
     rule_map = {
         "POINTS_32": TournamentMatchRule.TIMED_MATCH,
         "POINTS_24": TournamentMatchRule.TIMED_MATCH,
         "POINTS_40": TournamentMatchRule.TIMED_MATCH,
+        "TIME_UNLIMITED": TournamentMatchRule.TIMED_MATCH,
+        "TIME": TournamentMatchRule.TIMED_MATCH,
         "SETS": TournamentMatchRule.BEST_OF_3_SHORT,
     }
-    match_rule_val = rule_map.get(payload.scoring_system, TournamentMatchRule.TIMED_MATCH)
+    match_rule_val = rule_map.get(scoring, TournamentMatchRule.TIMED_MATCH)
 
     tiebreak_map = {
         "GAMES_DIFF": TournamentTiebreakRule.GAMES_DIFF,
         "HEAD_TO_HEAD": TournamentTiebreakRule.HEAD_TO_HEAD,
         "SETS_DIFF": TournamentTiebreakRule.SETS_DIFF,
+        "MATCHES_WON": TournamentTiebreakRule.GAMES_DIFF,
+        "POINTS_FOR": TournamentTiebreakRule.GAMES_DIFF,
     }
-    tb_rule_val = tiebreak_map.get(payload.tiebreak_rule, TournamentTiebreakRule.GAMES_DIFF)
+    tb_rule_val = tiebreak_map.get(str(payload.tiebreak_rule or "").upper(), TournamentTiebreakRule.GAMES_DIFF)
+    cfg = _build_americano_config(
+        scoring_system=scoring,
+        target_points=payload.target_points,
+        modality=payload.modality,
+        tiebreak_rule=payload.tiebreak_rule,
+        round_minutes=payload.round_minutes,
+        pair_count=payload.pair_count,
+    )
+    round_minutes = int(cfg["round_minutes"])
 
     tourn = OfficialTournament(
+        club_id=club_uuid,
         name=payload.name,
         sport_type=payload.sport_type.upper(),
         category=payload.category,
         format_type=TournamentFormatType.GROUPS_PLAYOFFS,
         match_rule=match_rule_val,
-        match_duration_minutes=30 if "POINTS" in payload.scoring_system else 60,
+        match_duration_minutes=round_minutes,
         tiebreak_rule=tb_rule_val,
-        status=OfficialTournamentStatus.IN_PROGRESS,
+        status=_running_status() if start_now else OfficialTournamentStatus.DRAFT,
         start_date=t_date,
         end_date=t_date,
         start_time=t_time,
@@ -1140,17 +1455,16 @@ async def create_live_americano_tournament(
             await db.flush()
             resolved_teams.append(t_team)
     else:
-        # Parejas de demostración por defecto para iniciar torneo en vivo
-        demo_names = [("Pareja Alpha", "Carlos Gómez", "Felipe Silva"),
-                      ("Pareja Beta", "Andrés Marín", "Sebastián Mora"),
-                      ("Pareja Gamma", "Daniel Rincón", "Mateo Valencia"),
-                      ("Pareja Delta", "Juan Pablo Ruiz", "Diego Castro")]
-        for idx, (tname, p1_name, p2_name) in enumerate(demo_names):
+        # Parejas placeholder según pair_count (hasta 20) para arrancar la mesa de control
+        pair_n = int(cfg.get("pair_count") or 4)
+        for idx in range(pair_n):
+            p1_name = f"Jugador {idx + 1}A"
+            p2_name = f"Jugador {idx + 1}B"
             c1 = await get_or_create_customer(p1_name, p1_name, (idx * 2) + 1)
             c2 = await get_or_create_customer(p2_name, p2_name, (idx * 2) + 2)
             t_team = TournamentTeam(
                 tournament_id=tourn.id,
-                team_name=tname,
+                team_name=f"Pareja {idx + 1}",
                 customer_id_1=c1.id,
                 customer_id_2=c2.id,
                 group_id=group.id,
@@ -1160,8 +1474,8 @@ async def create_live_americano_tournament(
             await db.flush()
             resolved_teams.append(t_team)
 
-    # 4. Inicializar Standings del Grupo
-    group.standings_json = [
+    # 4. Inicializar Standings del Grupo + config persistida
+    standing_rows = [
         {
             "team_id": tm.id,
             "team_name": tm.team_name,
@@ -1175,42 +1489,20 @@ async def create_live_americano_tournament(
         }
         for tm in resolved_teams
     ]
+    group.standings_json = _merge_standings_config(cfg, standing_rows)
 
-    # 5. Generar Cruces Round-Robin distribuidos en las pistas seleccionadas
-    import itertools
-    import uuid as _uuid_mod
-    court_uuids = []
-    for cid in payload.assigned_court_ids:
-        try:
-            court_uuids.append(_uuid_mod.UUID(str(cid)))
-        except Exception:
-            pass
+    # 5. Generar cruces por rondas (round-robin por canchas o Ronda 1 Sube y Baja)
+    court_uuids = _parse_court_uuids(payload.assigned_court_ids)
+    stage_name = "SUBE_Y_BAJA" if _is_sube_y_baja(payload.modality) else "ROUND_ROBIN"
+    fixture_rounds = _build_fixture_rounds(resolved_teams, court_uuids, payload.modality)
 
     matches_created = []
-    round_idx = 1
-    court_ptr = 0
-
-    for t1, t2 in itertools.combinations(resolved_teams, 2):
-        assigned_court = court_uuids[court_ptr % len(court_uuids)] if court_uuids else None
-        court_ptr += 1
-
-        match = TournamentMatch(
-            tournament_id=tourn.id,
-            group_id=group.id,
-            stage="ROUND_ROBIN",
-            round_number=round_idx,
-            team1_id=t1.id,
-            team2_id=t2.id,
-            team1_label=t1.team_name,
-            team2_label=t2.team_name,
-            court_id=assigned_court,
-            scheduled_time=f"Ronda {round_idx}",
-            scores_json=[{"set": 1, "t1": 0, "t2": 0}],
-            status="SCHEDULED" if round_idx > len(payload.assigned_court_ids) else "IN_PROGRESS",
-        )
-        db.add(match)
-        matches_created.append(match)
-        round_idx += 1
+    for r_idx, pairings in enumerate(fixture_rounds, start=1):
+        match_status = "IN_PROGRESS" if (start_now and r_idx == 1) else "SCHEDULED"
+        for t1, t2, court in pairings:
+            match = _make_match(tourn.id, group.id, r_idx, t1, t2, court, stage_name, match_status)
+            db.add(match)
+            matches_created.append(match)
 
     await db.commit()
     await db.refresh(tourn)
@@ -1230,28 +1522,32 @@ async def create_live_americano_tournament(
 
     return {
         "status": "success",
-        "message": f"Torneo Americano '{tourn.name}' iniciado exitosamente.",
+        "message": f"Torneo Americano '{tourn.name}' {'iniciado' if start_now else 'configurado en DRAFT'} exitosamente.",
         "tournament_id": tourn.id,
+        "club_id": str(club_uuid),
+        "tournament_status": _public_status(tourn.status),
         "total_teams": len(resolved_teams),
         "total_matches": len(matches_created),
         "assigned_courts_count": len(payload.assigned_court_ids),
+        "config": cfg,
+        "current_round": 1,
     }
 
 
 def _recalculate_americano_standings(group: TournamentGroup, matches: List[TournamentMatch]):
     """
-    Recalcula la tabla de posiciones en tiempo real basándose en los partidos jugados.
-    Criterios de orden:
-    1. Partidos Ganados (PG)
-    2. Diferencia de puntos (diff: favor - contra)
-    3. Puntos a favor totales (pts_favor)
+    Recalcula la tabla de posiciones en tiempo real.
+    Desempate canónico MATCHES_WON: 1. Partidos ganados  2. Puntos a favor  3. Enfrentamiento directo.
     """
+    cfg, existing_rows = _split_standings_config(group.standings_json)
     stats: Dict[int, Dict[str, Any]] = {}
 
-    # Inicializar con todos los equipos que figuran en el standing actual
-    for item in (group.standings_json or []):
-        stats[item["team_id"]] = {
-            "team_id": item["team_id"],
+    for item in existing_rows:
+        tid = item.get("team_id")
+        if tid is None:
+            continue
+        stats[tid] = {
+            "team_id": tid,
             "team_name": item.get("team_name", "Pareja"),
             "pj": 0,
             "pg": 0,
@@ -1265,8 +1561,10 @@ def _recalculate_americano_standings(group: TournamentGroup, matches: List[Tourn
     for m in matches:
         if not m.team1_id or not m.team2_id:
             continue
-        for tid, tname in [(m.team1_id, m.team1.team_name if m.team1 else m.team1_label),
-                           (m.team2_id, m.team2.team_name if m.team2 else m.team2_label)]:
+        for tid, tname in [
+            (m.team1_id, m.team1.team_name if m.team1 else m.team1_label),
+            (m.team2_id, m.team2.team_name if m.team2 else m.team2_label),
+        ]:
             if tid not in stats:
                 stats[tid] = {
                     "team_id": tid,
@@ -1280,7 +1578,6 @@ def _recalculate_americano_standings(group: TournamentGroup, matches: List[Tourn
                     "ranking_pts": 0,
                 }
 
-        # Sumar puntos si hay marcador
         t1_pts = 0
         t2_pts = 0
         for s in (m.scores_json or []):
@@ -1304,14 +1601,60 @@ def _recalculate_americano_standings(group: TournamentGroup, matches: List[Tourn
                 stats[m.team2_id]["ranking_pts"] += 3
                 stats[m.team1_id]["pp"] += 1
 
-    for tid, data in stats.items():
+    for data in stats.values():
         data["diff"] = data["pts_favor"] - data["pts_contra"]
 
-    # Ordenar por: 1) PG, 2) Diff, 3) Pts Favor
-    leaderboard = list(stats.values())
-    leaderboard.sort(key=lambda x: (x["pg"], x["diff"], x["pts_favor"]), reverse=True)
-    group.standings_json = leaderboard
+    leaderboard = _sort_americano_leaderboard(
+        list(stats.values()),
+        matches,
+        cfg.get("tiebreak_rule") or "MATCHES_WON",
+    )
+    group.standings_json = _merge_standings_config(cfg, leaderboard)
     return leaderboard
+
+
+@router.get(
+    "/americanos",
+    status_code=status.HTTP_200_OK,
+    summary="Listar Americanos de la sede (DRAFT / RUNNING / FINISHED) aislados por club_id",
+)
+async def list_club_americanos(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    club_id: Optional[str] = Query(None),
+    include_finished: bool = Query(False),
+):
+    club_uuid = resolve_club_id(request, club_id)
+    stmt = (
+        select(OfficialTournament)
+        .where(_club_scope(club_uuid))
+        .order_by(OfficialTournament.created_at.desc())
+    )
+    if not include_finished:
+        stmt = stmt.where(
+            OfficialTournament.status.in_(
+                [
+                    OfficialTournamentStatus.DRAFT,
+                    OfficialTournamentStatus.RUNNING,
+                    OfficialTournamentStatus.IN_PROGRESS,
+                    OfficialTournamentStatus.ENROLLMENT,
+                ]
+            )
+        )
+    res = await db.execute(stmt)
+    rows = res.scalars().all()
+    return [
+        {
+            "id": t.id,
+            "club_id": str(t.club_id) if t.club_id else str(club_uuid),
+            "name": t.name,
+            "category": t.category,
+            "sport_type": t.sport_type,
+            "status": _public_status(t.status),
+            "assigned_court_ids": t.assigned_court_ids or [],
+        }
+        for t in rows
+    ]
 
 
 @router.get(
@@ -1321,37 +1664,31 @@ def _recalculate_americano_standings(group: TournamentGroup, matches: List[Tourn
 )
 async def get_live_tournament_state(
     id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    club_id: Optional[str] = Query(None),
 ):
     """
     Retorna el estado en tiempo real del torneo:
-    - Información del torneo y estado (RUNNING, FINISHED)
+    - Información del torneo y estado (DRAFT, RUNNING, FINISHED)
     - Grilla de Pistas Físicas con el partido activo, tanteador en vivo y status
     - Fixture completo organizado por rondas
-    - Leaderboard calculado en tiempo real con posiciones, PJ, PG, PP, Puntos y Diferencia
+    - Leaderboard calculado en tiempo real con desempate PG → PF → H2H
     """
-    tourn_stmt = (
-        select(OfficialTournament)
-        .options(
-            selectinload(OfficialTournament.teams),
-            selectinload(OfficialTournament.groups).selectinload(TournamentGroup.matches),
-            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team1),
-            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team2),
-        )
-        .where(OfficialTournament.id == id)
-    )
-    tourn_res = await db.execute(tourn_stmt)
-    tourn = tourn_res.scalar_one_or_none()
-    if not tourn:
-        raise HTTPException(status_code=404, detail=f"Torneo con ID {id} no encontrado")
+    club_uuid = resolve_club_id(request, club_id)
+    tourn = await _get_tournament_for_club(db, id, club_uuid)
 
     # Obtener canchas del club para mapear nombres
-    courts_res = await db.execute(select(Court))
+    courts_res = await db.execute(
+        select(Court).where(or_(Court.club_id == club_uuid, Court.club_id.is_(None)))
+    )
     courts_by_id = {str(c.id): c for c in courts_res.scalars().all()}
 
     # Leaderboard en tiempo real
     primary_group = tourn.groups[0] if tourn.groups else None
+    cfg = {}
     if primary_group:
+        cfg, _rows = _split_standings_config(primary_group.standings_json)
         leaderboard = _recalculate_americano_standings(primary_group, tourn.matches)
     else:
         leaderboard = []
@@ -1422,15 +1759,36 @@ async def get_live_tournament_state(
             "winner_team_id": m.winner_team_id,
         })
 
+    active_matches = [m for m in tourn.matches if m.status == "IN_PROGRESS"]
+    current_round = max([m.round_number for m in active_matches], default=1) if active_matches else max(
+        [m.round_number for m in tourn.matches], default=1
+    ) if tourn.matches else 1
+    scoring = cfg.get("scoring_system") or (
+        "TIME_UNLIMITED" if tourn.match_rule == TournamentMatchRule.TIMED_MATCH and int(tourn.match_duration_minutes or 0) <= 20 else "POINTS_32"
+    )
+    modality = cfg.get("modality") or "PAREJA_FIJA"
+    tiebreak = cfg.get("tiebreak_rule") or "MATCHES_WON"
+    target_pts = cfg.get("target_points")
+    if target_pts is None:
+        target_pts = _target_points_for(scoring)
+
     return {
         "status": "success",
+        "club_id": str(tourn.club_id or club_uuid),
         "tournament": {
             "id": tourn.id,
+            "club_id": str(tourn.club_id or club_uuid),
             "name": tourn.name,
             "sport_type": tourn.sport_type,
             "category": tourn.category,
-            "status": tourn.status.value,
-            "match_duration_minutes": tourn.match_duration_minutes,
+            "status": _public_status(tourn.status),
+            "match_duration_minutes": int(cfg.get("round_minutes") or tourn.match_duration_minutes or 15),
+            "scoring_system": scoring,
+            "target_points": target_pts,
+            "modality": modality,
+            "tiebreak_rule": tiebreak,
+            "pair_count": cfg.get("pair_count") or len(tourn.teams or []),
+            "current_round": current_round,
             "start_date": str(tourn.start_date) if tourn.start_date else None,
             "start_time": tourn.start_time.strftime("%H:%M") if tourn.start_time else None,
             "champion_team": tourn.champion_team,
@@ -1439,6 +1797,8 @@ async def get_live_tournament_state(
         "courts_status": courts_status,
         "leaderboard": leaderboard,
         "matches": matches_list,
+        "config": cfg,
+        "tiebreak_order": ["MATCHES_WON", "POINTS_FOR", "HEAD_TO_HEAD"],
     }
 
 
@@ -1451,13 +1811,19 @@ async def update_live_match_score(
     id: int,
     match_id: int,
     payload: LiveScoreUpdateRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    club_id: Optional[str] = Query(None),
 ):
     """
     Soporta micro-ajustes rápidos en vivo (+1 / -1) o puntuación directa por equipo.
-    Recalcula al instante el leaderboard del torneo americano y verifica si el partido
-    ha concluido según el límite de puntos meta.
+    Recalcula al instante el leaderboard (PG → puntos a favor → H2H).
     """
+    club_uuid = resolve_club_id(request, club_id)
+    tourn = await _get_tournament_for_club(db, id, club_uuid)
+    if _is_finished(tourn.status):
+        raise HTTPException(status_code=409, detail="El torneo ya está finalizado.")
+
     m_stmt = (
         select(TournamentMatch)
         .options(
@@ -1492,14 +1858,23 @@ async def update_live_match_score(
 
     match.scores_json = [{"set": 1, "t1": t1, "t2": t2}]
 
-    # Determinar si el partido finalizó (por límite o forzado)
-    target_limit = 32
-    if match.tournament and "24" in match.tournament.name:
-        target_limit = 24
-    elif match.tournament and "40" in match.tournament.name:
-        target_limit = 40
+    cfg = {}
+    if match.group:
+        cfg, _ = _split_standings_config(match.group.standings_json)
+    scoring = cfg.get("scoring_system") or ""
+    target_limit = int(cfg.get("target_points") if cfg.get("target_points") is not None else _target_points_for(scoring))
+    time_based = _is_time_unlimited(scoring)
 
-    if (t1 + t2 >= target_limit and t1 != t2) or (payload.status == "COMPLETED"):
+    auto_complete = False
+    if payload.status == "COMPLETED":
+        auto_complete = True
+    elif not time_based and target_limit > 0:
+        if scoring == "SETS":
+            auto_complete = max(t1, t2) >= target_limit and t1 != t2
+        else:
+            auto_complete = (t1 + t2 >= target_limit and t1 != t2) or (max(t1, t2) >= target_limit and abs(t1 - t2) >= 2)
+
+    if auto_complete:
         match.status = "COMPLETED"
         if t1 > t2:
             match.winner_team_id = match.team1_id
@@ -1530,6 +1905,7 @@ async def update_live_match_score(
 
     return {
         "status": "success",
+        "club_id": str(club_uuid),
         "match_id": match.id,
         "team1_points": t1,
         "team2_points": t2,
@@ -1547,26 +1923,19 @@ async def update_live_match_score(
 async def close_americano_tournament(
     id: int,
     payload: CloseTournamentRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    club_id: Optional[str] = Query(None),
 ):
     """
     Finaliza el torneo americano, asigna el podio oficial (Campeón y Subcampeón),
     y consolida los puntos en la tabla `customers` para el ranking del club con
     detección de sugerencia de ascenso.
     """
-    tourn_stmt = (
-        select(OfficialTournament)
-        .options(
-            selectinload(OfficialTournament.teams),
-            selectinload(OfficialTournament.groups),
-            selectinload(OfficialTournament.matches),
-        )
-        .where(OfficialTournament.id == id)
-    )
-    res = await db.execute(tourn_stmt)
-    tourn = res.scalar_one_or_none()
-    if not tourn:
-        raise HTTPException(status_code=404, detail="Torneo no encontrado.")
+    club_uuid = resolve_club_id(request, club_id)
+    tourn = await _get_tournament_for_club(db, id, club_uuid, bind_legacy=True)
+    if _is_finished(tourn.status):
+        raise HTTPException(status_code=409, detail="El torneo ya está finalizado.")
 
     # 1. Identificar Campeón y Subcampeón (por payload o por tabla de posiciones)
     leaderboard = []
@@ -1586,28 +1955,44 @@ async def close_americano_tournament(
     tourn.champion_team = champ_name
     tourn.runner_up_team = runner_name
 
-    # 2. Actualizar estadísticas en CRM Customers
+    # 2. Consolidar puntos de ranking en CRM Customers (todas las parejas + bonus de podio)
     promoted_players = []
-    if champ_team:
-        for cust_id in [champ_team.customer_id_1, champ_team.customer_id_2]:
-            c_res = await db.execute(select(Customer).where(Customer.id == cust_id))
-            cust = c_res.scalar_one_or_none()
-            if cust:
-                cust.ranking_points += payload.champions_points
-                cust.titles_count += 1
-                cust.category_wins += 1
-                cust.consecutive_wins += 1
-                if cust.consecutive_wins >= 2 or cust.category_wins >= 2:
-                    cust.promotion_recommended = True
-                    cust.recommended_category = get_next_category(cust.category)
-                    promoted_players.append(f"{cust.name} (Sugerido a {cust.recommended_category})")
+    customers_updated = []
+    teams_by_id = {tm.id: tm for tm in (tourn.teams or [])}
 
-    if runner_team:
-        for cust_id in [runner_team.customer_id_1, runner_team.customer_id_2]:
-            c_res = await db.execute(select(Customer).where(Customer.id == cust_id))
-            cust = c_res.scalar_one_or_none()
-            if cust:
-                cust.ranking_points += payload.runner_up_points
+    async def _apply_customer_points(cust_id: Optional[int], points: int, as_champion: bool) -> Optional[Customer]:
+        if not cust_id:
+            return None
+        c_res = await db.execute(select(Customer).where(Customer.id == cust_id))
+        cust = c_res.scalar_one_or_none()
+        if not cust:
+            return None
+        cust.ranking_points = int(cust.ranking_points or 0) + max(0, int(points))
+        if as_champion:
+            cust.titles_count = int(cust.titles_count or 0) + 1
+            cust.category_wins = int(cust.category_wins or 0) + 1
+            cust.consecutive_wins = int(cust.consecutive_wins or 0) + 1
+            if cust.consecutive_wins >= 2 or cust.category_wins >= 2:
+                cust.promotion_recommended = True
+                cust.recommended_category = get_next_category(cust.category)
+                promoted_players.append(f"{cust.name} (Sugerido a {cust.recommended_category})")
+        customers_updated.append({"customer_id": cust.id, "name": cust.name, "points_added": max(0, int(points))})
+        return cust
+
+    for row in leaderboard:
+        team = teams_by_id.get(row.get("team_id"))
+        if not team:
+            continue
+        base_pts = int(row.get("ranking_pts") or 0)
+        extra = 0
+        is_champ = team.id == champ_id
+        if is_champ:
+            extra = int(payload.champions_points or 0)
+        elif team.id == runner_id:
+            extra = int(payload.runner_up_points or 0)
+        total = base_pts + extra
+        await _apply_customer_points(team.customer_id_1, total, is_champ)
+        await _apply_customer_points(team.customer_id_2, total, is_champ)
 
     await db.commit()
     await db.refresh(tourn)
@@ -1644,53 +2029,95 @@ async def close_americano_tournament(
     return {
         "status": "success",
         "message": f"Torneo Americano '{tourn.name}' finalizado con éxito.",
+        "club_id": str(tourn.club_id or club_uuid),
+        "tournament_status": "FINISHED",
         "champion": champ_name,
         "runner_up": runner_name,
         "promoted_players": promoted_players,
+        "customers_updated": customers_updated,
         "leaderboard": leaderboard,
+        "podium": {
+            "champion": champ_name,
+            "runner_up": runner_name,
+            "third": (leaderboard[2]["team_name"] if len(leaderboard) > 2 else None),
+        },
+        "history_saved": True,
     }
 
 
 class StartAmericanoRequest(BaseModel):
-    scoring_system: Optional[str] = Field("POINTS_32", description="POINTS_32, POINTS_24, POINTS_40, SETS")
-    target_points: Optional[int] = Field(32, description="Puntos objetivo")
-    modality: Optional[str] = Field("PAREJA_FIJA", description="PAREJA_FIJA o ROTATIVA_KING_OF_COURT")
+    scoring_system: Optional[str] = Field("POINTS_32", description="TIME_UNLIMITED, POINTS_24, POINTS_32, POINTS_40, SETS")
+    target_points: Optional[int] = Field(32, description="Puntos objetivo; 0 = infinitos")
+    modality: Optional[str] = Field("PAREJA_FIJA", description="PAREJA_FIJA, INDIVIDUAL, SUBE_Y_BAJA")
+    round_minutes: Optional[int] = Field(15, ge=1, le=180)
+    pair_count: Optional[int] = Field(None, ge=2, le=20)
+    tiebreak_rule: Optional[str] = Field("MATCHES_WON")
 
 
 @router.post(
     "/{id}/start",
     status_code=status.HTTP_200_OK,
-    summary="Iniciar Torneo Americano en Vivo (Activa Ronda 1 y pone estado en IN_PROGRESS)",
+    summary="Iniciar Torneo Americano en Vivo (Activa Ronda 1 y pone estado RUNNING)",
 )
 async def start_americano_tournament(
     id: int,
+    request: Request,
     payload: Optional[StartAmericanoRequest] = Body(None),
     db: AsyncSession = Depends(get_db),
+    club_id: Optional[str] = Query(None),
 ):
     """
     Inicia formalmente un Torneo Americano:
-    - Cambia su estado a IN_PROGRESS
-    - Activa la Ronda 1 en las pistas físicas designadas
-    - Configura el tanteador inicial 0-0 y bloquea turnos correspondientes
+    - Persiste scoring / modalidad / desempate / minutos de ronda
+    - Genera Ronda 1 si aún no hay cruces
+    - Pasa el estado a RUNNING y activa tanteador 0-0 en las pistas
     """
-    tourn_stmt = (
-        select(OfficialTournament)
-        .options(
-            selectinload(OfficialTournament.teams),
-            selectinload(OfficialTournament.groups).selectinload(TournamentGroup.matches),
-            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team1),
-            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team2),
-        )
-        .where(OfficialTournament.id == id)
+    club_uuid = resolve_club_id(request, club_id)
+    tourn = await _get_tournament_for_club(db, id, club_uuid, bind_legacy=True)
+    if _is_finished(tourn.status):
+        raise HTTPException(status_code=409, detail="El torneo ya está finalizado.")
+
+    payload = payload or StartAmericanoRequest()
+    primary_group = tourn.groups[0] if tourn.groups else None
+    prev_cfg = {}
+    if primary_group:
+        prev_cfg, _ = _split_standings_config(primary_group.standings_json)
+
+    cfg = _build_americano_config(
+        scoring_system=payload.scoring_system or prev_cfg.get("scoring_system") or "POINTS_32",
+        target_points=payload.target_points if payload.target_points is not None else prev_cfg.get("target_points"),
+        modality=payload.modality or prev_cfg.get("modality") or "PAREJA_FIJA",
+        tiebreak_rule=payload.tiebreak_rule or prev_cfg.get("tiebreak_rule") or "MATCHES_WON",
+        round_minutes=payload.round_minutes or prev_cfg.get("round_minutes") or tourn.match_duration_minutes or 15,
+        pair_count=payload.pair_count or prev_cfg.get("pair_count") or len(tourn.teams or []) or 4,
     )
-    res = await db.execute(tourn_stmt)
-    tourn = res.scalar_one_or_none()
-    if not tourn:
-        raise HTTPException(status_code=404, detail=f"Torneo con ID {id} no encontrado.")
+    tourn.status = _running_status()
+    tourn.match_duration_minutes = int(cfg["round_minutes"])
 
-    tourn.status = OfficialTournamentStatus.IN_PROGRESS
+    if primary_group:
+        _, rows = _split_standings_config(primary_group.standings_json)
+        if not rows:
+            rows = [
+                {
+                    "team_id": tm.id,
+                    "team_name": tm.team_name,
+                    "pj": 0, "pg": 0, "pp": 0,
+                    "pts_favor": 0, "pts_contra": 0, "diff": 0, "ranking_pts": 0,
+                }
+                for tm in (tourn.teams or [])
+            ]
+        primary_group.standings_json = _merge_standings_config(cfg, rows)
 
-    # Activar partidos de la ronda 1
+    if not tourn.matches and primary_group and tourn.teams:
+        court_uuids = _parse_court_uuids(tourn.assigned_court_ids or [])
+        stage_name = "SUBE_Y_BAJA" if _is_sube_y_baja(cfg.get("modality")) else "ROUND_ROBIN"
+        for r_idx, pairings in enumerate(_build_fixture_rounds(list(tourn.teams), court_uuids, cfg.get("modality")), start=1):
+            st = "IN_PROGRESS" if r_idx == 1 else "SCHEDULED"
+            for t1, t2, court in pairings:
+                db.add(_make_match(tourn.id, primary_group.id, r_idx, t1, t2, court, stage_name, st))
+        await db.flush()
+        await db.refresh(tourn)
+
     r1_matches = [m for m in tourn.matches if m.round_number == 1]
     for m in r1_matches:
         m.status = "IN_PROGRESS"
@@ -1700,7 +2127,6 @@ async def start_americano_tournament(
     await db.commit()
     await db.refresh(tourn)
 
-    # Log de Auditoría
     try:
         await log_activity(
             db=db,
@@ -1717,8 +2143,11 @@ async def start_americano_tournament(
         "status": "success",
         "message": f"Torneo Americano '{tourn.name}' ha comenzado. Ronda 1 en juego.",
         "tournament_id": tourn.id,
+        "club_id": str(tourn.club_id or club_uuid),
+        "tournament_status": "RUNNING",
         "round_active": 1,
         "active_matches": len(r1_matches),
+        "config": cfg,
     }
 
 
@@ -1734,8 +2163,10 @@ class NextRoundRequest(BaseModel):
 )
 async def advance_next_round(
     id: int,
+    request: Request,
     payload: Optional[NextRoundRequest] = Body(None),
     db: AsyncSession = Depends(get_db),
+    club_id: Optional[str] = Query(None),
 ):
     """
     Avanza a la siguiente ronda del Torneo Americano:
@@ -1746,20 +2177,10 @@ async def advance_next_round(
     3. Si existen partidos de la siguiente ronda programados (SCHEDULED), los activa a IN_PROGRESS.
     4. Recalcula el Leaderboard actualizado al instante.
     """
-    tourn_stmt = (
-        select(OfficialTournament)
-        .options(
-            selectinload(OfficialTournament.teams),
-            selectinload(OfficialTournament.groups).selectinload(TournamentGroup.matches),
-            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team1),
-            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team2),
-        )
-        .where(OfficialTournament.id == id)
-    )
-    res = await db.execute(tourn_stmt)
-    tourn = res.scalar_one_or_none()
-    if not tourn:
-        raise HTTPException(status_code=404, detail="Torneo no encontrado.")
+    club_uuid = resolve_club_id(request, club_id)
+    tourn = await _get_tournament_for_club(db, id, club_uuid)
+    if _is_finished(tourn.status):
+        raise HTTPException(status_code=409, detail="El torneo ya está finalizado.")
 
     # Determinar ronda actual máxima en progreso o completada
     active_matches = [m for m in tourn.matches if m.status == "IN_PROGRESS"]
@@ -1780,42 +2201,75 @@ async def advance_next_round(
     # 2. Buscar si hay partidos programados para la siguiente ronda
     next_round = current_round + 1
     next_scheduled = [m for m in tourn.matches if m.round_number == next_round and m.status == "SCHEDULED"]
+    primary_group = tourn.groups[0] if tourn.groups else None
+    cfg = {}
+    if primary_group:
+        cfg, _ = _split_standings_config(primary_group.standings_json)
+    modality = (payload.modality if payload and payload.modality else None) or cfg.get("modality") or "PAREJA_FIJA"
 
-    if next_scheduled:
+    if next_scheduled and not _is_sube_y_baja(modality):
         for m in next_scheduled:
             m.status = "IN_PROGRESS"
             if not m.scores_json:
                 m.scores_json = [{"set": 1, "t1": 0, "t2": 0}]
     else:
-        # Si no había cruces precalculados para esta ronda (ej. Sube y Baja dinámico), generar nueva ronda
-        court_ids = tourn.assigned_court_ids or []
-        import uuid as _uuid_mod
-        court_uuids = []
-        for cid in court_ids:
-            try:
-                court_uuids.append(_uuid_mod.UUID(str(cid)))
-            except Exception:
-                pass
+        court_uuids = _parse_court_uuids(tourn.assigned_court_ids or [])
+        teams_by_id = {tm.id: tm for tm in (tourn.teams or [])}
+        new_pairings = []
 
-        # Si tenemos parejas, emparejarlas según ranking actual (Sube y Baja)
-        primary_group = tourn.groups[0] if tourn.groups else None
-        if primary_group:
+        if _is_sube_y_baja(modality) and (payload is None or payload.auto_promote_relegate) and court_uuids:
+            round_matches = [m for m in tourn.matches if m.round_number == current_round]
+            by_court = {}
+            for m in round_matches:
+                key = str(m.court_id) if m.court_id else ""
+                by_court[key] = m
+
+            winners, losers = [], []
+            for cu in court_uuids:
+                m = by_court.get(str(cu))
+                if not m or not m.team1_id or not m.team2_id:
+                    continue
+                s = m.scores_json[0] if m.scores_json else {"t1": 0, "t2": 0}
+                t1_pts = int(s.get("t1", 0))
+                t2_pts = int(s.get("t2", 0))
+                w = m.winner_team_id
+                if not w:
+                    if t1_pts > t2_pts:
+                        w = m.team1_id
+                    elif t2_pts > t1_pts:
+                        w = m.team2_id
+                    else:
+                        w = m.team1_id
+                l = m.team2_id if w == m.team1_id else m.team1_id
+                winners.append(w)
+                losers.append(l)
+
+            n = len(winners)
+            if n == 1:
+                new_pairings = [(winners[0], losers[0], court_uuids[0])]
+            elif n >= 2:
+                new_pairings.append((winners[0], winners[1], court_uuids[0]))
+                for i in range(1, n - 1):
+                    new_pairings.append((losers[i - 1], winners[i + 1], court_uuids[i]))
+                new_pairings.append((losers[n - 2], losers[n - 1], court_uuids[n - 1]))
+
+        if not new_pairings and primary_group:
             current_standings = _recalculate_americano_standings(primary_group, tourn.matches)
             ranked_team_ids = [row["team_id"] for row in current_standings]
-            # Emparejar adyacentes: 1 vs 2 (Pista 1), 3 vs 4 (Pista 2), etc.
-            c_ptr = 0
             for i in range(0, len(ranked_team_ids) - 1, 2):
-                t1_id = ranked_team_ids[i]
-                t2_id = ranked_team_ids[i + 1]
-                t1_obj = next((t for t in tourn.teams if t.id == t1_id), None)
-                t2_obj = next((t for t in tourn.teams if t.id == t2_id), None)
-                assigned_c = court_uuids[c_ptr % len(court_uuids)] if court_uuids else None
-                c_ptr += 1
+                court = court_uuids[(i // 2) % len(court_uuids)] if court_uuids else None
+                new_pairings.append((ranked_team_ids[i], ranked_team_ids[i + 1], court))
 
+        if primary_group:
+            for (t1_id, t2_id, assigned_c) in new_pairings:
+                if t1_id == t2_id:
+                    continue
+                t1_obj = teams_by_id.get(t1_id)
+                t2_obj = teams_by_id.get(t2_id)
                 new_m = TournamentMatch(
                     tournament_id=tourn.id,
                     group_id=primary_group.id,
-                    stage="SUBE_Y_BAJA",
+                    stage="SUBE_Y_BAJA" if _is_sube_y_baja(modality) else "ROUND_ROBIN",
                     round_number=next_round,
                     team1_id=t1_id,
                     team2_id=t2_id,
@@ -1856,6 +2310,7 @@ async def advance_next_round(
         "current_round": next_round,
         "active_matches_count": len(next_scheduled),
         "leaderboard": leaderboard,
+        "club_id": str(tourn.club_id or club_uuid),
     }
 
 

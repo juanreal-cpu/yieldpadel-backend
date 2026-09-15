@@ -42,14 +42,18 @@ class TournamentTiebreakRule(str, enum.Enum):
 class OfficialTournamentStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     ENROLLMENT = "ENROLLMENT"
-    IN_PROGRESS = "IN_PROGRESS"
+    RUNNING = "RUNNING"
+    IN_PROGRESS = "IN_PROGRESS"  # alias legado; la API de Americanos expone RUNNING
     FINISHED = "FINISHED"
 
 
 class OfficialTournament(Base):
+    """Torneo oficial o Americano en vivo. Aislado estrictamente por club_id (multi-tenant)."""
+
     __tablename__ = "official_tournaments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Multi-tenancy: cada sede solo ve y muta sus propios torneos.
     club_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     sport_type: Mapped[str] = mapped_column(String(50), default="PADEL", nullable=False)
@@ -137,8 +141,9 @@ class TournamentGroup(Base):
     )
     name: Mapped[str] = mapped_column(String(50), nullable=False)  # "Grupo A", "Grupo B"
 
-    # Estadísticas dinámicas acumuladas de equipos en el grupo:
-    # Formato JSON: [{ "team_id": 1, "team_name": "...", "pj": 3, "pg": 2, "pp": 1, "sf": 4, "sc": 2, "gf": 24, "gc": 16, "pts": 6 }]
+    # Leaderboard en vivo + blob de config (_config=true):
+    # [{ "_config": true, "scoring_system": "POINTS_32"|"SETS"|"TIME_UNLIMITED", "modality": "PAREJA_FIJA"|"SUBE_Y_BAJA", ... },
+    #  { "team_id": 1, "team_name": "...", "pj": 3, "pg": 2, "pp": 1, "pts_favor": 40, "pts_contra": 28, "diff": 12, "ranking_pts": 6 }]
     standings_json: Mapped[List[dict]] = mapped_column(JSON, default=list, nullable=False)
 
     tournament = relationship("OfficialTournament", back_populates="groups", lazy="selectin")
@@ -155,7 +160,8 @@ class TournamentMatch(Base):
     group_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("tournament_groups.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    stage: Mapped[str] = mapped_column(String(50), default="GROUP_STAGE", nullable=False)  # GROUP_STAGE, QUARTERS, SEMIS, FINAL, BACKDRAW
+    # Cruce: ronda + cancha (court_id) definen qué pareja juega dónde.
+    stage: Mapped[str] = mapped_column(String(50), default="GROUP_STAGE", nullable=False)  # GROUP_STAGE, ROUND_ROBIN, SUBE_Y_BAJA, QUARTERS, SEMIS, FINAL
     round_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     team1_id: Mapped[Optional[int]] = mapped_column(

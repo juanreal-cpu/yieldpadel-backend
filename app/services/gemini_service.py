@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 from typing import Optional, Tuple
 from urllib.parse import urljoin
 import httpx
@@ -33,7 +34,7 @@ def _whatsapp_access_token() -> Optional[str]:
 
 
 def _graph_api_version() -> str:
-    raw = (os.getenv("WHATSAPP_GRAPH_API_VERSION") or "v20.0").strip()
+    raw = (os.getenv("WHATSAPP_GRAPH_API_VERSION") or "v17.0").strip()
     return raw if raw.startswith("v") else f"v{raw}"
 
 
@@ -138,9 +139,9 @@ async def fetch_media_url_from_id(media_id: str) -> Optional[str]:
 
 async def download_whatsapp_media_by_id(media_id: str) -> Tuple[bytes, Optional[str]]:
     """
-    Flujo obligatorio de 2 pasos de WhatsApp Cloud API:
-    1) GET https://graph.facebook.com/{version}/{media_id} + Bearer → extrae `url`
-    2) GET a esa `url` + Bearer (también en redirects) → bytes del audio
+    Flujo obligatorio de 2 pasos de WhatsApp Cloud API (Meta):
+    Paso 1: GET https://graph.facebook.com/v17.0/{media_id} + Bearer → extrae `url`
+    Paso 2: GET a esa `url` + Bearer (también en cada redirect) → bytes del audio
     """
     access_token = _whatsapp_access_token()
     if not access_token:
@@ -148,11 +149,20 @@ async def download_whatsapp_media_by_id(media_id: str) -> Tuple[bytes, Optional[
     if not media_id:
         raise ValueError("media_id vacío: no se puede resolver el audio de WhatsApp.")
 
-    headers = _meta_auth_headers(access_token)
-    meta_url = f"https://graph.facebook.com/{_graph_api_version()}/{media_id}"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+    graph_version = _graph_api_version()
+    step1_url = f"https://graph.facebook.com/{graph_version}/{media_id}"
+    logger.info("[WHATSAPP MEDIA STEP1] GET %s token_set=%s", step1_url, bool(access_token))
 
     async with httpx.AsyncClient(timeout=35.0, follow_redirects=False) as client:
-        resp1 = await client.get(meta_url, headers=headers)
+        try:
+            resp1 = await client.get(step1_url, headers=headers)
+        except Exception:
+            logger.error("[WHATSAPP MEDIA STEP1 EXCEPT]\n%s", traceback.format_exc())
+            raise
+
         if resp1.status_code != 200:
             logger.error("[WHATSAPP MEDIA STEP1 REJECT %s] Body: %s", resp1.status_code, resp1.text)
             resp1.raise_for_status()
@@ -164,8 +174,13 @@ async def download_whatsapp_media_by_id(media_id: str) -> Tuple[bytes, Optional[
             logger.error("[WHATSAPP MEDIA STEP1 REJECT] JSON sin url. Body: %s", resp1.text)
             raise ValueError(f"Meta no devolvió url para media_id={media_id}")
 
-        logger.info("[WHATSAPP MEDIA STEP1] media_id=%s url=%s", media_id, download_url[:80])
-        resp2 = await _get_preserving_bearer(client, download_url, headers, "WHATSAPP MEDIA STEP2")
+        logger.info("[WHATSAPP MEDIA STEP2] GET url=%s", str(download_url)[:120])
+        try:
+            resp2 = await _get_preserving_bearer(client, download_url, headers, "WHATSAPP MEDIA STEP2")
+        except Exception:
+            logger.error("[WHATSAPP MEDIA STEP2 EXCEPT]\n%s", traceback.format_exc())
+            raise
+
         if resp2.status_code != 200:
             logger.error("[WHATSAPP MEDIA STEP2 REJECT %s] Body: %s", resp2.status_code, resp2.text)
             resp2.raise_for_status()
