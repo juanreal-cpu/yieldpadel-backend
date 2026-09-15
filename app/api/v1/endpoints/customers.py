@@ -6,6 +6,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select, or_, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -659,6 +660,11 @@ async def register_customer(
     tier = payload.membership_tier.upper() if payload.membership_tier else "ESTANDAR"
     client_type = payload.client_type or ("Semillero Kids" if payload.is_minor else ("Socio VIP" if tier != "ESTANDAR" else "Estándar"))
 
+    # Validar si ya existe un cliente con este teléfono en el club
+    phone_stmt = select(Customer).where(Customer.phone == phone)
+    phone_res = await db.execute(phone_stmt)
+    existing_phone_customer = phone_res.scalars().first()
+
     stmt = (
         select(Customer)
         .options(selectinload(Customer.guardian))
@@ -666,6 +672,13 @@ async def register_customer(
     )
     res = await db.execute(stmt)
     customer = res.scalar_one_or_none()
+
+    # Si existe el teléfono pero pertenece a otro registro con nombre diferente, bloquear duplicado
+    if existing_phone_customer and not customer:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El jugador con este teléfono ya está registrado en el club."
+        )
 
     today = date.today()
     start_date = today if tier != "ESTANDAR" else None
@@ -739,6 +752,18 @@ async def register_customer(
             db.add(customer)
 
         await db.commit()
+    except IntegrityError as ie:
+        await db.rollback()
+        err_msg = str(ie).lower()
+        if "idx_customers_club_phone" in err_msg or "phone" in err_msg or "unique" in err_msg:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El jugador con este teléfono ya está registrado en el club."
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El jugador con este teléfono ya está registrado en el club."
+        )
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -823,7 +848,16 @@ async def update_customer_profile(
     if payload.name is not None:
         customer.name = payload.name.strip()
     if payload.phone is not None:
-        customer.phone = payload.phone.strip()
+        new_phone = payload.phone.strip()
+        if new_phone != customer.phone:
+            chk_phone_stmt = select(Customer).where(Customer.phone == new_phone, Customer.id != player_id)
+            chk_res = await db.execute(chk_phone_stmt)
+            if chk_res.scalars().first():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="El jugador con este teléfono ya está registrado en el club."
+                )
+        customer.phone = new_phone
     if payload.category is not None:
         customer.category = payload.category.strip()
     if payload.client_type is not None:
@@ -874,6 +908,18 @@ async def update_customer_profile(
 
     try:
         await db.commit()
+    except IntegrityError as ie:
+        await db.rollback()
+        err_msg = str(ie).lower()
+        if "idx_customers_club_phone" in err_msg or "phone" in err_msg or "unique" in err_msg:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El jugador con este teléfono ya está registrado en el club."
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El jugador con este teléfono ya está registrado en el club."
+        )
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -934,7 +980,7 @@ async def upload_customer_avatar(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db)
 ):
-    """Sube y almacena la foto de perfil del jugador en la carpeta estática local."""
+    """Sube y almacena la foto de perfil del jugador en Supabase Storage Bucket o carpeta estática local."""
     allowed_types = {"image/jpeg", "image/png", "image/webp"}
     content_type = (file.content_type or "").lower()
     if content_type not in allowed_types:
@@ -955,17 +1001,6 @@ async def upload_customer_avatar(
             detail="Debe adjuntar un archivo de imagen válido.",
         )
 
-    target_dir = os.path.join("app", "static", "uploads", "avatars")
-    os.makedirs(target_dir, exist_ok=True)
-
-    filename = f"avatar_{customer_id}_{int(time.time())}.{ext}"
-    file_path = os.path.normpath(os.path.join(target_dir, filename))
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    avatar_url = f"/static/uploads/avatars/{filename}"
-
     res = await db.execute(select(Customer).where(Customer.id == customer_id))
     customer = res.scalars().first()
     if not customer:
@@ -973,6 +1008,40 @@ async def upload_customer_avatar(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Cliente con ID {customer_id} no encontrado.",
         )
+
+    file_bytes = await file.read()
+    filename = f"avatar_{customer_id}_{int(time.time())}.{ext}"
+
+    # 1. Intentar subir a Supabase Storage Bucket si hay credenciales configuradas
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_ANON_KEY")
+
+    avatar_url = None
+    if supabase_url and supabase_key:
+        try:
+            import httpx
+            storage_url = f"{supabase_url.rstrip('/')}/storage/v1/object/avatars/{filename}"
+            headers = {
+                "Authorization": f"Bearer {supabase_key}",
+                "apikey": supabase_key,
+                "Content-Type": content_type or "image/jpeg",
+                "x-upsert": "true"
+            }
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                supa_res = await client.post(storage_url, content=file_bytes, headers=headers)
+                if supa_res.status_code in [200, 201]:
+                    avatar_url = f"{supabase_url.rstrip('/')}/storage/v1/object/public/avatars/{filename}"
+        except Exception:
+            avatar_url = None
+
+    # 2. Fallback persistente a almacenamiento estático local
+    if not avatar_url:
+        target_dir = os.path.join("app", "static", "uploads", "avatars")
+        os.makedirs(target_dir, exist_ok=True)
+        file_path = os.path.normpath(os.path.join(target_dir, filename))
+        with open(file_path, "wb") as buffer:
+            buffer.write(file_bytes)
+        avatar_url = f"/static/uploads/avatars/{filename}"
 
     customer.avatar_url = avatar_url
     await db.commit()

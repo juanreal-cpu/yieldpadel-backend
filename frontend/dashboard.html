@@ -68,11 +68,14 @@
       color: #0f172a !important;
     }
     .bg-white input, .bg-white select, .bg-white span, .bg-white label, .bg-white p,
-    .modal-card input, .modal-card select, .modal-card textarea, .modal-card label,
-    #modal-crm-player input, #modal-crm-player select, #modal-crm-player textarea, #modal-crm-player label,
-    #crm-search-input, #crm-guardian-search, #crm-guardian-dropdown, #crm-guardian-dropdown * {
-      color: #0f172a !important;
-      -webkit-text-fill-color: #0f172a !important;
+    .modal-card input, .modal-card select, .modal-card textarea, .modal-card label, .modal-card p, .modal-card span:not(.badge):not(.tag),
+    #modal-crm-player input, #modal-crm-player select, #modal-crm-player textarea, #modal-crm-player label, #modal-crm-player p,
+    #modal-crm-player input:not([type="submit"]):not([type="button"]),
+    #register-customer-modal input, #register-customer-modal select, #register-customer-modal textarea,
+    #crm-search-input, #crm-guardian-search, #crm-guardian-dropdown, #crm-guardian-dropdown *,
+    .force-crm-dark {
+      color: #111827 !important;
+      -webkit-text-fill-color: #111827 !important;
     }
     .bg-white .text-white, .bg-slate-50 .text-white, .bg-slate-100 .text-white {
       color: #0f172a !important;
@@ -112,16 +115,18 @@
       color: #64748b !important;
     }
 
-    /* SOLUCIÓN RADICAL A TEXTOS EN BLANCO (FORZAR NEGRO DIRECTO) */
+    /* FILTROS HORARIOS Y DE DEPORTE: DISEÑO LIMPIO Y ALTO CONTRASTE (CERO BLOQUES NEGROS) */
     .btn-sport-filter, .time-filter-btn, .btn-an-sport-pill {
-      color: #0f172a !important; /* Negro slate puro */
-      background-color: #ffffff;
-      border: 1px solid #cbd5e1;
+      color: #1e293b !important; /* slate-800 */
+      background-color: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
     }
     .btn-sport-filter.active, .time-filter-btn.active, .btn-an-sport-pill.active {
-      color: #ffffff !important;
-      background-color: #0f172a !important;
-      border-color: #0f172a !important;
+      color: #065f46 !important; /* emerald-800 */
+      background-color: #ecfdf5 !important; /* emerald-50 */
+      border-color: #10b981 !important; /* emerald-500 */
+      box-shadow: 0 1px 2px 0 rgba(16, 185, 129, 0.2) !important;
+      font-weight: 700 !important;
     }
     .btn-sport-filter span, .time-filter-btn span, .btn-an-sport-pill span {
       color: inherit !important;
@@ -2725,11 +2730,11 @@
                 </button>
               </div>
               <!-- Filtro Horario Horizontal Compacto -->
-              <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm" id="time-filter-container">
-                <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="time-filter-btn active px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #0f172a; color: #ffffff; border: 1px solid #0f172a;"><span>Todo el día</span></button>
-                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;"><span>Mañana (6-12)</span></button>
-                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;"><span>Tarde (12-18)</span></button>
-                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;"><span>Noche (18-24)</span></button>
+              <div class="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200 shadow-sm" id="time-filter-container">
+                <button type="button" onclick="setTimeFilter('ALL')" id="btn-time-all" class="time-filter-btn active px-3 py-1 text-xs font-bold rounded transition" style="background-color: #ecfdf5; color: #065f46; border: 1px solid #10b981;"><span>Todo el día</span></button>
+                <button type="button" onclick="setTimeFilter('MORNING')" id="btn-time-morning" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1;"><span>Mañana (6-12)</span></button>
+                <button type="button" onclick="setTimeFilter('AFTERNOON')" id="btn-time-afternoon" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1;"><span>Tarde (12-18)</span></button>
+                <button type="button" onclick="setTimeFilter('NIGHT')" id="btn-time-night" class="time-filter-btn px-3 py-1 text-xs font-semibold rounded transition" style="background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1;"><span>Noche (18-24)</span></button>
               </div>
 
               <!-- Selector de Cancha a la derecha con select nativo estilizado en Tailwind -->
@@ -7184,23 +7189,23 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div class="col-span-2">
-            <label class="block font-bold text-slate-700 mb-1">Nombre Completo</label>
-            <input type="text" id="crm-edit-name" required placeholder="Ej: Juan Real Florez" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500">
+            <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Nombre Completo</label>
+            <input type="text" id="crm-edit-name" required placeholder="Ej: Juan Real Florez" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold !text-gray-900 text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Teléfono WhatsApp</label>
-            <input type="tel" id="crm-edit-phone" required placeholder="+57 313 2058547" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500">
+            <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Teléfono WhatsApp</label>
+            <input type="tel" id="crm-edit-phone" required placeholder="+57 313 2058547" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium !text-gray-900 text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Correo Electrónico</label>
-            <input type="email" id="crm-edit-email" placeholder="jugador@ejemplo.com" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500">
+            <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Correo Electrónico</label>
+            <input type="email" id="crm-edit-email" placeholder="jugador@ejemplo.com" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium !text-gray-900 text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500">
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Categoría</label>
-            <select id="crm-edit-category" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-800 bg-white">
+            <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Categoría</label>
+            <select id="crm-edit-category" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold !text-gray-900 text-slate-800 bg-white">
               <option value="1ra">1ra Categoría (Competición)</option>
               <option value="2da">2da Categoría</option>
               <option value="3ra">3ra Categoría</option>
@@ -7210,8 +7215,8 @@
             </select>
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Género</label>
-            <select id="crm-edit-gender" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-slate-800 bg-white">
+            <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Género</label>
+            <select id="crm-edit-gender" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold !text-gray-900 text-slate-800 bg-white">
               <option value="Masculino" selected>👨 Masculino</option>
               <option value="Femenino">👩 Femenino</option>
               <option value="Otro">🧑 Otro</option>
@@ -7222,8 +7227,8 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Música Preferida</label>
-            <select id="crm-edit-music" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 bg-white">
+            <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Música Preferida</label>
+            <select id="crm-edit-music" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium !text-gray-900 text-slate-800 bg-white">
               <option value="Reggaeton / Urbano" selected>🎵 Reggaeton / Urbano</option>
               <option value="Rock / Clásico">🎸 Rock / Clásico</option>
               <option value="Electrónica / House">🎧 Electrónica / House</option>
@@ -7233,8 +7238,8 @@
             </select>
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Franja Horaria Preferida</label>
-            <select id="crm-edit-time" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 bg-white">
+            <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Franja Horaria Preferida</label>
+            <select id="crm-edit-time" class="w-full p-2.5 border border-slate-300 rounded-xl font-medium !text-gray-900 text-slate-800 bg-white">
               <option value="Mañana (06:00 - 10:00)">🌅 Mañana (06:00 - 10:00)</option>
               <option value="Mediodía (10:00 - 16:00)">☀️ Mediodía (10:00 - 16:00)</option>
               <option value="Tarde/Noche (16:00 - 23:00)" selected>🌙 Tarde/Noche (16:00 - 23:00)</option>
@@ -7243,8 +7248,8 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Membresía del Socio</label>
-          <select id="crm-edit-tier" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-indigo-700 bg-white">
+          <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Membresía del Socio</label>
+          <select id="crm-edit-tier" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold !text-gray-900 text-indigo-700 bg-white">
             <option value="ESTANDAR" selected>ESTÁNDAR (Sin membresía activa)</option>
             <option value="TAPIA">👑 TAPIA (-40% Americanos + Academia + Bebidas)</option>
             <option value="COELLO">⚡ COELLO (-30% Americanos + Academia + Bebidas)</option>
@@ -7254,12 +7259,12 @@
           </select>
         </div>
 
-                <!-- Sección Menor de Edad / Kid Apadrinado -->
+        <!-- Sección Menor de Edad / Kid Apadrinado -->
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
           <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+            <label class="flex items-center gap-2 cursor-pointer font-bold !text-gray-900 text-slate-800">
               <input type="checkbox" id="crm-player-is-minor" onchange="window.toggleMinorFields(this.checked)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-              <span>👦 ¿Es Menor de Edad / Dependiente (Kid)?</span>
+              <span class="!text-gray-900">👦 ¿Es Menor de Edad / Dependiente (Kid)?</span>
             </label>
             <span class="text-[10px] px-2 py-0.5 rounded font-bold bg-indigo-100 text-indigo-800">Semillero / Sub-14</span>
           </div>
@@ -7267,12 +7272,12 @@
           <div id="crm-minor-fields-container" class="hidden space-y-3 pt-2 border-t border-slate-200">
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Fecha de Nacimiento</label>
-                <input type="date" id="crm-player-birth-date" class="w-full p-2 border border-slate-300 rounded-xl text-slate-800 bg-white">
+                <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Fecha de Nacimiento</label>
+                <input type="date" id="crm-player-birth-date" class="w-full p-2 border border-slate-300 rounded-xl !text-gray-900 text-slate-800 bg-white">
               </div>
               <div>
-                <label class="block font-bold text-slate-700 mb-1">Parentesco con Acudiente</label>
-                <select id="crm-player-guardian-relationship" class="w-full p-2 border border-slate-300 rounded-xl font-medium text-slate-800 bg-white">
+                <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Parentesco con Acudiente</label>
+                <select id="crm-player-guardian-relationship" class="w-full p-2 border border-slate-300 rounded-xl font-medium !text-gray-900 text-slate-800 bg-white">
                   <option value="HIJO" selected>Hijo / Hija</option>
                   <option value="SOBRINO">Sobrino / Sobrina</option>
                   <option value="NIETO">Nieto / Nieta</option>
@@ -7283,10 +7288,10 @@
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Acudiente / Socio Responsable (CRM)</label>
+              <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Acudiente / Socio Responsable (CRM)</label>
               <div class="relative w-full">
-                <input type="text" id="crm-guardian-search" oninput="window.handleGuardianSearch(event)" autocomplete="off" placeholder="Buscar socio acudiente por nombre o teléfono..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 font-medium">
-                <div id="crm-guardian-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+                <input type="text" id="crm-guardian-search" oninput="window.handleGuardianSearch(event)" autocomplete="off" placeholder="Buscar socio acudiente por nombre o teléfono..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl !text-gray-900 text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 font-medium">
+                <div id="crm-guardian-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-100 !text-gray-900"></div>
               </div>
               <input type="hidden" id="crm-player-guardian-id" value="">
               <div id="crm-guardian-selected-badge" class="hidden mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 flex items-center justify-between">
@@ -7298,8 +7303,8 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Notas / Observaciones</label>
-          <textarea id="crm-edit-notes" rows="2" placeholder="Observaciones deportivas, nivel de juego, etc." class="w-full p-2.5 border border-slate-300 rounded-xl text-slate-800 font-medium"></textarea>
+          <label class="block font-bold !text-gray-900 text-slate-700 mb-1">Notas / Observaciones</label>
+          <textarea id="crm-edit-notes" rows="2" placeholder="Observaciones deportivas, nivel de juego, etc." class="w-full p-2.5 border border-slate-300 rounded-xl !text-gray-900 text-slate-800 bg-white font-medium"></textarea>
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
@@ -10178,13 +10183,15 @@ ${data.message}`);
           const isActive = (key === currentTimeFilter);
           btn.classList.toggle('active', isActive);
           if (isActive) {
-            btn.style.setProperty('background-color', '#0f172a', 'important');
-            btn.style.setProperty('color', '#ffffff', 'important');
-            btn.style.setProperty('border', '1px solid #0f172a', 'important');
+            btn.style.setProperty('background-color', '#ecfdf5', 'important');
+            btn.style.setProperty('color', '#065f46', 'important');
+            btn.style.setProperty('border', '1px solid #10b981', 'important');
+            btn.style.setProperty('font-weight', '700', 'important');
           } else {
             btn.style.setProperty('background-color', '#ffffff', 'important');
-            btn.style.setProperty('color', '#0f172a', 'important');
+            btn.style.setProperty('color', '#1e293b', 'important');
             btn.style.setProperty('border', '1px solid #cbd5e1', 'important');
+            btn.style.setProperty('font-weight', '600', 'important');
           }
           btn.querySelectorAll('span').forEach(sp => {
             sp.style.setProperty('color', 'inherit', 'important');
@@ -19012,6 +19019,8 @@ Jugador: ${checkData.player_name}`);
       return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0f172a,10b981&textColor=ffffff`;
     };
 
+    window.pendingCustomerAvatarFile = null;
+
     window.handleAvatarUpload = async function(event) {
       const file = event && event.target && event.target.files ? event.target.files[0] : null;
       if (!file) return;
@@ -19034,6 +19043,8 @@ Jugador: ${checkData.player_name}`);
 
       const customerId = document.getElementById('crm-edit-player-id')?.value;
       if (!customerId) {
+        // En modo creación: almacenar archivo para subirlo automáticamente tras crear el jugador
+        window.pendingCustomerAvatarFile = file;
         return;
       }
 
@@ -19070,6 +19081,7 @@ Jugador: ${checkData.player_name}`);
     window.openCustomerModal = function(mode, playerOrId) {
       const modal = document.getElementById('modal-crm-player') || document.getElementById('register-customer-modal');
       if (!modal) return;
+      window.pendingCustomerAvatarFile = null;
 
       const titleEl = document.getElementById('modal-crm-player-title');
       const submitTextEl = document.getElementById('modal-crm-player-submit-text');
@@ -19158,6 +19170,7 @@ Jugador: ${checkData.player_name}`);
     window.closeCustomerModal = function() {
       const modal = document.getElementById('modal-crm-player') || document.getElementById('register-customer-modal');
       if (modal) modal.classList.remove('active');
+      window.pendingCustomerAvatarFile = null;
     };
 
     window.openRegisterPlayerModal = function() {
@@ -19227,6 +19240,29 @@ Jugador: ${checkData.player_name}`);
         if (res.ok) {
           const customerObj = (data && data.data) ? data.data : (data || {});
           const playerName = customerObj.name || data.name || 'Jugador';
+          const savedId = customerObj.id || data.id || playerId;
+
+          // Si había una foto pendiente por subir al crear un nuevo jugador, subirla de inmediato
+          if (window.pendingCustomerAvatarFile && savedId) {
+            try {
+              const formData = new FormData();
+              formData.append('file', window.pendingCustomerAvatarFile);
+              const avatarRes = await fetch(`${API_BASE}/api/v1/customers/${savedId}/upload-avatar`, {
+                method: 'POST',
+                body: formData,
+              });
+              if (avatarRes.ok) {
+                const avatarData = await avatarRes.json();
+                if (avatarData.avatar_url) {
+                  customerObj.avatar_url = avatarData.avatar_url;
+                }
+              }
+            } catch (avErr) {
+              console.warn('Advertencia subiendo avatar tras creación:', avErr);
+            }
+            window.pendingCustomerAvatarFile = null;
+          }
+
           if (typeof window.showDarkToast === 'function') {
             window.showDarkToast(
               playerId ? '✏️ Perfil Actualizado' : '👤 Jugador Creado',
