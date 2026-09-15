@@ -400,7 +400,11 @@ async def receive_webhook(
 
                             message_text = transcription.strip()
                         except Exception as stt_err:
-                            logger.error(f"[AUDIO STT ERROR] Error procesando nota de voz de {sender_phone}: {stt_err}", exc_info=True)
+                            logging.error(f"Error procesando audio: {str(stt_err)}")
+                            logger.error(
+                                f"[AUDIO STT ERROR] Error procesando nota de voz de {sender_phone} (media_id: {media_id}, url: {media_url}, mime: {mime_type}): {stt_err}",
+                                exc_info=True
+                            )
                             await log_conversation_message(
                                 db, sender_phone, "[Nota de voz sin procesar]", direction="incoming",
                                 player_name=sender_name, increment_unread=False,

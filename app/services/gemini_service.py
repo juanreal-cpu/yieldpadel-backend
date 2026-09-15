@@ -26,27 +26,54 @@ TRANSCRIPTION_PROMPT = (
 async def download_whatsapp_media(media_url: str, mime_type: Optional[str] = None) -> bytes:
     """
     Descarga el archivo de audio de forma asíncrona usando httpx.
-    Si la URL es de Meta Graph API o similar, se inyecta el token Bearer correspondiente.
+    - Meta Cloud API: envía headers={"Authorization": f"Bearer {token}"}.
+      Maneja tanto la descarga de URL como la redirección firmada o endpoint de metadatos.
+    - Twilio: envía HTTP Basic Auth (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) si la URL pertenece a Twilio.
     """
     access_token = os.getenv("WHATSAPP_ACCESS_TOKEN") or getattr(settings, "WHATSAPP_ACCESS_TOKEN", None)
-    headers = {}
-    if access_token and ("facebook.com" in media_url or "meta.com" in media_url or "whatsapp.net" in media_url):
-        headers["Authorization"] = f"Bearer {access_token}"
+    twilio_sid = os.getenv("TWILIO_ACCOUNT_SID") or getattr(settings, "TWILIO_ACCOUNT_SID", None)
+    twilio_token = os.getenv("TWILIO_AUTH_TOKEN") or getattr(settings, "TWILIO_AUTH_TOKEN", None)
 
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        # En WhatsApp Cloud API, si se recibe media_id o url de media de Graph API,
-        # primero puede ser un endpoint de metadatos que retorna url descargable
-        resp = await client.get(media_url, headers=headers)
+    headers = {}
+    auth = None
+
+    is_twilio = "twilio.com" in media_url or (twilio_sid and twilio_token and "api.twilio" in media_url)
+    is_meta = any(domain in media_url for domain in ["facebook.com", "meta.com", "whatsapp.net", "fbcdn.net"])
+
+    if is_twilio and twilio_sid and twilio_token:
+        auth = httpx.BasicAuth(twilio_sid, twilio_token)
+        logger.info("[AUDIO DOWNLOAD] Usando Twilio HTTP Basic Auth para descarga de media.")
+    elif access_token and (is_meta or not is_twilio):
+        # Si es Meta o una URL directa privada de WhatsApp Cloud API, siempre inyectar el Bearer Token
+        headers["Authorization"] = f"Bearer {access_token}"
+        headers["User-Agent"] = "YieldPadel-WhatsApp/1.0"
+        logger.info("[AUDIO DOWNLOAD] Inyectando Bearer Token de Meta para descarga de media.")
+
+    async with httpx.AsyncClient(timeout=35.0, follow_redirects=True) as client:
+        resp = await client.get(media_url, headers=headers, auth=auth)
+        if resp.status_code != 200:
+            logger.error(
+                "[AUDIO DOWNLOAD FAIL] Status %s al descargar audio desde %s. Respuesta: %s",
+                resp.status_code, media_url, resp.text[:300]
+            )
         resp.raise_for_status()
 
-        # Si el content-type retornado es JSON, Meta devolvió el objeto Media con la url final
+        # Si Meta devuelve un JSON en lugar del binario, significa que es la respuesta de metadatos
+        # que contiene la URL CDN firmada final ('url')
         content_type = resp.headers.get("content-type", "").lower()
         if "application/json" in content_type:
-            data = resp.json()
-            download_url = data.get("url")
-            if download_url:
-                resp = await client.get(download_url, headers=headers)
-                resp.raise_for_status()
+            try:
+                data = resp.json()
+                cdn_download_url = data.get("url")
+                if cdn_download_url:
+                    logger.info("[AUDIO DOWNLOAD] Obtenida URL CDN de Meta, procediendo a descargar binario...")
+                    # Para la URL de descarga CDN de Meta, también se requiere el Bearer token en los headers
+                    cdn_headers = {"Authorization": f"Bearer {access_token}", "User-Agent": "YieldPadel-WhatsApp/1.0"} if access_token else {}
+                    cdn_resp = await client.get(cdn_download_url, headers=cdn_headers)
+                    cdn_resp.raise_for_status()
+                    return cdn_resp.content
+            except Exception as json_err:
+                logger.error("[AUDIO DOWNLOAD JSON ERROR] Error parseando respuesta JSON de Meta: %s", json_err)
 
         return resp.content
 
@@ -57,27 +84,33 @@ async def fetch_media_url_from_id(media_id: str) -> Optional[str]:
     """
     access_token = os.getenv("WHATSAPP_ACCESS_TOKEN") or getattr(settings, "WHATSAPP_ACCESS_TOKEN", None)
     if not access_token or not media_id:
+        logger.warning("[FETCH MEDIA URL] No hay WHATSAPP_ACCESS_TOKEN o media_id está vacío: %s", media_id)
         return None
 
     url = f"https://graph.facebook.com/v20.0/{media_id}"
-    headers = {"Authorization": f"Bearer {access_token}"}
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "User-Agent": "YieldPadel-WhatsApp/1.0",
+    }
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(url, headers=headers)
             if resp.is_success:
-                return resp.json().get("url")
-            logger.error("Error obteniendo media URL para %s: %s", media_id, resp.text)
+                res_data = resp.json()
+                return res_data.get("url")
+            logger.error("[FETCH MEDIA URL ERROR] Error obteniendo media URL para id %s (status %s): %s", media_id, resp.status_code, resp.text)
     except Exception as e:
-        logger.error("Excepción en fetch_media_url_from_id para %s: %s", media_id, e, exc_info=True)
+        logger.error("[FETCH MEDIA URL EXCEPTION] Excepción en fetch_media_url_from_id para %s: %s", media_id, e, exc_info=True)
     return None
 
 
 async def transcribe_audio_with_gemini(
     audio_bytes: bytes,
-    mime_type: Optional[str] = "audio/ogg",
+    mime_type: Optional[str] = "audio/ogg; codecs=opus",
 ) -> str:
     """
     Envía el audio en bytes a gemini-1.5-flash y devuelve la transcripción literal en texto plano.
+    Soporta explícitamente el formato nativo de WhatsApp 'audio/ogg; codecs=opus' así como 'audio/ogg'.
     """
     api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
     if not api_key:
@@ -87,21 +120,29 @@ async def transcribe_audio_with_gemini(
 
     genai.configure(api_key=api_key)
 
-    # Limpiar mime_type si viene con parámetros (ej: audio/ogg; codecs=opus)
-    effective_mime = "audio/ogg"
-    if mime_type:
-        effective_mime = mime_type.split(";")[0].strip().lower()
+    # Limpieza o preservación inteligente del mime_type
+    effective_mime = (mime_type or "audio/ogg; codecs=opus").strip()
 
-    # Si es audio/ogg o no reconocido, Gemini soporta audio/ogg, audio/mp3, audio/wav, audio/aac, audio/m4a, etc.
     part = {
         "mime_type": effective_mime,
         "data": audio_bytes,
     }
 
     model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-    response = await model.generate_content_async(
-        contents=[TRANSCRIPTION_PROMPT, part]
-    )
+    try:
+        response = await model.generate_content_async(
+            contents=[TRANSCRIPTION_PROMPT, part]
+        )
+    except Exception as gemini_err:
+        logger.warning(
+            "[GEMINI RETRY] Falló llamada con mime '%s': %s. Reintentando con 'audio/ogg' estándar...",
+            effective_mime, gemini_err
+        )
+        # Fallback a mime estándar si el backend de Gemini rechaza el parámetro codecs
+        part["mime_type"] = "audio/ogg"
+        response = await model.generate_content_async(
+            contents=[TRANSCRIPTION_PROMPT, part]
+        )
 
     transcription = (getattr(response, "text", None) or "").strip()
     if not transcription:
