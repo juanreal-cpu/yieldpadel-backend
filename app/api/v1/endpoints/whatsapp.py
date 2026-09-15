@@ -40,7 +40,7 @@ from app.models.customer import Customer
 from app.services.gemini_service import (
     AUDIO_PROCESSING_ERROR_MESSAGE,
     download_whatsapp_media,
-    fetch_media_url_from_id,
+    download_whatsapp_media_by_id,
     transcribe_audio_with_gemini,
 )
 
@@ -384,15 +384,17 @@ async def receive_webhook(
                         mime_type = audio_obj.get("mime_type") or "audio/ogg"
 
                         try:
-                            # Si no trae URL directa pero sí ID (Meta Cloud API estándar), resolver la URL
-                            if not media_url and media_id:
-                                media_url = await fetch_media_url_from_id(media_id)
-
-                            if not media_url:
-                                raise ValueError(f"No se pudo obtener la URL del audio (id: {media_id})")
-
-                            logger.info(f"[AUDIO STT] Descargando audio para {sender_phone} desde {media_url[:60]}...")
-                            audio_bytes = await download_whatsapp_media(media_url, mime_type=mime_type)
+                            # Flujo obligatorio Meta Cloud API (2 pasos): media_id → GET Graph → GET url con Bearer.
+                            if media_id:
+                                logger.info(f"[AUDIO STT] Resolviendo media_id={media_id} para {sender_phone} (2-step Meta)")
+                                audio_bytes, mime_from_meta = await download_whatsapp_media_by_id(media_id)
+                                if mime_from_meta:
+                                    mime_type = mime_from_meta
+                            elif media_url:
+                                logger.info(f"[AUDIO STT] Descargando audio para {sender_phone} desde URL directa")
+                                audio_bytes = await download_whatsapp_media(media_url, mime_type=mime_type)
+                            else:
+                                raise ValueError("El payload de audio no trae media_id ni url")
 
                             logger.info(f"[AUDIO STT] Transcribiendo audio ({len(audio_bytes)} bytes) con Gemini 1.5 Flash...")
                             transcription = await transcribe_audio_with_gemini(audio_bytes, mime_type=mime_type)
