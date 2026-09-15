@@ -2862,7 +2862,97 @@
                 <button onclick="openCreateAmericanoModal()" class="btn-action-primary-purple" style="box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">
                   🏆 + Crear Americano
                 </button>
+                <button onclick="toggleAmericanoLiveCockpit()" id="btn-toggle-live-cockpit" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                  <span class="animate-ping w-2 h-2 rounded-full bg-emerald-300"></span>
+                  <span>⚡ Mesa de Control en Vivo</span>
+                </button>
               </div>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- ⚡ COCKPIT EN VIVO: PISTAS EN TIEMPO REAL & LEADERBOARD  -->
+            <!-- ======================================================== -->
+            <div id="americano-live-cockpit" class="mb-8 p-6 bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl text-white space-y-6">
+              
+              <!-- Barra Superior del Torneo Activo -->
+              <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xl">
+                    ⚡
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h3 class="text-base font-black text-white" id="live-cockpit-tourn-name">Mesa de Control en Vivo</h3>
+                      <span id="live-cockpit-status-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        EN JUEGO
+                      </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5" id="live-cockpit-meta-info">
+                      Marcador en directo punto a punto (+1/-1), ranking dinámico acumulado y finalización de podio.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2.5 flex-wrap">
+                  <select id="live-tournament-selector" onchange="onSelectLiveAmericano(this.value)" class="px-3 py-1.5 text-xs font-bold bg-slate-800 text-white border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Cargando torneos activos...</option>
+                  </select>
+                  <button type="button" onclick="refreshLiveAmericanoState()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-slate-700">
+                    <span>🔄</span> <span>Refrescar</span>
+                  </button>
+                  <button type="button" onclick="openCloseAmericanoModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5">
+                    <span>👑</span> <span>Cerrar Torneo & Podio</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Grilla de Canchas en Vivo -->
+              <div>
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <span>🎾</span> <span>Pistas Deportivas Activas (Tanteador Directo)</span>
+                  </h4>
+                  <span id="live-cockpit-courts-count" class="text-[11px] font-bold text-slate-400 font-mono">0 Pistas</span>
+                </div>
+                <div id="live-cockpit-courts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div class="p-6 text-center text-xs text-slate-400 bg-slate-800/60 rounded-2xl border border-slate-700/60 col-span-full">
+                    Selecciona un torneo activo para visualizar los partidos en pista.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Leaderboard / Tabla Dinámica en Vivo -->
+              <div class="pt-2">
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <span>📊</span> <span>Leaderboard en Tiempo Real (Wins & Puntos)</span>
+                  </h4>
+                  <span class="text-[10px] text-slate-400 font-semibold">Criterio: 1° Partidos Ganados • 2° Dif. Puntos • 3° Puntos a Favor</span>
+                </div>
+                <div class="overflow-x-auto rounded-2xl border border-slate-700/80 bg-slate-800/40">
+                  <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-wider border-b border-slate-700">
+                      <tr>
+                        <th class="p-3">Pos</th>
+                        <th class="p-3">Pareja / Dupla</th>
+                        <th class="p-3 text-center">PJ</th>
+                        <th class="p-3 text-center text-emerald-400">PG</th>
+                        <th class="p-3 text-center text-rose-400">PP</th>
+                        <th class="p-3 text-center">Pts Favor</th>
+                        <th class="p-3 text-center">Pts Contra</th>
+                        <th class="p-3 text-center text-cyan-300">Diferencia</th>
+                        <th class="p-3 text-center text-amber-300 font-black">Pts Torneo</th>
+                      </tr>
+                    </thead>
+                    <tbody id="live-cockpit-leaderboard-body" class="divide-y divide-slate-800 text-slate-200">
+                      <tr>
+                        <td colspan="9" class="p-4 text-center text-xs text-slate-500">Sin estadísticas disponibles aún.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </div>
 
             <!-- Sección: Torneos Activos y Próximos -->
@@ -14013,6 +14103,260 @@ ${data.message}`);
       loadTournaments(sport);
     }
     window.filterTournamentsSport = filterTournamentsSport;
+
+    // ========================================================
+    // COCKPIT EN VIVO: CONTROL DE TORNEOS AMERICANOS
+    // ========================================================
+    window.activeLiveAmericanoId = null;
+    window.liveAmericanoPollInterval = null;
+
+    function toggleAmericanoLiveCockpit() {
+      const panel = document.getElementById('americano-live-cockpit');
+      if (!panel) return;
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        initLiveAmericanoSelector();
+      } else {
+        panel.classList.add('hidden');
+      }
+    }
+    window.toggleAmericanoLiveCockpit = toggleAmericanoLiveCockpit;
+
+    async function initLiveAmericanoSelector() {
+      const sel = document.getElementById('live-tournament-selector');
+      if (!sel) return;
+      try {
+        const res = await fetch('/api/v1/official-tournaments/');
+        if (!res.ok) return;
+        const list = await res.json();
+        if (!Array.isArray(list) || list.length === 0) {
+          sel.innerHTML = '<option value="">Sin torneos activos</option>';
+          return;
+        }
+
+        sel.innerHTML = list.map(t => `
+          <option value="${t.id}" ${t.id === window.activeLiveAmericanoId ? 'selected' : ''}>
+            🏆 ${escapeHtml(t.name)} (${t.category} - ${t.status})
+          </option>
+        `).join('');
+
+        if (!window.activeLiveAmericanoId || !list.find(x => x.id === window.activeLiveAmericanoId)) {
+          window.activeLiveAmericanoId = list[0].id;
+        }
+        sel.value = window.activeLiveAmericanoId;
+        await refreshLiveAmericanoState();
+      } catch (e) {
+        console.warn('Error inicializando selector de torneos en vivo:', e);
+      }
+    }
+    window.initLiveAmericanoSelector = initLiveAmericanoSelector;
+
+    function onSelectLiveAmericano(tournId) {
+      if (!tournId) return;
+      window.activeLiveAmericanoId = parseInt(tournId, 10);
+      refreshLiveAmericanoState();
+    }
+    window.onSelectLiveAmericano = onSelectLiveAmericano;
+
+    async function refreshLiveAmericanoState() {
+      const tId = window.activeLiveAmericanoId;
+      if (!tId) return;
+
+      try {
+        const res = await fetch(`/api/v1/tournaments/${tId}/live`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderLiveAmericanoUI(data);
+      } catch (err) {
+        console.error('Error refrescando estado en vivo del americano:', err);
+      }
+    }
+    window.refreshLiveAmericanoState = refreshLiveAmericanoState;
+
+    function renderLiveAmericanoUI(data) {
+      if (!data || !data.tournament) return;
+      const t = data.tournament;
+
+      // 1. Cabecera y meta
+      const nameEl = document.getElementById('live-cockpit-tourn-name');
+      const badgeEl = document.getElementById('live-cockpit-status-badge');
+      const metaEl = document.getElementById('live-cockpit-meta-info');
+
+      if (nameEl) nameEl.textContent = t.name;
+      if (badgeEl) {
+        badgeEl.textContent = t.status;
+        if (t.status === 'FINISHED') {
+          badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-500/50';
+        } else {
+          badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/30 text-indigo-300 border border-indigo-500/50';
+        }
+      }
+      if (metaEl) {
+        metaEl.textContent = `${t.category} (${t.sport_type}) • ${data.courts_status ? data.courts_status.length : 0} canchas activas • ${data.matches ? data.matches.length : 0} cruces programados`;
+      }
+
+      // 2. Grilla de canchas con tanteador rápido
+      const courtsGrid = document.getElementById('live-cockpit-courts-grid');
+      const courtsCount = document.getElementById('live-cockpit-courts-count');
+      if (courtsCount) courtsCount.textContent = `${(data.courts_status || []).length} Pistas`;
+
+      if (courtsGrid) {
+        if (!data.courts_status || data.courts_status.length === 0) {
+          courtsGrid.innerHTML = `
+            <div class="p-6 text-center text-xs text-slate-400 bg-slate-800/60 rounded-2xl border border-slate-700/60 col-span-full">
+              No hay pistas activas asignadas a este torneo.
+            </div>
+          `;
+        } else {
+          courtsGrid.innerHTML = data.courts_status.map(c => {
+            const m = c.current_match;
+            if (!m) {
+              return `
+                <div class="p-4 bg-slate-800/70 border border-slate-700 rounded-2xl flex flex-col justify-between min-h-[160px]">
+                  <div class="flex justify-between items-center text-xs font-bold text-slate-300">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> ${escapeHtml(c.court_name)}</span>
+                    <span class="text-[10px] font-mono text-slate-500">DISPONIBLE</span>
+                  </div>
+                  <div class="py-4 text-center text-xs text-slate-500">Sin partido asignado en este turno.</div>
+                </div>
+              `;
+            }
+
+            const isDone = m.status === 'COMPLETED';
+            return `
+              <div class="p-4 bg-slate-800/90 border ${isDone ? 'border-emerald-700/70' : 'border-indigo-600/70'} rounded-2xl shadow-lg flex flex-col justify-between space-y-3">
+                <div class="flex justify-between items-center text-xs font-bold pb-2 border-b border-slate-700">
+                  <span class="flex items-center gap-1.5 text-white">
+                    <span class="w-2.5 h-2.5 rounded-full ${isDone ? 'bg-emerald-400' : 'bg-emerald-400 animate-ping'}"></span>
+                    <span class="font-black">${escapeHtml(c.court_name)}</span>
+                  </span>
+                  <span class="text-[10px] font-black px-2 py-0.5 rounded ${isDone ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' : 'bg-indigo-950 text-indigo-300 border border-indigo-700'}">
+                    ${m.status} • R${m.round_number}
+                  </span>
+                </div>
+
+                <!-- Tanteador en vivo -->
+                <div class="space-y-2">
+                  <!-- Equipo 1 -->
+                  <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80">
+                    <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHtml(m.team1_name)}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, -1, 0)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center border border-slate-600">-</button>
+                      <span id="score-t1-${m.match_id}" class="text-base font-black font-mono text-emerald-400 w-6 text-center">${m.team1_points || 0}</span>
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 1, 0)" class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center">+</button>
+                    </div>
+                  </div>
+
+                  <!-- Equipo 2 -->
+                  <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80">
+                    <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHtml(m.team2_name)}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, -1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center border border-slate-600">-</button>
+                      <span id="score-t2-${m.match_id}" class="text-base font-black font-mono text-emerald-400 w-6 text-center">${m.team2_points || 0}</span>
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, 1)" class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center">+</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                  <span class="text-[10px] font-bold text-slate-400 font-mono">Meta: 32 pts</span>
+                  <button type="button" onclick="markMatchCompleted(${t.id}, ${m.match_id})" class="px-2.5 py-1 text-[10px] font-black rounded-lg ${isDone ? 'bg-slate-700 text-slate-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} transition">
+                    ${isDone ? 'Completado ✓' : 'Finalizar Cruce'}
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // 3. Leaderboard en vivo
+      const lbBody = document.getElementById('live-cockpit-leaderboard-body');
+      if (lbBody) {
+        const lb = data.leaderboard || [];
+        if (lb.length === 0) {
+          lbBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-xs text-slate-500">Sin estadísticas registradas.</td></tr>';
+        } else {
+          lbBody.innerHTML = lb.map((row, idx) => {
+            const isLeader = idx === 0;
+            const isPodium = idx < 2;
+            return `
+              <tr class="${isLeader ? 'bg-emerald-950/40 font-bold' : isPodium ? 'bg-slate-800/50' : ''} hover:bg-slate-800/80 transition">
+                <td class="p-3 font-mono font-black ${isLeader ? 'text-amber-400' : 'text-slate-400'}">
+                  ${idx + 1} ${isLeader ? '👑' : idx === 1 ? '🥈' : ''}
+                </td>
+                <td class="p-3 font-bold text-white">${escapeHtml(row.team_name || 'Pareja')}</td>
+                <td class="p-3 text-center font-mono text-slate-300">${row.pj || 0}</td>
+                <td class="p-3 text-center font-mono font-bold text-emerald-400">${row.pg || 0}</td>
+                <td class="p-3 text-center font-mono text-rose-400">${row.pp || 0}</td>
+                <td class="p-3 text-center font-mono text-slate-300">${row.pts_favor || 0}</td>
+                <td class="p-3 text-center font-mono text-slate-400">${row.pts_contra || 0}</td>
+                <td class="p-3 text-center font-mono font-bold ${row.diff >= 0 ? 'text-cyan-300' : 'text-rose-400'}">
+                  ${row.diff > 0 ? '+' : ''}${row.diff || 0}
+                </td>
+                <td class="p-3 text-center font-black font-mono text-amber-300 text-sm">${row.ranking_pts || 0}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    async function modifyLiveScore(tournId, matchId, delta1, delta2) {
+      try {
+        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            delta_t1: delta1,
+            delta_t2: delta2
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Actualización instantánea de DOM
+          const t1El = document.getElementById(`score-t1-${matchId}`);
+          const t2El = document.getElementById(`score-t2-${matchId}`);
+          if (t1El) t1El.textContent = data.team1_points;
+          if (t2El) t2El.textContent = data.team2_points;
+          // Refrescar estado general
+          await refreshLiveAmericanoState();
+        }
+      } catch (err) {
+        console.error('Error modificando score:', err);
+      }
+    }
+    window.modifyLiveScore = modifyLiveScore;
+
+    async function markMatchCompleted(tournId, matchId) {
+      try {
+        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'COMPLETED'
+          })
+        });
+        if (res.ok) {
+          await refreshLiveAmericanoState();
+        }
+      } catch (err) {
+        console.error('Error completando partido:', err);
+      }
+    }
+    window.markMatchCompleted = markMatchCompleted;
+
+    // Modal de Cierre de Torneo Americano
+    function openCloseAmericanoModal() {
+      const tId = window.activeLiveAmericanoId;
+      if (!tId) {
+        alert('Selecciona primero un torneo activo.');
+        return;
+      }
+      openFinalizeOfficialTournamentModal();
+    }
+    window.openCloseAmericanoModal = openCloseAmericanoModal;
+
 
     
     // ========================================================
