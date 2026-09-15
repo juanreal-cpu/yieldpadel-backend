@@ -969,7 +969,39 @@
       border-right: 1px solid #F1F5F9;
       height: 60px;
       box-sizing: border-box;
+      position: relative;
+      background: #FFFFFF;
+      transition: all 0.15s ease-in-out;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .grid-bg-cell:hover {
+      background-color: #F0FDF4 !important;
+      border-color: #86EFAC !important;
+      z-index: 10;
+    }
+
+    .grid-bg-cell:hover::after {
+      content: '+ Reservar';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #15803D;
+      background: #DCFCE7;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      border: 1px solid #BBF7D0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .grid-bg-cell:active {
+      background-color: #DCFCE7 !important;
     }
 
     /* Tarjetas de Turnos en la Grilla */
@@ -9963,18 +9995,12 @@ ${data.message}`);
         }
 
         const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
-        if (!allSlots || allSlots.length === 0) {
+        try {
+          renderCalendarMatrix();
+        } catch (renderErr) {
+          console.error('Error rendering calendar matrix:', renderErr);
           if (container) {
-            container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa 'Programar Semana' para crearlos.</div>";
-          }
-        } else {
-          try {
-            renderCalendarMatrix();
-          } catch (renderErr) {
-            console.error('Error rendering calendar matrix:', renderErr);
-            if (container) {
-              container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>Hubo un inconveniente visualizando las tarjetas de la matriz. Por favor refresca la página.</div>";
-            }
+            container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>Hubo un inconveniente visualizando las tarjetas de la matriz. Por favor refresca la página.</div>";
           }
         }
         if (typeof updateMetrics === 'function') updateMetrics();
@@ -9988,9 +10014,10 @@ ${data.message}`);
         if (countEl) {
           countEl.textContent = `0 turnos (${dateLabel})`;
         }
-        const container = document.getElementById('calendar-matrix') || document.getElementById('slots-grid') || document.getElementById('calendar-matrix-container');
-        if (container) {
-          container.innerHTML = "<div class='p-12 text-center text-slate-500 font-medium'>No hay turnos registrados para esta fecha. Usa 'Programar Semana' para crearlos.</div>";
+        try {
+          renderCalendarMatrix();
+        } catch (renderErr) {
+          console.error('Error rendering calendar matrix in fallback:', renderErr);
         }
         if (typeof updateMetrics === 'function') updateMetrics();
       } finally {
@@ -10070,32 +10097,6 @@ ${data.message}`);
         const slotSport = (s.sport_type || (s.court ? s.court.sport_type : 'PADEL') || 'PADEL').toUpperCase();
         return slotSport === activeSport;
       });
-
-      // Manejar arrays vacíos [] sin colapsar: Estado vacío limpio y amigable
-      if (sportSlots.length === 0) {
-        if (countEl) {
-          countEl.textContent = `0 turnos (${formatDateDisplay(selectedDate)})`;
-        }
-        container.style.gridTemplateColumns = '1fr';
-        container.style.minWidth = '100%';
-        container.innerHTML = `
-          <div style="grid-column: 1 / -1;" class="py-16 text-center text-slate-500 w-full">
-            <p class="text-base font-semibold">No hay turnos registrados para este deporte en esta fecha.</p>
-            <p class="text-xs text-slate-400 mt-1">Usa "🌱 Programar Semana" para generar la agenda del club.</p>
-          </div>
-        `;
-        const spinner = document.getElementById('loading-spinner');
-        if (spinner) {
-          spinner.classList.add('hidden');
-          spinner.style.display = 'none';
-        }
-        const gridLoader = document.getElementById('grid-loader');
-        if (gridLoader) {
-          gridLoader.classList.add('hidden');
-          gridLoader.style.display = 'none';
-        }
-        return;
-      }
 
       // 4. Configurar Grid Columns - Columna de horas fija de 75px
       if (displayedCourts.length > 1) {
@@ -10180,19 +10181,16 @@ ${data.message}`);
         html += `<div class="time-slot-label" style="grid-row: ${rowNum}; grid-column: 1;">${timeLabel}</div>`;
 
         displayedCourts.forEach((c, cIdx) => {
-          html += `<div class="grid-bg-cell" style="grid-row: ${rowNum}; grid-column: ${cIdx + 2};"></div>`;
+          const courtId = c.id;
+          html += `<div class="grid-bg-cell"
+                        style="grid-row: ${rowNum}; grid-column: ${cIdx + 2};"
+                        data-court-id="${courtId}"
+                        data-time="${timeLabel}"
+                        data-date="${selectedDate}"
+                        onclick="openManualBookingModal({ court_id: '${courtId}', date: '${selectedDate}', start_time: '${timeLabel}' })"
+                        title="Click para reservar en ${c.name} a las ${timeLabel}">
+                   </div>`;
         });
-      }
-
-      // Si no hay turnos visibles, mostrar el estado vacío limpio centrado sobre las canchas
-      if (visibleSlots.length === 0) {
-        html += `
-          <div style="grid-row: 2 / span ${TOTAL_SLOTS}; grid-column: 2 / -1; display: flex; align-items: center; justify-content: center; z-index: 25; pointer-events: auto; padding: 2rem;">
-            <div class='py-12 text-center'><p class='text-slate-500 mb-3'>No hay turnos programados para esta fecha.</p><button onclick='seedWeeklySlots()' class='px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition'>🌱 Generar Turnos Ahora</button></div>
-          </div>
-        `;
-        container.innerHTML = html;
-        return;
       }
 
       // Slot Cards & Style Variables
