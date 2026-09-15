@@ -37,6 +37,12 @@ from app.services.whatsapp import (
 )
 from app.models.whatsapp_conversation import WhatsAppConversation
 from app.models.customer import Customer
+from app.services.gemini_service import (
+    AUDIO_PROCESSING_ERROR_MESSAGE,
+    download_whatsapp_media,
+    fetch_media_url_from_id,
+    transcribe_audio_with_gemini,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -366,8 +372,48 @@ async def receive_webhook(
                     sender_phone = f"+{raw_from}" if not raw_from.startswith("+") else raw_from
                     sender_name = contact_map.get(raw_from) or contact_map.get(raw_from.lstrip("+"))
 
+                    msg_type = (msg.get("type") or "").lower()
                     text_obj = msg.get("text", {})
                     message_text = text_obj.get("body", "").strip()
+
+                    # Intercepción de mensajes de tipo audio o voice (notas de voz)
+                    if msg_type in ["audio", "voice"] or ("audio" in msg or "voice" in msg):
+                        audio_obj = msg.get("audio") or msg.get("voice") or {}
+                        media_url = audio_obj.get("url")
+                        media_id = audio_obj.get("id")
+                        mime_type = audio_obj.get("mime_type") or "audio/ogg"
+
+                        try:
+                            # Si no trae URL directa pero sí ID (Meta Cloud API estándar), resolver la URL
+                            if not media_url and media_id:
+                                media_url = await fetch_media_url_from_id(media_id)
+
+                            if not media_url:
+                                raise ValueError(f"No se pudo obtener la URL del audio (id: {media_id})")
+
+                            logger.info(f"[AUDIO STT] Descargando audio para {sender_phone} desde {media_url[:60]}...")
+                            audio_bytes = await download_whatsapp_media(media_url, mime_type=mime_type)
+
+                            logger.info(f"[AUDIO STT] Transcribiendo audio ({len(audio_bytes)} bytes) con Gemini 1.5 Flash...")
+                            transcription = await transcribe_audio_with_gemini(audio_bytes, mime_type=mime_type)
+                            logger.info(f"[AUDIO STT ÉXITO] Transcripción para {sender_phone}: '{transcription}'")
+
+                            message_text = transcription.strip()
+                        except Exception as stt_err:
+                            logger.error(f"[AUDIO STT ERROR] Error procesando nota de voz de {sender_phone}: {stt_err}", exc_info=True)
+                            await log_conversation_message(
+                                db, sender_phone, "[Nota de voz sin procesar]", direction="incoming",
+                                player_name=sender_name, increment_unread=False,
+                            )
+                            await log_conversation_message(
+                                db, sender_phone, AUDIO_PROCESSING_ERROR_MESSAGE, direction="bot"
+                            )
+                            await send_whatsapp_message(
+                                to_phone=raw_from,
+                                message_body=AUDIO_PROCESSING_ERROR_MESSAGE,
+                            )
+                            continue
+
                     if not message_text:
                         continue
 
@@ -388,7 +434,7 @@ async def receive_webhook(
                         if not quoted_text and context.get("id"):
                             quoted_text = MESSAGES_CACHE.get(context.get("id"))
 
-                    print(f"[WHATSAPP INCOMING] Mensaje de {sender_phone} ({sender_name}): '{message_text}' | Quoted: {bool(quoted_text)}")
+                    logger.info(f"[WHATSAPP INCOMING] Mensaje de {sender_phone} ({sender_name}): '{message_text}' | Quoted: {bool(quoted_text)}")
 
                     # Bandeja humana: registrar el mensaje entrante y respetar la pausa del bot si un asesor está atendiendo
                     paused = await is_conversation_paused(db, sender_phone)
@@ -430,7 +476,7 @@ async def receive_webhook(
                             context=context,
                         )
                         if reply_text:
-                            print(f"[WHATSAPP OUTGOING PREPARED]:\n{reply_text}\n")
+                            logger.info(f"[WHATSAPP OUTGOING PREPARED]:\n{reply_text}\n")
                             await log_conversation_message(db, sender_phone, reply_text, direction="bot")
                             await send_whatsapp_message(
                                 to_phone=raw_from,
