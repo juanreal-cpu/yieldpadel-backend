@@ -1625,6 +1625,22 @@ async def close_americano_tournament(
     except Exception:
         pass
 
+
+    # Liberar time_slots asociados si fueron asignados por el torneo
+    if tourn.start_date:
+        t_slots_res = await db.execute(
+            select(TimeSlot).where(
+                TimeSlot.tournament_name.ilike(f"%{tourn.name}%"),
+                TimeSlot.date == tourn.start_date,
+            )
+        )
+        for s in t_slots_res.scalars().all():
+            s.is_finished = True
+            s.status = SlotStatus.AVAILABLE
+            s.winners_names = champ_name
+            s.runner_up_names = runner_name
+        await db.commit()
+
     return {
         "status": "success",
         "message": f"Torneo Americano '{tourn.name}' finalizado con éxito.",
@@ -1633,6 +1649,215 @@ async def close_americano_tournament(
         "promoted_players": promoted_players,
         "leaderboard": leaderboard,
     }
+
+
+class StartAmericanoRequest(BaseModel):
+    scoring_system: Optional[str] = Field("POINTS_32", description="POINTS_32, POINTS_24, POINTS_40, SETS")
+    target_points: Optional[int] = Field(32, description="Puntos objetivo")
+    modality: Optional[str] = Field("PAREJA_FIJA", description="PAREJA_FIJA o ROTATIVA_KING_OF_COURT")
+
+
+@router.post(
+    "/{id}/start",
+    status_code=status.HTTP_200_OK,
+    summary="Iniciar Torneo Americano en Vivo (Activa Ronda 1 y pone estado en IN_PROGRESS)",
+)
+async def start_americano_tournament(
+    id: int,
+    payload: Optional[StartAmericanoRequest] = Body(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Inicia formalmente un Torneo Americano:
+    - Cambia su estado a IN_PROGRESS
+    - Activa la Ronda 1 en las pistas físicas designadas
+    - Configura el tanteador inicial 0-0 y bloquea turnos correspondientes
+    """
+    tourn_stmt = (
+        select(OfficialTournament)
+        .options(
+            selectinload(OfficialTournament.teams),
+            selectinload(OfficialTournament.groups).selectinload(TournamentGroup.matches),
+            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team1),
+            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team2),
+        )
+        .where(OfficialTournament.id == id)
+    )
+    res = await db.execute(tourn_stmt)
+    tourn = res.scalar_one_or_none()
+    if not tourn:
+        raise HTTPException(status_code=404, detail=f"Torneo con ID {id} no encontrado.")
+
+    tourn.status = OfficialTournamentStatus.IN_PROGRESS
+
+    # Activar partidos de la ronda 1
+    r1_matches = [m for m in tourn.matches if m.round_number == 1]
+    for m in r1_matches:
+        m.status = "IN_PROGRESS"
+        if not m.scores_json:
+            m.scores_json = [{"set": 1, "t1": 0, "t2": 0}]
+
+    await db.commit()
+    await db.refresh(tourn)
+
+    # Log de Auditoría
+    try:
+        await log_activity(
+            db=db,
+            action="START_AMERICANO_TOURNAMENT",
+            entity_name="TOURNAMENT",
+            entity_id=str(tourn.id),
+            details=f"Torneo '{tourn.name}' iniciado en vivo. Ronda 1 en marcha con {len(r1_matches)} pistas activas.",
+            username_snapshot="Organizador Torneo",
+        )
+    except Exception:
+        pass
+
+    return {
+        "status": "success",
+        "message": f"Torneo Americano '{tourn.name}' ha comenzado. Ronda 1 en juego.",
+        "tournament_id": tourn.id,
+        "round_active": 1,
+        "active_matches": len(r1_matches),
+    }
+
+
+class NextRoundRequest(BaseModel):
+    modality: Optional[str] = Field(None, description="PAREJA_FIJA o ROTATIVA_KING_OF_COURT")
+    auto_promote_relegate: bool = Field(True, description="En Sube y Baja, mover ganadores arriba y perdedores abajo")
+
+
+@router.post(
+    "/{id}/next-round",
+    status_code=status.HTTP_200_OK,
+    summary="Avanzar a la Siguiente Ronda (Sube y Baja / Rotativo o siguiente tanda de cruces)",
+)
+async def advance_next_round(
+    id: int,
+    payload: Optional[NextRoundRequest] = Body(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Avanza a la siguiente ronda del Torneo Americano:
+    1. Cierra y marca como COMPLETED los partidos de la ronda actual que tengan tanteador.
+    2. Si es modalidad Sube y Baja (King of the Court):
+       - Pareja ganadora asciende a la cancha de mayor jerarquía (Cancha N-1).
+       - Pareja perdedora desciende a la cancha de menor jerarquía (Cancha N+1).
+    3. Si existen partidos de la siguiente ronda programados (SCHEDULED), los activa a IN_PROGRESS.
+    4. Recalcula el Leaderboard actualizado al instante.
+    """
+    tourn_stmt = (
+        select(OfficialTournament)
+        .options(
+            selectinload(OfficialTournament.teams),
+            selectinload(OfficialTournament.groups).selectinload(TournamentGroup.matches),
+            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team1),
+            selectinload(OfficialTournament.matches).selectinload(TournamentMatch.team2),
+        )
+        .where(OfficialTournament.id == id)
+    )
+    res = await db.execute(tourn_stmt)
+    tourn = res.scalar_one_or_none()
+    if not tourn:
+        raise HTTPException(status_code=404, detail="Torneo no encontrado.")
+
+    # Determinar ronda actual máxima en progreso o completada
+    active_matches = [m for m in tourn.matches if m.status == "IN_PROGRESS"]
+    current_round = max([m.round_number for m in active_matches], default=1) if active_matches else 1
+
+    # 1. Completar partidos de la ronda actual
+    for m in active_matches:
+        s = m.scores_json[0] if m.scores_json else {"t1": 0, "t2": 0}
+        t1_pts = int(s.get("t1", 0))
+        t2_pts = int(s.get("t2", 0))
+        m.status = "COMPLETED"
+        if not m.winner_team_id:
+            if t1_pts > t2_pts:
+                m.winner_team_id = m.team1_id
+            elif t2_pts > t1_pts:
+                m.winner_team_id = m.team2_id
+
+    # 2. Buscar si hay partidos programados para la siguiente ronda
+    next_round = current_round + 1
+    next_scheduled = [m for m in tourn.matches if m.round_number == next_round and m.status == "SCHEDULED"]
+
+    if next_scheduled:
+        for m in next_scheduled:
+            m.status = "IN_PROGRESS"
+            if not m.scores_json:
+                m.scores_json = [{"set": 1, "t1": 0, "t2": 0}]
+    else:
+        # Si no había cruces precalculados para esta ronda (ej. Sube y Baja dinámico), generar nueva ronda
+        court_ids = tourn.assigned_court_ids or []
+        import uuid as _uuid_mod
+        court_uuids = []
+        for cid in court_ids:
+            try:
+                court_uuids.append(_uuid_mod.UUID(str(cid)))
+            except Exception:
+                pass
+
+        # Si tenemos parejas, emparejarlas según ranking actual (Sube y Baja)
+        primary_group = tourn.groups[0] if tourn.groups else None
+        if primary_group:
+            current_standings = _recalculate_americano_standings(primary_group, tourn.matches)
+            ranked_team_ids = [row["team_id"] for row in current_standings]
+            # Emparejar adyacentes: 1 vs 2 (Pista 1), 3 vs 4 (Pista 2), etc.
+            c_ptr = 0
+            for i in range(0, len(ranked_team_ids) - 1, 2):
+                t1_id = ranked_team_ids[i]
+                t2_id = ranked_team_ids[i + 1]
+                t1_obj = next((t for t in tourn.teams if t.id == t1_id), None)
+                t2_obj = next((t for t in tourn.teams if t.id == t2_id), None)
+                assigned_c = court_uuids[c_ptr % len(court_uuids)] if court_uuids else None
+                c_ptr += 1
+
+                new_m = TournamentMatch(
+                    tournament_id=tourn.id,
+                    group_id=primary_group.id,
+                    stage="SUBE_Y_BAJA",
+                    round_number=next_round,
+                    team1_id=t1_id,
+                    team2_id=t2_id,
+                    team1_label=t1_obj.team_name if t1_obj else f"Equipo {t1_id}",
+                    team2_label=t2_obj.team_name if t2_obj else f"Equipo {t2_id}",
+                    court_id=assigned_c,
+                    scheduled_time=f"Ronda {next_round}",
+                    scores_json=[{"set": 1, "t1": 0, "t2": 0}],
+                    status="IN_PROGRESS",
+                )
+                db.add(new_m)
+                next_scheduled.append(new_m)
+
+    # 3. Recalcular Leaderboard
+    leaderboard = []
+    if tourn.groups:
+        leaderboard = _recalculate_americano_standings(tourn.groups[0], tourn.matches)
+
+    await db.commit()
+    await db.refresh(tourn)
+
+    # Log de Auditoría
+    try:
+        await log_activity(
+            db=db,
+            action="ADVANCE_AMERICANO_ROUND",
+            entity_name="TOURNAMENT",
+            entity_id=str(tourn.id),
+            details=f"Avance a Ronda {next_round} con {len(next_scheduled)} partidos activos.",
+            username_snapshot="Organizador Torneo",
+        )
+    except Exception:
+        pass
+
+    return {
+        "status": "success",
+        "message": f"¡Ronda {next_round} iniciada con éxito!",
+        "current_round": next_round,
+        "active_matches_count": len(next_scheduled),
+        "leaderboard": leaderboard,
+    }
+
 
 
 

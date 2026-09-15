@@ -45,6 +45,13 @@
       -webkit-text-fill-color: #0f172a !important;
     }
 
+    /* Desplegable de Acción en Auditoría */
+    #audit-filter-action, #audit-filter-action option {
+      color: #0f172a !important;
+      background-color: #ffffff !important;
+      font-weight: 600 !important;
+    }
+    
     /* Calendarios nativos e iconos de fecha */
     input[type="date"] {
       color: #0f172a !important;
@@ -52,7 +59,7 @@
       font-weight: 600 !important;
     }
     input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(0.2) !important;
+      filter: invert(0.2) !important; /* Asegura que el icono de calendario se vea oscuro */
       cursor: pointer;
     }
 
@@ -77,15 +84,11 @@
     }
 
     /* Forzar contraste estricto en tarjetas claras */
-    .card-light, .bg-white, .bg-slate-50 {
+    .card-light {
       color: #0f172a !important;
     }
     .card-light h1, .card-light h2, .card-light h3, .card-light h4, .card-light p, .card-light span, .card-light div {
       color: inherit;
-    }
-    /* Evitar que texto blanco se cuele en contenedores claros */
-    .bg-white .text-white, .bg-slate-50 .text-white, .bg-slate-100 .text-white {
-      color: #0f172a !important;
     }
     /* Proteger botones y elementos oscuros dentro de contenedores claros para que su texto blanco se mantenga blanco */
     .bg-white button.text-white, .bg-slate-50 button.text-white, .bg-slate-100 button.text-white,
@@ -1031,7 +1034,7 @@
     }
 
     .grid-bg-cell:hover {
-      background-color: #F0FDF4 !important;
+      background-color: #F0FDF4 !important; /* Esmeralda muy suave */
       border-color: #86EFAC !important;
       z-index: 10;
     }
@@ -1560,36 +1563,68 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(15, 23, 42, 0.65);
+      background: rgba(2, 6, 23, 0.8);
       backdrop-filter: blur(4px);
       z-index: 100;
       align-items: center;
       justify-content: center;
+      padding: 1rem;
+    }
+    @media (min-width: 768px) {
+      .modal-overlay {
+        padding: 1.5rem;
+      }
     }
     .modal-overlay.active {
       display: flex;
     }
 
     .modal-card {
+      position: relative;
       background: #FFFFFF;
-      border: 1px solid #CBD5E1;
-      border-radius: 12px;
+      border: 1px solid #E2E8F0;
+      border-radius: 1rem;
       width: 100%;
-      max-width: 480px;
-      padding: 1.5rem;
+      max-width: 56rem; /* max-w-4xl (896px) */
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       color: #0F172A;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
 
     .modal-title {
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       font-weight: 800;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #E2E8F0;
-      padding-bottom: 0.5rem;
+      padding: 1.25rem;
+      background: rgba(248, 250, 252, 0.85);
+      flex-shrink: 0;
+      color: #0F172A;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1 1 auto;
+      color: #0F172A;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .form-group {
@@ -2868,7 +2903,100 @@
                 <button onclick="openCreateAmericanoModal()" class="btn-action-primary-purple" style="box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">
                   🏆 + Crear Americano
                 </button>
+                <button onclick="toggleAmericanoLiveCockpit()" id="btn-toggle-live-cockpit" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                  <span class="animate-ping w-2 h-2 rounded-full bg-emerald-300"></span>
+                  <span>⚡ Mesa de Control en Vivo</span>
+                </button>
               </div>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- ⚡ COCKPIT EN VIVO: PISTAS EN TIEMPO REAL & LEADERBOARD  -->
+            <!-- ======================================================== -->
+            <div id="americano-live-cockpit" class="mb-8 p-6 bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl text-white space-y-6">
+              
+              <!-- Barra Superior del Torneo Activo -->
+              <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xl">
+                    ⚡
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h3 class="text-base font-black text-white" id="live-cockpit-tourn-name">Mesa de Control en Vivo</h3>
+                      <span id="live-cockpit-status-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        EN JUEGO
+                      </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5" id="live-cockpit-meta-info">
+                      Marcador en directo punto a punto (+1/-1), ranking dinámico acumulado y finalización de podio.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2.5 flex-wrap">
+                  <select id="live-tournament-selector" onchange="onSelectLiveAmericano(this.value)" class="px-3 py-1.5 text-xs font-bold bg-slate-800 text-white border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Cargando torneos activos...</option>
+                  </select>
+                  <button type="button" onclick="refreshLiveAmericanoState()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-slate-700">
+                    <span>🔄</span> <span>Refrescar</span>
+                  </button>
+                  <button type="button" onclick="advanceLiveAmericanoRound()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                    <span>⏭️</span> <span>Siguiente Ronda</span>
+                  </button>
+                  <button type="button" onclick="openCloseAmericanoModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5">
+                    <span>👑</span> <span>Cerrar Torneo & Podio</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Grilla de Canchas en Vivo -->
+              <div>
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <span>🎾</span> <span>Pistas Deportivas Activas (Tanteador Directo)</span>
+                  </h4>
+                  <span id="live-cockpit-courts-count" class="text-[11px] font-bold text-slate-400 font-mono">0 Pistas</span>
+                </div>
+                <div id="live-cockpit-courts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div class="p-6 text-center text-xs text-slate-400 bg-slate-800/60 rounded-2xl border border-slate-700/60 col-span-full">
+                    Selecciona un torneo activo para visualizar los partidos en pista.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Leaderboard / Tabla Dinámica en Vivo -->
+              <div class="pt-2">
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <span>📊</span> <span>Leaderboard en Tiempo Real (Wins & Puntos)</span>
+                  </h4>
+                  <span class="text-[10px] text-slate-400 font-semibold">Criterio: 1° Partidos Ganados • 2° Dif. Puntos • 3° Puntos a Favor</span>
+                </div>
+                <div class="overflow-x-auto rounded-2xl border border-slate-700/80 bg-slate-800/40">
+                  <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-wider border-b border-slate-700">
+                      <tr>
+                        <th class="p-3">Pos</th>
+                        <th class="p-3">Pareja / Dupla</th>
+                        <th class="p-3 text-center">PJ</th>
+                        <th class="p-3 text-center text-emerald-400">PG</th>
+                        <th class="p-3 text-center text-rose-400">PP</th>
+                        <th class="p-3 text-center">Pts Favor</th>
+                        <th class="p-3 text-center">Pts Contra</th>
+                        <th class="p-3 text-center text-cyan-300">Diferencia</th>
+                        <th class="p-3 text-center text-amber-300 font-black">Pts Torneo</th>
+                      </tr>
+                    </thead>
+                    <tbody id="live-cockpit-leaderboard-body" class="divide-y divide-slate-800 text-slate-200">
+                      <tr>
+                        <td colspan="9" class="p-4 text-center text-xs text-slate-500">Sin estadísticas disponibles aún.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </div>
 
             <!-- Sección: Torneos Activos y Próximos -->
@@ -4927,8 +5055,8 @@
 <!-- ======================================================== -->
   <!-- VISTA MODULAR: 🛡️ AUDITORÍA & GESTIÓN DE USUARIOS RBAC    -->
         <!-- ======================================================== -->
-	<div id="view-audit" class="view-section hidden w-full max-w-7xl mx-auto px-6 py-6 space-y-6">
-          <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 3rem;">
+	<div id="view-audit" class="view-section hidden w-full px-6 py-6 space-y-6">
+          <div style="width: 100%; margin: 0 auto; padding-bottom: 3rem;">
             
             <!-- Encabezado de la Vista de Auditoría -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
@@ -5011,21 +5139,21 @@
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;" id="audit-filter-controls">
                   <div class="flex items-center gap-1">
                     <label for="audit-filter-start" class="text-[11px] font-bold text-slate-500">Desde:</label>
-                    <input type="date" id="audit-filter-start" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                    <input type="date" id="audit-filter-start" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-white text-slate-900 border border-slate-300 rounded-lg shadow-sm font-semibold focus:ring-1 focus:ring-emerald-500">
                   </div>
                   <div class="flex items-center gap-1">
                     <label for="audit-filter-end" class="text-[11px] font-bold text-slate-500">Hasta:</label>
-                    <input type="date" id="audit-filter-end" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                    <input type="date" id="audit-filter-end" onchange="loadAuditLogs()" class="px-2.5 py-1.5 text-xs bg-white text-slate-900 border border-slate-300 rounded-lg shadow-sm font-semibold focus:ring-1 focus:ring-emerald-500">
                   </div>
                   <div class="flex items-center gap-1">
                     <label for="audit-filter-action" class="text-[11px] font-bold text-slate-500">Acción:</label>
-                    <select id="audit-filter-action" onchange="loadAuditLogs()" class="px-3 py-1.5 text-xs bg-slate-900 text-white border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500">
-                      <option value="ALL">Todas las acciones</option>
-                      <option value="CANCEL">🚫 Cancelaciones</option>
-                      <option value="RESERVATION">📅 Reservas Creadas</option>
-                      <option value="PLAYER">👤 Jugadores (Agregar/Quitar)</option>
-                      <option value="AMERICANO">🏆 Americanos / Torneos</option>
-                      <option value="PRICE">💰 Cambios de Precios</option>
+                    <select id="audit-filter-action" onchange="loadAuditLogs()" class="px-3 py-1.5 text-xs bg-white text-slate-900 border border-slate-300 rounded-lg shadow-sm font-semibold">
+                      <option value="ALL" class="text-slate-900 bg-white">🔍 Todas las acciones</option>
+                      <option value="CANCEL" class="text-slate-900 bg-white">🚫 Cancelaciones</option>
+                      <option value="RESERVATION" class="text-slate-900 bg-white">📅 Reservas Creadas</option>
+                      <option value="PLAYER" class="text-slate-900 bg-white">👤 Jugadores (Agregar/Quitar)</option>
+                      <option value="AMERICANO" class="text-slate-900 bg-white">🏆 Americanos / Torneos</option>
+                      <option value="PRICE" class="text-slate-900 bg-white">💰 Cambios de Precios</option>
                     </select>
                   </div>
                   <button type="button" onclick="setAuditToday()" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition" title="Filtrar eventos de hoy">📅 Hoy</button>
@@ -5282,220 +5410,234 @@
   </div>
 
   <!-- MODAL: GESTIÓN DE TURNO (6 OPCIONES COMPLETAS & CRM AUTOCOMPLETE) -->
-  <div id="modal-turn" data-alias="reserve-block-modal" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-title">
-        <span>Gestión de Turno</span>
-        <button type="button" onclick="closeReserveOrBlockModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
+  <div id="modal-turn" data-alias="reserve-block-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+        <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+          <span>🎾</span> Gestión de Turno
+        </span>
+        <button type="button" onclick="closeReserveOrBlockModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1 rounded-lg transition leading-none">&times;</button>
       </div>
-      <form id="reserve-block-form" onsubmit="handleReserveOrBlockSubmit(event)">
+      <form id="reserve-block-form" onsubmit="handleReserveOrBlockSubmit(event)" class="flex flex-col flex-1 overflow-hidden">
         <input type="hidden" id="rb-slot-id" />
         
-        <div class="form-group">
-          <label class="form-label">Tipo de Asignación</label>
-          <select id="rb-slot-type-select" class="form-control" onchange="onSlotTypeChange(this.value)" style="font-weight: 700;">
-            <option value="FULL_COURT">Partido Completo (Reserva 100% - $120.000)</option>
-            <option value="SPLIT_MATCH">Partido Abierto (Split 1/4 - Cuota por jugador)</option>
-            <option value="MEMBER">Socio / Membresía (Exento de pasarela / Hold $0)</option>
-            <option value="PAY_AT_VENUE">Pago en Sede (Pay-at-venue / Datáfono)</option>
-            <option value="CLASS">Clase de Pádel (Academia / Coach)</option>
-            <option value="MAINTENANCE">Mantenimiento / Lluvia (Bloqueo administrativo)</option>
-          </select>
-        </div>
+        <!-- CUERPO DEL MODAL (Scroll interno ergonómico en dos columnas) -->
+        <div class="p-6 overflow-y-auto space-y-5 flex-1 text-slate-900">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- COLUMNA 1: Modalidad y Buscador de Cliente CRM -->
+            <div class="space-y-4">
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Tipo de Asignación / Modalidad</label>
+                <select id="rb-slot-type-select" class="form-control" onchange="onSlotTypeChange(this.value)" style="font-weight: 700;">
+                  <option value="FULL_COURT">Partido Completo (Reserva 100% - $120.000)</option>
+                  <option value="SPLIT_MATCH">Partido Abierto (Split 1/4 - Cuota por jugador)</option>
+                  <option value="MEMBER">Socio / Membresía (Exento de pasarela / Hold $0)</option>
+                  <option value="PAY_AT_VENUE">Pago en Sede (Pay-at-venue / Datáfono)</option>
+                  <option value="CLASS">Clase de Pádel (Academia / Coach)</option>
+                  <option value="MAINTENANCE">Mantenimiento / Lluvia (Bloqueo administrativo)</option>
+                </select>
+              </div>
 
-        <!-- Búsqueda dinámica CRM Autocompletado Reactivo -->
-        <div class="form-group relative" id="rb-customer-search-group">
-          <label class="form-label font-bold text-slate-700 flex items-center justify-between">
-            <span>🔍 Buscar Cliente (CRM)</span>
-            <span class="text-[10px] text-slate-400 font-normal">Autocompleta nombre, WhatsApp, categoría y membresía</span>
-          </label>
-          <div class="relative">
-            <input type="text" id="turn-crm-search" data-alias="rb-customer-search" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="window.handleTurnCRMSearch(event)">
-            <div id="turn-crm-dropdown" data-alias="rb-customer-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-          </div>
-        </div>
+              <!-- Búsqueda dinámica CRM Autocompletado Reactivo -->
+              <div class="form-group relative" id="rb-customer-search-group">
+                <label class="form-label font-bold text-slate-700 flex items-center justify-between">
+                  <span>🔍 Buscar Cliente (CRM)</span>
+                  <span class="text-[10px] text-slate-500 font-normal">Autocompleta nombre, WhatsApp y categoría</span>
+                </label>
+                <div class="relative">
+                  <input type="text" id="turn-crm-search" data-alias="rb-customer-search" class="form-control" placeholder="Escribe para buscar (Juan, Camilo, David, Socio)..." autocomplete="off" oninput="window.handleTurnCRMSearch(event)">
+                  <div id="turn-crm-dropdown" data-alias="rb-customer-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+                </div>
+              </div>
 
-        <div class="form-group" id="rb-instructor-group" style="display: none;">
-          <label class="form-label">Nombre del Profesor / Instructor</label>
-          <input type="text" id="rb-instructor-name" class="form-control" placeholder="Ej: Profe Marcos Rivas">
-        </div>
+              <div class="form-group" id="rb-instructor-group" style="display: none;">
+                <label class="form-label font-bold text-slate-700">Nombre del Profesor / Instructor</label>
+                <input type="text" id="rb-instructor-name" class="form-control" placeholder="Ej: Profe Marcos Rivas">
+              </div>
 
-        <div class="form-group" id="rb-client-name-group">
-          <label class="form-label">Nombre del Cliente / Responsable</label>
-          <input type="text" id="rb-client-name" class="form-control" placeholder="Nombre completo">
-        </div>
+              <div class="form-group" id="rb-client-name-group">
+                <label class="form-label font-bold text-slate-700">Nombre del Cliente / Responsable</label>
+                <input type="text" id="rb-client-name" class="form-control" placeholder="Nombre completo">
+              </div>
 
-        <div class="form-group" id="rb-client-phone-group">
-          <label class="form-label">Teléfono WhatsApp</label>
-          <input type="tel" id="rb-client-phone" class="form-control" placeholder="+57 313 2058547">
-        </div>
+              <div class="form-group" id="rb-client-phone-group">
+                <label class="form-label font-bold text-slate-700">Teléfono WhatsApp</label>
+                <input type="tel" id="rb-client-phone" class="form-control font-semibold" placeholder="+57 313 2058547">
+              </div>
+            </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;" id="rb-client-details-row">
-          <div class="form-group">
-            <label class="form-label">Categoría</label>
-            <select id="rb-client-category" class="form-control" style="font-weight: 600;">
-              <option value="1ra">1ra Categoría (Avanzado)</option>
-              <option value="2da">2da Categoría</option>
-              <option value="3ra">3ra Categoría</option>
-              <option value="4ta" selected>4ta Categoría (Intermedio)</option>
-              <option value="5ta">5ta Categoría</option>
-              <option value="6ta">6ta Categoría (Iniciación)</option>
-              <option value="Abierta / Recreativa">Abierta / Recreativa</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Tipo de Cliente / Socio</label>
-            <select id="rb-client-type" class="form-control" style="font-weight: 600;">
-              <option value="Estándar" selected>Estándar</option>
-              <option value="Socio VIP">Socio VIP (Exento Hold)</option>
-              <option value="Alumno Academia">Alumno Academia</option>
-              <option value="Corporativo">Corporativo</option>
-            </select>
-          </div>
-        </div>
+            <!-- COLUMNA 2: Categoría, Socio y Selector Inteligente de Precio -->
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="rb-client-details-row">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Categoría</label>
+                  <select id="rb-client-category" class="form-control" style="font-weight: 600;">
+                    <option value="1ra">1ra Categoría (Avanzado)</option>
+                    <option value="2da">2da Categoría</option>
+                    <option value="3ra">3ra Categoría</option>
+                    <option value="4ta" selected>4ta Categoría (Intermedio)</option>
+                    <option value="5ta">5ta Categoría</option>
+                    <option value="6ta">6ta Categoría (Iniciación)</option>
+                    <option value="Abierta / Recreativa">Abierta / Recreativa</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Tipo de Socio</label>
+                  <select id="rb-client-type" class="form-control" style="font-weight: 600;">
+                    <option value="Estándar" selected>Estándar</option>
+                    <option value="Socio VIP">Socio VIP (Exento Hold)</option>
+                    <option value="Alumno Academia">Alumno Academia</option>
+                    <option value="Corporativo">Corporativo</option>
+                  </select>
+                </div>
+              </div>
 
-        <div class="form-group" id="rb-custom-price-group">
-          <div class="flex items-center justify-between mb-1">
-            <label class="form-label mb-0" style="font-weight: 700;">Precio Total ($ COP)</label>
-            <span id="rb-price-mode-indicator" class="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">Tarifa Acordada</span>
-          </div>
+              <div class="form-group p-3.5 bg-slate-50 border border-slate-200 rounded-xl" id="rb-custom-price-group">
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="form-label mb-0 font-bold text-slate-800">Tarifa / Precio Total ($ COP)</label>
+                  <span id="rb-price-mode-indicator" class="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">Tarifa Acordada</span>
+                </div>
 
-          <!-- Selector de Modo de Precio Dinámico -->
-          <div class="mb-2">
-            <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Precio / Estrategia:</label>
-            <select id="rb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-sky-500" onchange="window.handleSmartPriceModeChange('rb', this.value)">
-              <option value="MANUAL" selected>✏️ Manual / Editable</option>
-              <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
-              <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
-              <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
-            </select>
-          </div>
+                <!-- Selector de Modo de Precio Dinámico -->
+                <div class="mb-2">
+                  <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Precio / Estrategia:</label>
+                  <select id="rb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-sky-500" onchange="window.handleSmartPriceModeChange('rb', this.value)">
+                    <option value="MANUAL" selected>✏️ Manual / Editable</option>
+                    <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
+                    <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
+                    <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
+                  </select>
+                </div>
 
-          <!-- Contenedor Descuento % (Oculto por defecto) -->
-          <div id="rb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
-            <div class="flex items-center justify-between gap-2">
-              <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
-              <div class="flex items-center gap-1">
-                <input type="number" id="rb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('rb', this.value)">
-                <span class="text-xs font-bold text-amber-900">%</span>
+                <!-- Contenedor Descuento % (Oculto por defecto) -->
+                <div id="rb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
+                  <div class="flex items-center justify-between gap-2">
+                    <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
+                    <div class="flex items-center gap-1">
+                      <input type="number" id="rb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('rb', this.value)">
+                      <span class="text-xs font-bold text-amber-900">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Input de Precio Numérico (100% editable) -->
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
+                  <input type="number" id="rb-custom-price" class="form-control pl-7 font-bold text-sky-700" value="120000" step="5000" min="0">
+                </div>
+
+                <!-- Quick Chips de Ajuste Rápido -->
+                <div class="flex items-center gap-1.5 flex-wrap mt-2.5">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'VALLE')" class="px-2 py-1 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
+                    ☀️ Valle: $80k
+                  </button>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'PICO')" class="px-2 py-1 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
+                    🌙 Pico: $120k
+                  </button>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'YIELD')" class="px-2 py-1 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
+                    🧠 Yield Sugerido
+                  </button>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_15')" class="px-2 py-1 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
+                    🏷️ -15%
+                  </button>
+                  <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_25')" class="px-2 py-1 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
+                    🔥 -25%
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Input de Precio Numérico (100% editable) -->
-          <div class="relative">
-            <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
-            <input type="number" id="rb-custom-price" class="form-control pl-7" value="120000" step="5000" min="0" style="font-weight: 700; color: #0284C7;">
-          </div>
-
-          <!-- Quick Chips de Ajuste Rápido -->
-          <div class="flex items-center gap-1.5 flex-wrap mt-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'VALLE')" class="px-2 py-0.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
-              ☀️ Valle: $80k
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'PICO')" class="px-2 py-0.5 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
-              🌙 Pico: $120k
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'YIELD')" class="px-2 py-0.5 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
-              🧠 Yield Sugerido
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_15')" class="px-2 py-0.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
-              🏷️ -15%
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('rb', 'DISCOUNT_25')" class="px-2 py-0.5 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
-              🔥 -25%
-            </button>
-          </div>
-        </div>
-
-        <!-- Sección 🌟 Protocolo Nuevo Cliente (Onboarding Counter) -->
-        <div id="rb-onboarding-section" style="display: none; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 0.85rem; margin-top: 0.75rem; margin-bottom: 0.75rem;">
-          <input type="hidden" id="rb-onboarding-customer-id" />
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span style="font-size: 1.1rem;">🌟</span>
-              <span style="font-weight: 800; color: #92400E; font-size: 0.85rem;">Protocolo Nuevo Cliente (Primera Visita)</span>
+          <!-- Sección 🌟 Protocolo Nuevo Cliente (Onboarding Counter) -->
+          <div id="rb-onboarding-section" style="display: none; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 0.85rem;">
+            <input type="hidden" id="rb-onboarding-customer-id" />
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span style="font-size: 1.1rem;">🌟</span>
+                <span style="font-weight: 800; color: #92400E; font-size: 0.85rem;">Protocolo Nuevo Cliente (Primera Visita)</span>
+              </div>
+              <span id="rb-onboarding-badge" class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400 rounded-md">⭐ 1ra Visita</span>
             </div>
-            <span id="rb-onboarding-badge" class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400 rounded-md">⭐ 1ra Visita</span>
+            <p id="rb-onboarding-desc" style="font-size: 0.75rem; color: #78350F; margin-bottom: 0.5rem;">
+              Jugador: <strong id="rb-onboarding-player-name">-</strong> • Tel: <span id="rb-onboarding-player-phone">-</span> • Estado: <span id="rb-onboarding-player-status" style="font-weight: 700;">PENDING</span>
+            </p>
+            <div style="margin-bottom: 0.5rem;">
+              <label style="font-size: 0.72rem; font-weight: 700; color: #92400E; display: block; margin-bottom: 0.2rem;">Notas Rápidas de Recepción:</label>
+              <input type="text" id="rb-onboarding-notes" class="form-control" style="font-size: 0.75rem; padding: 0.35rem 0.5rem;" placeholder="Ej: Vino recomendado, interesado en clases y membresía..." />
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" onclick="submitOnboardingAction('WELCOMED')" class="btn-action-emerald" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar bienvenida completada en counter">
+                ✅ Marcar Bienvenida Realizada
+              </button>
+              <button type="button" onclick="submitOnboardingAction('MEMBER_OFFERED')" class="btn-action-primary-purple" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar oferta de membresía / promo 2do turno">
+                💳 Ofrecer Membresía / Descuento 2do Turno
+              </button>
+            </div>
           </div>
-          <p id="rb-onboarding-desc" style="font-size: 0.75rem; color: #78350F; margin-bottom: 0.5rem;">
-            Jugador: <strong id="rb-onboarding-player-name">-</strong> • Tel: <span id="rb-onboarding-player-phone">-</span> • Estado: <span id="rb-onboarding-player-status" style="font-weight: 700;">PENDING</span>
-          </p>
-          <div style="margin-bottom: 0.5rem;">
-            <label style="font-size: 0.72rem; font-weight: 700; color: #92400E; display: block; margin-bottom: 0.2rem;">Notas Rápidas de Recepción:</label>
-            <input type="text" id="rb-onboarding-notes" class="form-control" style="font-size: 0.75rem; padding: 0.35rem 0.5rem;" placeholder="Ej: Vino recomendado, interesado en clases y membresía..." />
-          </div>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button type="button" onclick="submitOnboardingAction('WELCOMED')" class="btn-action-emerald" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar bienvenida completada en counter">
-              ✅ Marcar Bienvenida Realizada
-            </button>
-            <button type="button" onclick="submitOnboardingAction('MEMBER_OFFERED')" class="btn-action-primary-purple" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px;" title="Registrar oferta de membresía / promo 2do turno">
-              💳 Ofrecer Membresía / Descuento 2do Turno
-            </button>
-          </div>
-        </div>
 
-        <!-- Sección 🏅 Resultado del Partido (Punto 4) -->
-        <div id="rb-match-result-section" class="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-              <span>🏅</span> Resultado del Partido
-            </span>
-            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">+25 Pts de Ranking</span>
-          </div>
-          <p class="text-[11px] text-emerald-800 mb-2">
-            Selecciona la pareja vencedora para registrar la victoria y sumar automáticamente 25 puntos a su ranking oficial:
-          </p>
-          <div class="flex items-center gap-2 flex-wrap">
-            <div class="flex-1 min-w-[200px]">
-              <select id="turn-winner-team" data-alias="rb-match-pair-select" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="team_1">🎾 Pareja 1</option>
-                <option value="team_2">🎾 Pareja 2</option>
+          <!-- Sección 🏅 Resultado del Partido (Punto 4) -->
+          <div id="rb-match-result-section" class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                <span>🏅</span> Resultado del Partido
+              </span>
+              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">+25 Pts de Ranking</span>
+            </div>
+            <p class="text-[11px] text-emerald-800 mb-2">
+              Selecciona la pareja vencedora para registrar la victoria y sumar automáticamente 25 puntos a su ranking oficial:
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="flex-1 min-w-[200px]">
+                <select id="turn-winner-team" data-alias="rb-match-pair-select" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="team_1">🎾 Pareja 1</option>
+                  <option value="team_2">🎾 Pareja 2</option>
+                </select>
+              </div>
+              <button type="button" id="rb-btn-save-match" onclick="window.saveMatchResult(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                Guardar Victoria (+25 Pts)
+              </button>
+            </div>
+
+            <div class="mt-2.5 pt-2 border-t border-emerald-200/80">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[11px] font-bold text-emerald-950 flex items-center gap-1">
+                  <span>🎯 Apuesta / Desafío en Juego</span>
+                </label>
+                <span class="text-[10px] text-emerald-700 font-semibold">Opcional</span>
+              </div>
+              <select id="rb-match-bet-select" onchange="window.toggleRBMatchCustomBet(this.value)" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="Puntos Simples">Puntos Simples (Solo Ranking +25 Pts)</option>
+                <option value="🍔 Tato Hamburguesa">🍔 Tato Hamburguesa</option>
+                <option value="🥤 Gatorade / Bebida">🥤 Gatorade / Bebida</option>
+                <option value="💵 20K COP">💵 20K COP</option>
+                <option value="🎾 Paga la Cancha">🎾 Paga la Cancha</option>
+                <option value="CUSTOM">🎯 Personalizada...</option>
               </select>
-            </div>
-            <button type="button" id="rb-btn-save-match" onclick="window.saveMatchResult(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
-              Guardar Victoria (+25 Pts)
-            </button>
-          </div>
-
-          <div class="mt-2.5 pt-2 border-t border-emerald-200/80">
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] font-bold text-emerald-950 flex items-center gap-1">
-                <span>🎯 Apuesta / Desafío en Juego</span>
-              </label>
-              <span class="text-[10px] text-emerald-700 font-semibold">Opcional</span>
-            </div>
-            <select id="rb-match-bet-select" onchange="window.toggleRBMatchCustomBet(this.value)" class="w-full h-8 text-xs border border-emerald-300 rounded-lg px-2 bg-white text-emerald-950 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="Puntos Simples">Puntos Simples (Solo Ranking +25 Pts)</option>
-              <option value="🍔 Tato Hamburguesa">🍔 Tato Hamburguesa</option>
-              <option value="🥤 Gatorade / Bebida">🥤 Gatorade / Bebida</option>
-              <option value="💵 20K COP">💵 20K COP</option>
-              <option value="🎾 Paga la Cancha">🎾 Paga la Cancha</option>
-              <option value="CUSTOM">🎯 Personalizada...</option>
-            </select>
-            <div id="rb-match-custom-bet-container" class="mt-1.5" style="display: none;">
-              <input type="text" id="rb-match-custom-bet" placeholder="Escribe la apuesta personalizada (ej: 🍕 Cena o Six-pack)..." class="w-full h-8 px-2.5 text-xs border border-amber-300 rounded-lg bg-amber-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <div id="rb-match-custom-bet-container" class="mt-1.5" style="display: none;">
+                <input type="text" id="rb-match-custom-bet" placeholder="Escribe la apuesta personalizada (ej: 🍕 Cena o Six-pack)..." class="w-full h-8 px-2.5 text-xs border border-amber-300 rounded-lg bg-amber-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="modal-actions flex items-center justify-between gap-2 flex-wrap pt-2">
+        <!-- FOOTER DEL MODAL (Botones claros y organizados) -->
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-3 flex-wrap">
           <div class="flex items-center gap-2">
             <!-- Botón dinámico de Cancelar Reserva / Torneo Americano -->
-            <button type="button" id="btn-cancel-slot-action" onclick="window.cancelTurnoOrSlot(document.getElementById('rb-slot-id').value)" class="hidden font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center gap-1.5" style="display: none;">
+            <button type="button" id="btn-cancel-slot-action" onclick="window.cancelTurnoOrSlot(document.getElementById('rb-slot-id').value)" class="hidden font-bold px-4 py-2.5 rounded-xl text-xs shadow-sm transition items-center gap-1.5" style="display: none;">
               <span id="btn-cancel-slot-icon">🚫</span> <span id="btn-cancel-slot-text">Cancelar Reserva</span>
             </button>
-            <button type="button" id="btn-reset-slot-available" onclick="resetSlotToAvailable(document.getElementById('rb-slot-id').value)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1">
+            <button type="button" id="btn-reset-slot-available" onclick="resetSlotToAvailable(document.getElementById('rb-slot-id').value)" class="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5">
               <span>🗑️</span> <span>Vaciar / Dejar Disponible</span>
             </button>
           </div>
-          <div class="flex items-center gap-2">
-            <button type="button" id="btn-save-slot-price" onclick="window.saveSlotPrice(document.getElementById('rb-slot-id').value)" class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1">
+          <div class="flex items-center gap-2.5">
+            <button type="button" id="btn-save-slot-price" onclick="window.saveSlotPrice(document.getElementById('rb-slot-id').value)" class="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5">
               <span>💾</span> <span>Guardar Precio</span>
             </button>
-            <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary">Cerrar</button>
-            <button type="submit" class="btn-primary">Guardar Asignación</button>
+            <button type="button" onclick="closeReserveOrBlockModal()" class="btn-secondary px-4 py-2.5 font-bold text-xs rounded-xl">Cancelar</button>
+            <button type="submit" class="btn-primary px-5 py-2.5 font-bold text-xs rounded-xl shadow-md">💾 Guardar Asignación / Confirmar</button>
           </div>
         </div>
       </form>
@@ -5503,69 +5645,81 @@
   </div>
 
   <!-- MODAL: APARTAR CUPO (HOLD BOLD/WOMPI) -->
-  <div id="hold-modal" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-title">
-        <span>Apartar Cupo (Hold Temporal)</span>
-        <button onclick="closeModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
+  <div id="hold-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+        <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+          <span>⏱️</span> Apartar Cupo (Hold Temporal)
+        </span>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1 rounded-lg transition leading-none">&times;</button>
       </div>
-      <form id="hold-form" onsubmit="handleHoldSubmit(event)">
+      <form id="hold-form" onsubmit="handleHoldSubmit(event)" class="flex flex-col flex-1 overflow-hidden">
         <input type="hidden" id="hold-slot-id" />
         
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Método de Asignación</label>
-          <select id="hold-assignment-method" class="form-control" onchange="onHoldMethodChange(this.value)">
-            <option value="HOLD">⏱️ Hold Temporal (10 min para pago digital)</option>
-            <option value="COUNTER">💵 Pago en Counter / Efectivo-Datáfono (Confirma de una vez sin Hold)</option>
-            <option value="MEMBERSHIP">💎 Descontar de Membresía del Jugador</option>
-          </select>
-        </div>
+        <div class="p-6 overflow-y-auto space-y-5 flex-1 text-slate-900">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- COLUMNA 1: Método y Membresía -->
+            <div class="space-y-4">
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Método de Asignación</label>
+                <select id="hold-assignment-method" class="form-control" onchange="onHoldMethodChange(this.value)">
+                  <option value="HOLD">⏱️ Hold Temporal (10 min para pago digital)</option>
+                  <option value="COUNTER">💵 Pago en Counter / Efectivo-Datáfono (Confirma de una vez sin Hold)</option>
+                  <option value="MEMBERSHIP">💎 Descontar de Membresía del Jugador</option>
+                </select>
+              </div>
 
-        <div class="form-group" id="hold-membership-group" style="display: none;">
-          <label class="form-label font-bold text-slate-700">Membresía del Jugador</label>
-          <select id="hold-membership-tier" class="form-control">
-            <option value="TAPIA">TAPIA (6:00 AM - 11:59 PM | 40% desc)</option>
-            <option value="COELLO">COELLO (6:00 AM - 11:59 PM | 30% desc)</option>
-            <option value="GALAN">GALAN (6:00 AM - 11:59 PM | 20% desc)</option>
-            <option value="CHINGOTTO">CHINGOTTO (6:00 AM - 3:00 PM | 10% desc)</option>
-            <option value="LEBRON">LEBRON (6:00 AM - 6:00 PM | 20% desc)</option>
-            <option value="ESTANDAR">ESTANDAR (Sin descuento)</option>
-          </select>
-        </div>
+              <div class="form-group" id="hold-membership-group" style="display: none;">
+                <label class="form-label font-bold text-slate-700">Membresía del Jugador</label>
+                <select id="hold-membership-tier" class="form-control">
+                  <option value="TAPIA">TAPIA (6:00 AM - 11:59 PM | 40% desc)</option>
+                  <option value="COELLO">COELLO (6:00 AM - 11:59 PM | 30% desc)</option>
+                  <option value="GALAN">GALAN (6:00 AM - 11:59 PM | 20% desc)</option>
+                  <option value="CHINGOTTO">CHINGOTTO (6:00 AM - 3:00 PM | 10% desc)</option>
+                  <option value="LEBRON">LEBRON (6:00 AM - 6:00 PM | 20% desc)</option>
+                  <option value="ESTANDAR">ESTANDAR (Sin descuento)</option>
+                </select>
+              </div>
 
-        <!-- Búsqueda dinámica CRM Autocompletado Reactivo en Hold -->
-        <div class="form-group relative" id="hold-player-search-group">
-          <label class="form-label font-bold text-slate-700 flex items-center justify-between">
-            <span>Nombre del Jugador</span>
-            <span class="text-[10px] text-slate-400 font-normal">Autocompleta desde CRM</span>
-          </label>
-          <div class="relative">
-            <input type="text" id="hold-player-search" data-alias="hold-client-name" class="form-control" placeholder="Escribe para buscar cliente (Juan, Camilo, David)..." autocomplete="off" oninput="window.handleHoldCRMSearch(event)" required>
-            <div id="hold-crm-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-44 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Número de Cupos a Asignar</label>
+                <select id="hold-spots-count" class="form-control font-semibold">
+                  <option value="1">1 Cupo</option>
+                  <option value="2">2 Cupos</option>
+                  <option value="3">3 Cupos</option>
+                  <option value="4">4 Cupos (Cancha Completa)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- COLUMNA 2: Buscador CRM y Teléfono -->
+            <div class="space-y-4">
+              <!-- Búsqueda dinámica CRM Autocompletado Reactivo en Hold -->
+              <div class="form-group relative" id="hold-player-search-group">
+                <label class="form-label font-bold text-slate-700 flex items-center justify-between">
+                  <span>Nombre del Jugador</span>
+                  <span class="text-[10px] text-slate-500 font-normal">Autocompleta desde CRM</span>
+                </label>
+                <div class="relative">
+                  <input type="text" id="hold-player-search" data-alias="hold-client-name" class="form-control font-semibold" placeholder="Escribe para buscar cliente (Juan, Camilo, David)..." autocomplete="off" oninput="window.handleHoldCRMSearch(event)" required>
+                  <div id="hold-crm-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-44 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+                </div>
+                <input type="hidden" id="hold-player-name" />
+                <input type="hidden" id="hold-client-name" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Teléfono WhatsApp</label>
+                <input type="tel" id="hold-player-phone" data-alias="hold-client-phone" class="form-control font-semibold" required placeholder="+57 300 1234567" />
+                <input type="hidden" id="hold-client-phone" />
+              </div>
+            </div>
           </div>
-          <input type="hidden" id="hold-player-name" />
-          <input type="hidden" id="hold-client-name" />
         </div>
 
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Teléfono WhatsApp</label>
-          <input type="tel" id="hold-player-phone" data-alias="hold-client-phone" class="form-control" required placeholder="+57 300 1234567" />
-          <input type="hidden" id="hold-client-phone" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Número de Cupos a Asignar</label>
-          <select id="hold-spots-count" class="form-control">
-            <option value="1">1 Cupo</option>
-            <option value="2">2 Cupos</option>
-            <option value="3">3 Cupos</option>
-            <option value="4">4 Cupos (Cancha Completa)</option>
-          </select>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" onclick="closeModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" id="btn-submit-hold" class="btn-primary" style="background: #059669;">Generar Hold (10 min)</button>
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-3 flex-wrap">
+          <button type="button" onclick="closeModal()" class="btn-secondary px-4 py-2.5 font-bold text-xs rounded-xl">Cancelar</button>
+          <button type="submit" id="btn-submit-hold" class="btn-primary px-5 py-2.5 font-bold text-xs rounded-xl shadow-md" style="background: #059669 !important;">⚡ Generar Hold (10 min)</button>
         </div>
       </form>
     </div>
@@ -5648,67 +5802,77 @@
   </div>
 
   <!-- MODAL: INSCRIBIR PAREJA/JUGADOR EN TORNEO AMERICANO -->
-  <div id="join-tournament-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 500px;">
-      <div class="modal-title">
-        <span style="display: flex; align-items: center; gap: 0.4rem;">
+  <div id="join-tournament-modal" data-alias="modal-tournament-enroll modal-inscribir-pareja" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+        <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
           <span>🎾</span> + Inscribir Pareja / Jugador
         </span>
-        <button onclick="closeJoinAmericanoModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748B;">&times;</button>
+        <button onclick="closeJoinAmericanoModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1 rounded-lg transition leading-none">&times;</button>
       </div>
-      <form id="join-tournament-form" onsubmit="handleJoinTournamentSubmit(event)">
+      <form id="join-tournament-form" onsubmit="handleJoinTournamentSubmit(event)" class="flex flex-col flex-1 overflow-hidden">
         <input type="hidden" id="join-tourn-name" />
         <input type="hidden" id="join-tourn-date" />
         <input type="hidden" id="join-tourn-time" />
         <input type="hidden" id="join-tourn-slots" />
 
-        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
-          <div id="join-tourn-title" style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">Torneo Americano</div>
-          <div id="join-tourn-subtitle" style="font-size: 0.75rem; color: #64748B; margin-top: 0.2rem;">Pistas y horario</div>
+        <div class="p-6 overflow-y-auto space-y-5 flex-1 text-slate-900">
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.75rem;">
+            <div id="join-tourn-title" style="font-weight: 800; color: #0F172A; font-size: 0.95rem;">Torneo Americano</div>
+            <div id="join-tourn-subtitle" style="font-size: 0.75rem; color: #64748B; margin-top: 0.2rem;">Pistas y horario</div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- COLUMNA 1: Jugador 1 Titular -->
+            <div class="space-y-4">
+              <div class="form-group relative">
+                <label class="form-label font-bold text-slate-700">Jugador 1 (Nombre Completo - Buscar en CRM)</label>
+                <input type="text" id="join-p1-name" class="form-control font-bold" required placeholder="Escribe para buscar cliente..." autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 1)" />
+                <div id="join-p1-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Teléfono WhatsApp Jugador 1</label>
+                <input type="tel" id="join-p1-phone" class="form-control font-semibold" required placeholder="+57 313 2058547" />
+              </div>
+            </div>
+
+            <!-- COLUMNA 2: Jugador 2 Pareja y Membresía -->
+            <div class="space-y-4">
+              <div class="form-group relative">
+                <label class="form-label font-bold text-slate-700">Jugador 2 (Pareja - Opcional)</label>
+                <input type="text" id="join-p2-name" class="form-control font-semibold" placeholder="Escribe para buscar o dejar vacío para sorteo" autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 2)" />
+                <div id="join-p2-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Teléfono WhatsApp Pareja</label>
+                <input type="tel" id="join-p2-phone" class="form-control font-semibold" placeholder="+57 300 1234567" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label font-bold text-slate-700">Membresía Aplicable (Descuento Automático)</label>
+            <select id="join-membership-tier" class="form-control font-bold text-indigo-700 bg-slate-50 cursor-not-allowed" disabled>
+              <option value="ESTANDAR">ESTÁNDAR (Tarifa normal $45.000 COP)</option>
+              <option value="TAPIA">👑 TAPIA (40% desc - Paga $27.000 COP)</option>
+              <option value="COELLO">⚡ COELLO (30% desc - Paga $31.500 COP)</option>
+              <option value="GALAN">🎾 GALÁN (20% desc - Paga $36.000 COP)</option>
+              <option value="CHINGOTTO">🌅 CHINGOTTO (10% desc - Paga $40.500 COP)</option>
+              <option value="LEBRON">🐺 LEBRÓN (20% desc - Paga $36.000 COP)</option>
+              <option value="ORO">🏆 ORO (40% desc - Paga $27.000 COP)</option>
+              <option value="PLATA">🥈 PLATA (30% desc - Paga $31.500 COP)</option>
+            </select>
+          </div>
+
+          <!-- Banner reactivo de descuento de torneo -->
+          <div id="join-discount-notice" class="hidden" style="display: none; background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: #6B21A8; font-weight: 700;"></div>
         </div>
 
-        <div class="form-group relative">
-          <label class="form-label font-bold text-slate-700">Jugador 1 (Nombre Completo - Buscar en CRM)</label>
-          <input type="text" id="join-p1-name" class="form-control font-bold" required placeholder="Escribe para buscar cliente..." autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 1)" />
-          <div id="join-p1-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Teléfono WhatsApp Jugador 1</label>
-          <input type="tel" id="join-p1-phone" class="form-control" required placeholder="+57 313 2058547" />
-        </div>
-
-        <div class="form-group relative">
-          <label class="form-label font-bold text-slate-700">Jugador 2 (Pareja - Opcional)</label>
-          <input type="text" id="join-p2-name" class="form-control" placeholder="Escribe para buscar o dejar vacío para sorteo" autocomplete="off" oninput="window.handleJoinTournCRMSearch(event, 2)" />
-          <div id="join-p2-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Teléfono WhatsApp Pareja</label>
-          <input type="tel" id="join-p2-phone" class="form-control" placeholder="+57 300 1234567" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label font-bold text-slate-700">Membresía Aplicable (Descuento Automático)</label>
-          <select id="join-membership-tier" class="form-control font-bold text-indigo-700 bg-slate-50 cursor-not-allowed" disabled>
-            <option value="ESTANDAR">ESTÁNDAR (Tarifa normal $45.000 COP)</option>
-            <option value="TAPIA">👑 TAPIA (40% desc - Paga $27.000 COP)</option>
-            <option value="COELLO">⚡ COELLO (30% desc - Paga $31.500 COP)</option>
-            <option value="GALAN">🎾 GALÁN (20% desc - Paga $36.000 COP)</option>
-            <option value="CHINGOTTO">🌅 CHINGOTTO (10% desc - Paga $40.500 COP)</option>
-            <option value="LEBRON">🐺 LEBRÓN (20% desc - Paga $36.000 COP)</option>
-            <option value="ORO">🏆 ORO (40% desc - Paga $27.000 COP)</option>
-            <option value="PLATA">🥈 PLATA (30% desc - Paga $31.500 COP)</option>
-          </select>
-        </div>
-
-        <!-- Banner reactivo de descuento de torneo -->
-        <div id="join-discount-notice" class="hidden" style="display: none; background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; color: #6B21A8; font-weight: 700;"></div>
-
-        <div class="modal-actions">
-          <button type="button" onclick="closeJoinAmericanoModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-action-primary-purple" style="padding: 0.55rem 1.2rem;">Confirmar Inscripción</button>
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-3 flex-wrap">
+          <button type="button" onclick="closeJoinAmericanoModal()" class="btn-secondary px-4 py-2.5 font-bold text-xs rounded-xl">Cancelar</button>
+          <button type="submit" class="btn-action-primary-purple px-5 py-2.5 font-bold text-xs rounded-xl shadow-md" style="padding: 0.65rem 1.25rem;">Confirmar Inscripción</button>
         </div>
       </form>
     </div>
@@ -5793,6 +5957,59 @@
       </form>
     </div>
   </div>
+
+  <!-- MODAL: CONFIRMAR INICIO DE TORNEO AMERICANO EN VIVO -->
+  <div id="modal-confirm-start-americano" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 9999; backdrop-blur: 4px;">
+    <div style="background: #FFFFFF; border-radius: 24px; width: 92%; max-width: 480px; padding: 1.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid #E2E8F0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.85rem; margin-bottom: 1.25rem;">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center font-black text-lg">
+            ⚡
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-slate-900 leading-tight">Iniciar Torneo Americano en Vivo</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Activa la Ronda 1 en las pistas físicas designadas</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeStartAmericanoModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="confirm-start-americano-form" onsubmit="handleStartAmericanoSubmit(event)" class="space-y-4">
+        <input type="hidden" id="csa-hidden-name" />
+        <input type="hidden" id="csa-hidden-date" />
+        <input type="hidden" id="csa-hidden-time" />
+        <input type="hidden" id="csa-hidden-modality" />
+
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <div id="csa-tourn-name" class="font-black text-slate-900 text-sm">Torneo Americano</div>
+          <div id="csa-tourn-meta" class="text-xs text-slate-600 font-medium">Fecha • Horario • Modalidad</div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Sistema de Puntuación:</label>
+          <select id="csa-scoring-system" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="POINTS_32" selected>32 Puntos (Estándar Americano)</option>
+            <option value="POINTS_24">24 Puntos (Express Rápido)</option>
+            <option value="POINTS_40">40 Puntos (Extendido)</option>
+            <option value="SETS">Al mejor de 3 Sets Cortos</option>
+          </select>
+        </div>
+
+        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-medium flex items-start gap-2">
+          <span class="text-base leading-none">🎾</span>
+          <p>Al confirmar, el torneo pasará a estado <strong>EN JUEGO</strong>, se generará la Ronda 1 con tanteador directo (0-0) y se abrirá la <strong>Mesa de Control en Vivo</strong> para el arbitraje.</p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeStartAmericanoModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition flex items-center gap-1.5">
+            <span>⚡</span> <span>¡Comenzar Torneo Ahora!</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   <!-- ======================================================== -->
   <!-- MODAL: PROGRAMADOR SEMANAL INTELIGENTE (MALOKA TEMPLATE) -->
@@ -6329,194 +6546,213 @@
   <!-- ======================================================== -->
   <!-- MODAL: RESERVA PUNTUAL INDIVIDUAL DIRECTA                -->
   <!-- ======================================================== -->
-  <div id="modal-manual-booking" class="modal-overlay" style="display: none;">
-    <div class="modal-card" style="max-width: 520px; width: 95%;">
-      <div class="modal-title">
-        <span style="display: flex; align-items: center; gap: 0.5rem; color: #0F172A; font-weight: 800;">
-          <span style="font-size: 1.25rem;">➕</span> Nueva Reserva Puntual Directa
+  <!-- ======================================================== -->
+  <!-- MODAL: RESERVA PUNTUAL INDIVIDUAL DIRECTA                -->
+  <!-- ======================================================== -->
+  <div id="modal-manual-booking" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm" style="display: none;">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-slate-900">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80">
+        <span class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+          <span>➕</span> Nueva Reserva Puntual Directa
         </span>
-        <button type="button" onclick="closeManualBookingModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #64748B;">&times;</button>
+        <button type="button" onclick="closeManualBookingModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1 rounded-lg transition leading-none">&times;</button>
       </div>
 
-      <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; font-size: 0.75rem; color: #1E40AF; line-height: 1.4;">
-        ⚡ <strong>Reserva Inmediata:</strong> Agenda un turno o reserva directa en PostgreSQL sin necesidad de sembrar semanas completas. Se sincroniza al instante con el CRM.
-      </div>
-
-      <form id="form-manual-booking" onsubmit="submitManualBooking(event)">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Cancha</label>
-            <select id="mb-court" class="form-control" required style="font-weight: 600;">
-              <option value="1">Cancha 1 (Panorámica)</option>
-              <option value="2">Cancha 2</option>
-              <option value="3">Cancha 3</option>
-              <option value="4">Cancha 4</option>
-              <option value="5">Cancha 5</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Deporte</label>
-            <select id="mb-sport" class="form-control" required style="font-weight: 600;" onchange="onManualBookingSportChange(this.value)">
-              <option value="PADEL">🎾 Pádel</option>
-              <option value="PICKLEBALL">🏓 Pickleball</option>
-              <option value="VOLLEYBALL">🏐 Vóley</option>
-              <option value="PILATES">🧘 Pilates</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Fecha</label>
-            <input type="date" id="mb-date" class="form-control" required style="font-weight: 600;" />
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Hora de Inicio</label>
-            <input type="time" id="mb-start-time" class="form-control" value="08:00" required style="font-weight: 600;" />
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Duración</label>
-            <select id="mb-duration" class="form-control" required style="font-weight: 600;">
-              <option value="60">60 minutos (1 hora)</option>
-              <option value="90" selected>90 minutos (1.5 horas)</option>
-              <option value="120">120 minutos (2 horas)</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Modalidad</label>
-            <select id="mb-mode" class="form-control" required style="font-weight: 600;">
-              <option value="FULL_COURT">🏟️ Cancha Completa (4/4)</option>
-              <option value="SPLIT_MATCH">👤 Cupo Individual (1/4)</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group relative" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Cliente (Buscar en CRM)</label>
-            <input type="text" id="mb-client-name" class="form-control" placeholder="Escribe para buscar cliente..." autocomplete="off" required style="font-weight: 600;" oninput="window.handleManualBookingCRMSearch(event)" />
-            <div id="mb-client-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Teléfono / WhatsApp</label>
-            <input type="tel" id="mb-client-phone" class="form-control" placeholder="+573001234567" required style="font-weight: 600;" />
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Membresía / Tipo Socio</label>
-            <select id="mb-membership-tier" class="form-control bg-slate-50 cursor-not-allowed" disabled style="font-weight: 700; color: #4338CA;">
-              <option value="ESTANDAR">Tarifa General (Sin Membresía)</option>
-              <option value="TAPIA">👑 TAPIA (Socio VIP)</option>
-              <option value="COELLO">⚡ COELLO (Socio VIP)</option>
-              <option value="GALAN">🎾 GALÁN (Socio VIP)</option>
-              <option value="CHINGOTTO">🌅 CHINGOTTO (Socio Matutino)</option>
-              <option value="LEBRON">🐺 LEBRÓN (Socio Diurno)</option>
-              <option value="ORO">🏆 ORO (Socio VIP)</option>
-              <option value="PLATA">🥈 PLATA (Socio)</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700; color: #475569;">Nivel / Categoría</label>
-            <select id="mb-category" class="form-control" style="font-weight: 600;">
-              <option value="4ta">4ta Categoría (Intermedio)</option>
-              <option value="5ta">5ta Categoría (Iniciación)</option>
-              <option value="3ra">3ra Categoría (Avanzado)</option>
-              <option value="2da">2da Categoría</option>
-              <option value="1ra">1ra Categoría (Pro)</option>
-              <option value="6ta">6ta Categoría</option>
-              <option value="Open">Abierto</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Banner reactivo de beneficio de socio -->
-        <div id="mb-member-benefit-alert" class="hidden" style="display: none; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; color: #065F46; font-weight: 600;">
-          👑 <strong>Socio Activo:</strong> Exención de pago aplicada ($0 COP) por membresía activa.
-        </div>
-
-        <div class="form-group mb-3" id="mb-custom-price-group">
-          <div class="flex items-center justify-between mb-1">
-            <label class="form-label mb-0" style="font-weight: 700; color: #475569;">Precio Acordado (COP)</label>
-            <span id="mb-price-hint" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Tarifa calculada</span>
+      <form id="form-manual-booking" onsubmit="submitManualBooking(event)" class="flex flex-col flex-1 overflow-hidden">
+        <div class="p-6 overflow-y-auto space-y-5 flex-1 text-slate-900">
+          <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.75rem; color: #1E40AF; line-height: 1.4;">
+            ⚡ <strong>Reserva Inmediata:</strong> Agenda un turno o reserva directa en PostgreSQL sin necesidad de sembrar semanas completas. Se sincroniza al instante con el CRM.
           </div>
 
-          <!-- Selector de Modo de Precio Dinámico -->
-          <div class="mb-2">
-            <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Tarifa / Modo:</label>
-            <select id="mb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500" onchange="window.handleSmartPriceModeChange('mb', this.value)">
-              <option value="MANUAL" selected>✏️ Manual / Editable</option>
-              <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
-              <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
-              <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
-            </select>
-          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- COLUMNA 1: Cancha, Deporte, Fecha, Horario y Duración -->
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Cancha</label>
+                  <select id="mb-court" class="form-control" required style="font-weight: 600;">
+                    <option value="1">Cancha 1 (Panorámica)</option>
+                    <option value="2">Cancha 2</option>
+                    <option value="3">Cancha 3</option>
+                    <option value="4">Cancha 4</option>
+                    <option value="5">Cancha 5</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Deporte</label>
+                  <select id="mb-sport" class="form-control" required style="font-weight: 600;" onchange="onManualBookingSportChange(this.value)">
+                    <option value="PADEL">🎾 Pádel</option>
+                    <option value="PICKLEBALL">🏓 Pickleball</option>
+                    <option value="VOLLEYBALL">🏐 Vóley</option>
+                    <option value="PILATES">🧘 Pilates</option>
+                  </select>
+                </div>
+              </div>
 
-          <!-- Contenedor Descuento % (Oculto por defecto) -->
-          <div id="mb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
-            <div class="flex items-center justify-between gap-2">
-              <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
-              <div class="flex items-center gap-1">
-                <input type="number" id="mb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('mb', this.value)">
-                <span class="text-xs font-bold text-amber-900">%</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Fecha</label>
+                  <input type="date" id="mb-date" class="form-control" required style="font-weight: 600;" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Hora de Inicio</label>
+                  <input type="time" id="mb-start-time" class="form-control" value="08:00" required style="font-weight: 600;" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Duración</label>
+                  <select id="mb-duration" class="form-control" required style="font-weight: 600;">
+                    <option value="60">60 minutos (1 hora)</option>
+                    <option value="90" selected>90 minutos (1.5 horas)</option>
+                    <option value="120">120 minutos (2 horas)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Modalidad</label>
+                  <select id="mb-mode" class="form-control" required style="font-weight: 600;">
+                    <option value="FULL_COURT">🏟️ Cancha Completa (4/4)</option>
+                    <option value="SPLIT_MATCH">👤 Cupo Individual (1/4)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMNA 2: Cliente CRM, Teléfono, Membresía y Precio -->
+            <div class="space-y-4">
+              <div class="form-group relative">
+                <label class="form-label font-bold text-slate-700 flex items-center justify-between">
+                  <span>Cliente (Buscar en CRM)</span>
+                  <span class="text-[10px] text-slate-500 font-normal">Autocompleta datos</span>
+                </label>
+                <input type="text" id="mb-client-name" class="form-control font-semibold" placeholder="Escribe para buscar cliente..." autocomplete="off" required oninput="window.handleManualBookingCRMSearch(event)" />
+                <div id="mb-client-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label font-bold text-slate-700">Teléfono / WhatsApp</label>
+                <input type="tel" id="mb-client-phone" class="form-control font-semibold" placeholder="+573001234567" required />
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Membresía / Tipo Socio</label>
+                  <select id="mb-membership-tier" class="form-control bg-slate-50 cursor-not-allowed" disabled style="font-weight: 700; color: #4338CA;">
+                    <option value="ESTANDAR">Tarifa General (Sin Membresía)</option>
+                    <option value="TAPIA">👑 TAPIA (Socio VIP)</option>
+                    <option value="COELLO">⚡ COELLO (Socio VIP)</option>
+                    <option value="GALAN">🎾 GALÁN (Socio VIP)</option>
+                    <option value="CHINGOTTO">🌅 CHINGOTTO (Socio Matutino)</option>
+                    <option value="LEBRON">🐺 LEBRÓN (Socio Diurno)</option>
+                    <option value="ORO">🏆 ORO (Socio VIP)</option>
+                    <option value="PLATA">🥈 PLATA (Socio)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label font-bold text-slate-700">Nivel / Categoría</label>
+                  <select id="mb-category" class="form-control" style="font-weight: 600;">
+                    <option value="4ta">4ta Categoría (Intermedio)</option>
+                    <option value="5ta">5ta Categoría (Iniciación)</option>
+                    <option value="3ra">3ra Categoría (Avanzado)</option>
+                    <option value="2da">2da Categoría</option>
+                    <option value="1ra">1ra Categoría (Pro)</option>
+                    <option value="6ta">6ta Categoría</option>
+                    <option value="Open">Abierto</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Input de Precio Numérico (100% editable) -->
-          <div class="relative">
-            <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
-            <input type="number" id="mb-price" class="form-control pl-7" placeholder="80000" value="80000" step="1000" min="0" required style="font-weight: 700; color: #047857;" />
+          <!-- Banner reactivo de beneficio de socio -->
+          <div id="mb-member-benefit-alert" class="hidden" style="display: none; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: #065F46; font-weight: 600;">
+            👑 <strong>Socio Activo:</strong> Exención de pago aplicada ($0 COP) por membresía activa.
           </div>
 
-          <!-- Quick Chips de Ajuste Rápido -->
-          <div class="flex items-center gap-1.5 flex-wrap mt-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'VALLE')" class="px-2 py-0.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
-              ☀️ Valle: $80k
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'PICO')" class="px-2 py-0.5 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
-              🌙 Pico: $120k
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'YIELD')" class="px-2 py-0.5 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
-              🧠 Yield Sugerido
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_15')" class="px-2 py-0.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
-              🏷️ -15%
-            </button>
-            <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_25')" class="px-2 py-0.5 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
-              🔥 -25%
-            </button>
+          <!-- Selector Inteligente de Precio (Ancho completo) -->
+          <div class="form-group p-3.5 bg-slate-50 border border-slate-200 rounded-xl" id="mb-custom-price-group">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="form-label mb-0 font-bold text-slate-800">Precio Acordado (COP)</label>
+              <span id="mb-price-hint" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Tarifa calculada</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+              <div>
+                <label class="text-[11px] font-bold text-slate-600 block mb-1">Cálculo de Tarifa / Modo:</label>
+                <select id="mb-price-mode" class="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500" onchange="window.handleSmartPriceModeChange('mb', this.value)">
+                  <option value="MANUAL" selected>✏️ Manual / Editable</option>
+                  <option value="PEAK_OFFPEAK">🕒 Recomendado por Horario (Valle $80k / Pico $120k)</option>
+                  <option value="YIELD_AI">🧠 Recomendado por Yield IA</option>
+                  <option value="DISCOUNT">🏷️ Descuento Porcentual (%)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="text-[11px] font-bold text-slate-600 block mb-1">Monto a Facturar:</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">$</span>
+                  <input type="number" id="mb-price" class="form-control pl-7 font-bold text-emerald-700" placeholder="80000" value="80000" step="1000" min="0" required />
+                </div>
+              </div>
+            </div>
+
+            <!-- Contenedor Descuento % (Oculto por defecto) -->
+            <div id="mb-price-discount-box" class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg" style="display: none;">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-[11px] font-bold text-amber-900">Porcentaje de Descuento:</label>
+                <div class="flex items-center gap-1">
+                  <input type="number" id="mb-discount-percent" class="w-16 h-7 text-xs font-bold text-center border border-amber-300 rounded bg-white text-amber-950" value="15" min="1" max="99" oninput="window.applySmartPriceDiscount('mb', this.value)">
+                  <span class="text-xs font-bold text-amber-900">%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Chips de Ajuste Rápido -->
+            <div class="flex items-center gap-1.5 flex-wrap mt-2">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atajos:</span>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'VALLE')" class="px-2 py-1 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-md transition" title="Tarifa Valle ($80.000 COP)">
+                ☀️ Valle: $80k
+              </button>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'PICO')" class="px-2 py-1 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-md transition" title="Tarifa Pico ($120.000 COP)">
+                🌙 Pico: $120k
+              </button>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'YIELD')" class="px-2 py-1 text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 rounded-md transition" title="Optimización según Yield IA">
+                🧠 Yield Sugerido
+              </button>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_15')" class="px-2 py-1 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-md transition" title="Descuento del 15%">
+                🏷️ -15%
+              </button>
+              <button type="button" onclick="window.applySmartPriceChip('mb', 'DISCOUNT_25')" class="px-2 py-1 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-md transition" title="Descuento del 25%">
+                🔥 -25%
+              </button>
+            </div>
+          </div>
+
+          <!-- Toggle de Reserva Fija / Periódica -->
+          <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2.5">
+            <label class="flex items-center gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" id="mb-is-recurring" onchange="toggleManualBookingRecurring(this.checked)" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
+              <span class="text-xs font-bold text-indigo-900">🔁 Reserva Fija / Periódica</span>
+            </label>
+            <div id="mb-recurring-options" class="hidden grid grid-cols-2 gap-2.5 pt-1">
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-800 mb-1">Frecuencia:</label>
+                <select id="mb-recurrence-frequency" class="form-control text-xs font-semibold bg-white border-indigo-200">
+                  <option value="WEEKLY" selected>Semanal (mismo día y hora)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-800 mb-1">Número de semanas (4 a 12):</label>
+                <input type="number" id="mb-recurrence-weeks" min="4" max="12" value="4" class="form-control text-xs font-bold text-indigo-950 bg-white border-indigo-200">
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Toggle de Reserva Fija / Periódica -->
-        <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2.5 mb-3">
-          <label class="flex items-center gap-2.5 cursor-pointer select-none">
-            <input type="checkbox" id="mb-is-recurring" onchange="toggleManualBookingRecurring(this.checked)" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
-            <span class="text-xs font-bold text-indigo-900">🔁 Reserva Fija / Periódica</span>
-          </label>
-          <div id="mb-recurring-options" class="hidden grid grid-cols-2 gap-2.5 pt-1">
-            <div>
-              <label class="block text-[11px] font-bold text-indigo-800 mb-1">Frecuencia:</label>
-              <select id="mb-recurrence-frequency" class="form-control text-xs font-semibold bg-white border-indigo-200">
-                <option value="WEEKLY" selected>Semanal (mismo día y hora)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-indigo-800 mb-1">Número de semanas (4 a 12):</label>
-              <input type="number" id="mb-recurrence-weeks" min="4" max="12" value="4" class="form-control text-xs font-bold text-indigo-950 bg-white border-indigo-200">
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
-          <button type="button" onclick="closeManualBookingModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" id="btn-confirm-manual-booking" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition" style="background-color: #2563eb !important; color: #ffffff !important;">
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-3 flex-wrap">
+          <button type="button" onclick="closeManualBookingModal()" class="btn-secondary px-4 py-2.5 font-bold text-xs rounded-xl">Cancelar</button>
+          <button type="submit" id="btn-confirm-manual-booking" class="btn-primary px-5 py-2.5 font-bold text-xs rounded-xl shadow-md inline-flex items-center gap-2" style="background-color: #2563eb !important; color: #ffffff !important;">
             <span>➕</span> <span>Confirmar Reserva</span>
           </button>
         </div>
@@ -13493,40 +13729,71 @@ ${data.message}`);
       const capCount = t.max_players || t.total_capacity || 16;
       const slotIdsStr = (t.slot_ids || []).join(',');
 
+      const safeTournName = (t.tournament_name || 'Torneo Americano').replace(/'/g, "\\'");
+      const tIdStr = t.id ? String(t.id).replace(/'/g, "\\'") : '';
+
       return `
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
-          <div class="flex justify-between items-start mb-2 gap-3">
-            <div class="flex items-start gap-2.5">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center bg-violet-100 border border-violet-200 text-violet-800 text-lg shadow-xs shrink-0">
-                <span>${sportEmoji}</span>
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2 gap-3">
+              <div class="flex items-start gap-2.5">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-100 border border-violet-200 text-violet-800 text-lg shadow-xs shrink-0 font-black">
+                  <span>${sportEmoji}</span>
+                </div>
+                <div>
+                  <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 mb-1">
+                    ${t.sport_type || 'PADEL'} • ${modalityLabel}
+                  </span>
+                  <h4 class="text-sm font-black text-slate-900 leading-tight">${t.tournament_name || 'Torneo Americano'}</h4>
+                </div>
               </div>
-              <div>
-                <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-violet-100 text-violet-800 mb-1">
-                  ${t.sport_type || 'PADEL'} • ${modalityLabel}
-                </span>
-                <h4 class="text-sm font-bold text-slate-900">${t.tournament_name || 'Torneo Americano'}</h4>
-              </div>
+              <span class="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+                💰 ${prizeFormatted}
+              </span>
             </div>
-            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
-              💰 ${prizeFormatted}
-            </span>
+
+            <div class="text-xs text-slate-600 mb-3 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-medium">
+              <p>📅 <strong>${t.date}</strong> | ⏰ <strong>${t.start_time} - ${t.end_time}</strong></p>
+              <p>📍 ${courtsStr}</p>
+              <div class="flex items-center justify-between pt-0.5">
+                <span>👥 Inscritos: <strong class="text-purple-700">${bookedCount}/${capCount}</strong> cupos</span>
+                <span class="text-[10px] font-bold text-slate-500">${bookedCount >= capCount ? '🔴 Completo' : '🟢 Cupos libres'}</span>
+              </div>
+              ${isPast && t.winners_names ? `<p class="text-amber-800 font-bold mt-1 bg-amber-100/70 p-1.5 rounded border border-amber-300">🏆 Ganadores: ${t.winners_names}</p>` : ''}
+            </div>
+
+            <!-- Previsualización de Participantes (hasta 20 jugadores) -->
+            ${!isPast && bookedCount > 0 ? `
+              <div class="mb-3">
+                <div class="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  <span>Jugadores Inscritos (${bookedCount})</span>
+                  <button type="button" onclick="toggleCardParticipants('${safeTournName}')" class="text-purple-600 hover:text-purple-800 font-semibold lowercase">ver todos</button>
+                </div>
+                <div id="part-preview-${safeTournName.replace(/\W/g, '_')}" class="max-h-24 overflow-y-auto space-y-1 p-1.5 bg-slate-50 border border-slate-100 rounded-lg text-[11px] text-slate-700 font-medium">
+                  <div class="flex items-center gap-1.5 text-slate-500 text-[10px] italic">
+                    <span>⚡ Participantes confirmados listos para juego</span>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
           </div>
-          <div class="text-xs text-slate-500 mb-3 space-y-0.5">
-            <p>📅 <strong>${t.date}</strong> | ⏰ <strong>${t.start_time} - ${t.end_time}</strong></p>
-            <p>📍 ${courtsStr}</p>
-            <p>👥 Inscritos: <strong>${bookedCount}/${capCount}</strong> cupos</p>
-            ${isPast && t.winners_names ? `<p class="text-amber-700 font-semibold mt-1">🏆 Ganadores: ${t.winners_names}</p>` : ''}
-          </div>
-          <div class="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+
+          <div class="flex items-center gap-1.5 pt-3 border-t border-slate-100 flex-wrap">
             ${!isPast ? `
-              <button type="button" onclick="openJoinAmericanoModal('${t.tournament_name || 'Torneo Americano'}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
-                + Inscribir Pareja/Jugador
+              <button type="button" onclick="openStartAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="flex-1 py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap flex items-center justify-center gap-1">
+                <span>⚡</span> <span>Iniciar</span>
               </button>
-              <button type="button" onclick="openRecordWinnersModal('${(t.tournament_name || 'Torneo Americano').replace(/'/g, "\\'")}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
-                🏆 Registrar Ganadores
+              <button type="button" onclick="openJoinAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
+                + Inscribir
+              </button>
+              <button type="button" onclick="openRecordWinnersModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap" title="Registrar Ganadores Oficiales">
+                🏆 Ganadores
+              </button>
+              <button type="button" onclick="cancelAmericanoTournament('${safeTournName}', '${t.date}', '${t.start_time}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold border border-rose-200 transition" title="Cancelar Torneo y Liberar Canchas">
+                🗑️
               </button>
             ` : `
-              <span class="text-xs font-bold text-amber-700">🏆 Ganadores: ${t.winners_names || 'Torneo finalizado'}</span>
+              <span class="text-xs font-bold text-amber-800">🏆 Ganadores: ${t.winners_names || 'Torneo finalizado'}</span>
             `}
           </div>
         </div>
@@ -13865,6 +14132,176 @@ ${data.message}`);
     }
     window.handleRecordWinnersSubmit = handleRecordWinnersSubmit;
 
+    async function cancelAmericanoTournament(name, date, startTime) {
+      if (!confirm(`¿Estás seguro de cancelar el torneo '${name}'?\n\nEsta acción liberará inmediatamente todas las pistas asociadas a estado DISPONIBLE.`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/tournaments/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tournament_name: name,
+            date: date || null,
+            start_time: startTime || null
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ ${data.message || 'Torneo cancelado y canchas liberadas.'}`);
+          loadTournaments();
+          if (typeof fetchSlots === 'function') fetchSlots();
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo cancelar el torneo.'}`);
+        }
+      } catch (err) {
+        console.error('Error cancelando torneo:', err);
+        alert('Error de conexión al cancelar el torneo');
+      }
+    }
+    window.cancelAmericanoTournament = cancelAmericanoTournament;
+
+    function openStartAmericanoModal(name, date, startTime, slotIds, modality = 'PAREJA_FIJA') {
+      const modal = document.getElementById('modal-confirm-start-americano');
+      if (!modal) {
+        // Si no está en el DOM, iniciar directamente tras confirmación
+        if (confirm(`⚡ ¿Deseas iniciar el Torneo Americano '${name}' en vivo?\n\nSe activará la Ronda 1 en las pistas físicas y se abrirá la Mesa de Control.`)) {
+          startAmericanoLiveDirect(name, date, startTime);
+        }
+        return;
+      }
+      document.getElementById('csa-tourn-name').textContent = name || 'Torneo Americano';
+      document.getElementById('csa-tourn-meta').textContent = `${date || ''} • Horario: ${startTime || ''} • Modalidad: ${modality}`;
+      document.getElementById('csa-hidden-name').value = name || '';
+      document.getElementById('csa-hidden-date').value = date || '';
+      document.getElementById('csa-hidden-time').value = startTime || '';
+      document.getElementById('csa-hidden-modality').value = modality || 'PAREJA_FIJA';
+      modal.style.display = 'flex';
+    }
+    window.openStartAmericanoModal = openStartAmericanoModal;
+
+    function closeStartAmericanoModal() {
+      const modal = document.getElementById('modal-confirm-start-americano');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeStartAmericanoModal = closeStartAmericanoModal;
+
+    async function handleStartAmericanoSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const name = document.getElementById('csa-hidden-name').value;
+      const date = document.getElementById('csa-hidden-date').value;
+      const startTime = document.getElementById('csa-hidden-time').value;
+      const scoring = document.getElementById('csa-scoring-system').value || 'POINTS_32';
+      const modality = document.getElementById('csa-hidden-modality').value || 'PAREJA_FIJA';
+      closeStartAmericanoModal();
+      await startAmericanoLiveDirect(name, date, startTime, scoring, modality);
+    }
+    window.handleStartAmericanoSubmit = handleStartAmericanoSubmit;
+
+    async function startAmericanoLiveDirect(name, date, startTime, scoring = 'POINTS_32', modality = 'PAREJA_FIJA') {
+      try {
+        // 1. Obtener lista de torneos oficiales para encontrar si ya existe como OfficialTournament
+        const resList = await fetch('/api/v1/official-tournaments/');
+        let existingId = null;
+        if (resList.ok) {
+          const list = await resList.json();
+          const found = list.find(t => t.name.toLowerCase().includes(name.toLowerCase()));
+          if (found) existingId = found.id;
+        }
+
+        // Si existe, llamar a /{id}/start
+        if (existingId) {
+          const resStart = await fetch(`/api/v1/tournaments/${existingId}/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scoring_system: scoring, modality: modality })
+          });
+          window.activeLiveAmericanoId = existingId;
+        } else {
+          // Obtener pistas activas
+          const courtsRes = await fetch('/api/v1/courts/');
+          let assignedCourts = [];
+          if (courtsRes.ok) {
+            const courts = await courtsRes.json();
+            assignedCourts = courts.slice(0, 3).map(c => String(c.id));
+          }
+          // Crear torneo en vivo
+          const resCreate = await fetch('/api/v1/tournaments/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: name,
+              sport_type: 'PADEL',
+              category: '4ta',
+              modality: modality,
+              scoring_system: scoring,
+              target_points: 32,
+              tiebreak_rule: 'GAMES_DIFF',
+              assigned_court_ids: assignedCourts,
+              start_date: date || null,
+              start_time: startTime || '18:00'
+            })
+          });
+          if (resCreate.ok) {
+            const dataCreate = await resCreate.json();
+            window.activeLiveAmericanoId = dataCreate.tournament_id;
+          }
+        }
+
+        // Abrir cabina en vivo y refrescar
+        const cockpit = document.getElementById('americano-live-cockpit');
+        if (cockpit && cockpit.classList.contains('hidden')) {
+          cockpit.classList.remove('hidden');
+        }
+        await initLiveAmericanoSelector();
+        if (window.activeLiveAmericanoId) {
+          const sel = document.getElementById('live-tournament-selector');
+          if (sel) sel.value = window.activeLiveAmericanoId;
+          await refreshLiveAmericanoState();
+        }
+        cockpit.scrollIntoView({ behavior: 'smooth' });
+        alert(`⚡ ¡Torneo Americano '${name}' INICIADO EN VIVO!\nMesa de Control sincronizada con las pistas.`);
+      } catch (err) {
+        console.error('Error iniciando americano en vivo:', err);
+        alert('No se pudo iniciar el torneo en vivo.');
+      }
+    }
+    window.startAmericanoLiveDirect = startAmericanoLiveDirect;
+
+    async function toggleCardParticipants(tournName) {
+      const elId = `part-preview-${tournName.replace(/\W/g, '_')}`;
+      const el = document.getElementById(elId);
+      if (!el) return;
+
+      if (el.getAttribute('data-loaded') === 'true') {
+        el.classList.toggle('hidden');
+        return;
+      }
+
+      el.innerHTML = '<span class="text-slate-400 italic">Cargando lista de inscritos...</span>';
+      try {
+        const res = await fetch(`/api/v1/tournaments/${encodeURIComponent(tournName)}/participants`);
+        if (res.ok) {
+          const data = await res.json();
+          const parts = data.participants || [];
+          if (parts.length === 0) {
+            el.innerHTML = '<span class="text-slate-400 italic">No hay participantes registrados todavía.</span>';
+          } else {
+            el.innerHTML = parts.map(p => `
+              <div class="flex items-center justify-between py-0.5 border-b border-slate-100 last:border-0">
+                <span class="font-bold text-slate-900">${escapeHtml(p.name)}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 font-bold">${escapeHtml(p.membership_tier || p.category || '4ta')}</span>
+              </div>
+            `).join('');
+          }
+          el.setAttribute('data-loaded', 'true');
+        }
+      } catch (err) {
+        el.innerHTML = '<span class="text-rose-500 italic">Error al cargar participantes</span>';
+      }
+    }
+    window.toggleCardParticipants = toggleCardParticipants;
+
     async function loadTournaments(sport = 'ALL') {
       const upGrid = document.getElementById('tournaments-upcoming-grid');
       const pastGrid = document.getElementById('tournaments-past-grid');
@@ -13930,6 +14367,311 @@ ${data.message}`);
       loadTournaments(sport);
     }
     window.filterTournamentsSport = filterTournamentsSport;
+
+    // ========================================================
+    // COCKPIT EN VIVO: CONTROL DE TORNEOS AMERICANOS
+    // ========================================================
+    window.activeLiveAmericanoId = null;
+    window.liveAmericanoPollInterval = null;
+
+    function toggleAmericanoLiveCockpit() {
+      const panel = document.getElementById('americano-live-cockpit');
+      if (!panel) return;
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        initLiveAmericanoSelector();
+      } else {
+        panel.classList.add('hidden');
+      }
+    }
+    window.toggleAmericanoLiveCockpit = toggleAmericanoLiveCockpit;
+
+    async function initLiveAmericanoSelector() {
+      const sel = document.getElementById('live-tournament-selector');
+      if (!sel) return;
+      try {
+        const res = await fetch('/api/v1/official-tournaments/');
+        if (!res.ok) return;
+        const list = await res.json();
+        if (!Array.isArray(list) || list.length === 0) {
+          sel.innerHTML = '<option value="">Sin torneos activos</option>';
+          return;
+        }
+
+        sel.innerHTML = list.map(t => `
+          <option value="${t.id}" ${t.id === window.activeLiveAmericanoId ? 'selected' : ''}>
+            🏆 ${escapeHtml(t.name)} (${t.category} - ${t.status})
+          </option>
+        `).join('');
+
+        if (!window.activeLiveAmericanoId || !list.find(x => x.id === window.activeLiveAmericanoId)) {
+          window.activeLiveAmericanoId = list[0].id;
+        }
+        sel.value = window.activeLiveAmericanoId;
+        await refreshLiveAmericanoState();
+      } catch (e) {
+        console.warn('Error inicializando selector de torneos en vivo:', e);
+      }
+    }
+    window.initLiveAmericanoSelector = initLiveAmericanoSelector;
+
+    function onSelectLiveAmericano(tournId) {
+      if (!tournId) return;
+      window.activeLiveAmericanoId = parseInt(tournId, 10);
+      refreshLiveAmericanoState();
+    }
+    window.onSelectLiveAmericano = onSelectLiveAmericano;
+
+    async function refreshLiveAmericanoState() {
+      const tId = window.activeLiveAmericanoId;
+      if (!tId) return;
+
+      try {
+        const res = await fetch(`/api/v1/tournaments/${tId}/live`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderLiveAmericanoUI(data);
+      } catch (err) {
+        console.error('Error refrescando estado en vivo del americano:', err);
+      }
+    }
+    window.refreshLiveAmericanoState = refreshLiveAmericanoState;
+
+    function renderLiveAmericanoUI(data) {
+      if (!data || !data.tournament) return;
+      const t = data.tournament;
+
+      // 1. Cabecera y meta
+      const nameEl = document.getElementById('live-cockpit-tourn-name');
+      const badgeEl = document.getElementById('live-cockpit-status-badge');
+      const metaEl = document.getElementById('live-cockpit-meta-info');
+
+      if (nameEl) nameEl.textContent = t.name;
+      if (badgeEl) {
+        badgeEl.textContent = t.status;
+        if (t.status === 'FINISHED') {
+          badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-500/50';
+        } else {
+          badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/30 text-indigo-300 border border-indigo-500/50';
+        }
+      }
+      if (metaEl) {
+        metaEl.textContent = `${t.category} (${t.sport_type}) • ${data.courts_status ? data.courts_status.length : 0} canchas activas • ${data.matches ? data.matches.length : 0} cruces programados`;
+      }
+
+      // 2. Grilla de canchas con tanteador rápido
+      const courtsGrid = document.getElementById('live-cockpit-courts-grid');
+      const courtsCount = document.getElementById('live-cockpit-courts-count');
+      if (courtsCount) courtsCount.textContent = `${(data.courts_status || []).length} Pistas`;
+
+      if (courtsGrid) {
+        if (!data.courts_status || data.courts_status.length === 0) {
+          courtsGrid.innerHTML = `
+            <div class="p-6 text-center text-xs text-slate-400 bg-slate-800/60 rounded-2xl border border-slate-700/60 col-span-full">
+              No hay pistas activas asignadas a este torneo.
+            </div>
+          `;
+        } else {
+          courtsGrid.innerHTML = data.courts_status.map(c => {
+            const m = c.current_match;
+            if (!m) {
+              return `
+                <div class="p-4 bg-slate-800/70 border border-slate-700 rounded-2xl flex flex-col justify-between min-h-[160px]">
+                  <div class="flex justify-between items-center text-xs font-bold text-slate-300">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> ${escapeHtml(c.court_name)}</span>
+                    <span class="text-[10px] font-mono text-slate-500">DISPONIBLE</span>
+                  </div>
+                  <div class="py-4 text-center text-xs text-slate-500">Sin partido asignado en este turno.</div>
+                </div>
+              `;
+            }
+
+            const isDone = m.status === 'COMPLETED';
+            return `
+              <div class="p-4 bg-slate-800/90 border ${isDone ? 'border-emerald-700/70' : 'border-indigo-600/70'} rounded-2xl shadow-lg flex flex-col justify-between space-y-3">
+                <div class="flex justify-between items-center text-xs font-bold pb-2 border-b border-slate-700">
+                  <span class="flex items-center gap-1.5 text-white">
+                    <span class="w-2.5 h-2.5 rounded-full ${isDone ? 'bg-emerald-400' : 'bg-emerald-400 animate-ping'}"></span>
+                    <span class="font-black">${escapeHtml(c.court_name)}</span>
+                  </span>
+                  <span class="text-[10px] font-black px-2 py-0.5 rounded ${isDone ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' : 'bg-indigo-950 text-indigo-300 border border-indigo-700'}">
+                    ${m.status} • R${m.round_number}
+                  </span>
+                </div>
+
+                <!-- Tanteador en vivo con +/- y entrada directa rápida -->
+                <div class="space-y-2">
+                  <!-- Equipo 1 -->
+                  <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80">
+                    <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHtml(m.team1_name)}</span>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, -1, 0)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center border border-slate-600">-</button>
+                      <input type="number" min="0" max="60" value="${m.team1_points || 0}" id="score-t1-${m.match_id}" onchange="setDirectLiveScore(${t.id}, ${m.match_id}, parseInt(this.value, 10), null)" class="w-11 h-7 text-center font-mono font-black text-xs bg-slate-950 text-emerald-400 border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none" />
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 1, 0)" class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center">+</button>
+                    </div>
+                  </div>
+
+                  <!-- Equipo 2 -->
+                  <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80">
+                    <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHtml(m.team2_name)}</span>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, -1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center border border-slate-600">-</button>
+                      <input type="number" min="0" max="60" value="${m.team2_points || 0}" id="score-t2-${m.match_id}" onchange="setDirectLiveScore(${t.id}, ${m.match_id}, null, parseInt(this.value, 10))" class="w-11 h-7 text-center font-mono font-black text-xs bg-slate-950 text-emerald-400 border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none" />
+                      <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, 1)" class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center">+</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                  <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-slate-400 font-mono">Meta: 32 pts</span>
+                    <span class="text-[9px] text-slate-500">• Sube & Baja</span>
+                  </div>
+                  <button type="button" onclick="markMatchCompleted(${t.id}, ${m.match_id})" class="px-2.5 py-1 text-[10px] font-black rounded-lg ${isDone ? 'bg-slate-700 text-slate-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} transition">
+                    ${isDone ? 'Completado ✓' : 'Finalizar Cruce'}
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // 3. Leaderboard en vivo
+      const lbBody = document.getElementById('live-cockpit-leaderboard-body');
+      if (lbBody) {
+        const lb = data.leaderboard || [];
+        if (lb.length === 0) {
+          lbBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-xs text-slate-500">Sin estadísticas registradas.</td></tr>';
+        } else {
+          lbBody.innerHTML = lb.map((row, idx) => {
+            const isLeader = idx === 0;
+            const isPodium = idx < 2;
+            return `
+              <tr class="${isLeader ? 'bg-emerald-950/40 font-bold' : isPodium ? 'bg-slate-800/50' : ''} hover:bg-slate-800/80 transition">
+                <td class="p-3 font-mono font-black ${isLeader ? 'text-amber-400' : 'text-slate-400'}">
+                  ${idx + 1} ${isLeader ? '👑' : idx === 1 ? '🥈' : ''}
+                </td>
+                <td class="p-3 font-bold text-white">${escapeHtml(row.team_name || 'Pareja')}</td>
+                <td class="p-3 text-center font-mono text-slate-300">${row.pj || 0}</td>
+                <td class="p-3 text-center font-mono font-bold text-emerald-400">${row.pg || 0}</td>
+                <td class="p-3 text-center font-mono text-rose-400">${row.pp || 0}</td>
+                <td class="p-3 text-center font-mono text-slate-300">${row.pts_favor || 0}</td>
+                <td class="p-3 text-center font-mono text-slate-400">${row.pts_contra || 0}</td>
+                <td class="p-3 text-center font-mono font-bold ${row.diff >= 0 ? 'text-cyan-300' : 'text-rose-400'}">
+                  ${row.diff > 0 ? '+' : ''}${row.diff || 0}
+                </td>
+                <td class="p-3 text-center font-black font-mono text-amber-300 text-sm">${row.ranking_pts || 0}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    async function modifyLiveScore(tournId, matchId, delta1, delta2) {
+      try {
+        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            delta_t1: delta1,
+            delta_t2: delta2
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const t1El = document.getElementById(`score-t1-${matchId}`);
+          const t2El = document.getElementById(`score-t2-${matchId}`);
+          if (t1El) t1El.value = data.team1_points;
+          if (t2El) t2El.value = data.team2_points;
+          await refreshLiveAmericanoState();
+        }
+      } catch (err) {
+        console.error('Error modificando score:', err);
+      }
+    }
+    window.modifyLiveScore = modifyLiveScore;
+
+    async function setDirectLiveScore(tournId, matchId, p1, p2) {
+      try {
+        const payload = {};
+        if (p1 !== null && !isNaN(p1)) payload.team1_points = p1;
+        if (p2 !== null && !isNaN(p2)) payload.team2_points = p2;
+
+        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          await refreshLiveAmericanoState();
+        }
+      } catch (err) {
+        console.error('Error guardando tanteador directo:', err);
+      }
+    }
+    window.setDirectLiveScore = setDirectLiveScore;
+
+    async function advanceLiveAmericanoRound() {
+      const tId = window.activeLiveAmericanoId;
+      if (!tId) {
+        alert('Selecciona primero un torneo activo.');
+        return;
+      }
+      if (!confirm('¿Deseas avanzar a la siguiente ronda del Torneo Americano?\n\nLos partidos actuales quedarán concluidos y se organizará la siguiente ronda (Sube y Baja / King of the Court).')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/tournaments/${tId}/next-round`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ auto_promote_relegate: true })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`⏭️ ${data.message || 'Siguiente ronda iniciada'}\nRonda Activa: ${data.current_round}`);
+          await refreshLiveAmericanoState();
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo avanzar de ronda'}`);
+        }
+      } catch (err) {
+        console.error('Error avanzando de ronda:', err);
+        alert('Error de conexión al avanzar de ronda');
+      }
+    }
+    window.advanceLiveAmericanoRound = advanceLiveAmericanoRound;
+
+    async function markMatchCompleted(tournId, matchId) {
+      try {
+        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'COMPLETED'
+          })
+        });
+        if (res.ok) {
+          await refreshLiveAmericanoState();
+        }
+      } catch (err) {
+        console.error('Error completando partido:', err);
+      }
+    }
+    window.markMatchCompleted = markMatchCompleted;
+
+    // Modal de Cierre de Torneo Americano
+    function openCloseAmericanoModal() {
+      const tId = window.activeLiveAmericanoId;
+      if (!tId) {
+        alert('Selecciona primero un torneo activo.');
+        return;
+      }
+      openFinalizeOfficialTournamentModal();
+    }
+    window.openCloseAmericanoModal = openCloseAmericanoModal;
+
 
     
     // ========================================================

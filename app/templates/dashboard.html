@@ -2941,6 +2941,9 @@
                   <button type="button" onclick="refreshLiveAmericanoState()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-slate-700">
                     <span>🔄</span> <span>Refrescar</span>
                   </button>
+                  <button type="button" onclick="advanceLiveAmericanoRound()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                    <span>⏭️</span> <span>Siguiente Ronda</span>
+                  </button>
                   <button type="button" onclick="openCloseAmericanoModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5">
                     <span>👑</span> <span>Cerrar Torneo & Podio</span>
                   </button>
@@ -5954,6 +5957,59 @@
       </form>
     </div>
   </div>
+
+  <!-- MODAL: CONFIRMAR INICIO DE TORNEO AMERICANO EN VIVO -->
+  <div id="modal-confirm-start-americano" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 9999; backdrop-blur: 4px;">
+    <div style="background: #FFFFFF; border-radius: 24px; width: 92%; max-width: 480px; padding: 1.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid #E2E8F0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.85rem; margin-bottom: 1.25rem;">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center font-black text-lg">
+            ⚡
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-slate-900 leading-tight">Iniciar Torneo Americano en Vivo</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Activa la Ronda 1 en las pistas físicas designadas</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeStartAmericanoModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <form id="confirm-start-americano-form" onsubmit="handleStartAmericanoSubmit(event)" class="space-y-4">
+        <input type="hidden" id="csa-hidden-name" />
+        <input type="hidden" id="csa-hidden-date" />
+        <input type="hidden" id="csa-hidden-time" />
+        <input type="hidden" id="csa-hidden-modality" />
+
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <div id="csa-tourn-name" class="font-black text-slate-900 text-sm">Torneo Americano</div>
+          <div id="csa-tourn-meta" class="text-xs text-slate-600 font-medium">Fecha • Horario • Modalidad</div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Sistema de Puntuación:</label>
+          <select id="csa-scoring-system" class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="POINTS_32" selected>32 Puntos (Estándar Americano)</option>
+            <option value="POINTS_24">24 Puntos (Express Rápido)</option>
+            <option value="POINTS_40">40 Puntos (Extendido)</option>
+            <option value="SETS">Al mejor de 3 Sets Cortos</option>
+          </select>
+        </div>
+
+        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-medium flex items-start gap-2">
+          <span class="text-base leading-none">🎾</span>
+          <p>Al confirmar, el torneo pasará a estado <strong>EN JUEGO</strong>, se generará la Ronda 1 con tanteador directo (0-0) y se abrirá la <strong>Mesa de Control en Vivo</strong> para el arbitraje.</p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeStartAmericanoModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition flex items-center gap-1.5">
+            <span>⚡</span> <span>¡Comenzar Torneo Ahora!</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   <!-- ======================================================== -->
   <!-- MODAL: PROGRAMADOR SEMANAL INTELIGENTE (MALOKA TEMPLATE) -->
@@ -13673,40 +13729,71 @@ ${data.message}`);
       const capCount = t.max_players || t.total_capacity || 16;
       const slotIdsStr = (t.slot_ids || []).join(',');
 
+      const safeTournName = (t.tournament_name || 'Torneo Americano').replace(/'/g, "\\'");
+      const tIdStr = t.id ? String(t.id).replace(/'/g, "\\'") : '';
+
       return `
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
-          <div class="flex justify-between items-start mb-2 gap-3">
-            <div class="flex items-start gap-2.5">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center bg-violet-100 border border-violet-200 text-violet-800 text-lg shadow-xs shrink-0">
-                <span>${sportEmoji}</span>
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2 gap-3">
+              <div class="flex items-start gap-2.5">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-100 border border-violet-200 text-violet-800 text-lg shadow-xs shrink-0 font-black">
+                  <span>${sportEmoji}</span>
+                </div>
+                <div>
+                  <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 mb-1">
+                    ${t.sport_type || 'PADEL'} • ${modalityLabel}
+                  </span>
+                  <h4 class="text-sm font-black text-slate-900 leading-tight">${t.tournament_name || 'Torneo Americano'}</h4>
+                </div>
               </div>
-              <div>
-                <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-violet-100 text-violet-800 mb-1">
-                  ${t.sport_type || 'PADEL'} • ${modalityLabel}
-                </span>
-                <h4 class="text-sm font-bold text-slate-900">${t.tournament_name || 'Torneo Americano'}</h4>
-              </div>
+              <span class="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+                💰 ${prizeFormatted}
+              </span>
             </div>
-            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
-              💰 ${prizeFormatted}
-            </span>
+
+            <div class="text-xs text-slate-600 mb-3 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-medium">
+              <p>📅 <strong>${t.date}</strong> | ⏰ <strong>${t.start_time} - ${t.end_time}</strong></p>
+              <p>📍 ${courtsStr}</p>
+              <div class="flex items-center justify-between pt-0.5">
+                <span>👥 Inscritos: <strong class="text-purple-700">${bookedCount}/${capCount}</strong> cupos</span>
+                <span class="text-[10px] font-bold text-slate-500">${bookedCount >= capCount ? '🔴 Completo' : '🟢 Cupos libres'}</span>
+              </div>
+              ${isPast && t.winners_names ? `<p class="text-amber-800 font-bold mt-1 bg-amber-100/70 p-1.5 rounded border border-amber-300">🏆 Ganadores: ${t.winners_names}</p>` : ''}
+            </div>
+
+            <!-- Previsualización de Participantes (hasta 20 jugadores) -->
+            ${!isPast && bookedCount > 0 ? `
+              <div class="mb-3">
+                <div class="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  <span>Jugadores Inscritos (${bookedCount})</span>
+                  <button type="button" onclick="toggleCardParticipants('${safeTournName}')" class="text-purple-600 hover:text-purple-800 font-semibold lowercase">ver todos</button>
+                </div>
+                <div id="part-preview-${safeTournName.replace(/\W/g, '_')}" class="max-h-24 overflow-y-auto space-y-1 p-1.5 bg-slate-50 border border-slate-100 rounded-lg text-[11px] text-slate-700 font-medium">
+                  <div class="flex items-center gap-1.5 text-slate-500 text-[10px] italic">
+                    <span>⚡ Participantes confirmados listos para juego</span>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
           </div>
-          <div class="text-xs text-slate-500 mb-3 space-y-0.5">
-            <p>📅 <strong>${t.date}</strong> | ⏰ <strong>${t.start_time} - ${t.end_time}</strong></p>
-            <p>📍 ${courtsStr}</p>
-            <p>👥 Inscritos: <strong>${bookedCount}/${capCount}</strong> cupos</p>
-            ${isPast && t.winners_names ? `<p class="text-amber-700 font-semibold mt-1">🏆 Ganadores: ${t.winners_names}</p>` : ''}
-          </div>
-          <div class="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+
+          <div class="flex items-center gap-1.5 pt-3 border-t border-slate-100 flex-wrap">
             ${!isPast ? `
-              <button type="button" onclick="openJoinAmericanoModal('${t.tournament_name || 'Torneo Americano'}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
-                + Inscribir Pareja/Jugador
+              <button type="button" onclick="openStartAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="flex-1 py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap flex items-center justify-center gap-1">
+                <span>⚡</span> <span>Iniciar</span>
               </button>
-              <button type="button" onclick="openRecordWinnersModal('${(t.tournament_name || 'Torneo Americano').replace(/'/g, "\\'")}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
-                🏆 Registrar Ganadores
+              <button type="button" onclick="openJoinAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
+                + Inscribir
+              </button>
+              <button type="button" onclick="openRecordWinnersModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap" title="Registrar Ganadores Oficiales">
+                🏆 Ganadores
+              </button>
+              <button type="button" onclick="cancelAmericanoTournament('${safeTournName}', '${t.date}', '${t.start_time}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold border border-rose-200 transition" title="Cancelar Torneo y Liberar Canchas">
+                🗑️
               </button>
             ` : `
-              <span class="text-xs font-bold text-amber-700">🏆 Ganadores: ${t.winners_names || 'Torneo finalizado'}</span>
+              <span class="text-xs font-bold text-amber-800">🏆 Ganadores: ${t.winners_names || 'Torneo finalizado'}</span>
             `}
           </div>
         </div>
@@ -14045,6 +14132,176 @@ ${data.message}`);
     }
     window.handleRecordWinnersSubmit = handleRecordWinnersSubmit;
 
+    async function cancelAmericanoTournament(name, date, startTime) {
+      if (!confirm(`¿Estás seguro de cancelar el torneo '${name}'?\n\nEsta acción liberará inmediatamente todas las pistas asociadas a estado DISPONIBLE.`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/tournaments/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tournament_name: name,
+            date: date || null,
+            start_time: startTime || null
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ ${data.message || 'Torneo cancelado y canchas liberadas.'}`);
+          loadTournaments();
+          if (typeof fetchSlots === 'function') fetchSlots();
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo cancelar el torneo.'}`);
+        }
+      } catch (err) {
+        console.error('Error cancelando torneo:', err);
+        alert('Error de conexión al cancelar el torneo');
+      }
+    }
+    window.cancelAmericanoTournament = cancelAmericanoTournament;
+
+    function openStartAmericanoModal(name, date, startTime, slotIds, modality = 'PAREJA_FIJA') {
+      const modal = document.getElementById('modal-confirm-start-americano');
+      if (!modal) {
+        // Si no está en el DOM, iniciar directamente tras confirmación
+        if (confirm(`⚡ ¿Deseas iniciar el Torneo Americano '${name}' en vivo?\n\nSe activará la Ronda 1 en las pistas físicas y se abrirá la Mesa de Control.`)) {
+          startAmericanoLiveDirect(name, date, startTime);
+        }
+        return;
+      }
+      document.getElementById('csa-tourn-name').textContent = name || 'Torneo Americano';
+      document.getElementById('csa-tourn-meta').textContent = `${date || ''} • Horario: ${startTime || ''} • Modalidad: ${modality}`;
+      document.getElementById('csa-hidden-name').value = name || '';
+      document.getElementById('csa-hidden-date').value = date || '';
+      document.getElementById('csa-hidden-time').value = startTime || '';
+      document.getElementById('csa-hidden-modality').value = modality || 'PAREJA_FIJA';
+      modal.style.display = 'flex';
+    }
+    window.openStartAmericanoModal = openStartAmericanoModal;
+
+    function closeStartAmericanoModal() {
+      const modal = document.getElementById('modal-confirm-start-americano');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeStartAmericanoModal = closeStartAmericanoModal;
+
+    async function handleStartAmericanoSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const name = document.getElementById('csa-hidden-name').value;
+      const date = document.getElementById('csa-hidden-date').value;
+      const startTime = document.getElementById('csa-hidden-time').value;
+      const scoring = document.getElementById('csa-scoring-system').value || 'POINTS_32';
+      const modality = document.getElementById('csa-hidden-modality').value || 'PAREJA_FIJA';
+      closeStartAmericanoModal();
+      await startAmericanoLiveDirect(name, date, startTime, scoring, modality);
+    }
+    window.handleStartAmericanoSubmit = handleStartAmericanoSubmit;
+
+    async function startAmericanoLiveDirect(name, date, startTime, scoring = 'POINTS_32', modality = 'PAREJA_FIJA') {
+      try {
+        // 1. Obtener lista de torneos oficiales para encontrar si ya existe como OfficialTournament
+        const resList = await fetch('/api/v1/official-tournaments/');
+        let existingId = null;
+        if (resList.ok) {
+          const list = await resList.json();
+          const found = list.find(t => t.name.toLowerCase().includes(name.toLowerCase()));
+          if (found) existingId = found.id;
+        }
+
+        // Si existe, llamar a /{id}/start
+        if (existingId) {
+          const resStart = await fetch(`/api/v1/tournaments/${existingId}/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scoring_system: scoring, modality: modality })
+          });
+          window.activeLiveAmericanoId = existingId;
+        } else {
+          // Obtener pistas activas
+          const courtsRes = await fetch('/api/v1/courts/');
+          let assignedCourts = [];
+          if (courtsRes.ok) {
+            const courts = await courtsRes.json();
+            assignedCourts = courts.slice(0, 3).map(c => String(c.id));
+          }
+          // Crear torneo en vivo
+          const resCreate = await fetch('/api/v1/tournaments/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: name,
+              sport_type: 'PADEL',
+              category: '4ta',
+              modality: modality,
+              scoring_system: scoring,
+              target_points: 32,
+              tiebreak_rule: 'GAMES_DIFF',
+              assigned_court_ids: assignedCourts,
+              start_date: date || null,
+              start_time: startTime || '18:00'
+            })
+          });
+          if (resCreate.ok) {
+            const dataCreate = await resCreate.json();
+            window.activeLiveAmericanoId = dataCreate.tournament_id;
+          }
+        }
+
+        // Abrir cabina en vivo y refrescar
+        const cockpit = document.getElementById('americano-live-cockpit');
+        if (cockpit && cockpit.classList.contains('hidden')) {
+          cockpit.classList.remove('hidden');
+        }
+        await initLiveAmericanoSelector();
+        if (window.activeLiveAmericanoId) {
+          const sel = document.getElementById('live-tournament-selector');
+          if (sel) sel.value = window.activeLiveAmericanoId;
+          await refreshLiveAmericanoState();
+        }
+        cockpit.scrollIntoView({ behavior: 'smooth' });
+        alert(`⚡ ¡Torneo Americano '${name}' INICIADO EN VIVO!\nMesa de Control sincronizada con las pistas.`);
+      } catch (err) {
+        console.error('Error iniciando americano en vivo:', err);
+        alert('No se pudo iniciar el torneo en vivo.');
+      }
+    }
+    window.startAmericanoLiveDirect = startAmericanoLiveDirect;
+
+    async function toggleCardParticipants(tournName) {
+      const elId = `part-preview-${tournName.replace(/\W/g, '_')}`;
+      const el = document.getElementById(elId);
+      if (!el) return;
+
+      if (el.getAttribute('data-loaded') === 'true') {
+        el.classList.toggle('hidden');
+        return;
+      }
+
+      el.innerHTML = '<span class="text-slate-400 italic">Cargando lista de inscritos...</span>';
+      try {
+        const res = await fetch(`/api/v1/tournaments/${encodeURIComponent(tournName)}/participants`);
+        if (res.ok) {
+          const data = await res.json();
+          const parts = data.participants || [];
+          if (parts.length === 0) {
+            el.innerHTML = '<span class="text-slate-400 italic">No hay participantes registrados todavía.</span>';
+          } else {
+            el.innerHTML = parts.map(p => `
+              <div class="flex items-center justify-between py-0.5 border-b border-slate-100 last:border-0">
+                <span class="font-bold text-slate-900">${escapeHtml(p.name)}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 font-bold">${escapeHtml(p.membership_tier || p.category || '4ta')}</span>
+              </div>
+            `).join('');
+          }
+          el.setAttribute('data-loaded', 'true');
+        }
+      } catch (err) {
+        el.innerHTML = '<span class="text-rose-500 italic">Error al cargar participantes</span>';
+      }
+    }
+    window.toggleCardParticipants = toggleCardParticipants;
+
     async function loadTournaments(sport = 'ALL') {
       const upGrid = document.getElementById('tournaments-upcoming-grid');
       const pastGrid = document.getElementById('tournaments-past-grid');
@@ -14242,14 +14499,14 @@ ${data.message}`);
                   </span>
                 </div>
 
-                <!-- Tanteador en vivo -->
+                <!-- Tanteador en vivo con +/- y entrada directa rápida -->
                 <div class="space-y-2">
                   <!-- Equipo 1 -->
                   <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80">
                     <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHtml(m.team1_name)}</span>
-                    <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5 shrink-0">
                       <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, -1, 0)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center border border-slate-600">-</button>
-                      <span id="score-t1-${m.match_id}" class="text-base font-black font-mono text-emerald-400 w-6 text-center">${m.team1_points || 0}</span>
+                      <input type="number" min="0" max="60" value="${m.team1_points || 0}" id="score-t1-${m.match_id}" onchange="setDirectLiveScore(${t.id}, ${m.match_id}, parseInt(this.value, 10), null)" class="w-11 h-7 text-center font-mono font-black text-xs bg-slate-950 text-emerald-400 border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none" />
                       <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 1, 0)" class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center">+</button>
                     </div>
                   </div>
@@ -14257,16 +14514,19 @@ ${data.message}`);
                   <!-- Equipo 2 -->
                   <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80">
                     <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHtml(m.team2_name)}</span>
-                    <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5 shrink-0">
                       <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, -1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center border border-slate-600">-</button>
-                      <span id="score-t2-${m.match_id}" class="text-base font-black font-mono text-emerald-400 w-6 text-center">${m.team2_points || 0}</span>
+                      <input type="number" min="0" max="60" value="${m.team2_points || 0}" id="score-t2-${m.match_id}" onchange="setDirectLiveScore(${t.id}, ${m.match_id}, null, parseInt(this.value, 10))" class="w-11 h-7 text-center font-mono font-black text-xs bg-slate-950 text-emerald-400 border border-slate-700 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none" />
                       <button type="button" onclick="modifyLiveScore(${t.id}, ${m.match_id}, 0, 1)" class="w-6 h-6 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center">+</button>
                     </div>
                   </div>
                 </div>
 
                 <div class="flex items-center justify-between pt-1">
-                  <span class="text-[10px] font-bold text-slate-400 font-mono">Meta: 32 pts</span>
+                  <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-slate-400 font-mono">Meta: 32 pts</span>
+                    <span class="text-[9px] text-slate-500">• Sube & Baja</span>
+                  </div>
                   <button type="button" onclick="markMatchCompleted(${t.id}, ${m.match_id})" class="px-2.5 py-1 text-[10px] font-black rounded-lg ${isDone ? 'bg-slate-700 text-slate-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} transition">
                     ${isDone ? 'Completado ✓' : 'Finalizar Cruce'}
                   </button>
@@ -14321,12 +14581,10 @@ ${data.message}`);
         });
         if (res.ok) {
           const data = await res.json();
-          // Actualización instantánea de DOM
           const t1El = document.getElementById(`score-t1-${matchId}`);
           const t2El = document.getElementById(`score-t2-${matchId}`);
-          if (t1El) t1El.textContent = data.team1_points;
-          if (t2El) t2El.textContent = data.team2_points;
-          // Refrescar estado general
+          if (t1El) t1El.value = data.team1_points;
+          if (t2El) t2El.value = data.team2_points;
           await refreshLiveAmericanoState();
         }
       } catch (err) {
@@ -14334,6 +14592,56 @@ ${data.message}`);
       }
     }
     window.modifyLiveScore = modifyLiveScore;
+
+    async function setDirectLiveScore(tournId, matchId, p1, p2) {
+      try {
+        const payload = {};
+        if (p1 !== null && !isNaN(p1)) payload.team1_points = p1;
+        if (p2 !== null && !isNaN(p2)) payload.team2_points = p2;
+
+        const res = await fetch(`/api/v1/tournaments/${tournId}/matches/${matchId}/score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          await refreshLiveAmericanoState();
+        }
+      } catch (err) {
+        console.error('Error guardando tanteador directo:', err);
+      }
+    }
+    window.setDirectLiveScore = setDirectLiveScore;
+
+    async function advanceLiveAmericanoRound() {
+      const tId = window.activeLiveAmericanoId;
+      if (!tId) {
+        alert('Selecciona primero un torneo activo.');
+        return;
+      }
+      if (!confirm('¿Deseas avanzar a la siguiente ronda del Torneo Americano?\n\nLos partidos actuales quedarán concluidos y se organizará la siguiente ronda (Sube y Baja / King of the Court).')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/tournaments/${tId}/next-round`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ auto_promote_relegate: true })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`⏭️ ${data.message || 'Siguiente ronda iniciada'}\nRonda Activa: ${data.current_round}`);
+          await refreshLiveAmericanoState();
+        } else {
+          alert(`⚠️ Error: ${data.detail || 'No se pudo avanzar de ronda'}`);
+        }
+      } catch (err) {
+        console.error('Error avanzando de ronda:', err);
+        alert('Error de conexión al avanzar de ronda');
+      }
+    }
+    window.advanceLiveAmericanoRound = advanceLiveAmericanoRound;
 
     async function markMatchCompleted(tournId, matchId) {
       try {
