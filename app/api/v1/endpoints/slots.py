@@ -1169,7 +1169,7 @@ class ManualBookingRequest(BaseModel):
     category: Optional[str] = "4ta"
     client_tier: Optional[str] = "ESTANDAR"
     sport_type: Optional[str] = "PADEL"
-    booked_spots: Optional[int] = None
+    booked_spots: Optional[int] = 1
     spots_count: Optional[int] = None
     is_recurring: Optional[bool] = False
     recurrence_weeks: Optional[int] = 4
@@ -1285,9 +1285,7 @@ async def create_manual_booking(
             "customer_id": customer.id,
         }
 
-        req_booked = getattr(payload, 'booked_spots', None) or getattr(payload, 'spots_count', None)
-        if not req_booked:
-            req_booked = cap if (payload.mode or "FULL_COURT").upper() == "FULL_COURT" else 1
+        req_booked = getattr(payload, 'booked_spots', None) or getattr(payload, 'spots_count', None) or 1
 
         mode_enum = SlotMode.FULL_COURT if (payload.mode or "FULL_COURT").upper() == "FULL_COURT" else SlotMode.SPLIT_MATCH
 
