@@ -340,30 +340,35 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
     changed = False
 
     for c in all_courts:
-        st = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
-        name_clean = (c.name or "").strip().lower()
+        st = (getattr(c, "sport_type", None) or getattr(c, "sport", None) or "PADEL" or "PADEL").upper()
+        name_clean = (getattr(c, "name", None) or "").strip().lower()
         key = (name_clean, st)
 
         if key in seen_db_keys:
             # Pista duplicada en base de datos: desactivarla
-            if c.is_active:
+            if getattr(c, "is_active", False):
                 c.is_active = False
                 changed = True
         else:
             seen_db_keys.add(key)
-            if c.is_active:
+            if getattr(c, "is_active", True):
                 active_courts.append(c)
 
-    court_map = {c.name.strip().lower(): c for c in active_courts}
+    court_map = {(getattr(c, "name", None) or "").strip().lower(): c for c in active_courts if (getattr(c, "name", None) or "").strip()}
     num_map = {c.court_number: c for c in active_courts if getattr(c, "court_number", None) is not None}
 
     sample_club_id = None
     for c in active_courts:
-        if getattr(c, "club_id", None):
-            sample_club_id = c.club_id
+        raw_club = getattr(c, "club_id", None)
+        if not raw_club:
+            continue
+        try:
+            sample_club_id = raw_club if isinstance(raw_club, uuid.UUID) else uuid.UUID(str(raw_club))
             break
+        except (ValueError, TypeError, AttributeError):
+            continue
     if not sample_club_id:
-        sample_club_id = uuid.uuid4()
+        sample_club_id = uuid.UUID("2756f34a-7d24-4815-9f7e-6ed125ea5de7")
 
     court_definitions = [
         (1, "Cancha Central 1", "PADEL", 4),
@@ -384,12 +389,12 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
         if not existing:
             for c in active_courts:
                 c_sport = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
-                if c_sport == s_type and (getattr(c, "court_number", None) == num or c.name.strip().lower() == name.strip().lower()):
+                if c_sport == s_type and (getattr(c, "court_number", None) == num or (getattr(c, "name", None) or "").strip().lower() == name.strip().lower()):
                     existing = c
                     break
 
         if existing:
-            if existing.name != name:
+            if (getattr(existing, "name", None) or "") != name:
                 existing.name = name
                 changed = True
             if getattr(existing, "court_number", None) != num:
@@ -401,7 +406,7 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
             if getattr(existing, "max_capacity", None) != max_cap:
                 existing.max_capacity = max_cap
                 changed = True
-            if not existing.is_active:
+            if not getattr(existing, "is_active", True):
                 existing.is_active = True
                 changed = True
         else:
@@ -432,17 +437,46 @@ async def ensure_five_courts(db: AsyncSession) -> List[Court]:
     final_seen = set()
     final_courts = []
     for c in all_active:
-        st = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
-        nm = (c.name or "").strip().lower()
+        st = (getattr(c, "sport_type", None) or getattr(c, "sport", None) or "PADEL").upper()
+        nm = (getattr(c, "name", None) or "").strip().lower()
         key = (nm, st)
         if key not in final_seen:
             final_seen.add(key)
             final_courts.append(c)
 
-    final_courts.sort(key=lambda c: (getattr(c, "court_number", None) or 99, c.name))
+    final_courts.sort(key=lambda c: (getattr(c, "court_number", None) or 99, (getattr(c, "name", None) or "")))
     return final_courts
 
 ensure_multisport_courts = ensure_five_courts
+
+
+def _serialize_court_response(court: Any) -> CourtResponse:
+    """Serializa una fila de `courts` sin reventar por nulos o club_id ausente."""
+    raw_id = getattr(court, "id", None)
+    raw_name = getattr(court, "name", None)
+    raw_sport = getattr(court, "sport_type", None) or getattr(court, "sport", None) or "PADEL"
+    raw_number = getattr(court, "court_number", None)
+    raw_cap = getattr(court, "max_capacity", None)
+    try:
+        capacity = int(raw_cap) if raw_cap is not None else 4
+    except (TypeError, ValueError):
+        capacity = 4
+    try:
+        court_number = int(raw_number) if raw_number is not None else None
+    except (TypeError, ValueError):
+        court_number = None
+    display_name = str(raw_name).strip() if raw_name else ""
+    if not display_name:
+        display_name = f"Cancha {court_number}" if court_number else "Cancha"
+    return CourtResponse(
+        id=str(raw_id) if raw_id is not None else "",
+        name=display_name,
+        is_active=bool(getattr(court, "is_active", True)),
+        sport_type=str(raw_sport).upper(),
+        max_capacity=max(1, capacity),
+        court_number=court_number,
+        sport=str(raw_sport).upper(),
+    )
 
 
 @router.get("/courts", response_model=List[CourtResponse])
@@ -451,23 +485,50 @@ async def get_courts(
     db: AsyncSession = Depends(get_db),
 ):
     """Obtiene el listado ordenado de las canchas activas del club, deduplicado y con filtro opcional de deporte."""
-    courts = await ensure_five_courts(db)
-    if sport and sport.upper() not in ["ALL", "TODAS", ""]:
-        courts = [c for c in courts if (getattr(c, "sport_type", "PADEL") or "PADEL").upper() == sport.strip().upper()]
-    # Deduplicación por id y nombre+deporte
-    seen_ids = set()
-    seen_keys = set()
-    deduped = []
-    for c in courts:
-        cid = str(c.id)
-        st = (getattr(c, "sport_type", None) or getattr(c, "sport", "PADEL") or "PADEL").upper()
-        nm = (c.name or "").strip().lower()
-        key = (nm, st)
-        if cid not in seen_ids and key not in seen_keys:
+    try:
+        try:
+            courts = await ensure_five_courts(db)
+        except Exception:
+            logger.error("ensure_five_courts falló en GET /slots/courts:\n%s", traceback.format_exc())
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+            res = await db.execute(select(Court).where(Court.is_active.is_(True)))
+            courts = list(res.scalars().all())
+
+        courts = courts or []
+        if sport and str(sport).upper() not in ["ALL", "TODAS", ""]:
+            wanted = str(sport).strip().upper()
+            courts = [
+                c for c in courts
+                if (getattr(c, "sport_type", None) or getattr(c, "sport", None) or "PADEL").upper() == wanted
+            ]
+
+        seen_ids = set()
+        seen_keys = set()
+        payload: List[CourtResponse] = []
+        for c in courts:
+            if c is None:
+                continue
+            cid = str(getattr(c, "id", "") or "")
+            st = (getattr(c, "sport_type", None) or getattr(c, "sport", None) or "PADEL").upper()
+            nm = (getattr(c, "name", None) or "").strip().lower()
+            key = (nm, st)
+            if cid in seen_ids or key in seen_keys:
+                continue
             seen_ids.add(cid)
             seen_keys.add(key)
-            deduped.append(c)
-    return deduped
+            payload.append(_serialize_court_response(c))
+
+        payload.sort(key=lambda item: (item.court_number or 99, item.name or ""))
+        return payload
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error listando canchas: {e}",
+        )
 
 
 @router.post("/seed", status_code=status.HTTP_200_OK)
