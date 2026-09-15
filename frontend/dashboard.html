@@ -99,12 +99,12 @@
     .bg-slate-50 .bg-slate-900, .bg-slate-50 .bg-slate-800, .bg-slate-50 .bg-emerald-600, .bg-slate-50 .bg-indigo-600,
     .bg-slate-100 .bg-slate-900, .bg-slate-100 .bg-slate-800, .bg-slate-100 .bg-emerald-600, .bg-slate-100 .bg-indigo-600,
     button.bg-slate-900, button.bg-slate-800, button.bg-emerald-600, button.bg-indigo-600, button.bg-rose-600,
-    .btn-primary {
+    .btn-primary, .btn-action-primary-purple, #btn-crm-create-player {
       color: #ffffff !important;
     }
     .bg-white button.text-white *, .bg-slate-50 button.text-white *, .bg-slate-100 button.text-white *,
     button.bg-slate-900 *, button.bg-slate-800 *, button.bg-emerald-600 *, button.bg-indigo-600 *, button.bg-rose-600 *,
-    .btn-primary * {
+    .btn-primary *, .btn-action-primary-purple *, #btn-crm-create-player * {
       color: inherit !important;
     }
     /* Clases de texto forzado */
@@ -2946,8 +2946,8 @@
                   <button type="button" onclick="refreshLiveAmericanoState()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-slate-700">
                     <span>🔄</span> <span>Refrescar</span>
                   </button>
-                  <button type="button" onclick="advanceLiveAmericanoRound()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
-                    <span>⏭️</span> <span>Siguiente Ronda</span>
+                  <button type="button" onclick="advanceLiveAmericanoRound()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5" style="background-color: #4f46e5 !important; color: #ffffff !important;">
+                    <span style="color: #ffffff !important;">⏭️</span> <span style="color: #ffffff !important;">Siguiente Ronda</span>
                   </button>
                   <button type="button" onclick="openCloseAmericanoModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5">
                     <span>👑</span> <span>Cerrar Torneo & Podio</span>
@@ -3335,8 +3335,8 @@
                     </div>
                     <button type="button" onclick="window.filterCRMTable()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-xl shadow-sm transition">Buscar</button>
                   </div>
-                  <button type="button" onclick="window.openCustomerModal('create')" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition transform hover:-translate-y-0.5">
-                    <span>➕</span> <span>Nuevo Jugador CRM</span>
+                  <button type="button" id="btn-crm-create-player" onclick="window.openCustomerModal('create')" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition transform hover:-translate-y-0.5" style="background-color: #059669 !important; color: #ffffff !important;">
+                    <span style="color: #ffffff !important;">➕</span> <span style="color: #ffffff !important;">Nuevo Jugador CRM</span>
                   </button>
                 </div>
 
@@ -13787,14 +13787,14 @@ ${data.message}`);
 
           <div class="flex items-center gap-1.5 pt-3 border-t border-slate-100 flex-wrap">
             ${!isPast ? `
-              <button type="button" onclick="openStartAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="flex-1 py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap flex items-center justify-center gap-1">
-                <span>⚡</span> <span>Iniciar</span>
+              <button type="button" onclick="openStartAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="flex-1 py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap flex items-center justify-center gap-1" style="background-color: #059669 !important; color: #ffffff !important;">
+                <span style="color: #ffffff !important;">⚡</span> <span style="color: #ffffff !important;">Iniciar</span>
               </button>
-              <button type="button" onclick="openJoinAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap">
-                + Inscribir
+              <button type="button" onclick="openJoinAmericanoModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}')" class="flex-1 py-1.5 px-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap" style="background-color: #7c3aed !important; color: #ffffff !important;">
+                <span style="color: #ffffff !important;">+ Inscribir</span>
               </button>
-              <button type="button" onclick="openRecordWinnersModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs transition text-center whitespace-nowrap" title="Registrar Ganadores Oficiales">
-                🏆 Ganadores
+              <button type="button" onclick="openRecordWinnersModal('${safeTournName}', '${t.date}', '${t.start_time}', '${slotIdsStr}', '${t.modality || 'PAREJA_FIJA'}')" class="py-1.5 px-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl text-xs font-black shadow-xs transition text-center whitespace-nowrap" style="background-color: #f59e0b !important; color: #0f172a !important;" title="Registrar Ganadores Oficiales">
+                <span style="color: #0f172a !important;">🏆 Ganadores</span>
               </button>
               <button type="button" onclick="cancelAmericanoTournament('${safeTournName}', '${t.date}', '${t.start_time}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold border border-rose-200 transition" title="Cancelar Torneo y Liberar Canchas">
                 🗑️
@@ -14329,8 +14329,8 @@ ${data.message}`);
             upGrid.innerHTML = `
               <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 2rem; text-align: center; color: #64748B; grid-column: 1/-1;">
                 <p class="text-slate-500 mb-3 font-medium">No hay torneos americanos programados para esta fecha.</p>
-                <button onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition">
-                  <span>🏆</span> <span>+ Crear Torneo Americano</span>
+                <button onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition" style="background-color: #4f46e5 !important; color: #ffffff !important;">
+                  <span style="color: #ffffff !important;">🏆</span> <span style="color: #ffffff !important;">+ Crear Torneo Americano</span>
                 </button>
               </div>
             `;
@@ -14356,8 +14356,8 @@ ${data.message}`);
           upGrid.innerHTML = `
             <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 2rem; text-align: center; color: #64748B; grid-column: 1/-1;">
               <p class="text-slate-500 mb-3 font-medium">No hay torneos americanos programados para esta fecha.</p>
-              <button onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition">
-                <span>🏆</span> <span>+ Crear Torneo Americano</span>
+              <button onclick="openCreateAmericanoModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition" style="background-color: #4f46e5 !important; color: #ffffff !important;">
+                <span style="color: #ffffff !important;">🏆</span> <span style="color: #ffffff !important;">+ Crear Torneo Americano</span>
               </button>
             </div>
           `;
@@ -14534,7 +14534,7 @@ ${data.message}`);
                     <span class="text-[10px] font-bold text-slate-400 font-mono">Meta: 32 pts</span>
                     <span class="text-[9px] text-slate-500">• Sube & Baja</span>
                   </div>
-                  <button type="button" onclick="markMatchCompleted(${t.id}, ${m.match_id})" class="px-2.5 py-1 text-[10px] font-black rounded-lg ${isDone ? 'bg-slate-700 text-slate-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} transition">
+                  <button type="button" onclick="markMatchCompleted(${t.id}, ${m.match_id})" class="px-2.5 py-1 text-[10px] font-black rounded-lg ${isDone ? 'bg-slate-700 text-slate-300' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} transition" style="${isDone ? 'background-color: #334155 !important; color: #cbd5e1 !important;' : 'background-color: #4f46e5 !important; color: #ffffff !important;'}">
                     ${isDone ? 'Completado ✓' : 'Finalizar Cruce'}
                   </button>
                 </div>
@@ -19263,6 +19263,23 @@ Jugador: ${checkData.player_name}`);
             window.pendingCustomerAvatarFile = null;
           }
 
+          // a) Actualizar caché reactiva de jugadores de inmediato
+          window.cachedPlayers = window.cachedPlayers || [];
+          window.allCRMCustomers = window.allCRMCustomers || [];
+          const existingIdx = window.cachedPlayers.findIndex(p => p.id == savedId);
+          if (existingIdx >= 0) {
+            window.cachedPlayers[existingIdx] = { ...window.cachedPlayers[existingIdx], ...customerObj };
+          } else {
+            window.cachedPlayers.unshift(customerObj);
+          }
+          const allIdx = window.allCRMCustomers.findIndex(p => p.id == savedId);
+          if (allIdx >= 0) {
+            window.allCRMCustomers[allIdx] = { ...window.allCRMCustomers[allIdx], ...customerObj };
+          } else {
+            window.allCRMCustomers.unshift(customerObj);
+          }
+
+          // b) Notificación toast / alert
           if (typeof window.showDarkToast === 'function') {
             window.showDarkToast(
               playerId ? '✏️ Perfil Actualizado' : '👤 Jugador Creado',
@@ -19271,8 +19288,29 @@ Jugador: ${checkData.player_name}`);
           } else {
             alert(`✅ Jugador ${playerName} guardado con éxito.`);
           }
+
+          // c) Limpiar formulario y resetear campos
+          const crmForm = document.getElementById('form-crm-player');
+          if (crmForm) crmForm.reset();
+          const hiddenIdInput = document.getElementById('crm-edit-player-id');
+          if (hiddenIdInput) hiddenIdInput.value = '';
+          const minorContainer = document.getElementById('crm-minor-fields-container');
+          if (minorContainer) minorContainer.classList.add('hidden');
+          if (typeof window.clearSelectedGuardian === 'function') window.clearSelectedGuardian();
+          const avatarPrev = document.getElementById('customer-modal-avatar-preview');
+          if (avatarPrev) {
+            avatarPrev.src = 'https://api.dicebear.com/7.x/initials/svg?seed=Padel&backgroundColor=0f172a,10b981&textColor=ffffff';
+          }
+
+          // d) Cerrar modal automáticamente
           window.closeCustomerModal();
-          if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
+
+          // e) Crucial: Recargar la lista y directorio CRM reactivamente
+          if (typeof loadCRMDirectory === 'function') {
+            loadCRMDirectory();
+          } else if (typeof renderCRMTable === 'function') {
+            renderCRMTable(window.cachedPlayers);
+          }
           if (typeof loadMembershipsData === 'function') loadMembershipsData();
         } else {
           alert(`⚠️ Error: ${data.detail || 'No se pudo guardar el jugador'}`);
