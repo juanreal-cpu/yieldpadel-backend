@@ -57,13 +57,17 @@ class CustomerResponse(BaseModel):
     wallet_balance: float = 0.0
     is_recent: bool = False
     last_booking_date: Optional[str] = None
+    email: Optional[str] = None
+    status: Optional[str] = "success"
+    data: Optional[dict] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="allow")
 
 
 class CustomerCreateRequest(BaseModel):
     name: str
     phone: str
+    email: Optional[str] = None
     category: str = "4ta"
     client_type: Optional[str] = None
     membership_tier: str = "ESTANDAR"
@@ -77,10 +81,13 @@ class CustomerCreateRequest(BaseModel):
     guardian_id: Optional[int] = None
     guardian_relationship: Optional[str] = None
 
+    model_config = ConfigDict(extra="ignore", from_attributes=True)
+
 
 class CustomerUpdateRequest(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
+    email: Optional[str] = None
     category: Optional[str] = None
     client_type: Optional[str] = None
     membership_tier: Optional[str] = None
@@ -96,6 +103,8 @@ class CustomerUpdateRequest(BaseModel):
     birth_date: Optional[str] = None
     guardian_id: Optional[int] = None
     guardian_relationship: Optional[str] = None
+
+    model_config = ConfigDict(extra="ignore", from_attributes=True)
 
 
 class CustomerOnboardingRequest(BaseModel):
@@ -190,6 +199,12 @@ def format_customer_response(c: Customer) -> CustomerResponse:
         wallet_balance=float(c.wallet_balance if hasattr(c, 'wallet_balance') and c.wallet_balance is not None else 0.0),
         is_recent=is_recent,
         last_booking_date=lb_date.isoformat() if lb_date else None,
+        email=getattr(c, "email", None) or (
+            c.notes.split("Email:")[1].split("|")[0].strip()
+            if c.notes and "Email:" in c.notes
+            else None
+        ),
+        status="success",
     )
 
 
@@ -670,53 +685,67 @@ async def register_customer(
         except Exception:
             pass
 
-    if customer:
-        customer.name = name
-        customer.category = payload.category or customer.category
-        customer.membership_tier = tier
-        customer.client_type = client_type
-        customer.gender = payload.gender or customer.gender
-        customer.preferred_music = payload.preferred_music or customer.preferred_music
-        customer.preferred_play_time = payload.preferred_play_time or customer.preferred_play_time
-        customer.is_minor = bool(payload.is_minor)
-        if birth_d:
-            customer.birth_date = birth_d
-        if payload.guardian_id is not None:
-            customer.guardian_id = payload.guardian_id
-        if payload.guardian_relationship is not None:
-            customer.guardian_relationship = payload.guardian_relationship.strip()
-        if plan_id:
-            customer.membership_plan_id = plan_id
-        if tier != "ESTANDAR" and not customer.membership_end_date:
-            customer.membership_start_date = start_date
-            customer.membership_end_date = end_date
-        if payload.notes:
-            customer.notes = payload.notes.strip()
-    else:
-        customer = Customer(
-            name=name,
-            phone=phone,
-            category=payload.category or "4ta",
-            client_type=client_type,
-            membership_tier=tier,
-            gender=payload.gender or "MASCULINO",
-            preferred_music=payload.preferred_music,
-            preferred_play_time=payload.preferred_play_time,
-            membership_plan_id=plan_id,
-            membership_start_date=start_date,
-            membership_end_date=end_date,
-            academy_classes_used=0,
-            is_minor=bool(payload.is_minor),
-            birth_date=birth_d,
-            guardian_id=payload.guardian_id,
-            guardian_relationship=payload.guardian_relationship.strip() if payload.guardian_relationship else None,
-            notes=payload.notes.strip() if payload.notes else None,
-            is_first_visit=True,
-            onboarding_status="PENDING",
-        )
-        db.add(customer)
+    notes = payload.notes.strip() if payload.notes else ""
+    if payload.email and payload.email.strip():
+        clean_email = payload.email.strip()
+        if "Email:" not in notes:
+            notes = f"{notes} | Email: {clean_email}".strip(" |")
 
-    await db.commit()
+    try:
+        if customer:
+            customer.name = name
+            customer.category = payload.category or customer.category
+            customer.membership_tier = tier
+            customer.client_type = client_type
+            customer.gender = payload.gender or customer.gender
+            customer.preferred_music = payload.preferred_music or customer.preferred_music
+            customer.preferred_play_time = payload.preferred_play_time or customer.preferred_play_time
+            customer.is_minor = bool(payload.is_minor)
+            if birth_d:
+                customer.birth_date = birth_d
+            if payload.guardian_id is not None:
+                customer.guardian_id = payload.guardian_id
+            if payload.guardian_relationship is not None:
+                customer.guardian_relationship = payload.guardian_relationship.strip()
+            if plan_id:
+                customer.membership_plan_id = plan_id
+            if tier != "ESTANDAR" and not customer.membership_end_date:
+                customer.membership_start_date = start_date
+                customer.membership_end_date = end_date
+            if notes:
+                customer.notes = notes
+        else:
+            customer = Customer(
+                name=name,
+                phone=phone,
+                category=payload.category or "4ta",
+                client_type=client_type,
+                membership_tier=tier,
+                gender=payload.gender or "MASCULINO",
+                preferred_music=payload.preferred_music,
+                preferred_play_time=payload.preferred_play_time,
+                membership_plan_id=plan_id,
+                membership_start_date=start_date,
+                membership_end_date=end_date,
+                academy_classes_used=0,
+                is_minor=bool(payload.is_minor),
+                birth_date=birth_d,
+                guardian_id=payload.guardian_id,
+                guardian_relationship=payload.guardian_relationship.strip() if payload.guardian_relationship else None,
+                notes=notes if notes else None,
+                is_first_visit=True,
+                onboarding_status="PENDING",
+            )
+            db.add(customer)
+
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error guardando jugador en base de datos: {str(e)}"
+        )
+
     # Reconsultar con guardian y membership_plan cargados
     re_stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(Customer.id == customer.id)
     re_res = await db.execute(re_stmt)
@@ -809,6 +838,12 @@ async def update_customer_profile(
         customer.preferred_play_time = payload.preferred_play_time.strip()
     if payload.notes is not None:
         customer.notes = payload.notes.strip()
+    if payload.email is not None and payload.email.strip():
+        clean_email = payload.email.strip()
+        curr_notes = customer.notes or ""
+        if "Email:" not in curr_notes:
+            customer.notes = f"{curr_notes} | Email: {clean_email}".strip(" |")
+
     if payload.membership_plan_id is not None:
         customer.membership_plan_id = payload.membership_plan_id
     if payload.academy_classes_used is not None:
@@ -837,7 +872,15 @@ async def update_customer_profile(
         except Exception:
             pass
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error actualizando jugador en base de datos: {str(e)}"
+        )
+
     re_stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(Customer.id == customer.id)
     re_res = await db.execute(re_stmt)
     customer = re_res.scalar_one()

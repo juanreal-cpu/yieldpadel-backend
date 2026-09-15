@@ -22,6 +22,60 @@
     /* =========================================================================
        REGLA MAESTRA DE CONTRASTE ESTRICTO (PROTECCIÓN VISUAL CONTRA TEXTO BLANCO)
        ========================================================================= */
+    /* Forzar legibilidad total en todos los inputs, selects y datepickers */
+    #view-audit input, 
+    #view-audit select, 
+    #view-audit option,
+    input[type="date"],
+    select, option {
+      color: #0f172a !important;
+      background-color: #ffffff !important;
+      color-scheme: light !important;
+      -webkit-text-fill-color: #0f172a !important;
+    }
+
+    /* Pseudoelementos de fecha para Chrome / Edge / Safari */
+    input[type="date"]::-webkit-datetime-edit,
+    input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+    input[type="date"]::-webkit-datetime-edit-text,
+    input[type="date"]::-webkit-datetime-edit-month-field,
+    input[type="date"]::-webkit-datetime-edit-day-field,
+    input[type="date"]::-webkit-datetime-edit-year-field {
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+    }
+
+    /* Calendarios nativos e iconos de fecha */
+    input[type="date"] {
+      color: #0f172a !important;
+      background-color: #ffffff !important;
+      font-weight: 600 !important;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.2) !important;
+      cursor: pointer;
+    }
+
+    /* Prohibir texto blanco en contenedores claros e inputs */
+    .bg-white, .bg-slate-50, .bg-slate-100 {
+      color: #0f172a !important;
+    }
+    .bg-white input, .bg-white select, .bg-white span, .bg-white label, .bg-white p,
+    .modal-card input, .modal-card select, .modal-card textarea, .modal-card label,
+    #modal-crm-player input, #modal-crm-player select, #modal-crm-player textarea, #modal-crm-player label,
+    #crm-search-input, #crm-guardian-search, #crm-guardian-dropdown, #crm-guardian-dropdown * {
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+    }
+    .bg-white .text-white, .bg-slate-50 .text-white, .bg-slate-100 .text-white {
+      color: #0f172a !important;
+    }
+    input::placeholder, textarea::placeholder {
+      color: #64748b !important;
+      -webkit-text-fill-color: #64748b !important;
+      opacity: 1 !important;
+    }
+
     /* Forzar contraste estricto en tarjetas claras */
     .card-light, .bg-white, .bg-slate-50 {
       color: #0f172a !important;
@@ -18429,13 +18483,15 @@ Jugador: ${checkData.player_name}`);
         });
         const data = await res.json();
         if (res.ok) {
+          const customerObj = (data && data.data) ? data.data : (data || {});
+          const playerName = customerObj.name || data.name || 'Jugador';
           if (typeof window.showDarkToast === 'function') {
             window.showDarkToast(
               playerId ? '✏️ Perfil Actualizado' : '👤 Jugador Creado',
-              `Perfil de ${data.name} guardado con éxito en CRM.`
+              `Perfil de ${playerName} guardado con éxito en CRM.`
             );
           } else {
-            alert(`✅ Jugador ${data.name} guardado con éxito.`);
+            alert(`✅ Jugador ${playerName} guardado con éxito.`);
           }
           window.closeCustomerModal();
           if (typeof loadCRMDirectory === 'function') loadCRMDirectory();
