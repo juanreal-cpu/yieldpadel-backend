@@ -29,6 +29,12 @@ from app.schemas.radar import (
     RadarBatchConsolidatedResponse,
 )
 
+from app.schemas.customers import (
+    BotRegisterCustomerRequest,
+    BotRegisterResponse,
+    BotRegisterData,
+)
+
 __all__ = [
     "CourtBase",
     "CourtCreate",
@@ -52,4 +58,7 @@ __all__ = [
     "ClubSummary",
     "GlobalMarketMetrics",
     "RadarBatchConsolidatedResponse",
+    "BotRegisterCustomerRequest",
+    "BotRegisterResponse",
+    "BotRegisterData",
 ]

@@ -16,6 +16,11 @@ from app.models.customer import Customer
 from app.models.membership import MembershipPlan
 from app.models.slot import HoldStatus, SlotHold, SlotStatus, TimeSlot
 from app.models.booking import Booking
+from app.schemas.customers import (
+    BotRegisterCustomerRequest,
+    BotRegisterResponse,
+    BotRegisterData,
+)
 
 router = APIRouter()
 
@@ -841,6 +846,133 @@ async def register_lead(
     re_stmt = select(Customer).options(selectinload(Customer.guardian), selectinload(Customer.membership_plan)).where(Customer.id == new_customer.id)
     re_res = await db.execute(re_stmt)
     return format_customer_response(re_res.scalar_one())
+
+
+@router.post("/bot-register", response_model=BotRegisterResponse, status_code=status.HTTP_200_OK)
+async def bot_register_customer(
+    payload: BotRegisterCustomerRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Endpoint para bots conversacionales (Voiceflow/WhatsApp) para registrar jugadores en el CRM.
+    - Si el jugador ya existe por teléfono, devuelve HTTP 200 con mensaje informativo para no romper el flujo conversacional.
+    - Si no existe, lo inserta en Supabase con valores por defecto seguros ('Estándar', '4ta' o category_level provisto).
+    """
+    raw_phone = (payload.phone or "").strip()
+    name = (payload.name or "").strip()
+
+    if not name or not raw_phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nombre y teléfono son obligatorios para el registro."
+        )
+
+    # Limpieza y normalización básica de teléfono
+    phone = raw_phone
+    clean_digits = "".join(filter(str.isdigit, phone))
+    if len(clean_digits) == 10 and not phone.startswith("+"):
+        phone = f"+57{clean_digits}"
+
+    # 1. Buscar si ya existe el jugador por teléfono
+    check_stmt = select(Customer).where(
+        or_(
+            Customer.phone == phone,
+            Customer.phone == raw_phone,
+            Customer.phone.endswith(clean_digits[-10:]) if len(clean_digits) >= 10 else False
+        )
+    )
+    res = await db.execute(check_stmt)
+    existing_customer = res.scalars().first()
+
+    if existing_customer:
+        # Actualizar opcionalmente email si no lo tenía y vino en el payload
+        if payload.email and payload.email.strip():
+            em = payload.email.strip()
+            current_notes = existing_customer.notes or ""
+            if "Email:" not in current_notes:
+                existing_customer.notes = f"{current_notes} | Email: {em}".strip(" |")
+                await db.commit()
+
+        return BotRegisterResponse(
+            status="success",
+            message="El usuario ya existe",
+            data={
+                "id": existing_customer.id,
+                "name": existing_customer.name,
+                "phone": existing_customer.phone,
+                "category": existing_customer.category,
+                "client_type": existing_customer.client_type,
+                "membership_tier": existing_customer.membership_tier,
+                "email": getattr(existing_customer, "email", None) or (
+                    existing_customer.notes.split("Email:")[1].split("|")[0].strip()
+                    if existing_customer.notes and "Email:" in existing_customer.notes
+                    else payload.email
+                ),
+            }
+        )
+
+    # 2. Si no existe, crear nuevo jugador con valores por defecto
+    category = (payload.category_level or "4ta").strip()
+    notes_list = ["Registrado vía Bot Onboarding (Voiceflow)"]
+    if payload.email and payload.email.strip():
+        notes_list.append(f"Email: {payload.email.strip()}")
+    notes = " | ".join(notes_list)
+
+    new_cust = Customer(
+        name=name,
+        phone=phone,
+        category=category,
+        client_type="Estándar",
+        membership_tier="ESTANDAR",
+        notes=notes,
+        is_first_visit=True,
+        onboarding_status="WELCOMED",
+        wallet_balance=0.0,
+        total_bookings_completed=0,
+    )
+
+    try:
+        db.add(new_cust)
+        await db.commit()
+        await db.refresh(new_cust)
+    except IntegrityError:
+        await db.rollback()
+        # En caso de concurrencia donde se insertó justo antes
+        stmt_retry = select(Customer).where(Customer.phone == phone)
+        res_retry = await db.execute(stmt_retry)
+        found = res_retry.scalars().first()
+        if found:
+            return BotRegisterResponse(
+                status="success",
+                message="El usuario ya existe",
+                data={
+                    "id": found.id,
+                    "name": found.name,
+                    "phone": found.phone,
+                    "category": found.category,
+                    "client_type": found.client_type,
+                    "membership_tier": found.membership_tier,
+                    "email": payload.email,
+                }
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error de integridad al registrar el cliente."
+        )
+
+    return BotRegisterResponse(
+        status="success",
+        message="Jugador registrado",
+        data={
+            "id": new_cust.id,
+            "name": new_cust.name,
+            "phone": new_cust.phone,
+            "category": new_cust.category,
+            "client_type": new_cust.client_type,
+            "membership_tier": new_cust.membership_tier,
+            "email": payload.email,
+        }
+    )
 
 
 @router.put("/{player_id}", response_model=CustomerResponse)
