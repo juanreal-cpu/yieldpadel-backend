@@ -94,6 +94,30 @@ def test_text_messages_never_download_audio_and_persist_immediately():
         assert log_mock.await_args_list[0].kwargs.get("direction") == "incoming"
 
 
+def test_hola_reaches_voiceflow_even_if_inbox_persist_fails():
+    with patch(
+        "app.api.v1.endpoints.whatsapp.log_conversation_message",
+        new=AsyncMock(side_effect=Exception("supabase down")),
+    ), patch(
+        "app.api.v1.endpoints.whatsapp.interact_with_voiceflow",
+        new=AsyncMock(return_value=["Hola, ¿en qué te ayudo?"]),
+    ) as vf_mock, patch(
+        "app.api.v1.endpoints.whatsapp.send_whatsapp_message",
+        new=AsyncMock(return_value=True),
+    ) as send_mock, patch(
+        "app.api.v1.endpoints.whatsapp.is_conversation_paused",
+        new=AsyncMock(side_effect=Exception("db paused check down")),
+    ):
+        client = TestClient(app)
+        res = client.post("/api/v1/whatsapp/webhook", json=_webhook_payload("Hola"))
+        assert res.status_code == 200
+        assert res.json()["status"] == "received"
+        vf_mock.assert_awaited()
+        sent_body = send_mock.await_args.kwargs.get("message_body") or send_mock.await_args.args[1]
+        assert sent_body == "Hola, ¿en qué te ayudo?"
+        assert sent_body != VOICEFLOW_FALLBACK_MESSAGE
+
+
 def test_transactional_messages_skip_voiceflow():
     with patch(
         "app.api.v1.endpoints.whatsapp.interact_with_voiceflow",
