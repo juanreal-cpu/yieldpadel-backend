@@ -124,14 +124,12 @@ async def dispatch_voiceflow_replies(
     sender_phone: str,
     message_text: str,
     raw_from: str,
-    db: AsyncSession,
+    db: Any = None,
     conversation_phone: Optional[str] = None,
 ) -> None:
     """
-    Enruta consultas generales a Voiceflow y despacha cada trace text/speak vía Meta Graph API.
-    Errores de DB y de Voiceflow van en except independientes: un fallo de inbox no bloquea la respuesta.
+    Emergencia: Voiceflow → Meta. Sin persistencia SQLAlchemy/Supabase.
     """
-    log_phone = conversation_phone or sender_phone
     vf_text = str(message_text or "").strip()
     if MEMBERSHIP_BLOCK_REGEX.search(vf_text):
         vf_text = f"{VOICEFLOW_MEMBERSHIP_CONTEXT}{vf_text}"
@@ -142,14 +140,11 @@ async def dispatch_voiceflow_replies(
     except Exception as vf_err:
         logger.error("[VOICEFLOW TEXT EXCEPT] %s", vf_err)
         logger.error(traceback.format_exc())
-        vf_messages = []
+        return
 
-    outgoing = [m for m in (vf_messages or []) if m]
-    if not outgoing:
-        outgoing = [VOICEFLOW_FALLBACK_MESSAGE]
-
-    for vf_msg in outgoing:
-        await _safe_log_bot_message(db, log_phone, vf_msg)
+    for vf_msg in vf_messages or []:
+        if not vf_msg:
+            continue
         try:
             await send_whatsapp_message(to_phone=raw_from, message_body=vf_msg)
         except Exception as send_err:
@@ -366,49 +361,14 @@ def _safe_sender_from_meta(msg: dict) -> Tuple[str, Optional[str]]:
     return raw_from, (str(sender_name).strip() if sender_name else None)
 
 
-async def _safe_db_rollback(db: AsyncSession) -> None:
-    try:
-        await db.rollback()
-    except Exception:
-        pass
-
-
-async def _persist_inbox_immediately(
-    db: AsyncSession,
-    sender_phone: str,
-    body: str,
-    sender_name: Optional[str] = None,
-) -> None:
-    """Inserta en inbox. Si Supabase/SQLAlchemy falla, NO interrumpe el flujo hacia Voiceflow."""
-    try:
-        await log_conversation_message(
-            db,
-            sender_phone,
-            body or "[mensaje vacío]",
-            direction="incoming",
-            player_name=sender_name,
-            increment_unread=True,
-        )
-    except Exception as persist_err:
-        logger.error("[INBOX PERSIST EXCEPT] %s", persist_err)
-        logger.error(traceback.format_exc())
-        try:
-            await db.rollback()
-        except Exception:
-            pass
-
-
-async def _safe_log_bot_message(db: AsyncSession, phone: str, body: str) -> None:
-    try:
-        await log_conversation_message(db, phone, body, direction="bot")
-    except Exception:
-        logger.error("[INBOX BOT LOG EXCEPT]")
-        logger.error(traceback.format_exc())
-        await _safe_db_rollback(db)
+# EMERGENCIA: persistencia Supabase/SQLAlchemy APAGADA en el webhook.
+# No llamar _persist_inbox_immediately ni log_conversation_message desde receive_webhook.
+# async def _persist_inbox_immediately(...):  # desactivado
+#     await log_conversation_message(...)
 
 
 async def _route_text_message(
-    db: AsyncSession,
+    db: Any,
     sender_phone: str,
     sender_name: Optional[str],
     raw_from: str,
@@ -416,110 +376,15 @@ async def _route_text_message(
     msg: dict,
     msg_id: Optional[str],
 ) -> None:
-    """Flujo de texto: comandos nativos, disponibilidad, Voiceflow. Sin audio ni STT."""
+    """Emergencia: texto limpio → Voiceflow → Meta. Sin SQLAlchemy."""
     clean_text = str(message_text or "").strip()
     if msg_id:
         MESSAGES_CACHE[msg_id] = clean_text
-
-    payload = _as_dict(msg)
-    context = _as_dict(payload.get("context"))
-    quoted_text = None
-    quoted_msg = context.get("quoted_message")
-    if isinstance(quoted_msg, dict):
-        quoted_text = quoted_msg.get("body")
-        inner = quoted_msg.get("text")
-        if not quoted_text and isinstance(inner, dict):
-            quoted_text = inner.get("body")
-    if not quoted_text:
-        quoted_text = context.get("body") or context.get("text")
-    if not quoted_text and context.get("id"):
-        quoted_text = MESSAGES_CACHE.get(context.get("id"))
-
     logger.info("[WHATSAPP TEXT] %s (%s): '%s'", sender_phone, sender_name, clean_text)
-
-    paused = False
-    try:
-        paused = await is_conversation_paused(db, sender_phone)
-    except Exception:
-        logger.error("[WHATSAPP PAUSED CHECK EXCEPT] no bloquea Voiceflow")
-        logger.error(traceback.format_exc())
-        await _safe_db_rollback(db)
-        paused = False
-
-    if paused:
-        try:
-            wait_reply = await handle_human_wait_turn(db, sender_phone, clean_text)
-            if wait_reply:
-                await _safe_log_bot_message(db, sender_phone, wait_reply)
-                await send_whatsapp_message(to_phone=raw_from, message_body=wait_reply)
-        except Exception:
-            logger.error("[WHATSAPP HUMAN WAIT EXCEPT]")
-            logger.error(traceback.format_exc())
-            await _safe_db_rollback(db)
-        return
-
-    session = get_session(sender_phone)
-
-    try:
-        if is_transactional_message(clean_text):
-            reply_text = await process_incoming_whatsapp_message(
-                db=db,
-                sender_phone=sender_phone,
-                sender_name=sender_name,
-                raw_text=clean_text,
-                quoted_text=quoted_text,
-                context=context,
-            )
-            if reply_text:
-                logger.info("[WHATSAPP OUTGOING PREPARED]:\n%s\n", reply_text)
-                await _safe_log_bot_message(db, sender_phone, reply_text)
-                await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
-            return
-    except Exception:
-        logger.error("[WHATSAPP TRANSACTIONAL EXCEPT] continúo a Voiceflow")
-        logger.error(traceback.format_exc())
-        await _safe_db_rollback(db)
-
-    try:
-        if SLOT_SELECTION_REGEX.match(clean_text) and (
-            session.get("last_offered_slots") or session.get("pending_mode_slot_id")
-        ):
-            reply_text = await handle_sport_and_booking_flow(
-                db, sender_phone, sender_name, clean_text.strip(), session
-            )
-            if reply_text:
-                await _safe_log_bot_message(db, sender_phone, reply_text)
-                await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
-            return
-    except Exception:
-        logger.error("[WHATSAPP SLOT SELECT EXCEPT] continúo a Voiceflow")
-        logger.error(traceback.format_exc())
-        await _safe_db_rollback(db)
-
-    try:
-        if AVAILABILITY_INTENT_REGEX.search(clean_text):
-            availability = await lookup_available_slots(
-                db,
-                sender_phone=sender_phone,
-                message_text=clean_text,
-            )
-            reply_text = availability.get("whatsapp_text") if isinstance(availability, dict) else None
-            if reply_text:
-                await _safe_log_bot_message(db, sender_phone, reply_text)
-                await send_whatsapp_message(to_phone=raw_from, message_body=reply_text)
-                return
-    except Exception:
-        logger.error("[WHATSAPP AVAILABILITY EXCEPT] continúo a Voiceflow")
-        logger.error(traceback.format_exc())
-        await _safe_db_rollback(db)
-
-    vf_user_id = str(raw_from or "").lstrip("+")
     await dispatch_voiceflow_replies(
-        sender_phone=vf_user_id,
+        sender_phone=str(raw_from or "").lstrip("+"),
         message_text=clean_text,
         raw_from=raw_from,
-        db=db,
-        conversation_phone=sender_phone,
     )
 
 
@@ -537,15 +402,10 @@ async def verify_webhook(request: Request):
 
 
 @router.post("/webhook")
-async def receive_webhook(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-):
+async def receive_webhook(request: Request):
     """
-    Webhook de texto a prueba de balas.
-    Extrae text.body de Meta/Twilio y lo envía a Voiceflow.
-    Audio, imagen, sticker u otros medios sin texto se ignoran (HTTP 200).
-    Un fallo de Supabase/SQLAlchemy nunca bloquea Voiceflow.
+    Emergencia texto-only: extrae from + text.body, llama Voiceflow y despacha a Meta.
+    Sin persistencia SQLAlchemy. Sin audio/STT. Sin texto → HTTP 200.
     """
     try:
         body: Dict[str, Any] = {}
@@ -565,120 +425,76 @@ async def receive_webhook(
 
         inbound_messages: List[dict] = []
 
-        # Twilio (form): solo texto. Media sin Body se descarta.
         if form is not None and (form.get("From") or form.get("Body")):
             raw_from = str(form.get("From") or "").replace("whatsapp:", "").strip()
             body_text = str(form.get("Body") or "").strip()
             if raw_from and body_text:
                 inbound_messages.append({
-                    "id": str(form.get("MessageSid") or ""),
                     "from": raw_from,
                     "type": "text",
                     "text": {"body": body_text},
-                    "profile_name": str(form.get("ProfileName") or ""),
                 })
 
-        # Meta Cloud API (JSON)
-        entries = body.get("entry", []) if isinstance(body, dict) else []
+        entries = body.get("entry") if isinstance(body, dict) else None
+        if not isinstance(entries, list):
+            entries = []
         for entry in entries:
             if not isinstance(entry, dict):
                 continue
-            for change in entry.get("changes", []) or []:
+            for change in (entry.get("changes") or []):
                 if not isinstance(change, dict):
                     continue
                 value = change.get("value") if isinstance(change.get("value"), dict) else {}
-                contacts = value.get("contacts") if isinstance(value.get("contacts"), list) else []
-                contact_map = {}
-                for c in contacts:
-                    if not isinstance(c, dict):
-                        continue
-                    wa_id = str(c.get("wa_id") or c.get("from") or "").strip()
-                    profile = c.get("profile") if isinstance(c.get("profile"), dict) else {}
-                    profile_name = profile.get("name") if isinstance(profile, dict) else None
-                    if wa_id and profile_name:
-                        contact_map[wa_id] = profile_name
-                        contact_map[wa_id.lstrip("+")] = profile_name
-
-                messages = value.get("messages") if isinstance(value, dict) else None
+                messages = value.get("messages")
                 if messages is None:
-                    messages = value.get("message") if isinstance(value, dict) else None
+                    messages = value.get("message")
                 if isinstance(messages, dict):
                     messages = list(messages.values())
                 if not isinstance(messages, list):
                     continue
                 for msg in messages:
-                    if not isinstance(msg, dict):
-                        continue
-                    raw_from, _ignored_name = _safe_sender_from_meta(msg)
-                    if not raw_from:
-                        raw_from = str(msg.get("from") or "").strip()
-                    msg["_profile_name"] = (
-                        contact_map.get(raw_from)
-                        or contact_map.get(raw_from.lstrip("+"))
-                        or _safe_sender_from_meta(msg)[1]
-                    )
-                    inbound_messages.append(msg)
+                    if isinstance(msg, dict):
+                        inbound_messages.append(msg)
 
         logger.info("Incoming WhatsApp webhook: %s mensaje(s)", len(inbound_messages))
 
         for msg in inbound_messages:
-            raw_from, sender_name = _safe_sender_from_meta(msg)
-            raw_from = str(raw_from or "").strip()
+            if not isinstance(msg, dict):
+                continue
+            raw_from = str(msg.get("from") or msg.get("wa_id") or "").strip()
+            text_obj = msg.get("text") if isinstance(msg.get("text"), dict) else {}
+            message_text = str((text_obj or {}).get("body") or "").strip()
+            if not message_text:
+                logger.info(
+                    "[WHATSAPP] Ignorando mensaje sin texto (type=%s). HTTP 200.",
+                    str(msg.get("type") or "unknown"),
+                )
+                continue
             if not raw_from:
                 continue
-            sender_phone = f"+{raw_from}" if not raw_from.startswith("+") else raw_from
-            if not sender_name:
-                sender_name = msg.get("_profile_name") or msg.get("profile_name")
-            msg_type = str(msg.get("type") or "").lower()
-            message_text = _safe_text_body(msg)
-            if not message_text:
-                logger.info("[WHATSAPP] Ignorando mensaje sin texto (type=%s). HTTP 200.", msg_type or "unknown")
+
+            logger.info("[WHATSAPP TEXT] %s: '%s'", raw_from, message_text)
+            vf_user_id = raw_from.lstrip("+")
+            vf_messages: List[str] = []
+            try:
+                vf_messages = await interact_with_voiceflow(vf_user_id, message_text)
+            except Exception as vf_err:
+                logger.error("[VOICEFLOW TEXT EXCEPT] %s", vf_err)
+                logger.error(traceback.format_exc())
                 continue
 
-            try:
-                await _persist_inbox_immediately(db, sender_phone, message_text, sender_name)
-            except Exception:
-                logger.error("[INBOX PERSIST OUTER EXCEPT] el flujo continúa hacia Voiceflow")
-                logger.error(traceback.format_exc())
+            for vf_msg in vf_messages or []:
+                if not vf_msg:
+                    continue
                 try:
-                    await db.rollback()
-                except Exception:
+                    await send_whatsapp_message(to_phone=raw_from, message_body=vf_msg)
+                except Exception as send_err:
+                    logger.error("[WHATSAPP SEND EXCEPT] %s", send_err)
                     logger.error(traceback.format_exc())
-
-            try:
-                await _route_text_message(
-                    db, sender_phone, sender_name, raw_from, message_text, msg, msg.get("id"),
-                )
-            except Exception as text_err:
-                logger.error("[WHATSAPP TEXT EXCEPT] %s — intento Voiceflow directo", text_err)
-                logger.error(traceback.format_exc())
-                try:
-                    await db.rollback()
-                except Exception:
-                    logger.error(traceback.format_exc())
-                try:
-                    await dispatch_voiceflow_replies(
-                        sender_phone=raw_from.lstrip("+"),
-                        message_text=message_text,
-                        raw_from=raw_from,
-                        db=db,
-                        conversation_phone=sender_phone,
-                    )
-                except Exception:
-                    logger.error("[WHATSAPP TEXT VF LAST-RESORT EXCEPT]")
-                    logger.error(traceback.format_exc())
-                    try:
-                        await send_whatsapp_message(
-                            to_phone=raw_from,
-                            message_body=VOICEFLOW_FALLBACK_MESSAGE,
-                        )
-                    except Exception:
-                        logger.error(traceback.format_exc())
 
     except Exception as e:
         logger.error("[WHATSAPP WEBHOOK EXCEPT] %s", e)
         logger.error(traceback.format_exc())
-        print(f"[WHATSAPP WEBHOOK ERROR] Error procesando webhook: {e}")
 
     return {"status": "received"}
 
