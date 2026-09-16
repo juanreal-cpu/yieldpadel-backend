@@ -69,9 +69,6 @@ def test_text_messages_never_download_audio_and_persist_immediately():
     payload = _webhook_payload("Hola, hay cancha?")
     payload["entry"][0]["changes"][0]["value"]["messages"][0]["audio"] = None
     with patch(
-        "app.api.v1.endpoints.whatsapp.download_whatsapp_media_by_id",
-        new=AsyncMock(side_effect=AssertionError("no debe descargar audio en type=text")),
-    ) as audio_mock, patch(
         "app.api.v1.endpoints.whatsapp.interact_with_voiceflow",
         new=AsyncMock(return_value=["Hola desde VF"]),
     ), patch(
@@ -87,11 +84,41 @@ def test_text_messages_never_download_audio_and_persist_immediately():
         client = TestClient(app)
         res = client.post("/api/v1/whatsapp/webhook", json=payload)
         assert res.status_code == 200
-        audio_mock.assert_not_awaited()
         assert log_mock.await_count >= 1
         first_body = log_mock.await_args_list[0].kwargs.get("body") or log_mock.await_args_list[0].args[2]
         assert first_body == "Hola, hay cancha?"
         assert log_mock.await_args_list[0].kwargs.get("direction") == "incoming"
+
+
+def test_audio_image_sticker_are_ignored_with_http_200():
+    payload = {
+        "entry": [{
+            "changes": [{
+                "value": {
+                    "contacts": [{"wa_id": "573132058547", "profile": {"name": "Juan"}}],
+                    "messages": [{
+                        "id": "wamid.audio",
+                        "from": "573132058547",
+                        "type": "audio",
+                        "audio": {"id": "MEDIA123", "mime_type": "audio/ogg"},
+                    }],
+                }
+            }]
+        }]
+    }
+    with patch(
+        "app.api.v1.endpoints.whatsapp.interact_with_voiceflow",
+        new=AsyncMock(return_value=["no debe llamarse"]),
+    ) as vf_mock, patch(
+        "app.api.v1.endpoints.whatsapp.send_whatsapp_message",
+        new=AsyncMock(return_value=True),
+    ) as send_mock:
+        client = TestClient(app)
+        res = client.post("/api/v1/whatsapp/webhook", json=payload)
+        assert res.status_code == 200
+        assert res.json()["status"] == "received"
+        vf_mock.assert_not_awaited()
+        send_mock.assert_not_awaited()
 
 
 def test_hola_reaches_voiceflow_even_if_inbox_persist_fails():

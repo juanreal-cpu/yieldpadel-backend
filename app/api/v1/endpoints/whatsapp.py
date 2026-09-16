@@ -38,12 +38,6 @@ from app.services.whatsapp import (
 )
 from app.models.whatsapp_conversation import WhatsAppConversation
 from app.models.customer import Customer
-from app.services.gemini_service import (
-    AUDIO_PROCESSING_ERROR_MESSAGE,
-    download_whatsapp_media,
-    download_whatsapp_media_by_id,
-    transcribe_audio_with_gemini,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -338,19 +332,6 @@ def _as_dict(value: Any) -> dict:
     return value if isinstance(value, dict) else {}
 
 
-def _is_audio_message(msg_type: str, msg: dict) -> bool:
-    """True solo si el mensaje ES una nota de voz. El type=text nunca entra al flujo de audio."""
-    t = str(msg_type or "").strip().lower()
-    if t == "text":
-        return False
-    if t in ("audio", "voice"):
-        return True
-    if t:
-        return False
-    payload = _as_dict(msg)
-    return isinstance(payload.get("audio"), dict) or isinstance(payload.get("voice"), dict)
-
-
 def _safe_text_body(msg: dict) -> str:
     """Extrae el texto de Meta/Twilio sin KeyError/TypeError (text.body, button, interactive)."""
     payload = _as_dict(msg)
@@ -411,7 +392,10 @@ async def _persist_inbox_immediately(
     except Exception as persist_err:
         logger.error("[INBOX PERSIST EXCEPT] %s", persist_err)
         logger.error(traceback.format_exc())
-        await _safe_db_rollback(db)
+        try:
+            await db.rollback()
+        except Exception:
+            pass
 
 
 async def _safe_log_bot_message(db: AsyncSession, phone: str, body: str) -> None:
@@ -432,7 +416,7 @@ async def _route_text_message(
     msg: dict,
     msg_id: Optional[str],
 ) -> None:
-    """Flujo de texto: comandos nativos, disponibilidad, Voiceflow. Sin descarga de audio."""
+    """Flujo de texto: comandos nativos, disponibilidad, Voiceflow. Sin audio ni STT."""
     clean_text = str(message_text or "").strip()
     if msg_id:
         MESSAGES_CACHE[msg_id] = clean_text
@@ -539,33 +523,6 @@ async def _route_text_message(
     )
 
 
-async def _transcribe_inbound_audio(msg: dict) -> Tuple[str, str]:
-    """Descarga (2 pasos Meta) y transcribe. No se llama nunca para type=text."""
-    audio_obj = msg.get("audio") or msg.get("voice") or {}
-    if not isinstance(audio_obj, dict):
-        audio_obj = {}
-    media_id = audio_obj.get("id")
-    media_url = audio_obj.get("url")
-    mime_type = audio_obj.get("mime_type") or "audio/ogg"
-
-    if media_id:
-        logger.info("[AUDIO STT] Resolviendo media_id=%s (2-step Meta v17)", media_id)
-        audio_bytes, mime_from_meta = await download_whatsapp_media_by_id(str(media_id))
-        if mime_from_meta:
-            mime_type = mime_from_meta
-    elif media_url:
-        logger.info("[AUDIO STT] Descargando audio desde URL directa")
-        audio_bytes = await download_whatsapp_media(media_url, mime_type=mime_type)
-    else:
-        raise ValueError("El payload de audio no trae media_id ni url")
-
-    logger.info("[AUDIO STT] Transcribiendo audio (%s bytes) con Gemini 1.5 Flash...", len(audio_bytes))
-    transcription = await transcribe_audio_with_gemini(audio_bytes, mime_type=mime_type)
-    if not transcription or not str(transcription).strip():
-        raise ValueError("Transcripción vacía")
-    return str(transcription).strip(), mime_type
-
-
 @router.get("/webhook")
 async def verify_webhook(request: Request):
     """Verificación de webhook requerida por Meta Cloud API."""
@@ -585,10 +542,10 @@ async def receive_webhook(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Recepción de eventos de WhatsApp Cloud API (Meta) y Twilio.
-    1) Persiste el mensaje en inbox inmediatamente.
-    2) Texto → Voiceflow / flujos nativos (nunca descarga audio).
-    3) Audio → Meta 2-step + Gemini STT.
+    Webhook de texto a prueba de balas.
+    Extrae text.body de Meta/Twilio y lo envía a Voiceflow.
+    Audio, imagen, sticker u otros medios sin texto se ignoran (HTTP 200).
+    Un fallo de Supabase/SQLAlchemy nunca bloquea Voiceflow.
     """
     try:
         body: Dict[str, Any] = {}
@@ -608,21 +565,18 @@ async def receive_webhook(
 
         inbound_messages: List[dict] = []
 
-        # Twilio (form)
-        if form is not None and (form.get("From") or form.get("Body") or form.get("MediaUrl0")):
+        # Twilio (form): solo texto. Media sin Body se descarta.
+        if form is not None and (form.get("From") or form.get("Body")):
             raw_from = str(form.get("From") or "").replace("whatsapp:", "").strip()
-            media_url = str(form.get("MediaUrl0") or "").strip()
-            media_ctype = str(form.get("MediaContentType0") or "").strip().lower()
             body_text = str(form.get("Body") or "").strip()
-            is_audio = media_ctype.startswith("audio") or (bool(media_url) and not body_text)
-            inbound_messages.append({
-                "id": str(form.get("MessageSid") or ""),
-                "from": raw_from,
-                "type": "audio" if is_audio else "text",
-                "text": {"body": body_text},
-                "audio": {"url": media_url, "mime_type": media_ctype or "audio/ogg"} if is_audio else None,
-                "profile_name": str(form.get("ProfileName") or ""),
-            })
+            if raw_from and body_text:
+                inbound_messages.append({
+                    "id": str(form.get("MessageSid") or ""),
+                    "from": raw_from,
+                    "type": "text",
+                    "text": {"body": body_text},
+                    "profile_name": str(form.get("ProfileName") or ""),
+                })
 
         # Meta Cloud API (JSON)
         entries = body.get("entry", []) if isinstance(body, dict) else []
@@ -677,49 +631,20 @@ async def receive_webhook(
                 sender_name = msg.get("_profile_name") or msg.get("profile_name")
             msg_type = str(msg.get("type") or "").lower()
             message_text = _safe_text_body(msg)
-            is_audio = _is_audio_message(msg_type, msg)
+            if not message_text:
+                logger.info("[WHATSAPP] Ignorando mensaje sin texto (type=%s). HTTP 200.", msg_type or "unknown")
+                continue
 
-            inbox_preview = (
-                "[Nota de voz recibida]" if is_audio else (message_text or f"[{msg_type or 'mensaje'}]")
-            )
             try:
-                await _persist_inbox_immediately(db, sender_phone, inbox_preview, sender_name)
+                await _persist_inbox_immediately(db, sender_phone, message_text, sender_name)
             except Exception:
                 logger.error("[INBOX PERSIST OUTER EXCEPT] el flujo continúa hacia Voiceflow")
                 logger.error(traceback.format_exc())
-                await _safe_db_rollback(db)
-
-            if is_audio:
                 try:
-                    transcription, _mime = await _transcribe_inbound_audio(msg)
-                    logger.info("[AUDIO STT ÉXITO] %s: '%s'", sender_phone, transcription)
-                    try:
-                        await _persist_inbox_immediately(
-                            db, sender_phone, f"[Transcripción] {transcription}", sender_name
-                        )
-                    except Exception:
-                        logger.error(traceback.format_exc())
-                        await _safe_db_rollback(db)
-                    message_text = transcription
-                    await _route_text_message(
-                        db, sender_phone, sender_name, raw_from, message_text, msg, msg.get("id"),
-                    )
-                except Exception as stt_err:
-                    logger.error("[AUDIO STT EXCEPT] %s", stt_err)
+                    await db.rollback()
+                except Exception:
                     logger.error(traceback.format_exc())
-                    try:
-                        await send_whatsapp_message(
-                            to_phone=raw_from,
-                            message_body=AUDIO_PROCESSING_ERROR_MESSAGE,
-                        )
-                    except Exception:
-                        logger.error(traceback.format_exc())
-                continue
 
-            # Ruta de texto estricta: nunca descarga media ni toca variables de audio.
-            if not message_text:
-                logger.info("[WHATSAPP TEXT] Mensaje sin body (type=%s); ya persistido en inbox.", msg_type)
-                continue
             try:
                 await _route_text_message(
                     db, sender_phone, sender_name, raw_from, message_text, msg, msg.get("id"),
@@ -727,7 +652,10 @@ async def receive_webhook(
             except Exception as text_err:
                 logger.error("[WHATSAPP TEXT EXCEPT] %s — intento Voiceflow directo", text_err)
                 logger.error(traceback.format_exc())
-                await _safe_db_rollback(db)
+                try:
+                    await db.rollback()
+                except Exception:
+                    logger.error(traceback.format_exc())
                 try:
                     await dispatch_voiceflow_replies(
                         sender_phone=raw_from.lstrip("+"),
